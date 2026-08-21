@@ -600,6 +600,147 @@ a {
   font-size: 1.45rem;
 }
 
+.admin-dashboard,
+.admin-hub {
+  max-width: 1280px;
+}
+
+.admin-competition-grid,
+.admin-global-grid,
+.admin-action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin: 42px 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.admin-competition-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.admin-competition-grid a,
+.admin-global-grid > section,
+.admin-action-grid article,
+.admin-panel,
+.registration-card {
+  background: var(--ink);
+  padding: 26px;
+}
+
+.admin-competition-grid a {
+  display: grid;
+  gap: 12px;
+  min-height: 170px;
+  align-content: end;
+  text-decoration: none;
+}
+
+.admin-competition-grid a:hover {
+  background: var(--green-dark);
+}
+
+.admin-competition-grid span,
+.registration-card > div > span,
+.admin-action-grid span {
+  color: var(--green);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-competition-grid small,
+.admin-global-grid p,
+.registration-card p,
+.admin-action-grid p {
+  color: var(--muted);
+}
+
+.compact-admin-form,
+.inline-admin-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.inline-admin-form {
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+}
+
+.compact-admin-form label,
+.inline-admin-form label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.compact-admin-form input,
+.inline-admin-form select,
+.roster-form input[type="text"],
+.roster-form input:not([type]) {
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--paper);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.admin-panel {
+  margin: 40px 0;
+  border: 1px solid var(--line);
+}
+
+.registration-list {
+  display: grid;
+  gap: 20px;
+}
+
+.registration-card {
+  border: 1px solid var(--line);
+}
+
+.roster-form {
+  margin-top: 28px;
+}
+
+.roster-form fieldset {
+  display: grid;
+  gap: 1px;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--line);
+}
+
+.roster-form legend {
+  padding: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.roster-form label {
+  display: grid;
+  grid-template-columns: auto 1fr 100px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--ink);
+}
+
+.roster-form > .button {
+  width: 100%;
+}
+
 .public-shell,
 .empty-public-shell {
   min-height: 100vh;
@@ -897,6 +1038,13 @@ a {
   }
 
   .admin-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-competition-grid,
+  .admin-global-grid,
+  .admin-action-grid,
+  .inline-admin-form {
     grid-template-columns: 1fr;
   }
 

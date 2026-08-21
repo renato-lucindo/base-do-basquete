@@ -8,6 +8,36 @@ export type Database = {
   };
   public: {
     Tables: {
+      admin_mutation_audit: {
+        Row: {
+          action: string;
+          entity_id: number;
+          entity_type: string;
+          id: number;
+          metadata: Json;
+          occurred_at: string;
+          user_id: string;
+        };
+        Insert: {
+          action: string;
+          entity_id: number;
+          entity_type: string;
+          id?: never;
+          metadata?: Json;
+          occurred_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          action?: string;
+          entity_id?: number;
+          entity_type?: string;
+          id?: never;
+          metadata?: Json;
+          occurred_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       auth_audit_events: {
         Row: {
           correlation_id: string;
@@ -873,6 +903,48 @@ export type Database = {
           },
         ];
       };
+      player_jersey_history: {
+        Row: {
+          competition_id: number | null;
+          game_id: number | null;
+          jersey_number: string | null;
+          player_id: number | null;
+          used_at: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "games_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "roster_entries_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      player_primary_jerseys: {
+        Row: {
+          game_count: number | null;
+          jersey_number: string | null;
+          most_recent_use: string | null;
+          player_id: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "roster_entries_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       team_achievements: {
         Row: {
           competition_id: number | null;
@@ -901,6 +973,63 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_team_registration: {
+        Args: { p_competition_id: number; p_team_id: number };
+        Returns: {
+          competition_id: number;
+          confirmed_at: string | null;
+          created_at: string;
+          id: number;
+          status: string;
+          team_id: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "team_registrations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_replace_roster: {
+        Args: { p_entries: Json; p_registration_id: number };
+        Returns: {
+          competition_id: number;
+          created_at: string;
+          id: number;
+          jersey_number: string | null;
+          joined_on: string | null;
+          left_on: string | null;
+          player_id: number;
+          registration_id: number;
+          status: string;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "roster_entries";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      admin_transition_team_registration: {
+        Args: { p_registration_id: number; p_status: string };
+        Returns: {
+          competition_id: number;
+          confirmed_at: string | null;
+          created_at: string;
+          id: number;
+          status: string;
+          team_id: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "team_registrations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       is_current_admin: { Args: never; Returns: boolean };
       is_current_admin_aal2: { Args: never; Returns: boolean };
     };

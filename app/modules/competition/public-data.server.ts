@@ -191,14 +191,26 @@ export async function loadPublicDetail(
       .eq("status", "active")
       .limit(1);
     ensureQuery(rosterResult.error);
-    return rosterResult.data.length === 1
-      ? {
-          label: player.full_name,
-          description: rosterResult.data[0]?.jersey_number
-            ? `Camisa ${rosterResult.data[0].jersey_number} nesta edição.`
-            : "Atleta inscrito nesta edição.",
-        }
-      : null;
+    if (rosterResult.data.length !== 1) {
+      return null;
+    }
+    const primaryJerseyResult = await client
+      .from("player_primary_jerseys")
+      .select("jersey_number,game_count")
+      .eq("player_id", player.id)
+      .limit(1);
+    ensureQuery(primaryJerseyResult.error);
+    const currentJersey = rosterResult.data[0]?.jersey_number;
+    const primaryJersey = primaryJerseyResult.data[0];
+    return {
+      label: player.full_name,
+      description: [
+        currentJersey ? `Camisa ${currentJersey} nesta edição.` : "Atleta inscrito nesta edição.",
+        primaryJersey
+          ? `Camisa histórica: ${primaryJersey.jersey_number} em ${primaryJersey.game_count} jogo(s).`
+          : "Sem histórico de jogos finalizados.",
+      ].join(" "),
+    };
   }
 
   if (!/^\d+$/.test(detailKey)) {
