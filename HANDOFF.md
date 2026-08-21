@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-05 concluídos e integrados; WP-06 em execução.
-- Status geral: `IN PROGRESS` no WP-06; núcleo transacional, hub administrativo, inscrições, elencos e camisas implementados com gates SQL/local aprovados.
+- Fase: WP-00 a WP-05 concluídos e integrados; WP-06 concluído tecnicamente na PR #11, aguardando apenas o merge.
+- Status geral: `READY TO MERGE` no WP-06; gates SQL/local/remotos e smoke administrativo real em `aal2` aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `wp-06-admin-rosters`.
 - Último commit integrado em `main`: `85c6913` (`WP-05 — contexto e navegação pública (#10)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-06 está na branch própria. RPCs `aal2` controlam inscrição idempotente, transição de estado e substituição atômica do elenco, com auditoria e erros estáveis. Dashboard, gestão global, hub da edição e editor de elenco estão implementados. Histórico e camisa principal derivam somente de jogos finalizados. Os 21 asserts SQL e 14 testes de aplicação passaram; falta PR, preview e teste autenticado real.
+WP-06 está na branch própria e na PR #11. RPCs `aal2` controlam inscrição idempotente, transição de estado e substituição atômica do elenco, com auditoria e erros estáveis. Dashboard, gestão global, hub da edição e editor de elenco estão implementados. Histórico e camisa principal derivam somente de jogos finalizados. Os 21 asserts SQL, 14 testes de aplicação, CI/database desde zero, CodeQL, preview e smoke autenticado real passaram.
 
 ## 6. Próximo passo exato
 
-1. Commitar e abrir a PR do WP-06 após scan staged.
-2. Validar CI/database, preview e CodeQL.
-3. Fazer login/MFA no novo preview para validar gestão de uma edição completa; integrar somente após o gate.
+1. Commitar e enviar as evidências finais do WP-06.
+2. Reconfirmar os checks no novo head e integrar a PR #11 por squash, sem publicar produção.
+3. Criar a branch própria do WP-07 e executar o fluxo de súmula manual conforme o plano.
 
 ### Primeiros arquivos a abrir
 
@@ -95,7 +95,7 @@ Preview navegando entre anos/categorias sem mistura de dados, incluindo 404 cont
 | WP-03 — Administrador único | `DONE` | PR #8 integrada; conta singleton, TOTP real, `aal2`, RLS e gate aprovados |
 | WP-04 — Modelo canônico | `DONE` | PR #9 integrada; CI aplicou migrations/seed desde zero e pgTAP passou |
 | WP-05 — Contexto e navegação pública | `DONE` | PR #10 integrada; E2E no preview e navegador real aprovados |
-| WP-06 — Hub administrativo e elencos | `IN PROGRESS` | RPCs, auditoria, hub, CRUD global, elencos e camisas com gate SQL/local aprovado |
+| WP-06 — Hub administrativo e elencos | `READY TO MERGE` | PR #11; RPCs, auditoria, hub, CRUD global, elencos e camisas com todos os gates aprovados |
 | WP-07 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -165,13 +165,16 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-05 merge: PR #10 integrada por squash no commit `85c6913`; produção não publicada.
 - WP-06 banco: 16 asserts de inscrição/elenco e 5 asserts de histórico de camisas aprovados em rollback e no staging persistido.
 - WP-06 gate local: Biome em 46 arquivos, TypeScript strict, 7 arquivos/14 testes Vitest, builds cliente/SSR e scan de 255 arquivos aprovados.
+- WP-06 gate remoto inicial: PR #11 com CI/gate, database desde zero, preview/smoke público e CodeQL aprovados no commit `25fae07`.
+- WP-06 navegador: sessão real no host `pr-11`, selo `AAL2`, dashboard e hub 2025/Sub-15 validados; reenvio idempotente do elenco com camisa `00` concluído sem erro.
+- WP-06 auditoria real: evento `roster_replaced` append-only registrado para a inscrição com uma entrada, confirmado diretamente no banco.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-06-admin-rosters`.
 - Base integrada em `main`: `85c6913`.
-- Alterações WP-06 ainda não enviadas; migrations já aplicadas no Supabase pré-produção após rollback aprovado.
+- Commit funcional WP-06 enviado: `25fae07`; PR #11 aberta e gates aprovados. Evidências finais ainda não enviadas neste head.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -231,3 +234,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | PR #9 integrada; WP-05 com rotas e fixtures contextuais, 12 testes e gate local aprovados | Commitar WP-05 e validar smoke contextual no preview |
 | 2026-08-21 | Codex | PR #10 com CI/database, preview/smoke, CodeQL e navegação real aprovados | Enviar evidências finais, reconfirmar head e integrar sem produção |
 | 2026-08-21 | Codex | PR #10 integrada; WP-06 com RPCs, hub, elencos, camisas, 21 asserts SQL e gate local aprovados | Abrir PR e validar fluxo administrativo real no preview |
+| 2026-08-21 | Codex | PR #11 com todos os checks verdes; MFA/AAL2, hub, gravação idempotente e auditoria real aprovados | Enviar evidências finais, reconfirmar checks e integrar o WP-06 |
