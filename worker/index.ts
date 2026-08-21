@@ -1,7 +1,3 @@
-interface Env {
-  APP_ENV: "preview" | "production";
-}
-
 function securityHeaders(): Headers {
   return new Headers({
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; base-uri 'none'",

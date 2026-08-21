@@ -8,8 +8,7 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noEmit": true,
-    "types": ["@cloudflare/workers-types"],
     "skipLibCheck": true
   },
-  "include": ["worker/**/*.ts"]
+  "include": ["worker/**/*.ts", "worker-configuration.d.ts"]
 }
