@@ -22,12 +22,12 @@ insert into public.roster_entries
   (id, competition_id, registration_id, player_id, jersey_number)
 overriding system value values (9301, 9301, 9301, 9301, '00');
 insert into public.games
-  (id, competition_id, game_number, status, ended_at)
+  (id, competition_id, game_number, status, ended_at, source)
 overriding system value values
-  (9301, 9301, 'C-1', 'final', '2026-01-01T12:00:00Z'),
-  (9302, 9301, 'C-2', 'final', '2026-02-01T12:00:00Z'),
-  (9303, 9301, 'C-3', 'final', '2026-03-01T12:00:00Z'),
-  (9304, 9301, 'C-4', 'live', null);
+  (9301, 9301, 'C-1', 'final', '2026-01-01T12:00:00Z', 'seed'),
+  (9302, 9301, 'C-2', 'final', '2026-02-01T12:00:00Z', 'seed'),
+  (9303, 9301, 'C-3', 'final', '2026-03-01T12:00:00Z', 'seed'),
+  (9304, 9301, 'C-4', 'live', null, 'seed');
 insert into public.game_participants (game_id, competition_id, registration_id, side)
 values
   (9301, 9301, 9301, 'home'),

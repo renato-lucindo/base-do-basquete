@@ -39,12 +39,12 @@ overriding system value values
   (9101, 9101, 9101, 9101, '00'),
   (9102, 9101, 9102, 9102, '7'),
   (9103, 9102, 9103, 9103, '1');
-insert into public.games (id, competition_id, game_number, status)
+insert into public.games (id, competition_id, game_number, status, source)
 overriding system value values
-  (9101, 9101, 'T-01', 'scheduled'),
-  (9102, 9102, 'T-02', 'scheduled'),
-  (9103, 9101, 'T-03', 'draft'),
-  (9104, 9101, 'T-04', 'draft');
+  (9101, 9101, 'T-01', 'scheduled', 'seed'),
+  (9102, 9102, 'T-02', 'scheduled', 'seed'),
+  (9103, 9101, 'T-03', 'draft', 'seed'),
+  (9104, 9101, 'T-04', 'draft', 'seed');
 insert into public.game_participants (game_id, competition_id, registration_id, side)
 values
   (9101, 9101, 9101, 'home'),
