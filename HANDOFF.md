@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-02 concluídos; WP-03 implementado, com a conta real criada e vinculada ao singleton administrativo; falta concluir o TOTP.
-- Status geral: `WIP — HUMAN ACTION` na PR #8; não integrar enquanto a conta real em `aal2` não passar no gate.
+- Fase: WP-00 a WP-03 concluídos tecnicamente; WP-03 está no gate remoto final da PR #8 antes da integração.
+- Status geral: `READY TO MERGE` na PR #8 após MFA real, autorização `aal2`, RLS e gate local aprovados; integrar somente quando os checks do head final estiverem verdes.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `wp-03-single-admin-auth`.
 - Último commit integrado em `main`: `9bcbe99` (`WP-02 — Scaffold, CI/CD e previews por PR (#3)`).
@@ -49,24 +49,24 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-03 concluídos.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
 - [x] Fluxo server-side de login, matrícula/desafio TOTP e logout implementado.
 - [x] Migration de administrador singleton, RLS `aal2` e auditoria aplicada/validada.
 - [x] Conta administrativa real criada e registrada no singleton controlado pelo banco.
-- [ ] MFA TOTP matriculado e sessão real comprovada em `aal2`.
+- [x] MFA TOTP matriculado e sessão real comprovada em `aal2`.
 
 ## 5. Em andamento
 
-WP-03 passou nos gates técnicos local/remoto e nos testes diretos de RLS. A única conta ativa foi vinculada atomicamente a `private.admin_accounts`, sem registrar e-mail ou outro identificador na documentação. A PR #8 permanece WIP porque matricular o TOTP exige ação humana privada.
+WP-03 passou no gate técnico local, nos testes diretos de RLS e na validação da conta real. Há exatamente um fator TOTP verificado, uma sessão administrativa ativa com método `totp` e autorização real em `aal2`. A PR #8 aguarda somente os checks automáticos do commit final de evidências antes do merge.
 
 ## 6. Próximo passo exato
 
-1. Responsável entra no preview da PR #8 com a credencial privada e conclui a matrícula TOTP pelo fluxo `/admin`.
-2. Codex confirma um fator TOTP verificado e o evento de auditoria `mfa_verified`, sem ler ou registrar senha, QR, segredo TOTP ou código temporário.
-3. Codex valida sessão `aal2`, RLS e gate final; depois documenta e integra a PR #8.
+1. Enviar o commit final de evidências do WP-03 para `wp-03-single-admin-auth` e aguardar CI, preview e CodeQL do head final.
+2. Com todos os checks verdes, integrar a PR #8 em `main`, sem publicar produção.
+3. Criar `wp-04-canonical-model` a partir da `main` atualizada e iniciar o modelo canônico, migrations e RLS com aplicação desde zero em ambiente remoto seguro.
 
 ### Primeiros arquivos a abrir
 
@@ -78,7 +78,7 @@ WP-03 passou nos gates técnicos local/remoto e nos testes diretos de RLS. A ún
 
 ### Resultado esperado do próximo passo
 
-Conta real registrada, sessão administrativa em `aal2` comprovada, PR #8 integrada e branch do WP-04 criada.
+PR #8 integrada e branch do WP-04 criada a partir da `main` atualizada.
 
 ## 7. Pacotes de trabalho
 
@@ -87,7 +87,7 @@ Conta real registrada, sessão administrativa em `aal2` comprovada, PR #8 integr
 | WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
 | WP-01 — Ambientes cloud | `DONE` | PR #2 integrada; preview bootstrap saudável |
 | WP-02 — Scaffold, CI e preview | `DONE` | PR #3 integrada; preview por PR validado |
-| WP-03 — Administrador único | `WIP` | Código/gates aprovados e conta singleton vinculada; falta matrícula TOTP humana |
+| WP-03 — Administrador único | `READY TO MERGE` | Conta singleton, TOTP real, `aal2`, RLS e gate local aprovados; aguardando checks do head final |
 | WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -136,11 +136,14 @@ CLOUDFLARE_ACCOUNT_ID
 ## 11. Testes e evidências
 
 - Testes executados: `npm run check` aprovado; 6 testes Vitest; quatro cenários RLS diretos aprovados; smokes admin/CSRF/health aprovados.
-- Provisionamento real: exatamente 1 usuário Auth ativo, exatamente 1 vínculo em `private.admin_accounts` e correspondência singleton confirmada; 0 fatores TOTP verificados antes da ação humana.
+- Provisionamento real: exatamente 1 usuário Auth ativo, 1 vínculo em `private.admin_accounts`, 1 fator TOTP verificado e 1 sessão ativa com método `totp`; correspondência singleton confirmada.
+- Auditoria real: 2 eventos `mfa_verified` registrados pelo fluxo; a conta real em `aal2` é reconhecida e enxerga a auditoria sob RLS.
+- Negação real: a mesma identidade simulada em `aal1` é reconhecida como singleton, mas `is_current_admin_aal2()` retorna falso e nenhuma linha de auditoria fica visível.
+- Gate final local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente e SSR e varredura de 232 arquivos aprovados; `npm ci` auditou 175 pacotes com 0 vulnerabilidades.
 - Dependências: `npm install` auditou 175 pacotes e não encontrou vulnerabilidades.
 - GitHub Actions: CI #10, preview #9 e CodeQL #10 aprovados na PR #8.
 - CodeQL: SARIF de 70.839 bytes preservado por 14 dias; upload ao Code Scanning indisponível no plano atual do repositório privado.
-- Falhas conhecidas: nenhuma funcional; conclusão do WP-03 depende somente do TOTP mantido pelo responsável.
+- Falhas conhecidas: nenhuma funcional no WP-03.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
 ## 12. Git
@@ -201,3 +204,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | WP-02 com PR #3, CI, preview, CodeQL/SARIF e smoke aprovados | Integrar PR #3 e iniciar WP-03 |
 | 2026-08-21 | Codex | WP-03 técnico aprovado na PR #8; conta real e TOTP ainda não criados | Responsável cria usuário sem compartilhar senha; Codex registra ID e valida MFA |
 | 2026-08-21 | Codex | Única conta Auth criada e vinculada atomicamente ao singleton; advisors revisados | Responsável conclui o TOTP no preview; Codex valida `aal2`, auditoria e gate final |
+| 2026-08-21 | Codex | TOTP real verificado; sessão `aal2`, auditoria, RLS e gate consolidado aprovados | Aguardar checks do head final, integrar PR #8 e criar branch do WP-04 |
