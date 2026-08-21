@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-06 concluídos e integrados; WP-07 em execução.
-- Status geral: `IN PROGRESS` no WP-07; transação de súmula, editor, 19 pgTAP e gate local aprovados.
+- Fase: WP-00 a WP-06 concluídos e integrados; WP-07 pronto para integração.
+- Status geral: `READY TO MERGE` no WP-07; PR #12 com transação de súmula, editor, 19 pgTAP, gate remoto e smoke `aal2` aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `wp-07-manual-scoresheet`.
 - Último commit integrado em `main`: `07454a1` (`WP-06 — hub administrativo, equipes e elencos (#11)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-07 está na branch própria. A RPC `admin_create_manual_scoresheet` cria e encerra jogo, participantes, 12 slots, períodos, estatísticas, faltas, GD, placar e auditoria em uma transação idempotente. O editor `aal2` oferece prefill/fallback, N/A, camisas textuais, Q1–Q4/OT e bloqueios redundantes no BFF/banco. Os 19 pgTAP passaram antes e depois da migration persistida; 25 testes e o gate local completo passaram.
+WP-07 está na branch própria e pronto para merge. A RPC `admin_create_manual_scoresheet` cria e encerra jogo, participantes, até 12 slots por equipe, períodos, estatísticas, faltas, GD, placar e auditoria em uma transação idempotente. O editor `aal2` oferece prefill/fallback, N/A, camisas textuais, Q1–Q4/OT e bloqueios redundantes no BFF/banco. Os 19 pgTAP, 26 testes Vitest, CI/database desde zero, preview e smoke real passaram. O smoke final criou `SMOKE-WP07-02`, confirmou placar derivado 3×1 e redirecionou para a rota pública localizada.
 
 ## 6. Próximo passo exato
 
-1. Fazer scan staged, commit/push e abrir a PR do WP-07.
-2. Validar CI/database desde zero, preview e CodeQL.
-3. No novo preview, autenticar em `aal2`, criar e encerrar um jogo completo; confirmar placar, auditoria e atomicidade antes do merge.
+1. Commitar e enviar estas evidências finais para a PR #12.
+2. Marcar a PR pronta, reconfirmar CI, preview e CodeQL no head documental e integrar por squash.
+3. Atualizar `main`, criar a branch própria do WP-08 e executar o próximo pacote sem publicar produção.
 
 ### Primeiros arquivos a abrir
 
@@ -83,7 +83,7 @@ WP-07 está na branch própria. A RPC `admin_create_manual_scoresheet` cria e en
 
 ### Resultado esperado do próximo passo
 
-Preview navegando entre anos/categorias sem mistura de dados, incluindo 404 contextual e precedência de `/admin`.
+WP-07 integrado sem deploy de produção e branch WP-08 criada a partir de `main` atualizado.
 
 ## 7. Pacotes de trabalho
 
@@ -96,7 +96,7 @@ Preview navegando entre anos/categorias sem mistura de dados, incluindo 404 cont
 | WP-04 — Modelo canônico | `DONE` | PR #9 integrada; CI aplicou migrations/seed desde zero e pgTAP passou |
 | WP-05 — Contexto e navegação pública | `DONE` | PR #10 integrada; E2E no preview e navegador real aprovados |
 | WP-06 — Hub administrativo e elencos | `DONE` | PR #11 integrada no commit `07454a1`; todos os gates aprovados |
-| WP-07 — Jogos e súmula manual | `IN PROGRESS` | Transação, editor, staging, 19 pgTAP e gate local aprovados |
+| WP-07 — Jogos e súmula manual | `READY TO MERGE` | PR #12; 19 pgTAP, 26 testes, CI/preview e smoke `aal2` aprovados |
 | WP-08 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -171,15 +171,18 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-06 auditoria real: evento `roster_replaced` append-only registrado para a inscrição com uma entrada, confirmado diretamente no banco.
 - WP-06 merge: PR #11 integrada por squash no commit `07454a1`; produção não publicada.
 - WP-07 banco: migration transacional e 19 pgTAP aprovados em rollback integral e novamente no staging persistido.
-- WP-07 gate local: Biome em 50 arquivos, TypeScript strict, 8 arquivos/25 testes Vitest, builds cliente/SSR e scan de 263 arquivos aprovados.
+- WP-07 gate local final: Biome em 50 arquivos, TypeScript strict, 8 arquivos/26 testes Vitest, builds cliente/SSR e scan de 264 arquivos aprovados.
 - WP-07 advisors: FK `games.created_by` indexada; nenhum item acionável de segurança/performance permanece além dos avisos já documentados e índices novos sem uso.
+- WP-07 gate remoto: CI executou migrations/seed desde zero, todas as suítes pgTAP e o gate da aplicação; preview, smoke público automatizado e CodeQL aprovados na PR #12.
+- WP-07 navegador: sessão real `aal2`, editor com duas equipes/elencos, placar ao vivo, encerramento e detalhe público aprovados. O primeiro smoke revelou `/games/:id` inválido; a correção para `/jogos/:id` recebeu teste de regressão e o segundo smoke redirecionou corretamente.
+- WP-07 auditoria real: `SMOKE-WP07-02` persistiu como `manual`/`final`, placar derivado 3×1, 4 períodos, 2 relacionados, 8 linhas de estatísticas e um evento append-only `manual_scoresheet_saved` correspondente.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-07-manual-scoresheet`.
 - Base integrada em `main`: `07454a1`.
-- Alterações WP-07 ainda não commitadas; duas migrations já aplicadas no Supabase pré-produção após rollback e testes aprovados.
+- Head funcional da branch: `7815dc6`; correção do redirecionamento localizada, testada e enviada. Restam apenas o commit documental final e a integração da PR #12.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -241,3 +244,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | PR #10 integrada; WP-06 com RPCs, hub, elencos, camisas, 21 asserts SQL e gate local aprovados | Abrir PR e validar fluxo administrativo real no preview |
 | 2026-08-21 | Codex | PR #11 com todos os checks verdes; MFA/AAL2, hub, gravação idempotente e auditoria real aprovados | Enviar evidências finais, reconfirmar checks e integrar o WP-06 |
 | 2026-08-21 | Codex | PR #11 integrada; WP-07 com transação, editor, 19 pgTAP, 25 testes e gate local aprovados | Commitar, abrir PR e validar um jogo completo no preview autenticado |
+| 2026-08-21 | Codex | PR #12 com CI/preview e smoke `aal2` aprovados; jogo manual, placar, atomicidade, auditoria e redirecionamento público validados | Enviar evidências finais, marcar PR pronta e integrar sem produção |
