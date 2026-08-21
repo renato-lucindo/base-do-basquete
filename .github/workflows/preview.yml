@@ -1,0 +1,39 @@
+name: Pull request preview
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: preview-pr-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  upload:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: preview
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Upload aliased preview version
+        run: npm run preview:upload -- --preview-alias "pr-${{ github.event.number }}" | tee preview-output.log
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Add preview URL to summary
+        shell: bash
+        run: |
+          preview_url=$(grep -Eo 'https://[a-z0-9.-]+\.workers\.dev' preview-output.log | tail -1)
+          test -n "$preview_url"
+          printf '### Cloudflare preview\n\n[%s](%s)\n' "$preview_url" "$preview_url" >> "$GITHUB_STEP_SUMMARY"
