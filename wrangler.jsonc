@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "base-do-basquete-preview",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-21",
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "env": {
+    "preview": {
+      "name": "base-do-basquete-preview",
+      "workers_dev": true,
+      "preview_urls": true,
+      "vars": {
+        "APP_ENV": "preview"
+      }
+    },
+    "production": {
+      "name": "base-do-basquete-prod",
+      "workers_dev": true,
+      "preview_urls": false,
+      "vars": {
+        "APP_ENV": "production"
+      }
+    }
+  }
+}
