@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Base do Basquete">
+  <rect width="64" height="64" rx="32" fill="#08110d"/>
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#26d980" stroke-width="3"/>
+  <path d="M10 32h44M32 8c-8 7-12 15-12 24s4 17 12 24M32 8c8 7 12 15 12 24s-4 17-12 24" fill="none" stroke="#f7f3e8" stroke-width="2" opacity=".9"/>
+</svg>

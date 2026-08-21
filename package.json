@@ -7,17 +7,39 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "check": "npm run types:check && npm run typecheck && npm run build",
-    "types": "wrangler types worker-configuration.d.ts --env preview",
-    "types:check": "wrangler types worker-configuration.d.ts --env preview --check",
-    "typecheck": "tsc --noEmit",
-    "build": "wrangler deploy --dry-run --env preview --outdir dist/worker",
-    "deploy:preview": "wrangler deploy --env preview",
-    "deploy:production": "wrangler deploy --env production"
+    "build": "react-router build",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run scan:secrets",
+    "deploy:preview": "npm run build && wrangler deploy --env preview",
+    "deploy:production": "npm run build && wrangler deploy --env production",
+    "dev": "react-router dev",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "postinstall": "npm run typegen",
+    "preview": "npm run build && vite preview",
+    "preview:upload": "npm run build && wrangler versions upload --env preview",
+    "scan:secrets": "node scripts/scan-secrets.mjs",
+    "test": "vitest run",
+    "typecheck": "npm run typegen && tsc -b",
+    "typegen": "wrangler types worker-configuration.d.ts --env preview && react-router typegen",
+    "types:check": "wrangler types worker-configuration.d.ts --env preview --check"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "isbot": "5.2.1",
+    "react-router": "8.3.0"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
-    "typescript": "7.0.2",
+    "@biomejs/biome": "2.3.11",
+    "@cloudflare/vite-plugin": "1.53.1",
+    "@react-router/dev": "8.3.0",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "typescript": "5.9.3",
+    "vite": "8.2.2",
+    "vitest": "4.1.0",
     "wrangler": "4.125.0"
   }
 }

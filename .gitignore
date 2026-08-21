@@ -3,6 +3,7 @@ node_modules/
 build/
 dist/
 .wrangler/
+.vite/
 .dev.vars
 .env
 .env.*
@@ -11,5 +12,7 @@ coverage/
 playwright-report/
 test-results/
 *.log
+*.tsbuildinfo
+preview-output.log
 .DS_Store
 Thumbs.db

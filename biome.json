@@ -1,0 +1,32 @@
+{
+  "files": {
+    "includes": [
+      "**",
+      "!worker-configuration.d.ts",
+      "!build",
+      "!coverage",
+      "!node_modules",
+      "!.react-router",
+      "!.wrangler",
+      "!docs/plan/referencias"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  }
+}
