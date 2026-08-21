@@ -8,12 +8,12 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 e WP-01 concluídos; WP-02 com gate aprovado e aguardando integração.
-- Status geral: `READY` para integrar a PR #3 e iniciar WP-03.
+- Fase: WP-00 a WP-02 concluídos; WP-03 implementado e aguardando provisionamento humano da conta real/MFA.
+- Status geral: `WIP — HUMAN ACTION` na PR #8; não integrar enquanto a conta real em `aal2` não passar no gate.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `wp-02-scaffold-ci-preview`.
-- Último commit integrado em `main`: `672827a` (`WP-01 — Ambientes cloud (#2)`).
-- Aplicação publicada: preview full-stack da PR #3 disponível em URL temporária `workers.dev`; produção ainda não publicada.
+- Branch atual: `wp-03-single-admin-auth`.
+- Último commit integrado em `main`: `9bcbe99` (`WP-02 — Scaffold, CI/CD e previews por PR (#3)`).
+- Aplicação publicada: preview administrativo da PR #8 disponível em URL temporária `workers.dev`; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
@@ -53,16 +53,20 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
+- [x] Fluxo server-side de login, matrícula/desafio TOTP e logout implementado.
+- [x] Migration de administrador singleton, RLS `aal2` e auditoria aplicada/validada.
+- [ ] Conta administrativa real criada, registrada e com MFA matriculado.
 
 ## 5. Em andamento
 
-WP-02 passou nos gates local e remoto. A PR #3 tem CI, preview e CodeQL aprovados, e o smoke remoto de `/health` retornou HTTP 200.
+WP-03 passou nos gates técnicos local/remoto e nos testes diretos de RLS. A PR #8 permanece WIP porque criar a senha inicial e matricular o TOTP exigem ação humana privada.
 
 ## 6. Próximo passo exato
 
-1. Integrar a PR #3 por squash em `main`.
-2. Criar a branch do WP-03 a partir de `main`.
-3. Implementar administrador único com Supabase Auth, MFA obrigatório, `aal2`, sessão segura, autorização backend e RLS.
+1. Responsável cria diretamente o único usuário em Supabase Authentication > Users, sem convite, e não compartilha a senha.
+2. Codex consulta o novo `user_id` e o registra em `private.admin_accounts`.
+3. Responsável entra no preview da PR #8 e conclui a matrícula TOTP.
+4. Codex valida auditoria, `aal2`, RLS e gate final; depois documenta e integra a PR #8.
 
 ### Primeiros arquivos a abrir
 
@@ -74,7 +78,7 @@ WP-02 passou nos gates local e remoto. A PR #3 tem CI, preview e CodeQL aprovado
 
 ### Resultado esperado do próximo passo
 
-WP-02 integrado em `main`, branch do WP-03 criada e contrato de autenticação seguro iniciado.
+Conta real registrada, sessão administrativa em `aal2` comprovada, PR #8 integrada e branch do WP-04 criada.
 
 ## 7. Pacotes de trabalho
 
@@ -82,8 +86,8 @@ WP-02 integrado em `main`, branch do WP-03 criada e contrato de autenticação s
 | --- | --- | --- |
 | WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
 | WP-01 — Ambientes cloud | `DONE` | PR #2 integrada; preview bootstrap saudável |
-| WP-02 — Scaffold, CI e preview | `READY` | PR #3 com CI, CodeQL, preview e smoke aprovados |
-| WP-03 — Administrador único | `BACKLOG` | Auth, MFA, `aal2`, backend e RLS |
+| WP-02 — Scaffold, CI e preview | `DONE` | PR #3 integrada; preview por PR validado |
+| WP-03 — Administrador único | `WIP` | Código/gates aprovados; falta conta real e matrícula TOTP humana |
 | WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -131,19 +135,19 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
-- Testes executados: `npm run check` aprovado; 2 testes Vitest, TypeScript strict e builds cliente/SSR aprovados; smoke remoto `GET /health` retornou HTTP 200.
-- Dependências: `npm install` auditou 158 pacotes e não encontrou vulnerabilidades.
-- GitHub Actions: CI #3, preview #3 e CodeQL #3 aprovados na PR #3.
+- Testes executados: `npm run check` aprovado; 6 testes Vitest; quatro cenários RLS diretos aprovados; smokes admin/CSRF/health aprovados.
+- Dependências: `npm install` auditou 175 pacotes e não encontrou vulnerabilidades.
+- GitHub Actions: CI #10, preview #9 e CodeQL #10 aprovados na PR #8.
 - CodeQL: SARIF de 70.839 bytes preservado por 14 dias; upload ao Code Scanning indisponível no plano atual do repositório privado.
-- Falhas conhecidas: nenhuma funcional no WP-02.
+- Falhas conhecidas: nenhuma funcional; conclusão do WP-03 depende somente de senha e TOTP mantidos pelo responsável.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `wp-02-scaffold-ci-preview`.
-- Último commit funcional validado: `74cbfbf` (`fix(ci): preserve CodeQL SARIF without code scanning`).
-- `git status`: atualização final de evidências aguarda commit.
+- Branch: `wp-03-single-admin-auth`.
+- Último commit funcional validado: `f099426` (`feat(auth): enforce single-admin MFA sessions`).
+- `git status`: atualização WIP de evidências aguarda commit.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -192,3 +196,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | WP-00 integrado; Supabase saudável; Worker bootstrap passa no gate local | Autenticar Cloudflare e publicar preview do WP-01 |
 | 2026-08-21 | Codex | Cloudflare/GitHub configurados; preview publicado e smoke HTTP 200 | Integrar WP-01 por PR e iniciar WP-02 |
 | 2026-08-21 | Codex | WP-02 com PR #3, CI, preview, CodeQL/SARIF e smoke aprovados | Integrar PR #3 e iniciar WP-03 |
+| 2026-08-21 | Codex | WP-03 técnico aprovado na PR #8; conta real e TOTP ainda não criados | Responsável cria usuário sem compartilhar senha; Codex registra ID e valida MFA |
