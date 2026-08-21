@@ -1,0 +1,75 @@
+# Plano greenfield autônomo — Base do Basquete
+
+## Finalidade
+
+Este pacote substitui o plano de continuidade por um plano de reconstrução integral. Não existe dependência do repositório antigo, de checkout anterior ou de infraestrutura local persistente.
+
+## Identidade definida
+
+- Nome público: **Base do Basquete**.
+- Domínio próprio: **a definir posteriormente pelo responsável do projeto**.
+- Não pesquisar, registrar, comprar ou configurar domínio próprio durante este plano sem nova definição.
+
+A implementação deve ser conduzida autonomamente pela IDE, do repositório vazio até a publicação, usando:
+
+- GitHub como fonte da verdade para código, documentação, histórico e CI;
+- Cloudflare Workers para preview e produção;
+- Supabase para PostgreSQL, Auth e Storage;
+- navegador autorizado nos ambientes GitHub, Cloudflare e Supabase quando a ação não possuir API, CLI ou conector disponível.
+
+## Ordem de leitura obrigatória
+
+Antes da implementação, colocar `AGENTS.md` e `HANDOFF.md` na raiz do novo repositório. Em seguida, ler:
+
+1. `AGENTS.md`
+2. `HANDOFF.md`
+3. `PROMPT-MESTRE-IDE.md`
+4. `POLITICA-AUTONOMIA-CLOUD.md`
+5. `ARQUITETURA-SEGURANCA.md`
+6. `REQUISITOS-FUNCIONAIS.md`
+7. `MODELO-BOXSCORE-FIBA.md`
+8. `PLANO-EXECUCAO.md`
+9. `MATRIZ-RASTREABILIDADE.md`
+10. `FUTURO-OCR.md`
+
+O texto que inicia a primeira tarefa está em `PROMPT-PARA-EXECUCAO.md`.
+
+## Regra de execução
+
+Executar os pacotes de trabalho de `PLANO-EXECUCAO.md` na ordem de dependência. Cada pacote representa uma entrega vertical completa e pode envolver banco, backend, interface, testes e deploy no mesmo PR.
+
+Não pedir confirmação para decisões técnicas reversíveis cobertas por este plano. Aplicar os padrões definidos, registrar a decisão e continuar.
+
+Solicitar intervenção humana somente quando houver bloqueio real que não possa ser resolvido por ferramenta, como login interativo, MFA, CAPTCHA, aquisição paga, comprovação de domínio ou ação irreversível sobre dados de produção.
+
+## Validação simplificada
+
+- Não criar uma etapa de validação separada para cada pequeno arquivo ou função.
+- Executar um único gate automático ao final de cada pacote de trabalho.
+- O gate reúne lint, typecheck, testes relevantes, build, verificações de segurança e deploy de preview quando aplicável.
+- Corrigir falhas automaticamente e repetir o gate até três vezes antes de declarar bloqueio.
+- Não pedir ao usuário para confirmar decisões que possam ser verificadas por testes, documentação oficial, logs ou preview.
+
+## Persistência remota
+
+Nenhum artefato importante pode existir somente na máquina ou workspace temporário. Código, migrations, configuração declarativa, documentação e evidências devem ser enviados ao GitHub. Segredos devem existir apenas nos cofres do GitHub, Cloudflare ou Supabase.
+
+O workspace da IDE pode ser usado de forma efêmera para gerar arquivos e executar ferramentas, mas nunca será fonte da verdade nem requisito operacional do produto.
+
+## Plano anterior
+
+O conteúdo de `referencias/plano-original/` é apenas um catálogo detalhado de requisitos e decisões históricas. A baseline bloqueada e as 156 tarefas antigas não devem ser executadas individualmente.
+
+## Resultado esperado
+
+Ao concluir o plano devem existir:
+
+- repositório privado no GitHub;
+- CI funcional e proteção contra vazamento de segredos;
+- ambientes de preview/staging e produção;
+- aplicação full-stack publicada no Cloudflare;
+- banco, autenticação e storage configurados no Supabase;
+- painel protegido por MFA para uma única conta administrativa, sem cadastro ou gestão de usuários;
+- site público contextual;
+- inscrições, elencos, jogos, súmula manual, estatísticas e importação de boxscore em PDF;
+- observabilidade, auditoria e processo seguro de release.
