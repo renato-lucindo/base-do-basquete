@@ -8,12 +8,12 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-03 concluídos e integrados; WP-04 em execução com banco remoto migrado e gate SQL aprovado.
-- Status geral: `READY FOR PR` no WP-04; modelo canônico, RLS, Storage privado, seed, tipos e gates SQL/local estão aprovados, faltando commit, PR e integração.
+- Fase: WP-00 a WP-04 concluídos e integrados; WP-05 em execução.
+- Status geral: `READY TO MERGE` no WP-05; núcleo, rotas, fixtures, gate local, preview/E2E e checks remotos aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `wp-04-canonical-model`.
-- Último commit integrado em `main`: `0894ca9` (`WP-03 — autenticação do administrador único (#8)`).
-- Aplicação publicada: preview administrativo da PR #8 disponível em URL temporária `workers.dev`; produção ainda não publicada.
+- Branch atual: `wp-05-public-context`.
+- Último commit integrado em `main`: `b92c5c1` (`WP-04 — modelo canônico, migrations e RLS (#9)`).
+- Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-03 concluídos e WP-04 em execução.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-04 concluídos e WP-05 em execução.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -65,12 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-04 está na branch própria. As migrations `canonical_model` e `canonical_model_advisors` foram aplicadas ao Supabase pré-produção; o seed é privado e não publicável. Todos os 34 testes pgTAP passaram após a persistência e o gate local completo foi aprovado. Advisors de performance não têm item acionável; produção e `main` continuam intocadas pelo WP-04.
+WP-05 está na PR #10. URL/banco são fontes da verdade; preferência recente fica em cookie `HttpOnly` e é revalidada. Raiz, contextos, recursos e detalhes estão implementados com seletor, header, breadcrumb e filtros obrigatórios por `competition_id`. O staging possui 3 contextos públicos em 2 anos/2 categorias. CI/database, preview com smoke contextual e CodeQL estão verdes; navegador real confirmou seletor, histórico, reload, 404 e `/admin`.
 
 ## 6. Próximo passo exato
 
-1. Fazer commit funcional, push seguro e abrir a PR do WP-04; validar CI, preview e CodeQL.
-2. Com o gate remoto verde, integrar em `main` sem publicar produção e iniciar o WP-05 em branch própria.
+1. Enviar o commit final de evidências do WP-05 para a PR #10.
+2. Confirmar novamente CI/database, preview/smoke e CodeQL no head final.
+3. Integrar por squash sem publicar produção e iniciar o WP-06 em branch própria.
 
 ### Primeiros arquivos a abrir
 
@@ -82,7 +83,7 @@ WP-04 está na branch própria. As migrations `canonical_model` e `canonical_mod
 
 ### Resultado esperado do próximo passo
 
-WP-04 integrado com migrations reproduzíveis, gate SQL/local/remoto aprovado e nenhum deploy de produção.
+Preview navegando entre anos/categorias sem mistura de dados, incluindo 404 contextual e precedência de `/admin`.
 
 ## 7. Pacotes de trabalho
 
@@ -92,8 +93,9 @@ WP-04 integrado com migrations reproduzíveis, gate SQL/local/remoto aprovado e 
 | WP-01 — Ambientes cloud | `DONE` | PR #2 integrada; preview bootstrap saudável |
 | WP-02 — Scaffold, CI e preview | `DONE` | PR #3 integrada; preview por PR validado |
 | WP-03 — Administrador único | `DONE` | PR #8 integrada; conta singleton, TOTP real, `aal2`, RLS e gate aprovados |
-| WP-04 — Modelo canônico | `READY FOR PR` | Migrações remotas, RLS, Storage privado, seed, tipos, 34 testes SQL e gate local aprovados |
-| WP-05 a WP-13 | `BACKLOG` | Seguir dependências do plano |
+| WP-04 — Modelo canônico | `DONE` | PR #9 integrada; CI aplicou migrations/seed desde zero e pgTAP passou |
+| WP-05 — Contexto e navegação pública | `READY TO MERGE` | PR #10 com rotas, seletor, fixtures, E2E no preview e checks verdes |
+| WP-06 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
 
@@ -154,13 +156,18 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
+- WP-04 gate remoto: PR #9 com CI/gate, database desde zero, preview e CodeQL aprovados; merge `b92c5c1`.
+- WP-05 staging: consulta sob papel `anon` confirmou 3 contextos, 2 anos, 2 categorias, 2 equipes, 2 atletas e 3 jogos.
+- WP-05 gate local inicial: Biome em 43 arquivos, TypeScript strict, 6 arquivos/12 testes Vitest, builds cliente/SSR e scan de 247 arquivos aprovados.
+- WP-05 gate remoto: CI/gate, database desde zero, preview com smoke contextual e CodeQL aprovados na PR #10.
+- WP-05 navegador: troca 2026/Sub-15 → Sub-17, recurso Jogos, voltar/avançar, reload, troca para 2025, 404 inválido e `/admin/login` validados.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `wp-04-canonical-model`.
-- Base integrada em `main`: `0894ca9`.
-- Alterações locais do WP-04 ainda não foram enviadas; fazer push somente após gate e varredura de segredos.
+- Branch: `wp-05-public-context`.
+- Base integrada em `main`: `b92c5c1`.
+- Commit funcional do WP-05: `3c5d046`; PR #10 aberta e gate do primeiro head aprovado.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -217,3 +224,5 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | Única conta Auth criada e vinculada atomicamente ao singleton; advisors revisados | Responsável conclui o TOTP no preview; Codex valida `aal2`, auditoria e gate final |
 | 2026-08-21 | Codex | TOTP real verificado; sessão `aal2`, auditoria, RLS e gate consolidado aprovados | Aguardar checks do head final, integrar PR #8 e criar branch do WP-04 |
 | 2026-08-21 | Codex | PR #8 integrada; WP-04 migrado no Supabase, seed privado, tipos, 34 testes SQL e gate local aprovados | Publicar PR do WP-04 e integrar somente com checks verdes |
+| 2026-08-21 | Codex | PR #9 integrada; WP-05 com rotas e fixtures contextuais, 12 testes e gate local aprovados | Commitar WP-05 e validar smoke contextual no preview |
+| 2026-08-21 | Codex | PR #10 com CI/database, preview/smoke, CodeQL e navegação real aprovados | Enviar evidências finais, reconfirmar head e integrar sem produção |

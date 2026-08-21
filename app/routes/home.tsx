@@ -1,125 +1,60 @@
-import type { Route } from "./+types/home";
+import { redirect } from "react-router";
+
 import { cloudflareContext } from "../context";
+import { contextPath } from "../modules/competition/context";
+import {
+  latestPublicContext,
+  readContextPreference,
+  resolveCompetitionContext,
+} from "../modules/competition/context.server";
+import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import type { Route } from "./+types/home";
 
-const foundations = [
-  {
-    marker: "01",
-    title: "Memória organizada",
-    description: "Campeonatos, equipes, atletas e jogos conectados em uma linha histórica única.",
-  },
-  {
-    marker: "02",
-    title: "Estatística confiável",
-    description: "Cálculos e registros serão validados no servidor e reforçados no banco de dados.",
-  },
-  {
-    marker: "03",
-    title: "Origem verificável",
-    description: "Importações rastreáveis e auditoria essencial para preservar cada resultado.",
-  },
-] as const;
-
-export function meta(_: Route.MetaArgs) {
+export function meta() {
   return [
     { title: "Base do Basquete — O jogo fica na história" },
     {
       name: "description",
-      content: "Arquivo vivo de campeonatos, equipes, atletas, jogos e estatísticas do basquete.",
+      content: "Campeonatos, equipes, atletas e jogos com contexto verificável.",
     },
   ];
 }
 
-export function loader({ context }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   const { env } = context.get(cloudflareContext);
+  const client = createAnonymousSupabaseClient(env);
+  const preference = readContextPreference(request);
 
-  return {
-    environment: String(env.APP_ENV),
-  };
+  if (preference) {
+    const preferredContext = await resolveCompetitionContext(client, {
+      year: preference.year,
+      seriesSlug: preference.seriesSlug,
+      categorySlug: preference.categorySlug,
+    });
+    if (preferredContext) {
+      throw redirect(contextPath(preferredContext, "classificacao"));
+    }
+  }
+
+  const recentContext = await latestPublicContext(client);
+  if (recentContext) {
+    throw redirect(contextPath(recentContext, "classificacao"));
+  }
+
+  return { empty: true };
 }
 
-export default function Home({ loaderData }: Route.ComponentProps) {
+export default function Home() {
   return (
-    <main>
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="Base do Basquete — página inicial">
-          <span className="brand-mark" aria-hidden="true">
-            BB
-          </span>
-          <span>Base do Basquete</span>
+    <main className="empty-public-shell">
+      <div className="error-card">
+        <span className="eyebrow">Base do Basquete</span>
+        <h1>A próxima temporada está sendo preparada.</h1>
+        <p>Nenhuma edição pública está disponível neste momento.</p>
+        <a className="button button-ghost" href="/admin">
+          Administração
         </a>
-        <span className="environment-pill">
-          <span className="status-dot" aria-hidden="true" />
-          {loaderData.environment === "production" ? "Produção" : "Preview ativo"}
-        </span>
-      </header>
-
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="court-lines" aria-hidden="true">
-          <span className="court-circle" />
-          <span className="court-arc" />
-        </div>
-        <div className="hero-copy">
-          <p className="eyebrow">Arquivo vivo do basquete</p>
-          <h1 id="hero-title">
-            O jogo passa.
-            <span>A história fica.</span>
-          </h1>
-          <p className="hero-intro">
-            Uma base confiável para reunir campeonatos, equipes, atletas, partidas e estatísticas —
-            com contexto, origem e memória.
-          </p>
-          <div className="hero-actions">
-            <a className="button button-primary" href="#fundamentos">
-              Conhecer a base
-            </a>
-            <a className="button button-ghost" href="/health">
-              Ver saúde do sistema
-            </a>
-          </div>
-        </div>
-        <aside className="score-card" aria-label="Placar conceitual da plataforma">
-          <div className="score-card-topline">
-            <span>Temporada inaugural</span>
-            <span>Q1</span>
-          </div>
-          <div className="score">
-            <div>
-              <span className="score-label">Dados dispersos</span>
-              <strong>00</strong>
-            </div>
-            <span className="score-divider">—</span>
-            <div>
-              <span className="score-label">Memória preservada</span>
-              <strong>24</strong>
-            </div>
-          </div>
-          <div className="score-footer">
-            <span>Infraestrutura online</span>
-            <span className="live-mark">AO VIVO</span>
-          </div>
-        </aside>
-      </section>
-
-      <section className="foundations" id="fundamentos" aria-labelledby="foundations-title">
-        <div className="section-heading">
-          <p className="eyebrow">Fundamentos</p>
-          <h2 id="foundations-title">Construída para dados que precisam durar.</h2>
-        </div>
-        <div className="foundation-grid">
-          {foundations.map((foundation) => (
-            <article className="foundation-card" key={foundation.marker}>
-              <span className="card-marker">{foundation.marker}</span>
-              <h3>{foundation.title}</h3>
-              <p>{foundation.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <footer className="site-footer">
-        <span>Base do Basquete</span>
-        <span>Dados com contexto. História com fundamento.</span>
-      </footer>
+      </div>
     </main>
   );
 }
