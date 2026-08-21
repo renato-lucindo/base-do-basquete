@@ -8,14 +8,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 iniciado; baseline local concluída.
-- Status geral: `BLOCKED` somente pela autenticação humana no GitHub para criar o repositório remoto.
-- Repositório GitHub: criação remota pendente; navegador Codex redireciona para login e a credencial local do `gh` expirou.
+- Fase: WP-00 concluído; WP-01 em andamento.
+- Status geral: `DOING` em WP-01 — ambientes cloud.
+- Repositório GitHub: privado em `renato-lucindo/base-do-basquete`; `main` e `wp-00-repository-foundation` publicadas.
 - Branch atual: `wp-00-repository-foundation`.
 - Último commit funcional: `95cddd1` (`chore(wp-00): establish repository baseline`).
 - Aplicação publicada: não.
 - Cloudflare: ainda precisa ser configurado.
-- Supabase: conector autenticado; existe somente a organização `renato-lucindo` e nenhum projeto. A criação exige confirmação explícita da organização conforme a política da integração.
+- Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
 
@@ -45,7 +45,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Formato único de boxscore definido.
 - [x] Dois PDFs de referência incorporados ao plano.
 - [x] OCR registrado apenas como possibilidade futura.
-- [ ] Repositório remoto criado.
+- [x] Repositório remoto privado criado e baseline publicada.
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
@@ -54,15 +54,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-00 está pronto localmente. Falta autenticar o GitHub, criar o repositório privado, publicar a baseline e configurar a proteção de `main`.
+WP-01 em execução. O Supabase está criado; falta criar/conectar o Worker mínimo no Cloudflare e registrar os ambientes de preview e produção.
 
 ## 6. Próximo passo exato
 
-1. O responsável deve autenticar o GitHub no navegador Codex já aberto e informar que concluiu o login.
-2. Criar o repositório privado `base-do-basquete`, configurar o remoto e publicar a baseline sem credenciais.
-3. Configurar proteção de `main` compatível com automação e preservar branches WP para previews.
-4. Confirmar o uso da única organização Supabase disponível, `renato-lucindo`, para então criar o projeto do WP-01 no plano gratuito.
-5. Concluir o gate do WP-00, atualizar a evidência e avançar para WP-01.
+1. Criar a branch `wp-01-cloud-environments` a partir de `main` após integrar o fechamento do WP-00.
+2. Autenticar o Wrangler/Cloudflare sem expor tokens e criar um Worker mínimo `base-do-basquete-preview`.
+3. Registrar os nomes de bindings/secrets e ambientes sem valores no repositório.
+4. Validar build e URL temporária de preview, atualizar `docs/execution/WP-01.md` e avançar para WP-02.
 
 ### Primeiros arquivos a abrir
 
@@ -80,8 +79,8 @@ Repositório privado acessível, documentação inicial versionada, nenhum segre
 
 | Pacote | Estado | Observação |
 | --- | --- | --- |
-| WP-00 — Repositório e decisões iniciais | `BLOCKED` | Baseline local pronta; aguarda login GitHub |
-| WP-01 — Ambientes cloud | `BACKLOG` | Depende de WP-00 |
+| WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
+| WP-01 — Ambientes cloud | `DOING` | Supabase criado; Cloudflare pendente |
 | WP-02 — Scaffold, CI e preview | `BACKLOG` | Depende de WP-00/WP-01 |
 | WP-03 — Administrador único | `BACKLOG` | Auth, MFA, `aal2`, backend e RLS |
 | WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
@@ -122,7 +121,7 @@ Ainda não definidos porque o scaffold não foi criado. Após WP-02, registrar c
 
 ## 12. Git
 
-- Repositório: Git local inicializado; remoto ainda não criado.
+- Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-00-repository-foundation`.
 - `git status`: limpo após o commit de handoff desta sessão.
 - Alterações não commitadas: nenhuma esperada.
@@ -169,3 +168,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | --- | --- | --- | --- |
 | 2026-08-21 | Planejamento inicial | Plano concluído; implementação não iniciada | Executar WP-00 e criar o repositório privado |
 | 2026-08-21 | Codex | Pacote lido; baseline WP-00 pronta localmente; GitHub exige login | Autenticar GitHub, criar remoto privado e publicar WP-00 |
+| 2026-08-21 | Codex | GitHub privado e Supabase gratuito criados; WP-00 concluído | Integrar fechamento do WP-00 e criar Worker de preview no WP-01 |
