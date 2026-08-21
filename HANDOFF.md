@@ -58,9 +58,8 @@ WP-01 passou nos gates local e remoto. O preview foi publicado, o smoke de `/hea
 
 ## 6. Próximo passo exato
 
-1. Executar o segundo run do workflow de preview com Actions v5 e confirmar ausência do aviso de Node.js 20.
-2. Abrir o pull request do WP-01, revisar checks e integrar por squash em `main`.
-3. Criar a branch `wp-02-scaffold-ci-preview` a partir de `main` e executar o próximo pacote.
+1. Abrir o pull request do WP-01, revisar checks e integrar por squash em `main`.
+2. Criar a branch `wp-02-scaffold-ci-preview` a partir de `main` e executar o próximo pacote.
 
 ### Primeiros arquivos a abrir
 
@@ -127,7 +126,7 @@ CLOUDFLARE_ACCOUNT_ID
 
 - Testes executados: `npm run check` aprovado com tipos Wrangler atualizados, TypeScript strict e build seco; smoke remoto `GET /health` retornou HTTP 200.
 - Dependências: `npm install` auditou 39 pacotes e não encontrou vulnerabilidades.
-- GitHub Actions: primeiro run de preview aprovado em 31 segundos; Actions v5 preparadas para eliminar o aviso de runtime Node.js 20.
+- GitHub Actions: segundo run de preview aprovado em 25 segundos com Actions v5 e sem o aviso de runtime Node.js 20.
 - Falhas conhecidas: nenhuma no WP-01.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
@@ -135,8 +134,8 @@ CLOUDFLARE_ACCOUNT_ID
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-01-cloud-environments`.
-- Último commit da branch: `7415320` (`WP-01 — Prepare restricted preview deployment`).
-- `git status`: alterações finais de documentação e Actions v5 aguardam commit de fechamento.
+- Último commit da branch: `0841cb3` (`WP-01 — Publish and validate Cloudflare preview`).
+- `git status`: somente a atualização final de evidências aguarda commit.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
