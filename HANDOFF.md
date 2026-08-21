@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: WP-00 a WP-04 concluídos e integrados; WP-05 em execução.
-- Status geral: `IN PROGRESS` no WP-05; núcleo, rotas e fixtures contextuais implementados com gate local aprovado, faltando preview/E2E e gate remoto.
+- Status geral: `READY TO MERGE` no WP-05; núcleo, rotas, fixtures, gate local, preview/E2E e checks remotos aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `wp-05-public-context`.
 - Último commit integrado em `main`: `b92c5c1` (`WP-04 — modelo canônico, migrations e RLS (#9)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-05 está na branch própria. URL/banco são fontes da verdade; preferência recente fica em cookie `HttpOnly` e é revalidada. Raiz, contextos, recursos e detalhes estão implementados com seletor, header, breadcrumb e filtros obrigatórios por `competition_id`. O staging possui 3 contextos públicos em 2 anos/2 categorias; gate local passou com 12 testes. Falta validar o smoke E2E no preview.
+WP-05 está na PR #10. URL/banco são fontes da verdade; preferência recente fica em cookie `HttpOnly` e é revalidada. Raiz, contextos, recursos e detalhes estão implementados com seletor, header, breadcrumb e filtros obrigatórios por `competition_id`. O staging possui 3 contextos públicos em 2 anos/2 categorias. CI/database, preview com smoke contextual e CodeQL estão verdes; navegador real confirmou seletor, histórico, reload, 404 e `/admin`.
 
 ## 6. Próximo passo exato
 
-1. Commitar e enviar o incremento funcional para `wp-05-public-context` após scan staged.
-2. Abrir PR e validar CI/database, preview, smoke contextual e CodeQL.
-3. Corrigir qualquer falha na branch; integrar somente com todos os checks verdes e sem publicar produção.
+1. Enviar o commit final de evidências do WP-05 para a PR #10.
+2. Confirmar novamente CI/database, preview/smoke e CodeQL no head final.
+3. Integrar por squash sem publicar produção e iniciar o WP-06 em branch própria.
 
 ### Primeiros arquivos a abrir
 
@@ -94,7 +94,7 @@ Preview navegando entre anos/categorias sem mistura de dados, incluindo 404 cont
 | WP-02 — Scaffold, CI e preview | `DONE` | PR #3 integrada; preview por PR validado |
 | WP-03 — Administrador único | `DONE` | PR #8 integrada; conta singleton, TOTP real, `aal2`, RLS e gate aprovados |
 | WP-04 — Modelo canônico | `DONE` | PR #9 integrada; CI aplicou migrations/seed desde zero e pgTAP passou |
-| WP-05 — Contexto e navegação pública | `IN PROGRESS` | Rotas, seletor, links, fixtures e gate local aprovados; falta preview/E2E remoto |
+| WP-05 — Contexto e navegação pública | `READY TO MERGE` | PR #10 com rotas, seletor, fixtures, E2E no preview e checks verdes |
 | WP-06 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -159,13 +159,15 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-04 gate remoto: PR #9 com CI/gate, database desde zero, preview e CodeQL aprovados; merge `b92c5c1`.
 - WP-05 staging: consulta sob papel `anon` confirmou 3 contextos, 2 anos, 2 categorias, 2 equipes, 2 atletas e 3 jogos.
 - WP-05 gate local inicial: Biome em 43 arquivos, TypeScript strict, 6 arquivos/12 testes Vitest, builds cliente/SSR e scan de 247 arquivos aprovados.
+- WP-05 gate remoto: CI/gate, database desde zero, preview com smoke contextual e CodeQL aprovados na PR #10.
+- WP-05 navegador: troca 2026/Sub-15 → Sub-17, recurso Jogos, voltar/avançar, reload, troca para 2025, 404 inválido e `/admin/login` validados.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-05-public-context`.
 - Base integrada em `main`: `b92c5c1`.
-- Alterações locais do primeiro incremento WP-05 ainda não foram enviadas; fazer push somente após scan staged.
+- Commit funcional do WP-05: `3c5d046`; PR #10 aberta e gate do primeiro head aprovado.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -223,3 +225,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | TOTP real verificado; sessão `aal2`, auditoria, RLS e gate consolidado aprovados | Aguardar checks do head final, integrar PR #8 e criar branch do WP-04 |
 | 2026-08-21 | Codex | PR #8 integrada; WP-04 migrado no Supabase, seed privado, tipos, 34 testes SQL e gate local aprovados | Publicar PR do WP-04 e integrar somente com checks verdes |
 | 2026-08-21 | Codex | PR #9 integrada; WP-05 com rotas e fixtures contextuais, 12 testes e gate local aprovados | Commitar WP-05 e validar smoke contextual no preview |
+| 2026-08-21 | Codex | PR #10 com CI/database, preview/smoke, CodeQL e navegação real aprovados | Enviar evidências finais, reconfirmar head e integrar sem produção |
