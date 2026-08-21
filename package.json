@@ -1,0 +1,23 @@
+{
+  "name": "base-do-basquete",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "check": "npm run types:check && npm run typecheck && npm run build",
+    "types": "wrangler types worker-configuration.d.ts --env preview",
+    "types:check": "wrangler types worker-configuration.d.ts --env preview --check",
+    "typecheck": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --env preview --outdir dist/worker",
+    "deploy:preview": "wrangler deploy --env preview",
+    "deploy:production": "wrangler deploy --env production"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "7.0.2",
+    "wrangler": "4.125.0"
+  }
+}
