@@ -24,3 +24,18 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply migrations and seed from zero
+        run: npx --no-install supabase db start
+      - name: Run pgTAP database tests
+        run: npx --no-install supabase test db --local
