@@ -1,6 +1,7 @@
 import { data } from "react-router";
 
 import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
+import { GameStatistics } from "../components/game-statistics";
 import { cloudflareContext } from "../context";
 import {
   isDetailResource,
@@ -14,6 +15,7 @@ import {
 } from "../modules/competition/context.server";
 import { loadPublicDetail } from "../modules/competition/public-data.server";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import { loadPublicGameDetail } from "../modules/statistics/public-statistics.server";
 import type { Route } from "./+types/public-detail";
 
 function notFound(): never {
@@ -46,22 +48,25 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     return notFound();
   }
 
-  const [contexts, detail] = await Promise.all([
+  const [contexts, detail, game] = await Promise.all([
     listPublicContexts(client),
     loadPublicDetail(client, resolvedContext, params.resource, params.detail),
+    params.resource === "jogos"
+      ? loadPublicGameDetail(client, resolvedContext, params.detail)
+      : Promise.resolve(null),
   ]);
-  if (!detail) {
+  if (!detail || (params.resource === "jogos" && !game)) {
     return notFound();
   }
 
   return data(
-    { context: resolvedContext, contexts, detail, resource: params.resource },
+    { context: resolvedContext, contexts, detail, game, resource: params.resource },
     { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } },
   );
 }
 
 export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
-  const { context, contexts, detail, resource } = loaderData;
+  const { context, contexts, detail, game, resource } = loaderData;
   return (
     <main className="public-shell">
       <PublicHeader context={context} contexts={contexts} resource={resource} />
@@ -72,11 +77,15 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
           resource={resource}
           detailLabel={detail.label}
         />
-        <article className="detail-card">
-          <p className="eyebrow">{context.displayName}</p>
-          <h1>{detail.label}</h1>
-          <p>{detail.description}</p>
-        </article>
+        {resource === "jogos" && game ? (
+          <GameStatistics context={context} game={game} />
+        ) : (
+          <article className="detail-card">
+            <p className="eyebrow">{context.displayName}</p>
+            <h1>{detail.label}</h1>
+            <p>{detail.description}</p>
+          </article>
+        )}
       </div>
     </main>
   );

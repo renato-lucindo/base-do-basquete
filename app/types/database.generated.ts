@@ -891,6 +891,65 @@ export type Database = {
       };
     };
     Views: {
+      competition_player_statistics: {
+        Row: {
+          assists: number | null;
+          blocks: number | null;
+          competition_id: number | null;
+          defensive_rebounds: number | null;
+          free_throw_attempted: number | null;
+          free_throw_made: number | null;
+          games_played: number | null;
+          offensive_rebounds: number | null;
+          player_id: number | null;
+          player_name: string | null;
+          player_slug: string | null;
+          plus_minus: number | null;
+          points: number | null;
+          seconds_played: number | null;
+          steals: number | null;
+          three_point_attempted: number | null;
+          three_point_made: number | null;
+          turnovers: number | null;
+          two_point_attempted: number | null;
+          two_point_made: number | null;
+        };
+        Relationships: [];
+      };
+      game_player_statistics: {
+        Row: {
+          assists: number | null;
+          blocks: number | null;
+          competition_id: number | null;
+          defensive_rebounds: number | null;
+          did_not_play: boolean | null;
+          fouls: number | null;
+          free_throw_attempted: number | null;
+          free_throw_made: number | null;
+          game_id: number | null;
+          game_roster_slot_id: number | null;
+          jersey_number: string | null;
+          offensive_rebounds: number | null;
+          player_id: number | null;
+          player_name: string | null;
+          player_slug: string | null;
+          plus_minus: number | null;
+          points: number | null;
+          registration_id: number | null;
+          seconds_played: number | null;
+          side: string | null;
+          steals: number | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_slug: string | null;
+          three_point_attempted: number | null;
+          three_point_made: number | null;
+          turnovers: number | null;
+          two_point_attempted: number | null;
+          two_point_made: number | null;
+        };
+        Relationships: [];
+      };
       game_scores: {
         Row: {
           competition_id: number | null;
