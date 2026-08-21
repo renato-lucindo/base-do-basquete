@@ -8,12 +8,12 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 concluído; WP-01 com gate aprovado e aguardando integração.
-- Status geral: `READY` para integrar WP-01 e iniciar WP-02.
-- Repositório GitHub: privado em `renato-lucindo/base-do-basquete`; `main` e `wp-00-repository-foundation` publicadas.
-- Branch atual: `wp-01-cloud-environments`.
-- Último commit integrado em `main`: `78c95a2` (`WP-00 — Repositório e decisões iniciais (#1)`).
-- Aplicação publicada: preview bootstrap disponível em URL temporária `workers.dev`; produção ainda não publicada.
+- Fase: WP-00 e WP-01 concluídos; WP-02 com gate aprovado e aguardando integração.
+- Status geral: `READY` para integrar a PR #3 e iniciar WP-03.
+- Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
+- Branch atual: `wp-02-scaffold-ci-preview`.
+- Último commit integrado em `main`: `672827a` (`WP-01 — Ambientes cloud (#2)`).
+- Aplicação publicada: preview full-stack da PR #3 disponível em URL temporária `workers.dev`; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
@@ -51,15 +51,18 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
 - [ ] Aplicação implementada.
 - [x] Serviços cloud básicos configurados.
+- [x] Scaffold React Router full-stack em Cloudflare Workers.
+- [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
 
 ## 5. Em andamento
 
-WP-01 passou nos gates local e remoto. O preview foi publicado, o smoke de `/health` retornou HTTP 200 e a branch está pronta para pull request.
+WP-02 passou nos gates local e remoto. A PR #3 tem CI, preview e CodeQL aprovados, e o smoke remoto de `/health` retornou HTTP 200.
 
 ## 6. Próximo passo exato
 
-1. Abrir o pull request do WP-01, revisar checks e integrar por squash em `main`.
-2. Criar a branch `wp-02-scaffold-ci-preview` a partir de `main` e executar o próximo pacote.
+1. Integrar a PR #3 por squash em `main`.
+2. Criar a branch do WP-03 a partir de `main`.
+3. Implementar administrador único com Supabase Auth, MFA obrigatório, `aal2`, sessão segura, autorização backend e RLS.
 
 ### Primeiros arquivos a abrir
 
@@ -71,15 +74,15 @@ WP-01 passou nos gates local e remoto. O preview foi publicado, o smoke de `/hea
 
 ### Resultado esperado do próximo passo
 
-WP-01 integrado em `main`, preview saudável e branch do WP-02 criada a partir do commit integrado.
+WP-02 integrado em `main`, branch do WP-03 criada e contrato de autenticação seguro iniciado.
 
 ## 7. Pacotes de trabalho
 
 | Pacote | Estado | Observação |
 | --- | --- | --- |
 | WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
-| WP-01 — Ambientes cloud | `READY` | Preview publicado e smoke aprovado; falta integrar por PR |
-| WP-02 — Scaffold, CI e preview | `BACKLOG` | Depende de WP-00/WP-01 |
+| WP-01 — Ambientes cloud | `DONE` | PR #2 integrada; preview bootstrap saudável |
+| WP-02 — Scaffold, CI e preview | `READY` | PR #3 com CI, CodeQL, preview e smoke aprovados |
 | WP-03 — Administrador único | `BACKLOG` | Auth, MFA, `aal2`, backend e RLS |
 | WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
@@ -116,26 +119,31 @@ CLOUDFLARE_ACCOUNT_ID
 ## 10. Comandos do projeto
 
 - `npm ci` — instalação reproduzível pelo lockfile.
-- `npm run typecheck` — TypeScript strict.
-- `npm run build` — build seco do Worker no ambiente preview.
-- `npm run check` — gate bootstrap (typecheck + build).
+- `npm run format:check` — valida formatação com Biome.
+- `npm run lint` — valida regras estáticas com Biome.
+- `npm run typecheck` — gera tipos e executa TypeScript strict.
+- `npm test` — executa Vitest.
+- `npm run build` — gera builds cliente e SSR.
+- `npm run scan:secrets` — varre arquivos versionáveis por credenciais conhecidas.
+- `npm run check` — gate completo local e remoto.
 - `npm run deploy:preview` — deploy do Worker de preview.
 - `npm run deploy:production` — deploy de produção; permitido somente a partir de `main`.
 
 ## 11. Testes e evidências
 
-- Testes executados: `npm run check` aprovado com tipos Wrangler atualizados, TypeScript strict e build seco; smoke remoto `GET /health` retornou HTTP 200.
-- Dependências: `npm install` auditou 39 pacotes e não encontrou vulnerabilidades.
-- GitHub Actions: segundo run de preview aprovado em 25 segundos com Actions v5 e sem o aviso de runtime Node.js 20.
-- Falhas conhecidas: nenhuma no WP-01.
+- Testes executados: `npm run check` aprovado; 2 testes Vitest, TypeScript strict e builds cliente/SSR aprovados; smoke remoto `GET /health` retornou HTTP 200.
+- Dependências: `npm install` auditou 158 pacotes e não encontrou vulnerabilidades.
+- GitHub Actions: CI #3, preview #3 e CodeQL #3 aprovados na PR #3.
+- CodeQL: SARIF de 70.839 bytes preservado por 14 dias; upload ao Code Scanning indisponível no plano atual do repositório privado.
+- Falhas conhecidas: nenhuma funcional no WP-02.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `wp-01-cloud-environments`.
-- Último commit da branch: `0841cb3` (`WP-01 — Publish and validate Cloudflare preview`).
-- `git status`: somente a atualização final de evidências aguarda commit.
+- Branch: `wp-02-scaffold-ci-preview`.
+- Último commit funcional validado: `74cbfbf` (`fix(ci): preserve CodeQL SARIF without code scanning`).
+- `git status`: atualização final de evidências aguarda commit.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -144,6 +152,7 @@ Substitua esta seção por dados reais assim que o repositório for criado.
 - Não existe acesso ao repositório antigo; isso é decisão de greenfield, não bloqueio.
 - Login, MFA ou CAPTCHA podem exigir ação pontual do responsável.
 - Qualquer plano pago exige aprovação explícita.
+- GitHub Code Scanning nativo está indisponível para o repositório privado no plano atual; o workflow gera e preserva SARIF como alternativa sem custo.
 - A escolha e configuração de domínio devem aguardar instrução futura.
 - Não reduzir MFA, RLS, autorização backend ou proteção de segredos para acelerar a primeira temporada.
 
@@ -182,3 +191,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | GitHub privado e Supabase gratuito criados; WP-00 concluído | Integrar fechamento do WP-00 e criar Worker de preview no WP-01 |
 | 2026-08-21 | Codex | WP-00 integrado; Supabase saudável; Worker bootstrap passa no gate local | Autenticar Cloudflare e publicar preview do WP-01 |
 | 2026-08-21 | Codex | Cloudflare/GitHub configurados; preview publicado e smoke HTTP 200 | Integrar WP-01 por PR e iniciar WP-02 |
+| 2026-08-21 | Codex | WP-02 com PR #3, CI, preview, CodeQL/SARIF e smoke aprovados | Integrar PR #3 e iniciar WP-03 |
