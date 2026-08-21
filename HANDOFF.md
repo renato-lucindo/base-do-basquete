@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-03 concluídos tecnicamente; WP-03 está no gate remoto final da PR #8 antes da integração.
-- Status geral: `READY TO MERGE` na PR #8 após MFA real, autorização `aal2`, RLS e gate local aprovados; integrar somente quando os checks do head final estiverem verdes.
+- Fase: WP-00 a WP-03 concluídos e integrados; WP-04 em execução com banco remoto migrado e gate SQL aprovado.
+- Status geral: `READY FOR PR` no WP-04; modelo canônico, RLS, Storage privado, seed, tipos e gates SQL/local estão aprovados, faltando commit, PR e integração.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `wp-03-single-admin-auth`.
-- Último commit integrado em `main`: `9bcbe99` (`WP-02 — Scaffold, CI/CD e previews por PR (#3)`).
+- Branch atual: `wp-04-canonical-model`.
+- Último commit integrado em `main`: `0894ca9` (`WP-03 — autenticação do administrador único (#8)`).
 - Aplicação publicada: preview administrativo da PR #8 disponível em URL temporária `workers.dev`; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-03 concluídos.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-03 concluídos e WP-04 em execução.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -57,16 +57,20 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Migration de administrador singleton, RLS `aal2` e auditoria aplicada/validada.
 - [x] Conta administrativa real criada e registrada no singleton controlado pelo banco.
 - [x] MFA TOTP matriculado e sessão real comprovada em `aal2`.
+- [x] Modelo canônico de campeonatos, edições, equipes, atletas, inscrições, elencos, jogos, períodos e colocações aplicado no Supabase.
+- [x] Placar e conquistas modelados como visões derivadas, sem estado duplicado gravável.
+- [x] Importação limitada ao boxscore FIBA/Genius Sports com hash SHA-256 único e bucket PDF privado.
+- [x] RLS pública somente para dados publicados; escritas autenticadas exigem administrador singleton em `aal2` e `DELETE` não é concedido.
+- [x] Seed de staging não público, tipos TypeScript gerados e 34 testes SQL aprovados no banco remoto.
 
 ## 5. Em andamento
 
-WP-03 passou no gate técnico local, nos testes diretos de RLS e na validação da conta real. Há exatamente um fator TOTP verificado, uma sessão administrativa ativa com método `totp` e autorização real em `aal2`. A PR #8 aguarda somente os checks automáticos do commit final de evidências antes do merge.
+WP-04 está na branch própria. As migrations `canonical_model` e `canonical_model_advisors` foram aplicadas ao Supabase pré-produção; o seed é privado e não publicável. Todos os 34 testes pgTAP passaram após a persistência e o gate local completo foi aprovado. Advisors de performance não têm item acionável; produção e `main` continuam intocadas pelo WP-04.
 
 ## 6. Próximo passo exato
 
-1. Enviar o commit final de evidências do WP-03 para `wp-03-single-admin-auth` e aguardar CI, preview e CodeQL do head final.
-2. Com todos os checks verdes, integrar a PR #8 em `main`, sem publicar produção.
-3. Criar `wp-04-canonical-model` a partir da `main` atualizada e iniciar o modelo canônico, migrations e RLS com aplicação desde zero em ambiente remoto seguro.
+1. Fazer commit funcional, push seguro e abrir a PR do WP-04; validar CI, preview e CodeQL.
+2. Com o gate remoto verde, integrar em `main` sem publicar produção e iniciar o WP-05 em branch própria.
 
 ### Primeiros arquivos a abrir
 
@@ -78,7 +82,7 @@ WP-03 passou no gate técnico local, nos testes diretos de RLS e na validação 
 
 ### Resultado esperado do próximo passo
 
-PR #8 integrada e branch do WP-04 criada a partir da `main` atualizada.
+WP-04 integrado com migrations reproduzíveis, gate SQL/local/remoto aprovado e nenhum deploy de produção.
 
 ## 7. Pacotes de trabalho
 
@@ -87,8 +91,9 @@ PR #8 integrada e branch do WP-04 criada a partir da `main` atualizada.
 | WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
 | WP-01 — Ambientes cloud | `DONE` | PR #2 integrada; preview bootstrap saudável |
 | WP-02 — Scaffold, CI e preview | `DONE` | PR #3 integrada; preview por PR validado |
-| WP-03 — Administrador único | `READY TO MERGE` | Conta singleton, TOTP real, `aal2`, RLS e gate local aprovados; aguardando checks do head final |
-| WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
+| WP-03 — Administrador único | `DONE` | PR #8 integrada; conta singleton, TOTP real, `aal2`, RLS e gate aprovados |
+| WP-04 — Modelo canônico | `READY FOR PR` | Migrações remotas, RLS, Storage privado, seed, tipos, 34 testes SQL e gate local aprovados |
+| WP-05 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
 
@@ -146,13 +151,16 @@ CLOUDFLARE_ACCOUNT_ID
 - Falhas conhecidas: nenhuma funcional no WP-03.
 - Incidente de CI resolvido: o teste de adulteração alterava o último caractere Base64URL, que podia preservar os bytes decodificados por causa do padding; agora altera deterministicamente o meio do ciphertext autenticado.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
+- WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
+- WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
+- WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `wp-03-single-admin-auth`.
-- Último commit funcional validado: `f099426` (`feat(auth): enforce single-admin MFA sessions`).
-- A branch contém o commit funcional `f099426` e commits WIP posteriores apenas de evidências; nenhum WIP foi integrado em `main`.
+- Branch: `wp-04-canonical-model`.
+- Base integrada em `main`: `0894ca9`.
+- Alterações locais do WP-04 ainda não foram enviadas; fazer push somente após gate e varredura de segredos.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -161,6 +169,8 @@ Substitua esta seção por dados reais assim que o repositório for criado.
 - Não existe acesso ao repositório antigo; isso é decisão de greenfield, não bloqueio.
 - Login, MFA ou CAPTCHA podem exigir ação pontual do responsável.
 - Qualquer plano pago exige aprovação explícita.
+- Uma branch Supabase isolada custaria US$ 0,01344/h; não foi criada. O projeto atual ainda é pré-produção e foi validado transacionalmente antes das migrations persistidas.
+- Docker não está instalado neste host; o reset local do Supabase desde zero não pôde ser executado. O fallback remoto foi DDL integral em rollback, aplicação versionada e testes repetidos no esquema persistido.
 - O advisor informa que a proteção de senhas vazadas está desativada; o recurso exige plano Pro e não será habilitado sem autorização de upgrade. A política gratuita já exige 12 caracteres, maiúsculas, minúsculas, dígitos e símbolos, além de MFA obrigatório.
 - O advisor informa RLS sem policy em `private.admin_accounts`; isso é intencional porque o schema é privado, sem grants ao cliente, e a consulta ocorre somente por função interna restrita.
 - GitHub Code Scanning nativo está indisponível para o repositório privado no plano atual; o workflow gera e preserva SARIF como alternativa sem custo.
@@ -206,3 +216,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | WP-03 técnico aprovado na PR #8; conta real e TOTP ainda não criados | Responsável cria usuário sem compartilhar senha; Codex registra ID e valida MFA |
 | 2026-08-21 | Codex | Única conta Auth criada e vinculada atomicamente ao singleton; advisors revisados | Responsável conclui o TOTP no preview; Codex valida `aal2`, auditoria e gate final |
 | 2026-08-21 | Codex | TOTP real verificado; sessão `aal2`, auditoria, RLS e gate consolidado aprovados | Aguardar checks do head final, integrar PR #8 e criar branch do WP-04 |
+| 2026-08-21 | Codex | PR #8 integrada; WP-04 migrado no Supabase, seed privado, tipos, 34 testes SQL e gate local aprovados | Publicar PR do WP-04 e integrar somente com checks verdes |
