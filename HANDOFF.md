@@ -139,11 +139,12 @@ CLOUDFLARE_ACCOUNT_ID
 - Provisionamento real: exatamente 1 usuário Auth ativo, 1 vínculo em `private.admin_accounts`, 1 fator TOTP verificado e 1 sessão ativa com método `totp`; correspondência singleton confirmada.
 - Auditoria real: 2 eventos `mfa_verified` registrados pelo fluxo; a conta real em `aal2` é reconhecida e enxerga a auditoria sob RLS.
 - Negação real: a mesma identidade simulada em `aal1` é reconhecida como singleton, mas `is_current_admin_aal2()` retorna falso e nenhuma linha de auditoria fica visível.
-- Gate final local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente e SSR e varredura de 232 arquivos aprovados; `npm ci` auditou 175 pacotes com 0 vulnerabilidades.
+- Gate final local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente e SSR e varredura de 233 arquivos aprovados; `npm ci` auditou 175 pacotes com 0 vulnerabilidades.
 - Dependências: `npm install` auditou 175 pacotes e não encontrou vulnerabilidades.
 - GitHub Actions: CI #10, preview #9 e CodeQL #10 aprovados na PR #8.
 - CodeQL: SARIF de 70.839 bytes preservado por 14 dias; upload ao Code Scanning indisponível no plano atual do repositório privado.
 - Falhas conhecidas: nenhuma funcional no WP-03.
+- Incidente de CI resolvido: o teste de adulteração alterava o último caractere Base64URL, que podia preservar os bytes decodificados por causa do padding; agora altera deterministicamente o meio do ciphertext autenticado.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
 ## 12. Git

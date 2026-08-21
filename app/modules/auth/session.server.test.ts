@@ -21,7 +21,17 @@ describe("encrypted administrator session", () => {
     const sealed = await sealSession(payload, secret);
     expect(sealed).not.toContain(payload.accessToken);
     await expect(unsealSession(sealed, secret)).resolves.toEqual(payload);
-    await expect(unsealSession(`${sealed.slice(0, -1)}x`, secret)).resolves.toBeNull();
+
+    const [version, encodedIv, encodedCiphertext] = sealed.split(".");
+    if (!version || !encodedIv || !encodedCiphertext) throw new Error("Invalid sealed session");
+
+    const tamperIndex = Math.floor(encodedCiphertext.length / 2);
+    const replacement = encodedCiphertext[tamperIndex] === "A" ? "B" : "A";
+    const tamperedCiphertext = `${encodedCiphertext.slice(0, tamperIndex)}${replacement}${encodedCiphertext.slice(tamperIndex + 1)}`;
+
+    await expect(
+      unsealSession(`${version}.${encodedIv}.${tamperedCiphertext}`, secret),
+    ).resolves.toBeNull();
   });
 
   it("uses host-only secure cookie attributes", () => {
