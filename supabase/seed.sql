@@ -85,13 +85,14 @@ on conflict (registration_id, player_id) do update
 set jersey_number = excluded.jersey_number,
     status = 'active';
 
-insert into public.games (competition_id, game_number, status, venue, scheduled_at)
+insert into public.games (competition_id, game_number, status, venue, scheduled_at, source)
 select
   competition.id,
   'DEMO-01',
   'scheduled',
   'Ginásio de demonstração',
-  make_timestamptz(competition.year, 8, 15, 18, 0, 0, 'America/Sao_Paulo')
+  make_timestamptz(competition.year, 8, 15, 18, 0, 0, 'America/Sao_Paulo'),
+  'seed'
 from public.competitions competition
 join public.competition_series series on series.id = competition.series_id
 where series.slug = 'liga-de-desenvolvimento'
@@ -99,7 +100,8 @@ where series.slug = 'liga-de-desenvolvimento'
 on conflict (competition_id, game_number) do update
 set status = 'scheduled',
     venue = excluded.venue,
-    scheduled_at = excluded.scheduled_at;
+    scheduled_at = excluded.scheduled_at,
+    source = excluded.source;
 
 insert into public.game_participants (game_id, competition_id, registration_id, side)
 select

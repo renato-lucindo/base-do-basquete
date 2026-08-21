@@ -335,6 +335,13 @@ export type Database = {
             foreignKeyName: "final_placements_registration_competition_fkey";
             columns: ["registration_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "final_placements_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "team_registrations";
             referencedColumns: ["id", "competition_id"];
           },
@@ -414,6 +421,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "games";
             referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "game_participants_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
           },
           {
             foreignKeyName: "game_participants_registration_competition_fkey";
@@ -500,6 +514,8 @@ export type Database = {
         Row: {
           created_at: string;
           did_not_play: boolean;
+          disqualification_reason: string | null;
+          disqualified_at_period: number | null;
           game_id: number;
           id: number;
           is_applicable: boolean;
@@ -513,6 +529,8 @@ export type Database = {
         Insert: {
           created_at?: string;
           did_not_play?: boolean;
+          disqualification_reason?: string | null;
+          disqualified_at_period?: number | null;
           game_id: number;
           id?: never;
           is_applicable?: boolean;
@@ -526,6 +544,8 @@ export type Database = {
         Update: {
           created_at?: string;
           did_not_play?: boolean;
+          disqualification_reason?: string | null;
+          disqualified_at_period?: number | null;
           game_id?: number;
           id?: never;
           is_applicable?: boolean;
@@ -564,10 +584,14 @@ export type Database = {
         Row: {
           competition_id: number;
           created_at: string;
+          created_by: string | null;
           ended_at: string | null;
           game_number: string | null;
           id: number;
+          manual_idempotency_key: string | null;
+          manual_payload_hash: string | null;
           scheduled_at: string | null;
+          source: string;
           started_at: string | null;
           status: string;
           updated_at: string;
@@ -576,10 +600,14 @@ export type Database = {
         Insert: {
           competition_id: number;
           created_at?: string;
+          created_by?: string | null;
           ended_at?: string | null;
           game_number?: string | null;
           id?: never;
+          manual_idempotency_key?: string | null;
+          manual_payload_hash?: string | null;
           scheduled_at?: string | null;
+          source?: string;
           started_at?: string | null;
           status?: string;
           updated_at?: string;
@@ -588,10 +616,14 @@ export type Database = {
         Update: {
           competition_id?: number;
           created_at?: string;
+          created_by?: string | null;
           ended_at?: string | null;
           game_number?: string | null;
           id?: never;
+          manual_idempotency_key?: string | null;
+          manual_payload_hash?: string | null;
           scheduled_at?: string | null;
+          source?: string;
           started_at?: string | null;
           status?: string;
           updated_at?: string;
@@ -767,6 +799,13 @@ export type Database = {
             foreignKeyName: "roster_entries_registration_competition_fkey";
             columns: ["registration_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "roster_entries_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "team_registrations";
             referencedColumns: ["id", "competition_id"];
           },
@@ -872,8 +911,34 @@ export type Database = {
             foreignKeyName: "game_participants_registration_competition_fkey";
             columns: ["registration_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "game_participants_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "team_registrations";
             referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
+      manual_scoresheet_prefill: {
+        Row: {
+          competition_id: number | null;
+          game_id: number | null;
+          jersey_number: string | null;
+          registration_id: number | null;
+          roster_entry_id: number | null;
+          slot_number: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "team_registrations_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -887,6 +952,13 @@ export type Database = {
           result_label: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "final_placements_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
           {
             foreignKeyName: "final_placements_registration_competition_fkey";
             columns: ["registration_id", "competition_id"];
@@ -959,6 +1031,13 @@ export type Database = {
             foreignKeyName: "final_placements_registration_competition_fkey";
             columns: ["registration_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "final_placements_registration_competition_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "team_registrations";
             referencedColumns: ["id", "competition_id"];
           },
@@ -973,6 +1052,10 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_manual_scoresheet: {
+        Args: { p_payload: Json };
+        Returns: number;
+      };
       admin_create_team_registration: {
         Args: { p_competition_id: number; p_team_id: number };
         Returns: {

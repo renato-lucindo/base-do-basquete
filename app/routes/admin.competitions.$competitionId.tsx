@@ -303,7 +303,12 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           <article>
             <h2>Súmula manual</h2>
             <p>Fluxo isolado da importação, usando esta edição.</p>
-            <span>Disponível no WP-07</span>
+            <Link
+              className="button button-primary"
+              to={`/admin/competitions/${competition.id}/scoresheets/new`}
+            >
+              Criar jogo e preencher súmula
+            </Link>
           </article>
           <article>
             <h2>Importar boxscore</h2>
