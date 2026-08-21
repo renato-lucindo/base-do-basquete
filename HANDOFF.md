@@ -12,7 +12,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Status geral: `BLOCKED` somente pela autenticação humana no GitHub para criar o repositório remoto.
 - Repositório GitHub: criação remota pendente; navegador Codex redireciona para login e a credencial local do `gh` expirou.
 - Branch atual: `wp-00-repository-foundation`.
-- Último commit: pendente do gate local desta unidade.
+- Último commit funcional: `95cddd1` (`chore(wp-00): establish repository baseline`).
 - Aplicação publicada: não.
 - Cloudflare: ainda precisa ser configurado.
 - Supabase: conector autenticado; existe somente a organização `renato-lucindo` e nenhum projeto. A criação exige confirmação explícita da organização conforme a política da integração.
@@ -124,8 +124,8 @@ Ainda não definidos porque o scaffold não foi criado. Após WP-02, registrar c
 
 - Repositório: Git local inicializado; remoto ainda não criado.
 - Branch: `wp-00-repository-foundation`.
-- `git status`: arquivos da baseline aguardam primeiro commit.
-- Alterações não commitadas: documentação importada, ADRs, política de segurança e configurações iniciais.
+- `git status`: limpo após o commit de handoff desta sessão.
+- Alterações não commitadas: nenhuma esperada.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
