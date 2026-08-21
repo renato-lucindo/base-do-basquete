@@ -7,6 +7,7 @@ import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import { normalizeJersey } from "../modules/competition/admin-domain";
 import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
 import {
+  buildPublicGamePath,
   deriveTeamScore,
   evaluateDisqualification,
   parseFoulCodes,
@@ -340,7 +341,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   throw redirect(
-    `/${competitionResult.data.year}/${seriesResult.data.slug}/${categoryResult.data.slug}/games/${result.data}`,
+    buildPublicGamePath(
+      competitionResult.data.year,
+      seriesResult.data.slug,
+      categoryResult.data.slug,
+      result.data,
+    ),
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
 }

@@ -187,3 +187,12 @@ export function deriveTeamScore(periods: PeriodPayload[], rosterEntryIds: Set<nu
     0,
   );
 }
+
+export function buildPublicGamePath(
+  year: number,
+  competitionSlug: string,
+  categorySlug: string,
+  gameId: number,
+): string {
+  return `/${year}/${competitionSlug}/${categorySlug}/jogos/${gameId}`;
+}

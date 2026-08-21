@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildPublicGamePath,
   buildPrefillSlots,
   calculatePoints,
   deriveTeamScore,
@@ -87,5 +88,11 @@ describe("manual scoresheet domain", () => {
         new Set([1]),
       ),
     ).toBe(8);
+  });
+
+  it("builds the localized public game detail route", () => {
+    expect(buildPublicGamePath(2026, "liga-de-desenvolvimento", "sub-15", 40)).toBe(
+      "/2026/liga-de-desenvolvimento/sub-15/jogos/40",
+    );
   });
 });
