@@ -8,13 +8,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 concluído; WP-01 em andamento.
-- Status geral: `BLOCKED` em WP-01 somente pelo login humano no Cloudflare.
+- Fase: WP-00 concluído; WP-01 com gate aprovado e aguardando integração.
+- Status geral: `READY` para integrar WP-01 e iniciar WP-02.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`; `main` e `wp-00-repository-foundation` publicadas.
 - Branch atual: `wp-01-cloud-environments`.
 - Último commit integrado em `main`: `78c95a2` (`WP-00 — Repositório e decisões iniciais (#1)`).
-- Aplicação publicada: não.
-- Cloudflare: configuração declarativa e Worker bootstrap prontos; navegador está na tela de login e exige ação humana.
+- Aplicação publicada: preview bootstrap disponível em URL temporária `workers.dev`; produção ainda não publicada.
+- Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
@@ -50,18 +50,17 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
 - [ ] Aplicação implementada.
-- [ ] Serviços cloud configurados.
+- [x] Serviços cloud básicos configurados.
 
 ## 5. Em andamento
 
-WP-01 está validado localmente e aguarda apenas autenticação no Cloudflare para criar/publicar o Worker de preview e cadastrar secrets nos cofres corretos.
+WP-01 passou nos gates local e remoto. O preview foi publicado, o smoke de `/health` retornou HTTP 200 e a branch está pronta para pull request.
 
 ## 6. Próximo passo exato
 
-1. O responsável deve entrar no Cloudflare na aba já aberta e informar que o painel está acessível.
-2. Criar/publicar o Worker `base-do-basquete-preview` sem domínio próprio e executar smoke em `GET /health`.
-3. Cadastrar `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` nos environments GitHub sem revelar valores.
-4. Concluir o gate remoto do WP-01, integrar por squash e criar `wp-02-scaffold-ci-preview`.
+1. Executar o segundo run do workflow de preview com Actions v5 e confirmar ausência do aviso de Node.js 20.
+2. Abrir o pull request do WP-01, revisar checks e integrar por squash em `main`.
+3. Criar a branch `wp-02-scaffold-ci-preview` a partir de `main` e executar o próximo pacote.
 
 ### Primeiros arquivos a abrir
 
@@ -73,14 +72,14 @@ WP-01 está validado localmente e aguarda apenas autenticação no Cloudflare pa
 
 ### Resultado esperado do próximo passo
 
-Repositório privado acessível, documentação inicial versionada, nenhum segredo no histórico, decisões iniciais registradas e WP-00 concluído com evidência.
+WP-01 integrado em `main`, preview saudável e branch do WP-02 criada a partir do commit integrado.
 
 ## 7. Pacotes de trabalho
 
 | Pacote | Estado | Observação |
 | --- | --- | --- |
 | WP-00 — Repositório e decisões iniciais | `DONE` | Baseline em `main`; proteção obrigatória indisponível no plano gratuito do repositório privado |
-| WP-01 — Ambientes cloud | `BLOCKED` | Build local e Supabase prontos; aguarda login Cloudflare |
+| WP-01 — Ambientes cloud | `READY` | Preview publicado e smoke aprovado; falta integrar por PR |
 | WP-02 — Scaffold, CI e preview | `BACKLOG` | Depende de WP-00/WP-01 |
 | WP-03 — Administrador único | `BACKLOG` | Auth, MFA, `aal2`, backend e RLS |
 | WP-04 a WP-13 | `BACKLOG` | Seguir dependências do plano |
@@ -101,7 +100,7 @@ Repositório privado acessível, documentação inicial versionada, nenhum segre
 
 ## 9. Serviços e variáveis
 
-Serviços previstos: GitHub, Cloudflare Workers e Supabase PostgreSQL/Auth/Storage. Nenhum deles está configurado neste estado inicial.
+Serviços configurados: repositório privado e environments no GitHub, Worker de preview no Cloudflare e projeto gratuito saudável no Supabase. Produção permanece intencionalmente não publicada.
 
 Registre aqui somente nomes de variáveis quando forem definidos. Nunca registre valores, tokens, cookies, senhas, chaves privadas, URLs com credenciais ou connection strings.
 
@@ -126,17 +125,18 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
-- Testes executados: `npm run check` aprovado com Wrangler 4.125.0, TypeScript 7.0.2 e build seco do Worker.
-- Dependências: `npm install` auditou 38 pacotes e não encontrou vulnerabilidades.
-- Falhas conhecidas: deploy remoto bloqueado somente pelo login Cloudflare.
+- Testes executados: `npm run check` aprovado com tipos Wrangler atualizados, TypeScript strict e build seco; smoke remoto `GET /health` retornou HTTP 200.
+- Dependências: `npm install` auditou 39 pacotes e não encontrou vulnerabilidades.
+- GitHub Actions: primeiro run de preview aprovado em 31 segundos; Actions v5 preparadas para eliminar o aviso de runtime Node.js 20.
+- Falhas conhecidas: nenhuma no WP-01.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-01-cloud-environments`.
-- `git status`: arquivos do Worker bootstrap e deste handoff aguardam commit WIP antes do bloqueio humano.
-- Alterações não commitadas: package/lockfile, Worker, Wrangler, workflow bootstrap, environment example e evidência WP-01.
+- Último commit da branch: `7415320` (`WP-01 — Prepare restricted preview deployment`).
+- `git status`: alterações finais de documentação e Actions v5 aguardam commit de fechamento.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -182,3 +182,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | Pacote lido; baseline WP-00 pronta localmente; GitHub exige login | Autenticar GitHub, criar remoto privado e publicar WP-00 |
 | 2026-08-21 | Codex | GitHub privado e Supabase gratuito criados; WP-00 concluído | Integrar fechamento do WP-00 e criar Worker de preview no WP-01 |
 | 2026-08-21 | Codex | WP-00 integrado; Supabase saudável; Worker bootstrap passa no gate local | Autenticar Cloudflare e publicar preview do WP-01 |
+| 2026-08-21 | Codex | Cloudflare/GitHub configurados; preview publicado e smoke HTTP 200 | Integrar WP-01 por PR e iniciar WP-02 |
