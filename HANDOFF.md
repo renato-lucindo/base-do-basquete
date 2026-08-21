@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-07 concluídos e integrados; WP-08 em execução.
-- Status geral: `IN PROGRESS` no WP-08; views de estatísticas, fixtures de duas edições, páginas públicas, 14 pgTAP e gate local aprovados.
+- Fase: WP-00 a WP-07 concluídos e integrados; WP-08 pronto para integração.
+- Status geral: `READY TO MERGE` no WP-08; PR #13 com SQL, 32 testes, CI/database, preview, CodeQL, smoke de duas edições e benchmark aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `wp-08-game-statistics`.
 - Último commit integrado em `main`: `49890f6` (`WP-07 — Jogos e súmula manual (#12)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-08 está na branch própria. Duas views `security_invoker` agregam boxscore por jogo e por edição sem perder `competition_id`; percentuais, médias, rebotes e eficiência são derivados. O público já recebe placar/períodos/boxscore do jogo e tabelas simples ou avançadas com totais/médias, filtros combináveis e comparação acessível. Fixtures finais de 2025 e 2026, 14 pgTAP e 32 testes Vitest passaram. O preview e o benchmark HTTP ainda não foram executados.
+WP-08 está na branch própria e pronto para merge. Duas views `security_invoker` agregam boxscore por jogo e por edição sem perder `competition_id`; percentuais, médias, rebotes e eficiência são derivados. O público recebe placar/períodos/boxscore do jogo e tabelas simples ou avançadas com totais/médias, filtros combináveis e comparação acessível. Fixtures finais de 2025 e 2026, 14 pgTAP, 32 testes Vitest, CI/database, preview e CodeQL passaram. O smoke confirmou placares 2×3 e 8×6 em contextos distintos e o benchmark HTTP foi registrado.
 
 ## 6. Próximo passo exato
 
-1. Fazer scan staged, commit/push e abrir a PR do WP-08.
-2. Validar CI/database desde zero, preview e CodeQL.
-3. Executar smoke público entre 2025/2026 e registrar benchmark p50/p95 antes do merge, sem publicar produção.
+1. Commitar e enviar as evidências finais para a PR #13.
+2. Marcar a PR pronta, reconfirmar os checks no head documental e integrar por squash.
+3. Atualizar `main`, criar a branch própria do WP-09 e iniciar a importação restrita aos dois PDFs FIBA/Genius Sports, sem publicar produção.
 
 ### Primeiros arquivos a abrir
 
@@ -83,7 +83,7 @@ WP-08 está na branch própria. Duas views `security_invoker` agregam boxscore p
 
 ### Resultado esperado do próximo passo
 
-Preview do WP-08 mostrando estatísticas isoladas nas duas edições, interações acessíveis e benchmark inicial registrado.
+WP-08 integrado sem deploy de produção e branch WP-09 criada a partir de `main` atualizado.
 
 ## 7. Pacotes de trabalho
 
@@ -97,7 +97,7 @@ Preview do WP-08 mostrando estatísticas isoladas nas duas edições, interaçõ
 | WP-05 — Contexto e navegação pública | `DONE` | PR #10 integrada; E2E no preview e navegador real aprovados |
 | WP-06 — Hub administrativo e elencos | `DONE` | PR #11 integrada no commit `07454a1`; todos os gates aprovados |
 | WP-07 — Jogos e súmula manual | `DONE` | PR #12 integrada por squash no commit `49890f6`; produção não publicada |
-| WP-08 — Página do jogo e estatísticas | `IN PROGRESS` | Views, fixtures, páginas, 14 pgTAP, 32 testes e gate local aprovados |
+| WP-08 — Página do jogo e estatísticas | `READY TO MERGE` | PR #13; SQL, CI/preview/CodeQL, smoke 2025/2026 e benchmark aprovados |
 | WP-09 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -180,14 +180,17 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-07 merge: PR #12 integrada por squash no commit `49890f6`; produção não publicada.
 - WP-08 banco: views `security_invoker` por jogo/edição aplicadas; fixtures `STATS-01` de 2025 e 2026 isoladas; 14 pgTAP aprovados no staging.
 - WP-08 gate local: Biome em 55 arquivos, TypeScript strict, 9 arquivos/32 testes Vitest, builds cliente/SSR e scan de 271 arquivos aprovados.
-- WP-08 desempenho inicial do banco: detalhe de jogo filtrado executou em 1,408 ms no staging com índices contextuais existentes; p50/p95 HTTP aguardam o preview.
+- WP-08 desempenho inicial do banco: detalhe de jogo filtrado executou em 1,408 ms no staging com índices contextuais existentes.
+- WP-08 gate remoto: CI/database desde zero, preview/smoke automatizado e CodeQL aprovados na PR #13.
+- WP-08 smoke HTTP: Jogadores 2025/2026, tabela/comparação, jogos 45/46, boxscore e placares isolados 2×3/8×6 aprovados; contexto inválido respondeu 404.
+- WP-08 benchmark HTTP no Worker, 30 amostras: Jogadores p50 702,2 ms / p95 793,6 ms; jogo p50 979,5 ms / p95 1.083,0 ms.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `wp-08-game-statistics`.
 - Base integrada em `main`: `49890f6`.
-- Alterações WP-08 ainda não commitadas; migration e fixtures já aplicadas no Supabase de staging, com SQL e gate local aprovados.
+- Head funcional da branch: `2230748`; implementação enviada à PR #13. Restam o commit documental final e a integração.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -251,3 +254,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | PR #11 integrada; WP-07 com transação, editor, 19 pgTAP, 25 testes e gate local aprovados | Commitar, abrir PR e validar um jogo completo no preview autenticado |
 | 2026-08-21 | Codex | PR #12 com CI/preview e smoke `aal2` aprovados; jogo manual, placar, atomicidade, auditoria e redirecionamento público validados | Enviar evidências finais, marcar PR pronta e integrar sem produção |
 | 2026-08-21 | Codex | PR #12 integrada; WP-08 com views contextuais, fixtures de duas edições, páginas públicas, 14 pgTAP e gate local aprovados | Commitar, abrir PR, validar preview e medir p50/p95 HTTP |
+| 2026-08-21 | Codex | PR #13 com todos os gates verdes; smoke 2025/2026, boxscore, 404 e benchmark p50/p95 aprovados | Enviar evidências finais, marcar PR pronta e integrar sem produção |
