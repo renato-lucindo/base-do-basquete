@@ -2322,3 +2322,141 @@ a {
     margin: 6px 0 0;
   }
 }
+
+
+.public-header-tools {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+  margin-top: 0.75rem;
+}
+
+.contextual-search {
+  position: relative;
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.contextual-search > label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contextual-search-results {
+  position: absolute;
+  z-index: 30;
+  top: 100%;
+  right: 0;
+  left: 0;
+  max-height: min(26rem, 70vh);
+  overflow: auto;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  box-shadow: 0 1rem 2rem rgb(0 0 0 / 18%);
+}
+
+.contextual-search-results section {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.contextual-search-results section + section {
+  margin-top: 0.75rem;
+}
+
+.contextual-search-results strong {
+  padding: 0.25rem 0.5rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.contextual-search-results a {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.55rem;
+  border-radius: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.contextual-search-results a[aria-selected="true"],
+.contextual-search-results a:hover {
+  background: var(--surface-muted);
+}
+
+.contextual-search-results small {
+  color: var(--muted);
+}
+
+.context-quick-menu {
+  position: relative;
+}
+
+.context-quick-menu > summary {
+  white-space: nowrap;
+}
+
+.context-quick-menu > div {
+  position: absolute;
+  z-index: 29;
+  right: 0;
+  display: grid;
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: min(28rem, 70vh);
+  gap: 1rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  box-shadow: 0 1rem 2rem rgb(0 0 0 / 18%);
+}
+
+.context-quick-menu section {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.context-quick-menu a {
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.4rem;
+}
+
+.context-quick-menu a[aria-current="page"] {
+  background: var(--surface-muted);
+  font-weight: 800;
+}
+
+.comparison-selectors fieldset {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.comparison-selectors label {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+@media (max-width: 680px) {
+  .public-header-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .context-quick-menu > div {
+    right: auto;
+    left: 0;
+  }
+}

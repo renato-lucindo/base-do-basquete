@@ -1,5 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router";
 
+import { ContextualSearch } from "./contextual-search";
+
 import {
   contextPath,
   PUBLIC_RESOURCES,
@@ -23,6 +25,10 @@ interface PublicNavigationProps {
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
+}
+
+function isAdultContext(context: CompetitionContext): boolean {
+  return /adult|livre|senior|sênior/i.test(`${context.category.name} ${context.category.slug}`);
 }
 
 export function PublicHeader({ context, contexts, resource }: PublicNavigationProps) {
@@ -111,6 +117,36 @@ export function PublicHeader({ context, contexts, resource }: PublicNavigationPr
           </select>
         </label>
       </fieldset>
+
+      <div className="public-header-tools">
+        <ContextualSearch context={context} />
+        <details className="context-quick-menu">
+          <summary>Trocar edição rapidamente</summary>
+          <div>
+            {[
+              { label: "Adulto", options: contexts.filter(isAdultContext) },
+              { label: "Categorias de base", options: contexts.filter((option) => !isAdultContext(option)) },
+            ].map((group) =>
+              group.options.length > 0 ? (
+                <section key={group.label}>
+                  <strong>{group.label}</strong>
+                  {group.options.map((option) => (
+                    <Link
+                      aria-current={
+                        option.competitionId === context.competitionId ? "page" : undefined
+                      }
+                      key={option.competitionId}
+                      to={contextPath(option, resource)}
+                    >
+                      {option.year} · {option.series.name} · {option.category.name}
+                    </Link>
+                  ))}
+                </section>
+              ) : null,
+            )}
+          </div>
+        </details>
+      </div>
 
       <nav className="public-nav" aria-label="Navegação da edição">
         {PUBLIC_RESOURCES.map((item) => (

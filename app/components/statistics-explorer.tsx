@@ -409,8 +409,10 @@ export function StatisticsExplorer({
   const [metric, setMetric] = useState<FilterMetric>("points");
   const [operator, setOperator] = useState<FilterOperator>(">=");
   const [filterValue, setFilterValue] = useState("");
-  const [leftId, setLeftId] = useState("");
-  const [rightId, setRightId] = useState("");
+  const leftId = searchParams.get("left") ?? "";
+  const rightId = searchParams.get("right") ?? "";
+  const [leftQuery, setLeftQuery] = useState("");
+  const [rightQuery, setRightQuery] = useState("");
   const mode: StatisticsMode = searchParams.get("scale") === "totals" ? "totals" : "averages";
   const query = searchParams.get("q") ?? "";
   const sortKey = parseSortKey(
@@ -485,6 +487,18 @@ export function StatisticsExplorer({
         ) || left.playerName.localeCompare(right.playerName, "pt-BR"),
     );
   }, [direction, filters, mode, searchedPlayers, sortKey, statistics.kind]);
+
+  const comparisonOptions = (search: string) =>
+    statistics.kind === "advanced"
+      ? statistics.players.filter((player) => matchesStatisticsSearch(player, search))
+      : [];
+
+  const selectComparedPlayer = (side: "left" | "right", playerId: string) => {
+    replaceParams((next) => {
+      if (playerId) next.set(side, playerId);
+      else next.delete(side);
+    });
+  };
 
   const updateFilters = (nextFilters: StatisticFilter[]) => {
     setFilters(nextFilters);
@@ -692,36 +706,66 @@ export function StatisticsExplorer({
             <h2 id="comparison-title">Comparar dois atletas</h2>
           </div>
           <div className="comparison-selectors">
-            <label>
-              Primeiro atleta
-              <select value={leftId} onChange={(event) => setLeftId(event.target.value)}>
-                <option value="">Selecione</option>
-                {statistics.players.map((player) => (
-                  <option
-                    disabled={String(player.playerId) === rightId}
-                    key={player.playerId}
-                    value={player.playerId}
-                  >
-                    {player.playerName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Segundo atleta
-              <select value={rightId} onChange={(event) => setRightId(event.target.value)}>
-                <option value="">Selecione</option>
-                {statistics.players.map((player) => (
-                  <option
-                    disabled={String(player.playerId) === leftId}
-                    key={player.playerId}
-                    value={player.playerId}
-                  >
-                    {player.playerName}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <fieldset>
+              <legend>Primeiro atleta</legend>
+              <label>
+                Buscar
+                <input
+                  onChange={(event) => setLeftQuery(event.currentTarget.value)}
+                  placeholder="Nome ou equipe"
+                  type="search"
+                  value={leftQuery}
+                />
+              </label>
+              <label>
+                Atleta
+                <select
+                  value={leftId}
+                  onChange={(event) => selectComparedPlayer("left", event.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {comparisonOptions(leftQuery).map((player) => (
+                    <option
+                      disabled={String(player.playerId) === rightId}
+                      key={player.playerId}
+                      value={player.playerId}
+                    >
+                      {player.playerName} · {player.teamName ?? "Sem equipe"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
+            <fieldset>
+              <legend>Segundo atleta</legend>
+              <label>
+                Buscar
+                <input
+                  onChange={(event) => setRightQuery(event.currentTarget.value)}
+                  placeholder="Nome ou equipe"
+                  type="search"
+                  value={rightQuery}
+                />
+              </label>
+              <label>
+                Atleta
+                <select
+                  value={rightId}
+                  onChange={(event) => selectComparedPlayer("right", event.target.value)}
+                >
+                  <option value="">Selecione</option>
+                  {comparisonOptions(rightQuery).map((player) => (
+                    <option
+                      disabled={String(player.playerId) === leftId}
+                      key={player.playerId}
+                      value={player.playerId}
+                    >
+                      {player.playerName} · {player.teamName ?? "Sem equipe"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
           </div>
           {(() => {
             const left = statistics.players.find((player) => String(player.playerId) === leftId);
@@ -734,11 +778,15 @@ export function StatisticsExplorer({
                     <li key={item}>
                       <strong>{metricLabels[item]}</strong>
                       <p data-comparison={states.left}>
-                        {left.playerName}: {displayNumber(statisticValue(left, item, mode))} —{" "}
+                        <Link to={playerPath(context, left)}>{left.playerName}</Link>:{" "}
+                        {displayNumber(statisticValue(left, item, mode))} —{" "}
+                        <span className="sr-only">Resultado da comparação: </span>
                         {comparisonLabels[states.left]}
                       </p>
                       <p data-comparison={states.right}>
-                        {right.playerName}: {displayNumber(statisticValue(right, item, mode))} —{" "}
+                        <Link to={playerPath(context, right)}>{right.playerName}</Link>:{" "}
+                        {displayNumber(statisticValue(right, item, mode))} —{" "}
+                        <span className="sr-only">Resultado da comparação: </span>
                         {comparisonLabels[states.right]}
                       </p>
                     </li>
