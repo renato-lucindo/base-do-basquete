@@ -11,8 +11,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
 - Status geral: `IN PROGRESS` no WP-13; advisors/reconciliação, secrets isolados de produção e mecanismo de release seguro preparados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-production-release`.
-- Último commit integrado em `main`: `526e900` (`WP-12 — Observabilidade e recuperação (#17)`).
+- Branch atual: `codex/wp-13-cloudflare-env-fix`.
+- Último commit integrado em `main`: `fbf2ad0` (`fix: parse production workflow cleanup (#19)`).
 - Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -67,13 +67,16 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema acionável; a reconciliação confirmou singleton/MFA, RLS integral e ausência de órfãos. O environment GitHub `production` recebeu três bindings próprios sem exposição. O workflow agora exige secrets declarados, envia code/secrets atomicamente, executa smoke/benchmark e permite upload de candidata para rollout gradual. Gate local inicial passou com 43 testes.
 
-O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou deploy: o GitHub marcou o workflow inválido porque o comando inline de limpeza continha `: ` em um scalar YAML. A correção usa bloco literal em `codex/wp-13-release-fix`; produção continua inexistente.
+O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou deploy: o GitHub marcou o workflow inválido porque o comando inline de limpeza continha `: ` em um scalar YAML. A correção foi integrada pela PR #19 e a tag imutável `v1.0.1` aponta para esse commit; `v1.0.0` foi preservada como candidata não implantada.
+
+O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A correção em andamento seleciona `CLOUDFLARE_ENV=production` antes do build, valida o nome/`APP_ENV` no artefato e só então chama o Wrangler.
 
 ## 6. Próximo passo exato
 
-1. Integrar a correção YAML curta do WP-13 após gates verdes.
-2. Reconfirmar que o GitHub reconhece `workflow_dispatch` e disparar `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`.
-3. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
+1. Aprovar e integrar a correção de seleção do ambiente Cloudflare após gates verdes.
+2. Restaurar o Worker fixo de preview pelo workflow de preview e confirmar `/health` e login.
+3. Repetir `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`, exigindo host `base-do-basquete-prod` e `APP_ENV=production`.
+4. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
 
 ### Primeiros arquivos a abrir
 
@@ -104,7 +107,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
-| WP-13 — Release de produção | `IN PROGRESS` | Advisors/reconciliação e fluxo seguro de release preparados; falta PR e publicação |
+| WP-13 — Release de produção | `IN PROGRESS` | PR #19 integrou o workflow; primeiro job revelou seleção incorreta do ambiente Vite e o smoke impediu a falsa liberação |
 
 ## 8. Arquivos e referências importantes
 
