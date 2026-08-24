@@ -2037,6 +2037,7 @@ a {
 .player-profile {
   display: grid;
   gap: 0;
+  min-width: 0;
 }
 
 .player-profile-header {
@@ -2129,6 +2130,7 @@ a {
 }
 
 .player-profile-section {
+  min-width: 0;
   padding: 64px 0;
   border-bottom: 1px solid var(--line);
   scroll-margin-top: 72px;
