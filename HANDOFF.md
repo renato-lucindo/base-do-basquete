@@ -67,12 +67,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema acionável; a reconciliação confirmou singleton/MFA, RLS integral e ausência de órfãos. O environment GitHub `production` recebeu três bindings próprios sem exposição. O workflow agora exige secrets declarados, envia code/secrets atomicamente, executa smoke/benchmark e permite upload de candidata para rollout gradual. Gate local inicial passou com 43 testes.
 
+O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou deploy: o GitHub marcou o workflow inválido porque o comando inline de limpeza continha `: ` em um scalar YAML. A correção usa bloco literal em `codex/wp-13-release-fix`; produção continua inexistente.
+
 ## 6. Próximo passo exato
 
-1. Commitar e enviar o mecanismo de release na branch `codex/wp-13-production-release`; abrir a PR #18.
-2. Validar CI/database/CodeQL/preview e integrar por squash.
-3. Marcar a versão integrada e disparar `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`.
-4. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
+1. Integrar a correção YAML curta do WP-13 após gates verdes.
+2. Reconfirmar que o GitHub reconhece `workflow_dispatch` e disparar `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`.
+3. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
 
 ### Primeiros arquivos a abrir
 
@@ -294,3 +295,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #16 integrada; WP-12 instrumentado e gate local/ensaios de recuperação em staging aprovados | Commitar WP-12, abrir PR #17 e validar logs redigidos no Worker de preview |
 | 2026-08-24 | Codex | PR #17 com quatro checks verdes; head promovido em staging e eventos redigidos confirmados ao vivo | Enviar evidências finais, reconfirmar gates e integrar WP-12 sem produção |
 | 2026-08-24 | Codex | PR #17 integrada; WP-13 com advisors/reconciliação, secrets isolados e workflow de release seguro preparado | Abrir PR #18, integrar com gates verdes e publicar pela `main` |
+| 2026-08-24 | Codex | PR #18 integrada e tag `v1.0.0` criada; primeiro dispatch recusado por YAML antes de qualquer deploy | Integrar correção em bloco literal e repetir o dispatch pela `main` |

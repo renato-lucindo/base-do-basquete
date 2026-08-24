@@ -85,4 +85,5 @@ jobs:
           BENCHMARK_ALLOW_PRODUCTION=true node scripts/benchmark-public.mjs "$PRODUCTION_URL" 10
       - name: Remove ephemeral runtime secret file
         if: always() && github.event.inputs.environment == 'production'
-        run: node -e "require('node:fs').rmSync(process.argv[1], { force: true })" "$RUNNER_TEMP/bdb-worker-secrets.json"
+        run: |
+          node -e "require('node:fs').rmSync(process.argv[1], { force: true })" "$RUNNER_TEMP/bdb-worker-secrets.json"
