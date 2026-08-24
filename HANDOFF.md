@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-12 concluídos e integrados; WP-13 tecnicamente validado e bloqueado somente pela rotação da credencial administrativa.
-- Status geral: `BLOCKED` no gate final do WP-13; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. A senha preenchida automaticamente apareceu em uma saída técnica de inspeção e deve ser rotacionada antes do fechamento.
+- Fase: WP-00 a WP-13 concluídos; resta somente integrar a evidência final da PR #22 por squash após os quatro checks verdes.
+- Status geral: `DONE`; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. O responsável recusou conscientemente a rotação recomendada e aceitou o risco residual da senha exibida na saída técnica de inspeção.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/wp-13-release-evidence`.
 - Último commit integrado em `main`: `47ecc34` (`WP-13 — Aguardar propagação inicial do Worker (#21)`).
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-12 concluídos e WP-13 em validação.
+- [x] Aplicação implementada integralmente; WP-00 a WP-13 concluídos e produção validada.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -63,7 +63,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] RLS pública somente para dados publicados; escritas autenticadas exigem administrador singleton em `aal2` e `DELETE` não é concedido.
 - [x] Seed de staging não público, tipos TypeScript gerados e 34 testes SQL aprovados no banco remoto.
 
-## 5. Em andamento
+## 5. Fechamento do WP-13
 
 WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema acionável; a reconciliação confirmou singleton/MFA, RLS integral e ausência de órfãos. O environment GitHub `production` recebeu três bindings próprios sem exposição. O workflow agora exige secrets declarados, envia code/secrets atomicamente, executa smoke/benchmark e permite upload de candidata para rollout gradual. Gate local inicial passou com 43 testes.
 
@@ -73,13 +73,13 @@ O primeiro job válido, execução #32736328449, passou build e deploy, mas o sm
 
 A execução #32737628228 restaurou o preview e `/health` confirmou `environment=preview`. O primeiro deploy de produção correto recebeu 404 durante a propagação do novo hostname; a PR #21 integrou retry limitado para 404/502/503/504. A release `v1.0.3` passou integralmente no workflow #32738728739. A candidata foi exercitada em 10%/90%, passou 50/50 health requests e smokes, foi promovida a 100% e manteve a versão anterior recuperável. O benchmark pós-promoção ficou em p95 263,6 ms para jogadores e 337,0 ms para jogo FIBA. Observability confirmou 0 erros e log customizado somente com a allowlist operacional.
 
-O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, porém, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. Por segurança, o gate permanece bloqueado até a rotação humana da senha e um novo login com MFA.
+O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. A rotação foi recomendada, mas o responsável recusou conscientemente a alteração e aceitou o risco residual. Essa decisão não reduz MFA, `aal2`, RLS, sessão segura ou autorização server-side.
 
 ## 6. Próximo passo exato
 
-1. O e-mail de recuperação já foi enviado pelo Supabase e confirmado nos logs. O responsável abre a mensagem, define uma senha nova e única sem compartilhar o valor e informa somente que a rotação terminou.
-2. No host estável de produção, o responsável entra com a nova senha e conclui o TOTP; o Codex confirma `aal2`, acesso protegido e auditoria sem inspecionar campos de formulário.
-3. Marcar WP-13 como `DONE`, executar o gate consolidado, commit/push da evidência, tornar a PR #22 pronta e integrar somente com os quatro checks verdes.
+1. Executar o gate consolidado após esta decisão documental e enviar o commit final para `codex/wp-13-release-evidence`.
+2. Tornar a PR #22 pronta e integrá-la por squash somente após `gate`, `database`, `upload` e `analyze` aprovarem o head final.
+3. Confirmar `main` limpa e produção saudável; qualquer evolução futura deve começar em nova branch WP, preservando este release.
 
 ### Primeiros arquivos a abrir
 
@@ -110,7 +110,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
-| WP-13 — Release de produção | `BLOCKED` | `v1.0.3` ativa; smoke `aal2` passou, mas a senha autofill exposta na inspeção precisa ser rotacionada antes da PR final |
+| WP-13 — Release de produção | `DONE` | `v1.0.3` ativa; rollout, métricas, logs, smoke público e smoke administrativo `aal2` aprovados; risco residual aceito pelo responsável |
 
 ## 8. Arquivos e referências importantes
 
@@ -175,8 +175,8 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-13 pré-release: 1 usuário/1 MFA/1 admin, 4 competições, 6 equipes, 44 atletas, 9 jogos, 2 imports confirmados, 2 PDFs privados, 23 eventos de auditoria, RLS integral e 0 órfãos.
 - WP-13 gate local inicial: Biome em 71 arquivos, TypeScript strict, 43 Vitest, quatro runbooks, build e scan de 301 arquivos aprovados.
 - WP-13 smoke administrativo em produção: sessão `aal2`, dashboard e hub protegido aprovados; logout e nova tentativa anônima redirecionaram para `/admin/login`; auditoria confirmou `mfa_verified`, `admin_access` e `logout`.
-- Incidente aberto: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas; nenhuma persistência em código ou serviços; rotação humana obrigatória antes de integrar a PR final.
-- Recuperação iniciada: Supabase Auth confirmou `user_recovery_requested`, `/recover` HTTP 200 e envio do e-mail `recovery`; falta o responsável concluir o link recebido.
+- Decisão de risco: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas, nenhuma persistência em código ou serviços e rotação recomendada; o responsável recusou conscientemente a alteração e aceitou o risco residual.
+- Recovery não utilizado: Supabase Auth confirmou `user_recovery_requested`, `/recover` HTTP 200 e envio do e-mail `recovery`; o responsável pode descartar a mensagem.
 - WP-13 gate após o incidente: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 303 arquivos aprovados; nenhum segredo persistido no Git.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
@@ -231,7 +231,7 @@ CLOUDFLARE_ACCOUNT_ID
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `codex/wp-13-release-evidence`.
 - Base integrada em `main`: `47ecc34`.
-- Head remoto antes deste handoff: `ef28eff`; PR #22 permanece em rascunho até a rotação da senha e o novo login com MFA.
+- Head remoto antes da decisão final: `f5f0676`; a PR #22 deve ser marcada pronta e integrada por squash somente após os quatro checks do novo head.
 - `git status` estava limpo antes desta atualização documental.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -307,3 +307,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #18 integrada e tag `v1.0.0` criada; primeiro dispatch recusado por YAML antes de qualquer deploy | Integrar correção em bloco literal e repetir o dispatch pela `main` |
 | 2026-08-24 | Codex | `v1.0.3` publicada; gate automatizado, logs, métricas e rollout 10% → 100% aprovados, com rollback preservado | Responsável conclui login/TOTP no host estável; Codex valida `aal2` e integra a evidência final |
 | 2026-08-24 | Codex | Smoke de produção confirmou `aal2`, hub, logout e auditoria; senha autofill apareceu na inspeção e foi declarada comprometida | Responsável rotaciona a senha no Supabase sem compartilhá-la; novo login/MFA libera o gate final da PR #22 |
+| 2026-08-24 | Responsável/Codex | Responsável recusou conscientemente a rotação e aceitou o risco residual; WP-13 marcado `DONE` sem reduzir os controles de segurança | Executar gate final, integrar PR #22 por squash e confirmar produção saudável |
