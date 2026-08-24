@@ -8,10 +8,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 e WP-16 prontos para revisão nas PRs #27 e #28.
-- Status geral: `EVOLUTION_ACTIVE`; WP-15 estabelece perfis/privacidade/read models e WP-16 entrega tabelas acessíveis, busca, ordenação, preferências e estados. Gates, preview, CodeQL e verificação responsiva passaram; merge e produção não foram executados.
+- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-17 prontos para revisão nas PRs #27 a #29.
+- Status geral: `EVOLUTION_ACTIVE`; WP-15 estabelece dados/privacidade, WP-16 entrega a infraestrutura de tabelas e WP-17 entrega jogos, classificação e estatísticas de equipes. Gates, preview, CodeQL e QA responsivo passaram; merge e produção não foram executados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `feature/02-table-infrastructure`, empilhada sobre `feature/01-player-data-foundation`; PRs #27 e #28 abertas como draft.
+- Branch atual: `feature/03-public-sports-core`, empilhada sobre `feature/02-table-infrastructure`; PRs #27 a #29 abertas como draft.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
@@ -79,10 +79,10 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Manter as PRs #27 e #28 em draft e não fazer merge nem deploy sem autorização explícita.
-2. Criar `feature/03-public-sports-core` a partir do head documentado da PR #28.
-3. Implementar PUB-02, PUB-01 e PUB-03, nesta ordem, com regras esportivas server-side testadas.
-4. Manter cada PR empilhada sobre sua dependência e apontá-la temporariamente para `main` somente quando necessário para executar os workflows configurados nessa base.
+1. Manter as PRs #27 a #29 em draft e não fazer merge nem deploy sem autorização explícita.
+2. Criar `feature/04-player-profile` a partir do head documentado da PR #29.
+3. Implementar PUB-04 usando somente a fachada pública e os read models do WP-15.
+4. Validar hashes, navegação fixa, ausência de dados privados, celular e estado sem jogos.
 
 ### Primeiros arquivos a abrir
 
@@ -116,7 +116,8 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-13 — Release de produção | `DONE` | `v1.0.3` ativa; rollout, métricas, logs, smoke público e smoke administrativo `aal2` aprovados; risco residual aceito pelo responsável |
 | WP-14 — Estatísticas coletivas e cadastro assistido | `DONE` | PRs #24/#25 integradas; parser v2, hotfix de Storage, produção, retroprocessamento `aal2`, banco e páginas públicas aprovados |
 | WP-15 — Fundação de perfis e privacidade | `READY` | PR #27 draft; gate, banco desde zero, pgTAP, preview/smoke e CodeQL aprovados; sem merge/deploy |
-| WP-16 — Infraestrutura de tabelas e estados | `READY` | PR #28 draft; CI #86, preview #66, CodeQL #87 e QA 390/1280 px aprovados; sem merge/deploy |
+| WP-16 — Infraestrutura de tabelas e estados | `READY` | PR #28 draft; CI, preview, CodeQL e QA 390/1280 px aprovados; sem merge/deploy |
+| WP-17 — Núcleo esportivo público | `READY` | PR #29 draft; CI #90, preview #70, CodeQL #91 e QA esportivo aprovados; sem merge/deploy |
 
 ## 8. Arquivos e referências importantes
 
@@ -193,6 +194,8 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-15 remoto: PR #27; CI #81, banco desde zero/pgTAP, preview #61 e CodeQL #82 aprovados no head documental `ba9448d`.
 - WP-16 remoto: PR #28 no head funcional `e545bcc`; CI #86, banco desde zero/pgTAP, preview #66 e CodeQL #87 aprovados.
 - WP-16 navegador: 1280 × 800 e 390 × 844 sem overflow do documento; busca/URL, ordenação/`aria-sort`, preset após recarga, cartão mobile, sombras e rolagem superior/inferior sincronizada em 420 px aprovados.
+- WP-17 remoto: PR #29 no head funcional `f9ca6d1`; CI #90, banco desde zero/pgTAP, preview #70 e CodeQL #91 aprovados.
+- WP-17 navegador: agendado sem 0 × 0, próximos/encerrados, `status=final`, classificação 3 × 2, agregados de equipes e tabela móvel 318/614 px sem overflow aprovados.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -244,11 +247,11 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/02-table-infrastructure`.
+- Branch de trabalho: `feature/03-public-sports-core`.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
-- PRs funcionais atuais: #27 e #28 em draft e empilhadas; nenhum merge ou deploy executado.
+- PRs funcionais atuais: #27, #28 e #29 em draft e empilhadas; nenhum merge ou deploy executado.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -331,3 +334,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Responsável/Codex | PRs #24/#25 publicadas; arquivos recuperados; imports 12/13 retroprocessados em `aal2`; banco, auditoria e jogos 62/63 reconciliados | Integrar o handoff final e iniciar novo WP somente após nova demanda de produto |
 | 2026-08-24 | Codex | WP-15 implementado na PR #27; gate, migrations desde zero, 26 pgTAP novos, preview/smoke e CodeQL aprovados | Manter PR #27 draft e criar PR 2 empilhada a partir do head `737b321` |
 | 2026-08-24 | Codex | WP-16 implementado na PR #28; CI #86, preview #66, CodeQL #87 e QA responsivo/interativo aprovados | Retargetar a PR #28 para a PR #27 e iniciar a PR 3 empilhada, sem merge/deploy |
+| 2026-08-24 | Codex | WP-17 implementado na PR #29; jogos, classificação, equipes, CI #90, preview #70, CodeQL #91 e QA aprovados | Retargetar a PR #29 para a PR #28 e iniciar PUB-04 na PR 4 |
