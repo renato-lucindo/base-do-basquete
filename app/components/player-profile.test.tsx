@@ -50,4 +50,81 @@ describe("PlayerProfile", () => {
     expect(html).toContain("Nenhum jogo publicado");
     expect(html).not.toContain("0,0");
   });
+
+  it("renders published statistics, honors and games", () => {
+    const totals = { games: 3, points: 13, assists: 3, rebounds: 10, steals: 2, blocks: 1 };
+    const richProfile: PublicPlayerProfileDto = {
+      ...profile,
+      current: {
+        ...totals,
+        context,
+        teamName: "Dourada",
+        teamSlug: "dourada",
+        jerseyNumber: "10",
+        position: "Ala",
+        starterAppearances: 2,
+      },
+      career: totals,
+      competitions: [
+        {
+          ...totals,
+          context,
+          teamName: "Dourada",
+          teamSlug: "dourada",
+          jerseyNumber: "10",
+          position: "Ala",
+          starterAppearances: 2,
+        },
+      ],
+      honors: [
+        {
+          id: 1,
+          title: "Destaque",
+          description: "Honraria confirmada",
+          year: 2026,
+          competitionName: context.displayName,
+        },
+      ],
+      games: [
+        {
+          id: 10,
+          label: "Jogo 10",
+          status: "final",
+          scheduledAt: "2026-08-24T15:00:00Z",
+          context,
+          teamName: "Dourada",
+          jerseyNumber: "10",
+          points: 13,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <PlayerProfile
+          achievements={[
+            {
+              competitionId: 1,
+              competitionDisplayName: context.displayName,
+              seriesName: context.series.name,
+              seriesSlug: context.series.slug,
+              year: context.year,
+              categoryName: context.category.name,
+              categorySlug: context.category.slug,
+              placement: 1,
+              resultLabel: null,
+              teamName: "Dourada",
+              teamSlug: "dourada",
+            },
+          ]}
+          context={context}
+          profile={richProfile}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("Destaque");
+    expect(html).toContain("Jogo 10");
+    expect(html).toContain("4,3");
+  });
 });
