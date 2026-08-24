@@ -11,6 +11,10 @@ export default [
     "admin/competitions/:competitionId/scoresheets/new",
     "routes/admin.competitions.$competitionId.scoresheets.new.tsx",
   ),
+  route(
+    "admin/competitions/:competitionId/boxscores/import",
+    "routes/admin.competitions.$competitionId.boxscores.import.tsx",
+  ),
   route("admin/competitions/:competitionId", "routes/admin.competitions.$competitionId.tsx"),
   route(":year/:competition/:category/:resource", "routes/public-context.tsx"),
   route(":year/:competition/:category/:resource/:detail", "routes/public-detail.tsx"),

@@ -11,6 +11,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+work/
 *.log
 *.tsbuildinfo
 preview-output.log

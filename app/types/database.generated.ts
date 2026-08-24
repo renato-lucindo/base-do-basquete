@@ -74,9 +74,12 @@ export type Database = {
           id: number;
           import_id: number;
           roster_entry_id: number | null;
+          similarity_score: number | null;
+          source_jersey_number: string;
           source_player_name: string;
           source_team_name: string;
           status: string;
+          suggestion_kind: string;
           updated_at: string;
         };
         Insert: {
@@ -87,9 +90,12 @@ export type Database = {
           id?: never;
           import_id: number;
           roster_entry_id?: number | null;
+          similarity_score?: number | null;
+          source_jersey_number?: string;
           source_player_name: string;
           source_team_name: string;
           status?: string;
+          suggestion_kind?: string;
           updated_at?: string;
         };
         Update: {
@@ -100,9 +106,12 @@ export type Database = {
           id?: never;
           import_id?: number;
           roster_entry_id?: number | null;
+          similarity_score?: number | null;
+          source_jersey_number?: string;
           source_player_name?: string;
           source_team_name?: string;
           status?: string;
+          suggestion_kind?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -129,13 +138,18 @@ export type Database = {
           created_at: string;
           created_by: string;
           error_code: string | null;
+          file_size_bytes: number;
           game_id: number | null;
           id: number;
+          parsed_payload: Json;
           parser_version: string;
+          resolution_payload: Json | null;
           sha256: string;
+          source_filename: string;
           status: string;
           storage_path: string;
           updated_at: string;
+          validation_payload: Json;
         };
         Insert: {
           competition_id: number;
@@ -143,13 +157,18 @@ export type Database = {
           created_at?: string;
           created_by: string;
           error_code?: string | null;
+          file_size_bytes?: number;
           game_id?: number | null;
           id?: never;
+          parsed_payload?: Json;
           parser_version: string;
+          resolution_payload?: Json | null;
           sha256: string;
+          source_filename?: string;
           status?: string;
           storage_path: string;
           updated_at?: string;
+          validation_payload?: Json;
         };
         Update: {
           competition_id?: number;
@@ -157,13 +176,18 @@ export type Database = {
           created_at?: string;
           created_by?: string;
           error_code?: string | null;
+          file_size_bytes?: number;
           game_id?: number | null;
           id?: never;
+          parsed_payload?: Json;
           parser_version?: string;
+          resolution_payload?: Json | null;
           sha256?: string;
+          source_filename?: string;
           status?: string;
           storage_path?: string;
           updated_at?: string;
+          validation_payload?: Json;
         };
         Relationships: [
           {
@@ -653,6 +677,7 @@ export type Database = {
           plus_minus: number;
           points: number | null;
           seconds_played: number;
+          stat_scope: string;
           steals: number;
           three_point_attempted: number;
           three_point_made: number;
@@ -673,6 +698,7 @@ export type Database = {
           plus_minus?: number;
           points?: number | null;
           seconds_played?: number;
+          stat_scope?: string;
           steals?: number;
           three_point_attempted?: number;
           three_point_made?: number;
@@ -693,6 +719,7 @@ export type Database = {
           plus_minus?: number;
           points?: number | null;
           seconds_played?: number;
+          stat_scope?: string;
           steals?: number;
           three_point_attempted?: number;
           three_point_made?: number;
@@ -1111,6 +1138,25 @@ export type Database = {
       };
     };
     Functions: {
+      admin_claim_boxscore_upload: { Args: never; Returns: undefined };
+      admin_commit_boxscore_import: {
+        Args: { p_import_id: number; p_resolution: Json };
+        Returns: number;
+      };
+      admin_create_boxscore_import_draft: {
+        Args: {
+          p_competition_id: number;
+          p_file_size_bytes: number;
+          p_matches: Json;
+          p_parsed_payload: Json;
+          p_parser_version: string;
+          p_sha256: string;
+          p_source_filename: string;
+          p_storage_path: string;
+          p_validation_payload: Json;
+        };
+        Returns: number;
+      };
       admin_create_manual_scoresheet: {
         Args: { p_payload: Json };
         Returns: number;
@@ -1171,6 +1217,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      admin_fail_boxscore_import: {
+        Args: { p_error_code: string; p_import_id: number };
+        Returns: undefined;
       };
       is_current_admin: { Args: never; Returns: boolean };
       is_current_admin_aal2: { Args: never; Returns: boolean };

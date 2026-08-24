@@ -285,3 +285,157 @@ where game.game_number = 'STATS-01'
 group by stats.game_id, slot.registration_id, stats.period_number
 on conflict (game_id, registration_id, period_number) do update
 set points = excluded.points;
+
+-- Exact FIBA/Genius Sports fixtures used by the WP-09 preview smoke. The PDF remains the
+-- source of game facts; this seed supplies only the edition, registrations and review candidates.
+insert into public.competition_series (name, slug)
+values ('Copa ES Ouro', 'copa-es-ouro')
+on conflict (slug) do update set name = excluded.name, is_active = true;
+
+insert into public.categories (name, slug, has_advanced_stats)
+values ('Fixture FIBA', 'fixture-fiba', true)
+on conflict (slug) do update
+set name = excluded.name, has_advanced_stats = true, is_active = true;
+
+insert into public.competitions
+  (series_id, category_id, year, display_name, status, published_at)
+select series.id, category.id, 2026, 'Copa ES Ouro 2026 — Fixture FIBA', 'published', now()
+from public.competition_series series
+cross join public.categories category
+where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
+on conflict (series_id, year, category_id) do update
+set display_name = excluded.display_name,
+    status = 'published',
+    published_at = coalesce(public.competitions.published_at, excluded.published_at);
+
+insert into public.teams (name, slug, abbreviation, is_public)
+values
+  ('Alcateia', 'alcateia', 'ALC', true),
+  ('AVABES', 'avabes', 'AVA', true),
+  ('Instituto Viva Vida', 'instituto-viva-vida', 'IVV', true),
+  ('Clube Álvares Cabral', 'clube-alvares-cabral', 'CAC', true)
+on conflict (slug) do update
+set name = excluded.name,
+    abbreviation = excluded.abbreviation,
+    is_active = true,
+    is_public = true;
+
+insert into public.players (full_name, slug, is_public)
+values
+  ('Marcos Gabriel Araujo de Oliveira', 'marcos-gabriel-araujo-de-oliveira', true),
+  ('Lucas Pereira Gaspar', 'lucas-pereira-gaspar', true),
+  ('Diego dos Santos Boa', 'diego-dos-santos-boa', true),
+  ('Rian dos Reis Salaroli Silva', 'rian-dos-reis-salaroli-silva', true),
+  ('João Matheus de Alves de Oliveira', 'joao-matheus-de-alves-de-oliveira', true),
+  ('João Pedro de Almeida Neves', 'joao-pedro-de-almeida-neves', true),
+  ('Igor Antunes de Almeida', 'igor-antunes-de-almeida', true),
+  ('Marcos Vinicius Siravegna de Morais', 'marcos-vinicius-siravegna-de-morais', true),
+  ('Atos Lorenzo Rosa', 'atos-lorenzo-rosa', true),
+  ('Kauã Ricardo Duarte', 'kaua-ricardo-duarte', true),
+  ('Matheus Padovani Daltin', 'matheus-padovani-daltin', true),
+  ('Marcos Vinicius da Silva', 'marcos-vinicius-da-silva', true),
+  ('Flavio de Leon Santos Scherer', 'flavio-de-leon-santos-scherer', true),
+  ('Bruno Curto Santana', 'bruno-curto-santana', true),
+  ('Sanlley Borges de Freitas', 'sanlley-borges-de-freitas', true),
+  ('Luis Gabriel Ribeiro Silva', 'luis-gabriel-ribeiro-silva', true),
+  ('Carlos Henrique Giostri Ribeiro', 'carlos-henrique-giostri-ribeiro', true),
+  ('Alexsander Correa Covre', 'alexsander-correa-covre', true),
+  ('Rahysner Will', 'rahysner-will', true),
+  ('Lucas Gaspar Campagnaro', 'lucas-gaspar-campagnaro', true),
+  ('José Abdo Chalub Neto', 'jose-abdo-chalub-neto', true),
+  ('Arquidally Souza dos Santos', 'arquidally-souza-dos-santos', true),
+  ('Alisson Venâncio do Nascimento', 'alisson-venancio-do-nascimento', true),
+  ('Alexandre Freitas Brochado', 'alexandre-freitas-brochado', true),
+  ('Fernando dos Santos', 'fernando-dos-santos', true),
+  ('Guilherme Cruz Santos', 'guilherme-cruz-santos', true),
+  ('Artur Louzada Machado', 'artur-louzada-machado', true),
+  ('João Vitor Martins', 'joao-vitor-martins', true),
+  ('Juan Gama Alves', 'juan-gama-alves', true),
+  ('Enrico de Paula Oliveira', 'enrico-de-paula-oliveira', true),
+  ('Lorenzo Gagno Gouvêa', 'lorenzo-gagno-gouvea', true),
+  ('Thiago Sbardelotti Almeida', 'thiago-sbardelotti-almeida', true),
+  ('Vitor Gabriel Borges Santos', 'vitor-gabriel-borges-santos', true),
+  ('Juan Peter dos Santos Deolinda', 'juan-peter-dos-santos-deolinda', true),
+  ('Carlos Olimpio Ramos Pinto', 'carlos-olimpio-ramos-pinto', true),
+  ('Josué Soares Moreira da Silva', 'josue-soares-moreira-da-silva', true),
+  ('Marco Antonio Persio Cruz', 'marco-antonio-persio-cruz', true),
+  ('Franco Campos Junger', 'franco-campos-junger', true),
+  ('Yuri Lemos Pereira', 'yuri-lemos-pereira', true),
+  ('Cauan Borges Pedral Sampaio', 'cauan-borges-pedral-sampaio', true),
+  ('Thierry Botelho de Oliveira Claudino', 'thierry-botelho-de-oliveira-claudino', true),
+  ('Cleiton Conceição Ferreira', 'cleiton-conceicao-ferreira', true)
+on conflict (slug) do update
+set full_name = excluded.full_name,
+    is_active = true,
+    is_public = true;
+
+insert into public.team_registrations
+  (competition_id, team_id, status, confirmed_at)
+select competition.id, team.id, 'confirmed', now()
+from public.competitions competition
+join public.competition_series series on series.id = competition.series_id
+cross join public.teams team
+where series.slug = 'copa-es-ouro'
+  and competition.year = 2026
+  and team.slug in ('alcateia', 'avabes', 'instituto-viva-vida', 'clube-alvares-cabral')
+on conflict (competition_id, team_id) do update
+set status = 'confirmed',
+    confirmed_at = coalesce(public.team_registrations.confirmed_at, excluded.confirmed_at);
+
+insert into public.roster_entries
+  (competition_id, registration_id, player_id, jersey_number, status)
+select registration.competition_id, registration.id, player.id, fixture.jersey_number, 'active'
+from (
+  values
+    ('alcateia'::text, 'marcos-gabriel-araujo-de-oliveira'::text, '00'::text),
+    ('alcateia', 'lucas-pereira-gaspar', '3'),
+    ('alcateia', 'diego-dos-santos-boa', '8'),
+    ('alcateia', 'rian-dos-reis-salaroli-silva', '10'),
+    ('alcateia', 'joao-matheus-de-alves-de-oliveira', '21'),
+    ('alcateia', 'joao-pedro-de-almeida-neves', '24'),
+    ('alcateia', 'igor-antunes-de-almeida', '32'),
+    ('alcateia', 'marcos-vinicius-siravegna-de-morais', '34'),
+    ('alcateia', 'atos-lorenzo-rosa', '44'),
+    ('alcateia', 'kaua-ricardo-duarte', '94'),
+    ('avabes', 'matheus-padovani-daltin', '1'),
+    ('avabes', 'marcos-vinicius-da-silva', '4'),
+    ('avabes', 'flavio-de-leon-santos-scherer', '5'),
+    ('avabes', 'bruno-curto-santana', '6'),
+    ('avabes', 'sanlley-borges-de-freitas', '10'),
+    ('avabes', 'luis-gabriel-ribeiro-silva', '14'),
+    ('avabes', 'carlos-henrique-giostri-ribeiro', '23'),
+    ('avabes', 'alexsander-correa-covre', '24'),
+    ('avabes', 'rahysner-will', '30'),
+    ('avabes', 'lucas-gaspar-campagnaro', '66'),
+    ('avabes', 'jose-abdo-chalub-neto', '84'),
+    ('avabes', 'arquidally-souza-dos-santos', '92'),
+    ('instituto-viva-vida', 'alisson-venancio-do-nascimento', '2'),
+    ('instituto-viva-vida', 'alexandre-freitas-brochado', '3'),
+    ('instituto-viva-vida', 'fernando-dos-santos', '5'),
+    ('instituto-viva-vida', 'guilherme-cruz-santos', '7'),
+    ('instituto-viva-vida', 'artur-louzada-machado', '10'),
+    ('instituto-viva-vida', 'joao-vitor-martins', '12'),
+    ('instituto-viva-vida', 'juan-gama-alves', '13'),
+    ('instituto-viva-vida', 'enrico-de-paula-oliveira', '15'),
+    ('instituto-viva-vida', 'lorenzo-gagno-gouvea', '17'),
+    ('instituto-viva-vida', 'thiago-sbardelotti-almeida', '22'),
+    ('instituto-viva-vida', 'vitor-gabriel-borges-santos', '28'),
+    ('instituto-viva-vida', 'juan-peter-dos-santos-deolinda', '35'),
+    ('clube-alvares-cabral', 'carlos-olimpio-ramos-pinto', '0'),
+    ('clube-alvares-cabral', 'josue-soares-moreira-da-silva', '3'),
+    ('clube-alvares-cabral', 'marco-antonio-persio-cruz', '8'),
+    ('clube-alvares-cabral', 'franco-campos-junger', '9'),
+    ('clube-alvares-cabral', 'yuri-lemos-pereira', '10'),
+    ('clube-alvares-cabral', 'cauan-borges-pedral-sampaio', '11'),
+    ('clube-alvares-cabral', 'thierry-botelho-de-oliveira-claudino', '36'),
+    ('clube-alvares-cabral', 'cleiton-conceicao-ferreira', '43')
+) as fixture(team_slug, player_slug, jersey_number)
+join public.teams team on team.slug = fixture.team_slug
+join public.players player on player.slug = fixture.player_slug
+join public.team_registrations registration on registration.team_id = team.id
+join public.competitions competition on competition.id = registration.competition_id
+join public.competition_series series on series.id = competition.series_id
+where series.slug = 'copa-es-ouro' and competition.year = 2026
+on conflict (registration_id, player_id) do update
+set jersey_number = excluded.jersey_number,
+    status = 'active';
