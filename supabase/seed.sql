@@ -85,6 +85,46 @@ on conflict (registration_id, player_id) do update
 set jersey_number = excluded.jersey_number,
     status = 'active';
 
+-- Confirmed historical results for public team/player profile fixtures.
+insert into public.final_placements (
+  competition_id, registration_id, placement, result_label, result_status,
+  confirmed_by, confirmed_at
+)
+select
+  competition.id,
+  registration.id,
+  case
+    when competition.year = 2025 and team.slug = 'equipe-demonstracao-azul' then 1
+    when competition.year = 2025 then 2
+    when team.slug = 'equipe-demonstracao-dourada' then 1
+    else 2
+  end::smallint,
+  case
+    when (competition.year = 2025 and team.slug = 'equipe-demonstracao-azul') or
+         (competition.year = 2026 and team.slug = 'equipe-demonstracao-dourada')
+      then 'Campeã da edição'
+    else 'Vice-campeã da edição'
+  end,
+  'placed',
+  admin_account.user_id,
+  now()
+from public.competitions competition
+join public.competition_series series on series.id = competition.series_id
+join public.categories category on category.id = competition.category_id
+join public.team_registrations registration on registration.competition_id = competition.id
+join public.teams team on team.id = registration.team_id
+cross join lateral (select user_id from private.admin_accounts limit 1) admin_account
+where series.slug = 'liga-de-desenvolvimento'
+  and category.slug = 'sub-15'
+  and competition.year in (2025, 2026)
+  and team.slug in ('equipe-demonstracao-azul', 'equipe-demonstracao-dourada')
+on conflict (competition_id, registration_id) do update
+set placement = excluded.placement,
+    result_label = excluded.result_label,
+    result_status = excluded.result_status,
+    confirmed_by = excluded.confirmed_by,
+    confirmed_at = excluded.confirmed_at;
+
 insert into public.games (competition_id, game_number, status, venue, scheduled_at, source)
 select
   competition.id,

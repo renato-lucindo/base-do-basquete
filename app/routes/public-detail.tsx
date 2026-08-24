@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { data, Link } from "react-router";
 
 import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
 import { GameStatistics } from "../components/game-statistics";
@@ -24,6 +24,11 @@ function notFound(): never {
 
 export function meta() {
   return [{ title: "Detalhe — Base do Basquete" }];
+}
+
+function placementLabel(placement: number, resultLabel: string | null): string {
+  if (resultLabel) return resultLabel;
+  return placement === 1 ? "Campeão" : `${placement}º lugar`;
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -80,11 +85,42 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
         {resource === "jogos" && game ? (
           <GameStatistics context={context} game={game} />
         ) : (
-          <article className="detail-card">
-            <p className="eyebrow">{context.displayName}</p>
-            <h1>{detail.label}</h1>
-            <p>{detail.description}</p>
-          </article>
+          <>
+            <article className="detail-card">
+              <p className="eyebrow">{context.displayName}</p>
+              <h1>{detail.label}</h1>
+              <p>{detail.description}</p>
+            </article>
+            <section className="achievement-panel" aria-labelledby="achievement-title">
+              <p className="eyebrow">Histórico derivado</p>
+              <h2 id="achievement-title">Conquistas confirmadas</h2>
+              {detail.achievements.length ? (
+                <ol className="achievement-list">
+                  {detail.achievements.map((achievement) => {
+                    const contextPath = `/${achievement.year}/${achievement.seriesSlug}/${achievement.categorySlug}`;
+                    return (
+                      <li key={`${achievement.competitionId}-${achievement.teamSlug ?? "team"}`}>
+                        <strong>
+                          {placementLabel(achievement.placement, achievement.resultLabel)}
+                        </strong>
+                        <span>
+                          {achievement.year} · {achievement.seriesName} · {achievement.categoryName}
+                        </span>
+                        {achievement.teamName && achievement.teamSlug ? (
+                          <Link to={`${contextPath}/equipes/${achievement.teamSlug}`}>
+                            {achievement.teamName}
+                          </Link>
+                        ) : null}
+                        <Link to={`${contextPath}/classificacao`}>Abrir edição</Link>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p>Nenhuma conquista confirmada.</p>
+              )}
+            </section>
+          </>
         )}
       </div>
     </main>

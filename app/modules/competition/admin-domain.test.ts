@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mapAdminDomainError, normalizeJersey } from "./admin-domain";
+import { mapAdminDomainError, normalizeFinalResult, normalizeJersey } from "./admin-domain";
 
 describe("admin competition domain", () => {
   it("preserves 0 and 00 without numeric conversion", () => {
@@ -16,5 +16,18 @@ describe("admin competition domain", () => {
       field: "player",
     });
     expect(mapAdminDomainError("XX000")).toMatchObject({ code: "unknown" });
+  });
+
+  it("normalizes authoritative final results", () => {
+    expect(normalizeFinalResult("placed", "1", " Campeão ")).toEqual({
+      ok: true,
+      value: { status: "placed", placement: 1, label: "Campeão" },
+    });
+    expect(normalizeFinalResult("withdrawn", "", "Ignorado")).toEqual({
+      ok: true,
+      value: { status: "withdrawn", placement: null, label: null },
+    });
+    expect(normalizeFinalResult("placed", "", "").ok).toBe(false);
+    expect(normalizeFinalResult("disqualified", "2", "").ok).toBe(false);
   });
 });
