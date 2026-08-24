@@ -14,6 +14,8 @@ export interface SimplePlayerStatistics {
   playerId: number;
   playerName: string;
   playerSlug: string;
+  teamName: string | null;
+  teamSlug: string | null;
   gamesPlayed: number;
   points: number;
   pointsPerGame: number | null;
@@ -134,7 +136,9 @@ export async function loadCompetitionStatistics(
   if (!capabilities.advanced) {
     const result = await client
       .from("competition_player_statistics")
-      .select("competition_id,player_id,player_name,player_slug,games_played,points")
+      .select(
+        "competition_id,player_id,player_name,player_slug,team_name,team_slug,games_played,points",
+      )
       .eq("competition_id", context.competitionId)
       .order("points", { ascending: false })
       .order("player_name");
@@ -150,6 +154,8 @@ export async function loadCompetitionStatistics(
           playerId: row.player_id as number,
           playerName: row.player_name as string,
           playerSlug: row.player_slug as string,
+          teamName: row.team_name,
+          teamSlug: row.team_slug,
           gamesPlayed,
           points,
           pointsPerGame: perGame(points, gamesPlayed),
@@ -173,6 +179,8 @@ export async function loadCompetitionStatistics(
       playerId: row.player_id as number,
       playerName: row.player_name as string,
       playerSlug: row.player_slug as string,
+      teamName: row.team_name,
+      teamSlug: row.team_slug,
       gamesPlayed: numberValue(row.games_played),
       totals: totalsFromRow(row),
     })),

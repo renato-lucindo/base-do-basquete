@@ -15,6 +15,8 @@ const player = (playerId: number, points: number, gamesPlayed = 2): PlayerStatis
   playerId,
   playerName: `Atleta ${playerId}`,
   playerSlug: `atleta-${playerId}`,
+  teamName: "Equipe Teste",
+  teamSlug: "equipe-teste",
   gamesPlayed,
   totals: {
     secondsPlayed: 1200,

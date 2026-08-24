@@ -31,6 +31,8 @@ export interface PlayerStatistics {
   playerId: number;
   playerName: string;
   playerSlug: string;
+  teamName: string | null;
+  teamSlug: string | null;
   gamesPlayed: number;
   totals: StatisticTotals;
 }
