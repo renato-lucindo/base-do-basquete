@@ -526,9 +526,7 @@ export function StatisticsExplorer({
                   <input
                     checked={mode === value}
                     name="statisticsMode"
-                    onChange={() =>
-                      replaceParams((next) => next.set("scale", value))
-                    }
+                    onChange={() => replaceParams((next) => next.set("scale", value))}
                     type="radio"
                   />
                   {value === "averages" ? "Média por jogo" : "Totais"}
@@ -542,10 +540,7 @@ export function StatisticsExplorer({
                 event.preventDefault();
                 const value = Number(filterValue.replace(",", "."));
                 if (!Number.isFinite(value) || filterValue.trim() === "") return;
-                updateFilters([
-                  ...filters,
-                  { id: crypto.randomUUID(), metric, operator, value },
-                ]);
+                updateFilters([...filters, { id: crypto.randomUUID(), metric, operator, value }]);
                 setFilterValue("");
               }}
             >
