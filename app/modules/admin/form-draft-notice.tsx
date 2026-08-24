@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   createAdminFormDraft,
@@ -52,7 +52,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
     [contextId, formId],
   );
   const [candidate, setCandidate] = useState<AdminFormDraft | null>(null);
-  const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
     let timer = 0;
     const persist = () => {
       window.clearTimeout(timer);
-      setDirty(true);
+      dirtyRef.current = true;
       timer = window.setTimeout(() => {
         const fields = sanitizeDraftEntries(new FormData(form).entries());
         const draft = createAdminFormDraft(formId, contextId, fields);
@@ -74,9 +74,9 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
         setSavedAt(draft.updatedAt);
       }, 300);
     };
-    const submitted = () => setDirty(false);
+    const submitted = () => dirtyRef.current = false;
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
+      if (!dirtyRef.current) return;
       event.preventDefault();
     };
 
@@ -91,7 +91,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
       form.removeEventListener("submit", submitted);
       window.removeEventListener("beforeunload", beforeUnload);
     };
-  }, [contextId, dirty, formId, storageKey]);
+  }, [contextId, formId, storageKey]);
 
   return (
     <aside className="form-draft-notice" aria-live="polite">
@@ -105,7 +105,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
               const form = document.getElementById(formId);
               if (form instanceof HTMLFormElement) restoreFields(form, candidate);
               setCandidate(null);
-              setDirty(true);
+              dirtyRef.current = true;
             }}
             type="button"
           >
@@ -116,7 +116,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
             onClick={() => {
               localStorage.removeItem(storageKey);
               setCandidate(null);
-              setDirty(false);
+              dirtyRef.current = false;
             }}
             type="button"
           >
