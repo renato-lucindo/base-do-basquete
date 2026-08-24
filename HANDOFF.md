@@ -11,9 +11,9 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
 - Status geral: `IN PROGRESS` no WP-13; advisors/reconciliação, secrets isolados de produção e mecanismo de release seguro preparados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-cloudflare-env-fix`.
-- Último commit integrado em `main`: `fbf2ad0` (`fix: parse production workflow cleanup (#19)`).
-- Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
+- Branch atual: `codex/wp-13-release-propagation`.
+- Último commit integrado em `main`: `5d7429d` (`WP-13 — Corrigir seleção do ambiente Cloudflare (#20)`).
+- Aplicação publicada: preview fixo restaurado e candidata de produção `v1.0.2` saudável na URL temporária `workers.dev`; aceite automatizado final ainda em andamento.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
@@ -71,12 +71,13 @@ O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou 
 
 O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A correção em andamento seleciona `CLOUDFLARE_ENV=production` antes do build, valida o nome/`APP_ENV` no artefato e só então chama o Wrangler.
 
+A PR #20 integrou essa correção. O workflow #32737628228 restaurou o preview atomicamente e `/health` confirmou `environment=preview`. O deploy de produção #32737807217 criou corretamente `base-do-basquete-prod`, mas o primeiro smoke recebeu 404 durante a propagação inicial do novo hostname. Cerca de 50 segundos depois, health, headers, login público, contextos e benchmark passaram manualmente: jogadores p50 249,0 ms/p95 311,4 ms; jogo FIBA p50 361,8 ms/p95 839,5 ms. A branch atual adiciona retry limitado somente para 404/502/503/504 nessa janela.
+
 ## 6. Próximo passo exato
 
-1. Aprovar e integrar a correção de seleção do ambiente Cloudflare após gates verdes.
-2. Restaurar o Worker fixo de preview pelo workflow de preview e confirmar `/health` e login.
-3. Repetir `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`, exigindo host `base-do-basquete-prod` e `APP_ENV=production`.
-4. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
+1. Integrar o retry limitado de propagação do primeiro hostname após gates verdes.
+2. Repetir `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`, e exigir o gate automatizado integralmente verde.
+3. Validar logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
 
 ### Primeiros arquivos a abrir
 
