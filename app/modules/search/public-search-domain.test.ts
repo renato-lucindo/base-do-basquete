@@ -57,11 +57,13 @@ describe("public contextual search", () => {
   it("rejects short queries, excludes private records and enforces the result limit", () => {
     expect(buildContextualSearchResults("a", context, players, teams, [])).toEqual([]);
     expect(buildContextualSearchResults("oculto", context, players, teams, [])).toEqual([]);
-    const many = Array.from({ length: 20 }, (_, index) => ({
-      ...players[0],
+    const many: SearchPlayer[] = Array.from({ length: 20 }, (_, index) => ({
       id: index + 10,
       name: `Atleta ${index}`,
+      nickname: null,
       slug: `atleta-${index}`,
+      teamName: "Águias do Sul",
+      isPublic: true,
     }));
     const result = buildContextualSearchResults("atleta", context, many, teams, [], 3);
     expect(result.flatMap((group) => group.items)).toHaveLength(3);
