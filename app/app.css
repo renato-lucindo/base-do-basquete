@@ -2033,199 +2033,198 @@ a {
     width: 100%;
   }
 }
-
 /* WP-18: complete, privacy-safe public player profile. */
 .player-profile {
-  display: grid;
-  gap: 0;
+	display: grid;
+	gap: 0;
 }
 
 .player-profile-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
-  gap: clamp(36px, 7vw, 96px);
-  align-items: end;
-  min-height: 520px;
-  padding: clamp(56px, 9vw, 112px) 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+	gap: clamp(36px, 7vw, 96px);
+	align-items: end;
+	min-height: 520px;
+	padding: clamp(56px, 9vw, 112px) 0;
 }
 
 .player-profile-header h1 {
-  margin: 0;
-  font-size: clamp(3.4rem, 9vw, 7.6rem);
-  letter-spacing: -0.07em;
-  line-height: 0.9;
+	margin: 0;
+	font-size: clamp(3.4rem, 9vw, 7.6rem);
+	letter-spacing: -0.07em;
+	line-height: 0.9;
 }
 
 .player-profile-header > div > p:last-child,
 .player-summary-card p {
-  color: var(--muted);
-  line-height: 1.7;
+	color: var(--muted);
+	line-height: 1.7;
 }
 
 .player-nickname {
-  color: var(--green);
-  font-size: 1.15rem;
-  font-weight: 760;
+	color: var(--green);
+	font-size: 1.15rem;
+	font-weight: 760;
 }
 
 .player-public-fields,
 .player-summary-card dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin: 0;
-  padding: 1px;
-  background: var(--line);
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1px;
+	margin: 0;
+	padding: 1px;
+	background: var(--line);
 }
 
 .player-public-fields div,
 .player-summary-card dl div {
-  display: grid;
-  gap: 6px;
-  padding: 16px;
-  background: var(--ink);
+	display: grid;
+	gap: 6px;
+	padding: 16px;
+	background: var(--ink);
 }
 
 .player-public-fields dt,
 .player-summary-card dt {
-  color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+	color: var(--muted);
+	font-size: 0.66rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .player-public-fields dd,
 .player-summary-card dd {
-  margin: 0;
-  font-weight: 780;
+	margin: 0;
+	font-weight: 780;
 }
 
 .player-profile-nav {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  display: flex;
-  gap: 28px;
-  padding: 18px 0;
-  overflow-x: auto;
-  border-block: 1px solid var(--line);
-  background: color-mix(in srgb, var(--ink) 94%, transparent);
-  backdrop-filter: blur(14px);
+	position: sticky;
+	top: 0;
+	z-index: 4;
+	display: flex;
+	gap: 28px;
+	padding: 18px 0;
+	overflow-x: auto;
+	border-block: 1px solid var(--line);
+	background: color-mix(in srgb, var(--ink) 94%, transparent);
+	backdrop-filter: blur(14px);
 }
 
 .player-profile-nav a {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-decoration: none;
-  text-transform: uppercase;
-  white-space: nowrap;
+	color: var(--muted);
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.07em;
+	text-decoration: none;
+	text-transform: uppercase;
+	white-space: nowrap;
 }
 
 .player-profile-nav a:hover,
 .player-profile-nav a:focus-visible {
-  color: var(--green);
+	color: var(--green);
 }
 
 .player-profile-section {
-  padding: 64px 0;
-  border-bottom: 1px solid var(--line);
-  scroll-margin-top: 72px;
+	padding: 64px 0;
+	border-bottom: 1px solid var(--line);
+	scroll-margin-top: 72px;
 }
 
 .player-profile-section h2 {
-  margin: 0 0 30px;
-  font-size: clamp(2rem, 5vw, 4rem);
-  letter-spacing: -0.045em;
+	margin: 0 0 30px;
+	font-size: clamp(2rem, 5vw, 4rem);
+	letter-spacing: -0.045em;
 }
 
 .player-summary-grid,
 .player-awards-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
 }
 
 .player-summary-card,
 .player-awards-grid article {
-  padding: 24px;
-  border: 1px solid var(--line);
+	padding: 24px;
+	border: 1px solid var(--line);
 }
 
 .player-summary-card h3,
 .player-awards-grid h3 {
-  margin: 0 0 20px;
+	margin: 0 0 20px;
 }
 
 .player-awards-grid article > span {
-  color: var(--orange);
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+	color: var(--orange);
+	font-size: 0.68rem;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
 .player-awards-grid p,
 .player-game-list span,
 .player-history span {
-  color: var(--muted);
+	color: var(--muted);
 }
 
 .player-game-list,
 .player-history {
-  display: grid;
-  gap: 1px;
-  margin: 0;
-  padding: 1px;
-  background: var(--line);
-  list-style: none;
+	display: grid;
+	gap: 1px;
+	margin: 0;
+	padding: 1px;
+	background: var(--line);
+	list-style: none;
 }
 
 .player-game-list li {
-  display: grid;
-  grid-template-columns: minmax(190px, 1fr) minmax(240px, 1fr) auto;
-  gap: 18px;
-  align-items: center;
-  padding: 20px;
-  background: var(--ink);
+	display: grid;
+	grid-template-columns: minmax(190px, 1fr) minmax(240px, 1fr) auto;
+	gap: 18px;
+	align-items: center;
+	padding: 20px;
+	background: var(--ink);
 }
 
 .player-game-list li > div,
 .player-history li {
-  display: grid;
-  gap: 6px;
+	display: grid;
+	gap: 6px;
 }
 
 .player-game-list a {
-  color: var(--green);
-  font-size: 0.72rem;
-  font-weight: 800;
-  text-decoration: none;
-  text-transform: uppercase;
+	color: var(--green);
+	font-size: 0.72rem;
+	font-weight: 800;
+	text-decoration: none;
+	text-transform: uppercase;
 }
 
 .player-history li {
-  padding: 20px;
-  background: var(--ink);
+	padding: 20px;
+	background: var(--ink);
 }
 
 @media (max-width: 720px) {
-  .player-profile-header,
-  .player-summary-grid,
-  .player-awards-grid,
-  .player-game-list li {
-    grid-template-columns: 1fr;
-  }
+	.player-profile-header,
+	.player-summary-grid,
+	.player-awards-grid,
+	.player-game-list li {
+		grid-template-columns: 1fr;
+	}
 
-  .player-profile-header {
-    min-height: 0;
-  }
+	.player-profile-header {
+		min-height: 0;
+	}
 
-  .player-profile-nav {
-    margin-inline: -20px;
-    padding-inline: 20px;
-  }
+	.player-profile-nav {
+		margin-inline: -20px;
+		padding-inline: 20px;
+	}
 }
 
