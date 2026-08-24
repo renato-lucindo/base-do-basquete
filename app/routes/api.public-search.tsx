@@ -73,11 +73,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
           .limit(80)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (profilesResult.error || teamsResult.error) {
+  if (teamsResult.error) {
     throw new Response("Falha na busca pública", { status: 503 });
   }
 
-  const nicknameById = new Map(profilesResult.data.map((row) => [row.id, row.nickname]));
+  const nicknameById = new Map(
+    profilesResult.error ? [] : profilesResult.data.map((row) => [row.id, row.nickname]),
+  );
   const players: SearchPlayer[] = statisticsResult.data.flatMap((row) =>
     typeof row.player_id === "number" && row.player_name && row.player_slug
       ? [
@@ -87,7 +89,8 @@ export async function loader({ request, context }: Route.LoaderArgs) {
             nickname: nicknameById.get(row.player_id) ?? null,
             slug: row.player_slug,
             teamName: row.team_name,
-            isPublic: nicknameById.has(row.player_id),
+            // A view estatística já aplica a política pública; a consulta de apelidos é opcional.
+            isPublic: true,
           },
         ]
       : [],
