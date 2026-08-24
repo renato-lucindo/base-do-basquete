@@ -292,18 +292,8 @@ select
   participation.competition_id,
   participation.player_id,
   player.full_name as player_name,
-  player.nickname as player_nickname,
   player.slug as player_slug,
-  roster.registration_id,
-  roster.team_id,
-  roster.team_name,
-  roster.team_slug,
-  roster.team_abbreviation,
-  roster.jersey_number,
-  roster.roster_position,
   participation.games_played,
-  participation.starter_appearances,
-  coalesce(foul.fouls, 0)::bigint as fouls,
   coalesce(stats.seconds_played, 0)::bigint as seconds_played,
   coalesce(stats.two_point_made, 0)::bigint as two_point_made,
   coalesce(stats.two_point_attempted, 0)::bigint as two_point_attempted,
@@ -318,7 +308,17 @@ select
   coalesce(stats.steals, 0)::bigint as steals,
   coalesce(stats.blocks, 0)::bigint as blocks,
   coalesce(stats.plus_minus, 0)::bigint as plus_minus,
-  coalesce(stats.points, 0)::bigint as points
+  coalesce(stats.points, 0)::bigint as points,
+  player.nickname as player_nickname,
+  roster.registration_id,
+  roster.team_id,
+  roster.team_name,
+  roster.team_slug,
+  roster.team_abbreviation,
+  roster.jersey_number,
+  roster.roster_position,
+  participation.starter_appearances,
+  coalesce(foul.fouls, 0)::bigint as fouls
 from participation_totals participation
 join public.players player on player.id = participation.player_id
 join roster_context roster

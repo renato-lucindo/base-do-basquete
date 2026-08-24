@@ -1028,7 +1028,7 @@ export type Database = {
           joined_on?: string | null;
           left_on?: string | null;
           player_id: number;
-          position: string | null;
+          position?: string | null;
           registration_id: number;
           status?: string;
           updated_at?: string;
