@@ -1,7 +1,8 @@
 import { data, Link } from "react-router";
 
-import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
 import { GameStatistics } from "../components/game-statistics";
+import { PlayerProfile } from "../components/player-profile";
+import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
 import { cloudflareContext } from "../context";
 import {
   isDetailResource,
@@ -15,20 +16,21 @@ import {
 } from "../modules/competition/context.server";
 import { loadPublicDetail } from "../modules/competition/public-data.server";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import { loadPublicPlayerProfile } from "../modules/statistics/player-profile.server";
 import { loadPublicGameDetail } from "../modules/statistics/public-statistics.server";
 import type { Route } from "./+types/public-detail";
 
 function notFound(): never {
-  throw data(null, { status: 404, statusText: "Registro não encontrado neste contexto" });
+  throw data(null, { status: 404, statusText: "Registro nÃ£o encontrado neste contexto" });
 }
 
 export function meta() {
-  return [{ title: "Detalhe — Base do Basquete" }];
+  return [{ title: "Detalhe â€” Base do Basquete" }];
 }
 
 function placementLabel(placement: number, resultLabel: string | null): string {
   if (resultLabel) return resultLabel;
-  return placement === 1 ? "Campeão" : `${placement}º lugar`;
+  return placement === 1 ? "CampeÃ£o" : `${placement}Âº lugar`;
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -49,29 +51,41 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     seriesSlug: params.competition,
     categorySlug: params.category,
   });
-  if (!resolvedContext) {
-    return notFound();
-  }
+  if (!resolvedContext) return notFound();
 
-  const [contexts, detail, game] = await Promise.all([
-    listPublicContexts(client),
+  const contexts = await listPublicContexts(client);
+  const [detail, game, playerProfile] = await Promise.all([
     loadPublicDetail(client, resolvedContext, params.resource, params.detail),
     params.resource === "jogos"
       ? loadPublicGameDetail(client, resolvedContext, params.detail)
       : Promise.resolve(null),
+    params.resource === "jogadores"
+      ? loadPublicPlayerProfile(client, resolvedContext, contexts, params.detail)
+      : Promise.resolve(null),
   ]);
-  if (!detail || (params.resource === "jogos" && !game)) {
+  if (
+    !detail ||
+    (params.resource === "jogos" && !game) ||
+    (params.resource === "jogadores" && !playerProfile)
+  ) {
     return notFound();
   }
 
   return data(
-    { context: resolvedContext, contexts, detail, game, resource: params.resource },
+    {
+      context: resolvedContext,
+      contexts,
+      detail,
+      game,
+      playerProfile,
+      resource: params.resource,
+    },
     { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } },
   );
 }
 
 export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
-  const { context, contexts, detail, game, resource } = loaderData;
+  const { context, contexts, detail, game, playerProfile, resource } = loaderData;
   return (
     <main className="public-shell">
       <PublicHeader context={context} contexts={contexts} resource={resource} />
@@ -84,6 +98,8 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
         />
         {resource === "jogos" && game ? (
           <GameStatistics context={context} game={game} />
+        ) : resource === "jogadores" && playerProfile ? (
+          <PlayerProfile achievements={detail.achievements} context={context} profile={playerProfile} />
         ) : (
           <>
             <article className="detail-card">
@@ -92,7 +108,7 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
               <p>{detail.description}</p>
             </article>
             <section className="achievement-panel" aria-labelledby="achievement-title">
-              <p className="eyebrow">Histórico derivado</p>
+              <p className="eyebrow">HistÃ³rico derivado</p>
               <h2 id="achievement-title">Conquistas confirmadas</h2>
               {detail.achievements.length ? (
                 <ol className="achievement-list">
@@ -100,25 +116,17 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
                     const contextPath = `/${achievement.year}/${achievement.seriesSlug}/${achievement.categorySlug}`;
                     return (
                       <li key={`${achievement.competitionId}-${achievement.teamSlug ?? "team"}`}>
-                        <strong>
-                          {placementLabel(achievement.placement, achievement.resultLabel)}
-                        </strong>
-                        <span>
-                          {achievement.year} · {achievement.seriesName} · {achievement.categoryName}
-                        </span>
+                        <strong>{placementLabel(achievement.placement, achievement.resultLabel)}</strong>
+                        <span>{achievement.year} Â· {achievement.seriesName} Â· {achievement.categoryName}</span>
                         {achievement.teamName && achievement.teamSlug ? (
-                          <Link to={`${contextPath}/equipes/${achievement.teamSlug}`}>
-                            {achievement.teamName}
-                          </Link>
+                          <Link to={`${contextPath}/equipes/${achievement.teamSlug}`}>{achievement.teamName}</Link>
                         ) : null}
-                        <Link to={`${contextPath}/classificacao`}>Abrir edição</Link>
+                        <Link to={`${contextPath}/classificacao`}>Abrir ediÃ§Ã£o</Link>
                       </li>
                     );
                   })}
                 </ol>
-              ) : (
-                <p>Nenhuma conquista confirmada.</p>
-              )}
+              ) : <p>Nenhuma conquista confirmada.</p>}
             </section>
           </>
         )}
@@ -126,3 +134,4 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
     </main>
   );
 }
+
