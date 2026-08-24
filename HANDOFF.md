@@ -9,12 +9,12 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
-- Status geral: `IN PROGRESS` no WP-13; advisors/reconciliação, secrets isolados de produção e mecanismo de release seguro preparados.
+- Status geral: `IN PROGRESS` no gate final do WP-13; produção pública, métricas, logs e rollout aprovados, faltando apenas smoke administrativo real em `aal2`.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-release-propagation`.
-- Último commit integrado em `main`: `5d7429d` (`WP-13 — Corrigir seleção do ambiente Cloudflare (#20)`).
-- Aplicação publicada: preview fixo restaurado e candidata de produção `v1.0.2` saudável na URL temporária `workers.dev`; aceite automatizado final ainda em andamento.
-- Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
+- Branch atual: `codex/wp-13-release-evidence`.
+- Último commit integrado em `main`: `47ecc34` (`WP-13 — Aguardar propagação inicial do Worker (#21)`).
+- Aplicação publicada: release `v1.0.3` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; preview fixo também restaurado e saudável.
+- Cloudflare: produção ativa em 100% na candidata `c98935fa`; versão anterior `d59fd181` preservada para rollback; logs 179 sucessos/0 erros na janela validada.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
@@ -69,15 +69,15 @@ WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema 
 
 O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou deploy: o GitHub marcou o workflow inválido porque o comando inline de limpeza continha `: ` em um scalar YAML. A correção foi integrada pela PR #19 e a tag imutável `v1.0.1` aponta para esse commit; `v1.0.0` foi preservada como candidata não implantada.
 
-O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A correção em andamento seleciona `CLOUDFLARE_ENV=production` antes do build, valida o nome/`APP_ENV` no artefato e só então chama o Wrangler.
+O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A PR #20 integrou a correção que seleciona `CLOUDFLARE_ENV` antes do build, valida nome/`APP_ENV` no artefato e restaura preview/secrets atomicamente.
 
-A PR #20 integrou essa correção. O workflow #32737628228 restaurou o preview atomicamente e `/health` confirmou `environment=preview`. O deploy de produção #32737807217 criou corretamente `base-do-basquete-prod`, mas o primeiro smoke recebeu 404 durante a propagação inicial do novo hostname. Cerca de 50 segundos depois, health, headers, login público, contextos e benchmark passaram manualmente: jogadores p50 249,0 ms/p95 311,4 ms; jogo FIBA p50 361,8 ms/p95 839,5 ms. A branch atual adiciona retry limitado somente para 404/502/503/504 nessa janela.
+A execução #32737628228 restaurou o preview e `/health` confirmou `environment=preview`. O primeiro deploy de produção correto recebeu 404 durante a propagação do novo hostname; a PR #21 integrou retry limitado para 404/502/503/504. A release `v1.0.3` passou integralmente no workflow #32738728739. A candidata foi exercitada em 10%/90%, passou 50/50 health requests e smokes, foi promovida a 100% e manteve a versão anterior recuperável. O benchmark pós-promoção ficou em p95 263,6 ms para jogadores e 337,0 ms para jogo FIBA. Observability confirmou 0 erros e log customizado somente com a allowlist operacional.
 
 ## 6. Próximo passo exato
 
-1. Integrar o retry limitado de propagação do primeiro hostname após gates verdes.
-2. Repetir `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`, e exigir o gate automatizado integralmente verde.
-3. Validar logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
+1. No host estável de produção já aberto em `/admin/login`, o responsável faz login e conclui o TOTP sem compartilhar senha ou código.
+2. O Codex valida no navegador o selo `AAL2`, dashboard administrativo e logout; em seguida confirma o evento de autenticação no log/auditoria sem dados sensíveis.
+3. Marcar WP-13 como `DONE`, executar o gate documental, commit/push da evidência, abrir PR e integrar somente com os quatro checks verdes.
 
 ### Primeiros arquivos a abrir
 
@@ -108,7 +108,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
-| WP-13 — Release de produção | `IN PROGRESS` | PR #19 integrou o workflow; primeiro job revelou seleção incorreta do ambiente Vite e o smoke impediu a falsa liberação |
+| WP-13 — Release de produção | `IN PROGRESS` | `v1.0.3` ativa após rollout 10% → 100%; falta somente smoke administrativo `aal2` e PR de evidência |
 
 ## 8. Arquivos e referências importantes
 
@@ -300,3 +300,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #17 com quatro checks verdes; head promovido em staging e eventos redigidos confirmados ao vivo | Enviar evidências finais, reconfirmar gates e integrar WP-12 sem produção |
 | 2026-08-24 | Codex | PR #17 integrada; WP-13 com advisors/reconciliação, secrets isolados e workflow de release seguro preparado | Abrir PR #18, integrar com gates verdes e publicar pela `main` |
 | 2026-08-24 | Codex | PR #18 integrada e tag `v1.0.0` criada; primeiro dispatch recusado por YAML antes de qualquer deploy | Integrar correção em bloco literal e repetir o dispatch pela `main` |
+| 2026-08-24 | Codex | `v1.0.3` publicada; gate automatizado, logs, métricas e rollout 10% → 100% aprovados, com rollback preservado | Responsável conclui login/TOTP no host estável; Codex valida `aal2` e integra a evidência final |
