@@ -71,15 +71,17 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
   return (
     <search>
       <form
-          className="contextual-search"
+        className="contextual-search"
         onSubmit={(event) => {
           event.preventDefault();
           selectItem(items[activeIndex] ?? items[0]);
         }}
-        >
+      >
         <label htmlFor={`${listboxId}-input`}>Buscar nesta edição</label>
         <input
-          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-activedescendant={
+            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+          }
           aria-autocomplete="list"
           aria-controls={listboxId}
           aria-expanded={expanded}
@@ -113,7 +115,7 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
                 ? "Busca indisponível"
                 : "Digite ao menos dois caracteres"}
         </span>
-  
+
         {expanded ? (
           <div className="contextual-search-results" id={listboxId} role="listbox">
             {status === "loading" ? <p>Buscando…</p> : null}
