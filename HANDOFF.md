@@ -8,13 +8,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-13 concluídos; WP-14 integrado e em correção operacional do Storage histórico.
-- Status geral: `IN PROGRESS`; estatísticas coletivas FIBA e cadastro assistido foram integrados pela PR #24 e publicados. O primeiro retroprocessamento foi bloqueado com segurança porque os dois objetos PDF históricos, embora tenham caminho e SHA-256 corretos no banco, possuem tamanho `0` no Storage.
+- Fase: WP-00 a WP-13 concluídos; WP-14 e hotfix binário integrados/publicados, aguardando somente a recuperação dos dois objetos históricos.
+- Status geral: `BLOCKED ON HUMAN FILE PICKER`; estatísticas coletivas FIBA e cadastro assistido foram integrados pela PR #24. O hotfix de Storage foi integrado pela PR #25 e publicado. O controle automatizado abriu `boxscore-pdfs/20/recovered`, mas não consegue preencher o seletor de arquivos local do navegador.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/wp-14-storage-binary-fix`, criada de `origin/main` após a integração da PR #24.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
-- Aplicação publicada: commit `3b7929d` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `2da18343-cb9e-491a-98cf-49eb7e2d8d44`.
-- Cloudflare: deploy de produção do WP-14 aprovado no workflow `32759184915`; smokes e benchmark repetido aprovados. O bloqueio do retroprocessamento foi observado como `BDB_PDF_STORED_HASH`, status 400, sem escrita parcial.
+- Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
+- Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior do retroprocessamento foi observado como `BDB_PDF_STORED_HASH`, status 400, sem escrita parcial.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
@@ -79,9 +79,9 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Integrar a branch `codex/wp-14-storage-binary-fix` após gate/CI, publicando pela `main` a conversão explícita de `Uint8Array` para `Blob` antes do upload ao Supabase Storage.
-2. No dashboard autenticado do Supabase, selecionar os dois PDFs oficiais em `docs/plan/referencias/modelos-boxscore/` para o diretório privado `boxscore-pdfs/20/recovered`; esta seleção depende do seletor de arquivos local, que o controle do navegador não consegue preencher.
-3. Depois do upload, conferir tamanhos e SHA-256, atualizar somente `storage_path` dos imports 12 e 13 para os objetos recuperados, retroprocessar em sessão `aal2` e reconciliar 4 linhas coletivas, 2 linhas gerais, 2 auditorias e as páginas públicas dos jogos 62 e 63.
+1. No seletor de arquivos já aberto pelo dashboard autenticado do Supabase, selecionar simultaneamente `docs/plan/referencias/modelos-boxscore/Box Score FIBA ALC vs AVA 09 maio.pdf` e `docs/plan/referencias/modelos-boxscore/Box Score FIBA IVV vs CAC 06 maio.pdf`; o destino já está em `boxscore-pdfs/20/recovered`.
+2. Depois do upload, conferir tamanhos e SHA-256, atualizar somente `storage_path` dos imports 12 e 13 para os objetos recuperados e preservar os objetos vazios para evidência até o encerramento.
+3. Retroprocessar em sessão `aal2` e reconciliar 4 linhas coletivas, 2 linhas gerais, 2 auditorias e as páginas públicas dos jogos 62 e 63.
 
 ### Primeiros arquivos a abrir
 
