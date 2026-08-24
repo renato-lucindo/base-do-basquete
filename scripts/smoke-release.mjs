@@ -12,7 +12,39 @@ assert.match(
   "release smoke refuses non-production Workers",
 );
 
-const health = await fetch(new URL("/health", baseUrl), { redirect: "manual" });
+const propagationAttempts = Number.parseInt(
+  process.env.RELEASE_SMOKE_PROPAGATION_ATTEMPTS ?? "12",
+  10,
+);
+const propagationDelayMs = Number.parseInt(
+  process.env.RELEASE_SMOKE_PROPAGATION_DELAY_MS ?? "5000",
+  10,
+);
+assert.ok(
+  Number.isSafeInteger(propagationAttempts) && propagationAttempts >= 1,
+  "propagation attempts must be a positive integer",
+);
+assert.ok(
+  Number.isSafeInteger(propagationDelayMs) && propagationDelayMs >= 0,
+  "propagation delay must be a non-negative integer",
+);
+
+let health;
+for (let attempt = 1; attempt <= propagationAttempts; attempt += 1) {
+  health = await fetch(new URL("/health", baseUrl), { redirect: "manual" });
+  if (health.status === 200) break;
+
+  const canBePropagation = [404, 502, 503, 504].includes(health.status);
+  if (!canBePropagation || attempt === propagationAttempts) break;
+
+  await health.arrayBuffer();
+  console.log(
+    `Production route not propagated yet (HTTP ${health.status}); retry ${attempt}/${propagationAttempts}.`,
+  );
+  await new Promise((resolve) => setTimeout(resolve, propagationDelayMs));
+}
+
+assert.ok(health, "health request must run");
 assert.equal(health.status, 200, "health must return HTTP 200");
 assert.deepEqual(await health.json(), {
   environment: "production",
