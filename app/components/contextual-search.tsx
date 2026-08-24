@@ -69,14 +69,14 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
   };
 
   return (
-    <form
-      className="contextual-search"
+    <search>
+      <form
+        className="contextual-search"
       onSubmit={(event) => {
         event.preventDefault();
         selectItem(items[activeIndex] ?? items[0]);
       }}
-      role="search"
-    >
+      >
       <label htmlFor={`${listboxId}-input`}>Buscar nesta edição</label>
       <input
         aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
@@ -120,8 +120,8 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
           {status === "error" ? <p>Busca temporariamente indisponível.</p> : null}
           {status === "ready" && items.length === 0 ? <p>Nenhum resultado encontrado.</p> : null}
           {groups.map((group) => (
-            <section aria-labelledby={`${listboxId}-${group.type}`} key={group.type} role="group">
-              <strong id={`${listboxId}-${group.type}`}>{group.label}</strong>
+            <fieldset key={group.type}>
+              <legend>{group.label}</legend>
               {group.items.map((item) => {
                 const index = items.findIndex((candidate) => candidate.id === item.id);
                 return (
@@ -138,10 +138,11 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
                   </Link>
                 );
               })}
-            </section>
+            </fieldset>
           ))}
         </div>
       ) : null}
-    </form>
+      </form>
+    </search>
   );
 }

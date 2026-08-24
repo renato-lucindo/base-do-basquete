@@ -2361,16 +2361,16 @@ a {
   box-shadow: 0 1rem 2rem rgb(0 0 0 / 18%);
 }
 
-.contextual-search-results section {
+.contextual-search-results fieldset {
   display: grid;
   gap: 0.25rem;
 }
 
-.contextual-search-results section + section {
+.contextual-search-results fieldset + section {
   margin-top: 0.75rem;
 }
 
-.contextual-search-results strong {
+.contextual-search-results legend {
   padding: 0.25rem 0.5rem;
   color: var(--muted);
   font-size: 0.75rem;
