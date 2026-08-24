@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: WP-00 a WP-10 concluídos e integrados; WP-11 em validação.
-- Status geral: `READY TO VALIDATE` no WP-11; metas, benchmark SQL representativo, benchmark HTTP, advisors e decisão de não adicionar cache concluídos.
+- Status geral: `READY TO MERGE` no WP-11; metas, benchmarks, advisors, decisão de não adicionar cache, gate remoto e preview da PR #16 aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/wp-11-performance-cache`.
 - Último commit integrado em `main`: `191069c` (`WP-10 — Histórico, colocações e conquistas (#15)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-11 está na branch própria. O benchmark SQL temporário simulou 250 jogos, 240 atletas, 6.000 escalações e 24.000 linhas por período: 158,089 ms simples e 196,174 ms avançado. No preview, 30 amostras resultaram em p95 711 ms para estatísticas e 597 ms para jogo. Todas as metas foram atendidas; cache não foi adicionado, preservando consistência imediata e evitando infraestrutura sem evidência de necessidade.
+WP-11 está na branch própria e na PR #16. O benchmark SQL temporário simulou 250 jogos, 240 atletas, 6.000 escalações e 24.000 linhas por período: 158,089 ms simples e 196,174 ms avançado. No preview, 30 amostras resultaram em p95 711 ms para estatísticas e 597 ms para jogo. Todas as metas foram atendidas; cache não foi adicionado. Gate, banco desde zero, CodeQL, deploy e smoke público passaram no head `88135ca`.
 
 ## 6. Próximo passo exato
 
-1. Executar `npm run check` e confirmar que o novo benchmark/relatório não introduziu regressão ou segredo.
-2. Commitar o WP-11, abrir PR draft e validar `gate`, `database`, `upload` e `analyze` no head final.
-3. Repetir o smoke público no preview da PR, integrar por squash sem produção e criar `codex/wp-12-observability-recovery`.
+1. Enviar o head documental final da PR #16 e reconfirmar os quatro checks.
+2. Marcar a PR pronta e integrar por squash sem publicar produção.
+3. Atualizar `main` e criar `codex/wp-12-observability-recovery` para instrumentar fluxos e testar runbooks em staging.
 
 ### Primeiros arquivos a abrir
 
@@ -100,7 +100,7 @@ WP-11 integrado sem cache desnecessário e sem deploy de produção; branch WP-1
 | WP-08 — Página do jogo e estatísticas | `DONE` | PR #13 integrada por squash no commit `0cdd560`; produção não publicada |
 | WP-09 — Importação de boxscore PDF | `DONE` | PR #14 integrada por squash no commit `91c59dd`; produção não publicada |
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
-| WP-11 — Desempenho e cache condicionado | `READY TO VALIDATE` | Metas e benchmarks aprovados; cache dispensado por evidência; falta PR/preview |
+| WP-11 — Desempenho e cache condicionado | `READY TO MERGE` | Metas/benchmarks, gate remoto e preview aprovados; cache dispensado por evidência |
 | WP-12 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
@@ -205,13 +205,14 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-11 HTTP no preview, 30 amostras: estatísticas p50 318 ms/p95 711 ms; jogo FIBA p50 374 ms/p95 597 ms, abaixo das metas de 1.000/1.500 ms.
 - WP-11 decisão: nenhum cache ou índice novo; medições e advisors não demonstraram necessidade.
 - WP-11 CI: a primeira execução tratou o benchmark em `supabase/tests/` como pgTAP sem plano; o arquivo opt-in foi movido para `supabase/benchmarks/`, preservando a suíte automática.
+- WP-11 remoto: PR #16 com `gate`, `database`, `upload` e `analyze` aprovados no head `88135ca`; estatísticas e jogo FIBA validados no preview.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `codex/wp-11-performance-cache`.
 - Base integrada em `main`: `191069c`.
-- Head atual: ainda sem commit próprio; benchmark reproduzível, ADR e relatório do WP-11 estão no worktree e aguardam gate/commit.
+- Head funcional: `88135ca`; o head documental final contém este handoff. Resta integrar a PR #16.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -281,3 +282,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #14 integrada; WP-10 com RPC `aal2`, views históricas, 27 pgTAP, fixtures e gate local aprovados | Abrir PR do WP-10 e validar administração/perfis no preview |
 | 2026-08-24 | Codex | PR #15 com todos os gates verdes; smoke `aal2`, auditoria e históricos de equipe/atleta reconciliados | Enviar evidência final, integrar WP-10 e criar a branch do WP-11 |
 | 2026-08-24 | Codex | PR #15 integrada; WP-11 mediu SQL/HTTP com volume e metas explícitos, sem justificar cache | Executar gate, abrir PR do WP-11 e validar o preview final |
+| 2026-08-24 | Codex | PR #16 com gates verdes; benchmark opt-in separado de pgTAP e preview público aprovado | Enviar evidência final, integrar WP-11 e criar a branch do WP-12 |
