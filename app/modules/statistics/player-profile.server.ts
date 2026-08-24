@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { data } from "react-router";
 
 import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
-import { PublicContextQueryError } from "../competition/context.server";
 import { addPlayerTotals, type PlayerTotals } from "./player-profile-domain";
 
 export interface PlayerCompetitionSummary extends PlayerTotals {
@@ -49,8 +49,10 @@ export interface PublicPlayerProfileDto {
   }>;
 }
 
-function ensure(error: unknown): asserts error is null {
-  if (error) throw new PublicContextQueryError();
+function ensure(error: unknown, step: string): asserts error is null {
+  if (error) {
+    throw data(null, { status: 500, statusText: `player-profile:${step}` });
+  }
 }
 
 function numberValue(value: number | null): number {
@@ -71,7 +73,7 @@ export async function loadPublicPlayerProfile(
     .eq("slug", slug)
     .eq("is_public", true)
     .limit(2);
-  ensure(profileResult.error);
+  ensure(profileResult.error, "profile");
   const profile = profileResult.data.length === 1 ? profileResult.data[0] : null;
   if (!profile?.id || !profile.full_name || !profile.slug) return null;
 
@@ -82,14 +84,14 @@ export async function loadPublicPlayerProfile(
     .eq("player_id", profile.id)
     .eq("status", "active")
     .limit(1);
-  ensure(rosterResult.error);
+  ensure(rosterResult.error, "roster");
   if (rosterResult.data.length !== 1) return null;
 
   const statisticsResult = await client
     .from("competition_player_statistics")
     .select("*")
     .eq("player_id", profile.id);
-  ensure(statisticsResult.error);
+  ensure(statisticsResult.error, "statistics");
 
   const contextById = new Map(contexts.map((item) => [item.competitionId, item]));
   const competitions = statisticsResult.data
@@ -132,8 +134,8 @@ export async function loadPublicPlayerProfile(
       .select("game_id,competition_id,team_name,jersey_number,points")
       .eq("player_id", profile.id),
   ]);
-  ensure(honorsResult.error);
-  ensure(gameStatisticsResult.error);
+  ensure(honorsResult.error, "honors");
+  ensure(gameStatisticsResult.error, "game-statistics");
 
   const gameIds = gameStatisticsResult.data.flatMap((row) =>
     row.game_id === null ? [] : [row.game_id],
@@ -146,7 +148,7 @@ export async function loadPublicPlayerProfile(
         .in("status", ["live", "final"])
         .order("scheduled_at", { ascending: false, nullsFirst: false })
     : { data: [], error: null };
-  ensure(gameResult.error);
+  ensure(gameResult.error, "games");
 
   const statByGame = new Map(
     gameStatisticsResult.data.flatMap((row) =>
