@@ -1321,6 +1321,63 @@ a {
   opacity: 0.55;
 }
 
+.boxscore-review {
+  display: grid;
+  gap: 20px;
+}
+
+.boxscore-team-resolution {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.boxscore-team-resolution label,
+.boxscore-review td select {
+  width: 100%;
+}
+
+.match-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.match-exact {
+  background: rgba(27, 132, 79, 0.14);
+  color: #126137;
+}
+
+.match-similar {
+  background: rgba(207, 137, 20, 0.16);
+  color: #744900;
+}
+
+.match-unmatched {
+  background: rgba(177, 45, 45, 0.14);
+  color: #831f1f;
+}
+
+.import-history {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.import-history li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
 @media (max-width: 820px) {
   .hero {
     grid-template-columns: 1fr;
@@ -1341,7 +1398,8 @@ a {
   }
 
   .scoresheet-header-grid,
-  .participant-grid {
+  .participant-grid,
+  .boxscore-team-resolution {
     grid-template-columns: 1fr;
   }
 

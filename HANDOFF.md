@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-07 concluídos e integrados; WP-08 pronto para integração.
-- Status geral: `READY TO MERGE` no WP-08; PR #13 com SQL, 32 testes, CI/database, preview, CodeQL, smoke de duas edições e benchmark aprovados.
+- Fase: WP-00 a WP-08 concluídos e integrados; WP-09 pronto para integração.
+- Status geral: `READY TO MERGE` no WP-09; PR #14 com parser dos dois PDFs, 23 pgTAP, 39 testes Vitest, CI/database, preview, análise de segurança, smoke administrativo `aal2`, duplicidade e reconciliação aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `wp-08-game-statistics`.
-- Último commit integrado em `main`: `49890f6` (`WP-07 — Jogos e súmula manual (#12)`).
+- Branch atual: `wp-09-fiba-boxscore-import`.
+- Último commit integrado em `main`: `0cdd560` (`WP-08 — Página do jogo e estatísticas (#13)`).
 - Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-07 concluídos e WP-08 em execução.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-08 concluídos e WP-09 pronto para integração.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-08 está na branch própria e pronto para merge. Duas views `security_invoker` agregam boxscore por jogo e por edição sem perder `competition_id`; percentuais, médias, rebotes e eficiência são derivados. O público recebe placar/períodos/boxscore do jogo e tabelas simples ou avançadas com totais/médias, filtros combináveis e comparação acessível. Fixtures finais de 2025 e 2026, 14 pgTAP, 32 testes Vitest, CI/database, preview e CodeQL passaram. O smoke confirmou placares 2×3 e 8×6 em contextos distintos e o benchmark HTTP foi registrado.
+WP-09 está na branch própria e na PR #14, pronto para merge. O parser exclusivo FIBA/Genius Sports, upload privado e limitado, hash/duplicidade, associação controlada ao elenco, revisão e commit transacional foram implementados. Os dois PDFs passaram pelo mesmo contrato e pelo fluxo real `aal2`; os jogos públicos 5205808 e 5205822 estão finais e reconciliados. O reenvio duplicado foi recusado, sem importação, jogo ou objeto extra. Todos os gates técnicos e funcionais passaram.
 
 ## 6. Próximo passo exato
 
-1. Commitar e enviar as evidências finais para a PR #13.
-2. Marcar a PR pronta, reconfirmar os checks no head documental e integrar por squash.
-3. Atualizar `main`, criar a branch própria do WP-09 e iniciar a importação restrita aos dois PDFs FIBA/Genius Sports, sem publicar produção.
+1. Executar o gate local final, commit de evidências e scan de segredos; enviar o head documental à PR #14.
+2. Reconfirmar `gate`, `database`, `upload` e `analyze`, marcar a PR pronta e integrar por squash sem publicar produção.
+3. Atualizar `main`, criar a branch própria do WP-10 e iniciar histórico, colocações e conquistas.
 
 ### Primeiros arquivos a abrir
 
@@ -83,7 +83,7 @@ WP-08 está na branch própria e pronto para merge. Duas views `security_invoker
 
 ### Resultado esperado do próximo passo
 
-WP-08 integrado sem deploy de produção e branch WP-09 criada a partir de `main` atualizado.
+WP-09 comprovado de ponta a ponta, PR #14 integrada sem deploy de produção e branch WP-10 criada a partir de `main` atualizado.
 
 ## 7. Pacotes de trabalho
 
@@ -97,8 +97,9 @@ WP-08 integrado sem deploy de produção e branch WP-09 criada a partir de `main
 | WP-05 — Contexto e navegação pública | `DONE` | PR #10 integrada; E2E no preview e navegador real aprovados |
 | WP-06 — Hub administrativo e elencos | `DONE` | PR #11 integrada no commit `07454a1`; todos os gates aprovados |
 | WP-07 — Jogos e súmula manual | `DONE` | PR #12 integrada por squash no commit `49890f6`; produção não publicada |
-| WP-08 — Página do jogo e estatísticas | `READY TO MERGE` | PR #13; SQL, CI/preview/CodeQL, smoke 2025/2026 e benchmark aprovados |
-| WP-09 a WP-13 | `BACKLOG` | Seguir dependências do plano |
+| WP-08 — Página do jogo e estatísticas | `DONE` | PR #13 integrada por squash no commit `0cdd560`; produção não publicada |
+| WP-09 — Importação de boxscore PDF | `READY TO MERGE` | PR #14; todos os gates e smoke real dos dois PDFs aprovados, sem produção |
+| WP-10 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
 
@@ -184,13 +185,20 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-08 gate remoto: CI/database desde zero, preview/smoke automatizado e CodeQL aprovados na PR #13.
 - WP-08 smoke HTTP: Jogadores 2025/2026, tabela/comparação, jogos 45/46, boxscore e placares isolados 2×3/8×6 aprovados; contexto inválido respondeu 404.
 - WP-08 benchmark HTTP no Worker, 30 amostras: Jogadores p50 702,2 ms / p95 793,6 ms; jogo p50 979,5 ms / p95 1.083,0 ms.
+- WP-08 merge: PR #13 integrada por squash no commit `0cdd560`; produção não publicada.
+- WP-09 parser: os dois PDFs oficiais geram o mesmo contrato; ALC 58–67 AVABES (5205808) e IVV 93–39 CAC (5205822) reconciliados.
+- WP-09 banco: migrations de importação/limite/funções privadas aplicadas; 23 pgTAP aprovados no remoto e novamente pelo CI desde zero.
+- WP-09 gate local: Biome, TypeScript strict, 11 arquivos/39 testes Vitest, builds cliente/SSR Worker, scan de 283 arquivos e auditoria npm com zero vulnerabilidades.
+- WP-09 remoto: PR #14 com `gate`, `database`, `upload` e `analyze` aprovados no commit `f2ea9d7`; smoke público contextual do preview aprovado.
+- WP-09 navegador: sessão real `aal2`; ALC 58–67 AVABES e IVV 93–39 CAC importados, revisados e exibidos publicamente; duplicata recusada por hash.
+- WP-09 reconciliação: 2 importações confirmadas, 2 jogos finais, 4 participantes, 8 períodos, 16 placares por período, 42 slots/associações/totais, 81 faltas, 2 objetos privados e 2 auditorias, sem parcial ou excedente.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `wp-08-game-statistics`.
-- Base integrada em `main`: `49890f6`.
-- Head funcional da branch: `2230748`; implementação enviada à PR #13. Restam o commit documental final e a integração.
+- Branch: `wp-09-fiba-boxscore-import`.
+- Base integrada em `main`: `0cdd560`.
+- Head funcional da branch: `f2ea9d7`; implementação e correções do CI enviadas à PR #14. O commit WIP `23f2a07` preservou o handoff antes do smoke; as evidências finais estão prontas para commit e integração.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -255,3 +263,5 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-21 | Codex | PR #12 com CI/preview e smoke `aal2` aprovados; jogo manual, placar, atomicidade, auditoria e redirecionamento público validados | Enviar evidências finais, marcar PR pronta e integrar sem produção |
 | 2026-08-21 | Codex | PR #12 integrada; WP-08 com views contextuais, fixtures de duas edições, páginas públicas, 14 pgTAP e gate local aprovados | Commitar, abrir PR, validar preview e medir p50/p95 HTTP |
 | 2026-08-21 | Codex | PR #13 com todos os gates verdes; smoke 2025/2026, boxscore, 404 e benchmark p50/p95 aprovados | Enviar evidências finais, marcar PR pronta e integrar sem produção |
+| 2026-08-24 | Codex | PR #13 integrada; WP-09 implementado na PR #14 com parser dos dois PDFs, 23 pgTAP, 39 Vitest e todos os checks verdes | Fazer login/MFA no host da PR #14, importar os dois PDFs, testar duplicata e integrar sem produção |
+| 2026-08-24 | Codex | WP-09 validado em `aal2`: dois jogos finais, duplicata recusada, banco/Storage/auditoria reconciliados | Enviar evidências, reconfirmar o head da PR #14 e integrar sem produção |

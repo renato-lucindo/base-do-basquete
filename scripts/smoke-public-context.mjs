@@ -12,7 +12,7 @@ async function request(path, init = {}) {
   });
 }
 
-const latest = "/2026/liga-de-desenvolvimento/sub-15/classificacao";
+const latest = "/2026/copa-es-ouro/fixture-fiba/classificacao";
 const older = "/2025/liga-de-desenvolvimento/sub-15/equipes";
 const secondCategory = "/2026/liga-de-desenvolvimento/sub-17/jogadores";
 

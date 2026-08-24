@@ -313,7 +313,12 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           <article>
             <h2>Importar boxscore</h2>
             <p>Somente FIBA/Genius Sports, usando esta edição.</p>
-            <span>Disponível no WP-09</span>
+            <Link
+              className="button button-primary"
+              to={`/admin/competitions/${competition.id}/boxscores/import`}
+            >
+              Enviar e revisar PDF
+            </Link>
           </article>
         </section>
       </section>
