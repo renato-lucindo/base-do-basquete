@@ -126,7 +126,7 @@ async function playerItems(
   }
 
   const playerResult = await client
-    .from("players")
+    .from("public_player_profiles")
     .select("id,full_name,slug")
     .in(
       "id",
@@ -139,14 +139,21 @@ async function playerItems(
   const jerseyByPlayer = new Map(
     rosterResult.data.map((entry) => [entry.player_id, entry.jersey_number]),
   );
-  return playerResult.data.map((player) => ({
-    id: String(player.id),
-    label: player.full_name,
-    detail: jerseyByPlayer.get(player.id)
-      ? `Camisa ${jerseyByPlayer.get(player.id)}`
-      : "Atleta inscrito",
-    detailKey: player.slug,
-  }));
+  return playerResult.data.flatMap((player): PublicResourceItem[] => {
+    if (player.id === null || player.full_name === null || player.slug === null) {
+      return [];
+    }
+    return [
+      {
+        id: String(player.id),
+        label: player.full_name,
+        detail: jerseyByPlayer.get(player.id)
+          ? `Camisa ${jerseyByPlayer.get(player.id)}`
+          : "Atleta inscrito",
+        detailKey: player.slug,
+      },
+    ];
+  });
 }
 
 async function gameItems(
@@ -235,7 +242,7 @@ export async function loadPublicDetail(
 
   if (resource === "jogadores") {
     const playerResult = await client
-      .from("players")
+      .from("public_player_profiles")
       .select("id,full_name,slug")
       .eq("slug", detailKey)
       .eq("is_public", true)
@@ -245,7 +252,12 @@ export async function loadPublicDetail(
       return null;
     }
     const player = playerResult.data[0];
-    if (!player) {
+    if (
+      !player ||
+      player.id === null ||
+      player.full_name === null ||
+      player.slug === null
+    ) {
       return null;
     }
 

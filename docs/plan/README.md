@@ -73,3 +73,10 @@ Ao concluir o plano devem existir:
 - site público contextual;
 - inscrições, elencos, jogos, súmula manual, estatísticas e importação de boxscore em PDF;
 - observabilidade, auditoria e processo seguro de release.
+
+
+## Plano ativo de melhorias — 24/08/2026
+
+A evolução posterior ao WP-14 está definida em `improvements/PLANO-DE-IMPLEMENTACAO-E-DIVISAO-DAS-PRS.md`, com sete PRs sequenciais. Os requisitos normativos que sustentam esse plano estão no mesmo diretório.
+
+O primeiro pacote é o WP-15, correspondente à PR 1 de fundação de dados, privacidade e read models. Nenhuma PR desse ciclo autoriza merge ou deploy de produção sem os gates e a aprovação humana definidos no plano.

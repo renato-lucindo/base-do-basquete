@@ -866,9 +866,116 @@ export type Database = {
           },
         ];
       };
+      player_honors: {
+        Row: {
+          competition_id: number | null;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          description: string | null;
+          id: number;
+          player_id: number;
+          status: string;
+          title: string;
+          updated_at: string;
+          year: number | null;
+        };
+        Insert: {
+          competition_id?: number | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: never;
+          player_id: number;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          year?: number | null;
+        };
+        Update: {
+          competition_id?: number | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: never;
+          player_id?: number;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          year?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "player_honors_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "player_honors_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      player_profiles: {
+        Row: {
+          bio: string | null;
+          birth_year: number | null;
+          created_at: string;
+          hand: string | null;
+          height_cm: number | null;
+          home_city: string | null;
+          home_state: string | null;
+          main_position: string | null;
+          player_id: number;
+          updated_at: string;
+          weight_kg: number | null;
+        };
+        Insert: {
+          bio?: string | null;
+          birth_year?: number | null;
+          created_at?: string;
+          hand?: string | null;
+          height_cm?: number | null;
+          home_city?: string | null;
+          home_state?: string | null;
+          main_position?: string | null;
+          player_id: number;
+          updated_at?: string;
+          weight_kg?: number | null;
+        };
+        Update: {
+          bio?: string | null;
+          birth_year?: number | null;
+          created_at?: string;
+          hand?: string | null;
+          height_cm?: number | null;
+          home_city?: string | null;
+          home_state?: string | null;
+          main_position?: string | null;
+          player_id?: number;
+          updated_at?: string;
+          weight_kg?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "player_profiles_player_id_fkey";
+            columns: ["player_id"];
+            isOneToOne: true;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       players: {
         Row: {
-          birth_date: string | null;
+          nickname: string | null;
           created_at: string;
           full_name: string;
           id: number;
@@ -878,7 +985,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
-          birth_date?: string | null;
+          nickname?: string | null;
           created_at?: string;
           full_name: string;
           id?: never;
@@ -888,7 +995,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
-          birth_date?: string | null;
+          nickname?: string | null;
           created_at?: string;
           full_name?: string;
           id?: never;
@@ -908,6 +1015,7 @@ export type Database = {
           joined_on: string | null;
           left_on: string | null;
           player_id: number;
+          position: string | null;
           registration_id: number;
           status: string;
           updated_at: string;
@@ -920,6 +1028,7 @@ export type Database = {
           joined_on?: string | null;
           left_on?: string | null;
           player_id: number;
+          position: string | null;
           registration_id: number;
           status?: string;
           updated_at?: string;
@@ -932,6 +1041,7 @@ export type Database = {
           joined_on?: string | null;
           left_on?: string | null;
           player_id?: number;
+          position?: string | null;
           registration_id?: number;
           status?: string;
           updated_at?: string;
@@ -1048,15 +1158,25 @@ export type Database = {
           defensive_rebounds: number | null;
           free_throw_attempted: number | null;
           free_throw_made: number | null;
+          fouls: number | null;
           games_played: number | null;
+          jersey_number: string | null;
           offensive_rebounds: number | null;
           player_id: number | null;
+          player_nickname: string | null;
           player_name: string | null;
           player_slug: string | null;
+          registration_id: number | null;
+          roster_position: string | null;
           plus_minus: number | null;
           points: number | null;
           seconds_played: number | null;
+          starter_appearances: number | null;
           steals: number | null;
+          team_abbreviation: string | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_slug: string | null;
           three_point_attempted: number | null;
           three_point_made: number | null;
           turnovers: number | null;
@@ -1240,6 +1360,27 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      public_player_profiles: {
+        Row: {
+          bio: string | null;
+          birth_year: number | null;
+          created_at: string | null;
+          full_name: string | null;
+          hand: string | null;
+          height_cm: number | null;
+          home_city: string | null;
+          home_state: string | null;
+          id: number | null;
+          is_active: boolean | null;
+          is_public: boolean | null;
+          main_position: string | null;
+          nickname: string | null;
+          slug: string | null;
+          updated_at: string | null;
+          weight_kg: number | null;
+        };
+        Relationships: [];
       };
       team_achievements: {
         Row: {
