@@ -657,8 +657,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
               />
               <aside className="admin-review-summary" aria-live="polite">
                 <strong>
-                  Placar extraído: {review.parsed.teams[0].score} ×{" "}
-                  {review.parsed.teams[1].score}
+                  Placar extraído: {review.parsed.teams[0].score} × {review.parsed.teams[1].score}
                 </strong>
                 <span>
                   {pendingAssociations} vínculo(s) sem correspondência exata exigem revisão.

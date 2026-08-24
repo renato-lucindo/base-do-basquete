@@ -317,11 +317,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                 </Form>
               ) : null}
               {registration.status !== "withdrawn" && registration.status !== "completed" ? (
-                <Form
-                  method="post"
-                  className="roster-form"
-                  id={`roster-form-${registration.id}`}
-                >
+                <Form method="post" className="roster-form" id={`roster-form-${registration.id}`}>
                   <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
                   <input type="hidden" name="intent" value="replace-roster" />
                   <input type="hidden" name="registrationId" value={registration.id} />

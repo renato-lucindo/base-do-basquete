@@ -13,7 +13,7 @@ export interface AdminFormDraft {
 }
 
 const forbiddenName =
-  /(csrf|token|session|secret|credential|password|passcode|mfa|totp|pdf|file|boxscore)/i;
+  /(csrf|token|session|secret|credential|password|passcode|mfa|totp|idempotency|pdf|file|boxscore)/i;
 
 export function isForbiddenDraftField(name: string): boolean {
   return forbiddenName.test(name);

@@ -14,6 +14,7 @@ describe("secure administrative form drafts", () => {
       ["jersey-12", "07"],
       ["csrfToken", "forbidden"],
       ["sessionSecret", "forbidden"],
+      ["idempotencyKey", "forbidden"],
       ["boxscorePdf", new File(["pdf"], "boxscore.pdf", { type: "application/pdf" })],
     ]);
     expect(fields).toEqual({ playerId: ["12"], "jersey-12": ["07"] });
