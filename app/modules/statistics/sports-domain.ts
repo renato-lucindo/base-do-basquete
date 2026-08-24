@@ -134,9 +134,7 @@ export function calculateStandings(
       ) {
         return false;
       }
-      return game.homeScore > game.awayScore
-        ? game.home.id === teamId
-        : game.away.id === teamId;
+      return game.homeScore > game.awayScore ? game.home.id === teamId : game.away.id === teamId;
     }).length;
 
   return [...rows.values()]
@@ -181,10 +179,7 @@ export function summarizeTeamStatistics(input: TeamStatisticInput): TeamStatisti
     abbreviation: input.abbreviation,
     games: input.games,
     pointsPerGame: ratio(input.points, input.games),
-    reboundsPerGame: ratio(
-      input.offensiveRebounds + input.defensiveRebounds,
-      input.games,
-    ),
+    reboundsPerGame: ratio(input.offensiveRebounds + input.defensiveRebounds, input.games),
     assistsPerGame: ratio(input.assists, input.games),
     fieldGoalPercentage: percent(fieldMade, fieldAttempted),
     threePointPercentage: percent(input.threePointMade, input.threePointAttempted),

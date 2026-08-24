@@ -179,10 +179,7 @@ export async function loadPublicSportsCore(
   const finalGameIds = games.filter((game) => game.status === "final").map((game) => game.id);
   const statisticsResult =
     finalGameIds.length > 0
-      ? await client
-          .from("game_player_statistics")
-          .select("*")
-          .in("game_id", finalGameIds)
+      ? await client.from("game_player_statistics").select("*").in("game_id", finalGameIds)
       : { data: [], error: null };
   ensure(statisticsResult.error);
 

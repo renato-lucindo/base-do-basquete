@@ -166,8 +166,8 @@ function Standings({ context, rows }: { context: CompetitionContext; rows: Stand
       <details className="standings-legend">
         <summary>Siglas e critérios de desempate</summary>
         <p>
-          J: jogos; V: vitórias; D: derrotas; PP/PC: pontos pró/contra; SLD: saldo.
-          Desempates: vitórias, confronto direto, saldo, pontos pró e nome.
+          J: jogos; V: vitórias; D: derrotas; PP/PC: pontos pró/contra; SLD: saldo. Desempates:
+          vitórias, confronto direto, saldo, pontos pró e nome.
         </p>
       </details>
     </section>
