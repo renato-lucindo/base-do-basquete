@@ -8,13 +8,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
-- Status geral: `IN PROGRESS` no WP-13; advisors/reconciliação, secrets isolados de produção e mecanismo de release seguro preparados.
+- Fase: WP-00 a WP-13 concluídos; resta somente integrar a evidência final da PR #22 por squash após os quatro checks verdes.
+- Status geral: `DONE`; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. O responsável recusou conscientemente a rotação recomendada e aceitou o risco residual da senha exibida na saída técnica de inspeção.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-release-propagation`.
-- Último commit integrado em `main`: `5d7429d` (`WP-13 — Corrigir seleção do ambiente Cloudflare (#20)`).
-- Aplicação publicada: preview fixo restaurado e candidata de produção `v1.0.2` saudável na URL temporária `workers.dev`; aceite automatizado final ainda em andamento.
-- Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
+- Branch atual: `codex/wp-13-release-evidence`.
+- Último commit integrado em `main`: `47ecc34` (`WP-13 — Aguardar propagação inicial do Worker (#21)`).
+- Aplicação publicada: release `v1.0.3` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; preview fixo também restaurado e saudável.
+- Cloudflare: produção ativa em 100% na candidata `c98935fa`; versão anterior `d59fd181` preservada para rollback; logs 179 sucessos/0 erros na janela validada.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-12 concluídos e WP-13 em validação.
+- [x] Aplicação implementada integralmente; WP-00 a WP-13 concluídos e produção validada.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -63,21 +63,23 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] RLS pública somente para dados publicados; escritas autenticadas exigem administrador singleton em `aal2` e `DELETE` não é concedido.
 - [x] Seed de staging não público, tipos TypeScript gerados e 34 testes SQL aprovados no banco remoto.
 
-## 5. Em andamento
+## 5. Fechamento do WP-13
 
 WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema acionável; a reconciliação confirmou singleton/MFA, RLS integral e ausência de órfãos. O environment GitHub `production` recebeu três bindings próprios sem exposição. O workflow agora exige secrets declarados, envia code/secrets atomicamente, executa smoke/benchmark e permite upload de candidata para rollout gradual. Gate local inicial passou com 43 testes.
 
 O primeiro dispatch foi recusado com HTTP 422 antes de executar qualquer job ou deploy: o GitHub marcou o workflow inválido porque o comando inline de limpeza continha `: ` em um scalar YAML. A correção foi integrada pela PR #19 e a tag imutável `v1.0.1` aponta para esse commit; `v1.0.0` foi preservada como candidata não implantada.
 
-O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A correção em andamento seleciona `CLOUDFLARE_ENV=production` antes do build, valida o nome/`APP_ENV` no artefato e só então chama o Wrangler.
+O primeiro job válido, execução #32736328449, passou build e deploy, mas o smoke bloqueou a liberação: o Cloudflare Vite Plugin gerou uma configuração redirecionada com o ambiente top-level de preview, apesar de `wrangler deploy --env production`. Assim, nenhum Worker de produção foi criado; o Worker fixo de preview recebeu a versão nova e uma nova `SESSION_SECRET`, sem exposição de valores. A PR #20 integrou a correção que seleciona `CLOUDFLARE_ENV` antes do build, valida nome/`APP_ENV` no artefato e restaura preview/secrets atomicamente.
 
-A PR #20 integrou essa correção. O workflow #32737628228 restaurou o preview atomicamente e `/health` confirmou `environment=preview`. O deploy de produção #32737807217 criou corretamente `base-do-basquete-prod`, mas o primeiro smoke recebeu 404 durante a propagação inicial do novo hostname. Cerca de 50 segundos depois, health, headers, login público, contextos e benchmark passaram manualmente: jogadores p50 249,0 ms/p95 311,4 ms; jogo FIBA p50 361,8 ms/p95 839,5 ms. A branch atual adiciona retry limitado somente para 404/502/503/504 nessa janela.
+A execução #32737628228 restaurou o preview e `/health` confirmou `environment=preview`. O primeiro deploy de produção correto recebeu 404 durante a propagação do novo hostname; a PR #21 integrou retry limitado para 404/502/503/504. A release `v1.0.3` passou integralmente no workflow #32738728739. A candidata foi exercitada em 10%/90%, passou 50/50 health requests e smokes, foi promovida a 100% e manteve a versão anterior recuperável. O benchmark pós-promoção ficou em p95 263,6 ms para jogadores e 337,0 ms para jogo FIBA. Observability confirmou 0 erros e log customizado somente com a allowlist operacional.
+
+O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. A rotação foi recomendada, mas o responsável recusou conscientemente a alteração e aceitou o risco residual. Essa decisão não reduz MFA, `aal2`, RLS, sessão segura ou autorização server-side.
 
 ## 6. Próximo passo exato
 
-1. Integrar o retry limitado de propagação do primeiro hostname após gates verdes.
-2. Repetir `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`, e exigir o gate automatizado integralmente verde.
-3. Validar logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
+1. Executar o gate consolidado após esta decisão documental e enviar o commit final para `codex/wp-13-release-evidence`.
+2. Tornar a PR #22 pronta e integrá-la por squash somente após `gate`, `database`, `upload` e `analyze` aprovarem o head final.
+3. Confirmar `main` limpa e produção saudável; qualquer evolução futura deve começar em nova branch WP, preservando este release.
 
 ### Primeiros arquivos a abrir
 
@@ -108,7 +110,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
-| WP-13 — Release de produção | `IN PROGRESS` | PR #19 integrou o workflow; primeiro job revelou seleção incorreta do ambiente Vite e o smoke impediu a falsa liberação |
+| WP-13 — Release de produção | `DONE` | `v1.0.3` ativa; rollout, métricas, logs, smoke público e smoke administrativo `aal2` aprovados; risco residual aceito pelo responsável |
 
 ## 8. Arquivos e referências importantes
 
@@ -126,7 +128,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 
 ## 9. Serviços e variáveis
 
-Serviços configurados: repositório privado e environments no GitHub, Worker de preview no Cloudflare e projeto gratuito saudável no Supabase. Produção permanece intencionalmente não publicada.
+Serviços configurados: repositório privado e environments no GitHub, Workers de preview e produção no Cloudflare e projeto gratuito saudável no Supabase. A produção `v1.0.3` está publicada na URL temporária da plataforma.
 
 Registre aqui somente nomes de variáveis quando forem definidos. Nunca registre valores, tokens, cookies, senhas, chaves privadas, URLs com credenciais ou connection strings.
 
@@ -172,6 +174,10 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-12 observabilidade: eventos `health` e `auth` conferidos ao vivo no Worker fixo de staging; o log customizado contém somente a allowlist operacional e nenhum payload da aplicação.
 - WP-13 pré-release: 1 usuário/1 MFA/1 admin, 4 competições, 6 equipes, 44 atletas, 9 jogos, 2 imports confirmados, 2 PDFs privados, 23 eventos de auditoria, RLS integral e 0 órfãos.
 - WP-13 gate local inicial: Biome em 71 arquivos, TypeScript strict, 43 Vitest, quatro runbooks, build e scan de 301 arquivos aprovados.
+- WP-13 smoke administrativo em produção: sessão `aal2`, dashboard e hub protegido aprovados; logout e nova tentativa anônima redirecionaram para `/admin/login`; auditoria confirmou `mfa_verified`, `admin_access` e `logout`.
+- Decisão de risco: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas, nenhuma persistência em código ou serviços e rotação recomendada; o responsável recusou conscientemente a alteração e aceitou o risco residual.
+- Recovery não utilizado: Supabase Auth confirmou `user_recovery_requested`, `/recover` HTTP 200 e envio do e-mail `recovery`; o responsável pode descartar a mensagem.
+- WP-13 gate após o incidente: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 303 arquivos aprovados; nenhum segredo persistido no Git.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -223,11 +229,10 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `codex/wp-11-performance-cache`.
-- Base integrada em `main`: `191069c`.
-- Head funcional: `88135ca`; o head documental final contém este handoff. Resta integrar a PR #16.
-
-Substitua esta seção por dados reais assim que o repositório for criado.
+- Branch: `codex/wp-13-release-evidence`.
+- Base integrada em `main`: `47ecc34`.
+- Head remoto antes da decisão final: `f5f0676`; a PR #22 deve ser marcada pronta e integrada por squash somente após os quatro checks do novo head.
+- `git status` estava limpo antes desta atualização documental.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
 
@@ -300,3 +305,6 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #17 com quatro checks verdes; head promovido em staging e eventos redigidos confirmados ao vivo | Enviar evidências finais, reconfirmar gates e integrar WP-12 sem produção |
 | 2026-08-24 | Codex | PR #17 integrada; WP-13 com advisors/reconciliação, secrets isolados e workflow de release seguro preparado | Abrir PR #18, integrar com gates verdes e publicar pela `main` |
 | 2026-08-24 | Codex | PR #18 integrada e tag `v1.0.0` criada; primeiro dispatch recusado por YAML antes de qualquer deploy | Integrar correção em bloco literal e repetir o dispatch pela `main` |
+| 2026-08-24 | Codex | `v1.0.3` publicada; gate automatizado, logs, métricas e rollout 10% → 100% aprovados, com rollback preservado | Responsável conclui login/TOTP no host estável; Codex valida `aal2` e integra a evidência final |
+| 2026-08-24 | Codex | Smoke de produção confirmou `aal2`, hub, logout e auditoria; senha autofill apareceu na inspeção e foi declarada comprometida | Responsável rotaciona a senha no Supabase sem compartilhá-la; novo login/MFA libera o gate final da PR #22 |
+| 2026-08-24 | Responsável/Codex | Responsável recusou conscientemente a rotação e aceitou o risco residual; WP-13 marcado `DONE` sem reduzir os controles de segurança | Executar gate final, integrar PR #22 por squash e confirmar produção saudável |
