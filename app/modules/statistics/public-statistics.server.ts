@@ -8,6 +8,7 @@ import {
   type PlayerStatistics,
   type StatisticTotals,
 } from "./domain";
+import { pointsReconcile, sumStatisticTotals } from "./game-detail-domain";
 
 export interface SimplePlayerStatistics {
   competitionId: number;
@@ -42,6 +43,8 @@ export interface PublicGameTeam {
   score: number;
   periodScores: Array<{ periodNumber: number; points: number }>;
   statistics: PublicGameTeamStatistics | null;
+  totals: StatisticTotals | null;
+  pointsReconciled: boolean | null;
 }
 
 export interface PublicGameTeamStatistics {
@@ -67,6 +70,7 @@ export interface PublicGamePlayer {
   side: "home" | "away";
   jerseyNumber: string;
   didNotPlay: boolean;
+  isStarter: boolean;
   fouls: number;
   totals: StatisticTotals;
 }
@@ -210,6 +214,7 @@ export async function loadPublicGameDetail(
     scoresResult,
     periodScoresResult,
     playerResult,
+    rosterSlotsResult,
     teamStatisticsResult,
     gameStatisticsResult,
   ] = await Promise.all([
@@ -229,6 +234,7 @@ export async function loadPublicGameDetail(
       .eq("game_id", gameId)
       .order("period_number"),
     client.from("game_player_statistics").select("*").eq("game_id", gameId),
+    client.from("game_roster_slots").select("id,is_starter").eq("game_id", gameId),
     client.from("game_team_statistics").select("*").eq("game_id", gameId),
     client
       .from("game_statistics")
@@ -240,6 +246,7 @@ export async function loadPublicGameDetail(
   ensure(scoresResult.error);
   ensure(periodScoresResult.error);
   ensure(playerResult.error);
+  ensure(rosterSlotsResult.error);
   ensure(teamStatisticsResult.error);
   ensure(gameStatisticsResult.error);
   if (participantsResult.data.length !== 2) return null;
@@ -265,6 +272,21 @@ export async function loadPublicGameDetail(
     registrationsResult.data.map((registration) => [registration.id, registration]),
   );
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
+  const starterBySlot = new Map(
+    rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]),
+  );
+  const players: PublicGamePlayer[] = playerResult.data.map((row) => ({
+    playerId: row.player_id as number,
+    playerName: row.player_name as string,
+    playerSlug: row.player_slug as string,
+    teamId: row.team_id as number,
+    side: row.side as "home" | "away",
+    jerseyNumber: row.jersey_number as string,
+    didNotPlay: row.did_not_play as boolean,
+    isStarter: starterBySlot.get(row.game_roster_slot_id as number) ?? false,
+    fouls: numberValue(row.fouls),
+    totals: totalsFromRow(row),
+  }));
   const teams = participantsResult.data
     .map((participant): PublicGameTeam | null => {
       const registration = registrationById.get(participant.registration_id);
@@ -284,6 +306,22 @@ export async function loadPublicGameDetail(
         periodScores: periodScoresResult.data
           .filter((score) => score.registration_id === participant.registration_id)
           .map((score) => ({ periodNumber: score.period_number, points: score.points })),
+        totals: (() => {
+          const teamPlayers = players.filter((player) => player.teamId === team.id);
+          return teamPlayers.length
+            ? sumStatisticTotals(teamPlayers.map((player) => player.totals))
+            : null;
+        })(),
+        pointsReconciled: (() => {
+          const teamPlayers = players.filter((player) => player.teamId === team.id);
+          const totals = teamPlayers.length
+            ? sumStatisticTotals(teamPlayers.map((player) => player.totals))
+            : null;
+          const score = scoresResult.data.find(
+            (item) => item.registration_id === participant.registration_id,
+          )?.score;
+          return score === undefined ? null : pointsReconcile(score, totals);
+        })(),
         statistics: (() => {
           const statistics = teamStatisticsResult.data.find(
             (item) => item.registration_id === participant.registration_id,
@@ -326,16 +364,6 @@ export async function loadPublicGameDetail(
           timesTied: gameStatisticsResult.data.times_tied,
         }
       : null,
-    players: playerResult.data.map((row) => ({
-      playerId: row.player_id as number,
-      playerName: row.player_name as string,
-      playerSlug: row.player_slug as string,
-      teamId: row.team_id as number,
-      side: row.side as "home" | "away",
-      jerseyNumber: row.jersey_number as string,
-      didNotPlay: row.did_not_play as boolean,
-      fouls: numberValue(row.fouls),
-      totals: totalsFromRow(row),
-    })),
+    players,
   };
 }
