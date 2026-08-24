@@ -74,7 +74,7 @@ export function FormDraftNotice({ contextId, formId }: FormDraftNoticeProps) {
         setSavedAt(draft.updatedAt);
       }, 300);
     };
-    const submitted = () => dirtyRef.current = false;
+    const submitted = () => (dirtyRef.current = false);
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (!dirtyRef.current) return;
       event.preventDefault();
