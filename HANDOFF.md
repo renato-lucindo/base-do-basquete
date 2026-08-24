@@ -204,6 +204,7 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-11 SQL representativo: 250 jogos/240 atletas/6.000 slots/24.000 linhas; simples 158,089 ms e avançado 196,174 ms, abaixo da meta de 250 ms.
 - WP-11 HTTP no preview, 30 amostras: estatísticas p50 318 ms/p95 711 ms; jogo FIBA p50 374 ms/p95 597 ms, abaixo das metas de 1.000/1.500 ms.
 - WP-11 decisão: nenhum cache ou índice novo; medições e advisors não demonstraram necessidade.
+- WP-11 CI: a primeira execução tratou o benchmark em `supabase/tests/` como pgTAP sem plano; o arquivo opt-in foi movido para `supabase/benchmarks/`, preservando a suíte automática.
 
 ## 12. Git
 
