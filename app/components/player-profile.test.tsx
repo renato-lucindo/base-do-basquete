@@ -30,6 +30,7 @@ const profile: PublicPlayerProfileDto = {
   current: null,
   career: { games: 0, points: 0, assists: 0, rebounds: 0, steals: 0, blocks: 0 },
   competitions: [],
+  achievements: [],
   honors: [],
   games: [],
 };

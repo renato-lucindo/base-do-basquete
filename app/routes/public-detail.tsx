@@ -57,8 +57,10 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   if (!resolvedContext) return notFound();
 
   const contexts = await listPublicContexts(client);
-  const [detail, game, playerProfile] = await Promise.all([
-    loadPublicDetail(client, resolvedContext, params.resource, params.detail),
+  const [loadedDetail, game, playerProfile] = await Promise.all([
+    params.resource === "jogadores"
+      ? Promise.resolve(null)
+      : loadPublicDetail(client, resolvedContext, params.resource, params.detail),
     params.resource === "jogos"
       ? loadPublicGameDetail(client, resolvedContext, params.detail)
       : Promise.resolve(null),
@@ -66,6 +68,13 @@ export async function loader({ params, context }: Route.LoaderArgs) {
       ? loadPublicPlayerProfile(client, resolvedContext, contexts, params.detail)
       : Promise.resolve(null),
   ]);
+  const detail = playerProfile
+    ? {
+        label: playerProfile.fullName,
+        description: playerProfile.bio ?? "Perfil público do atleta.",
+        achievements: playerProfile.achievements,
+      }
+    : loadedDetail;
   if (
     !detail ||
     (params.resource === "jogos" && !game) ||

@@ -1,8 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { data } from "react-router";
 
 import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
+import { PublicContextQueryError } from "../competition/context.server";
+import type { PublicAchievement } from "../competition/public-data.server";
 import { addPlayerTotals, type PlayerTotals } from "./player-profile-domain";
 
 export interface PlayerCompetitionSummary extends PlayerTotals {
@@ -30,6 +31,7 @@ export interface PublicPlayerProfileDto {
   current: PlayerCompetitionSummary | null;
   career: PlayerTotals;
   competitions: PlayerCompetitionSummary[];
+  achievements: PublicAchievement[];
   honors: Array<{
     id: number;
     title: string;
@@ -49,10 +51,8 @@ export interface PublicPlayerProfileDto {
   }>;
 }
 
-function ensure(error: unknown, step: string): asserts error is null {
-  if (error) {
-    throw data(null, { status: 500, statusText: `player-profile:${step}` });
-  }
+function ensure(error: unknown): asserts error is null {
+  if (error) throw new PublicContextQueryError();
 }
 
 function numberValue(value: number | null): number {
@@ -73,8 +73,32 @@ export async function loadPublicPlayerProfile(
     .eq("slug", slug)
     .eq("is_public", true)
     .limit(2);
-  ensure(profileResult.error, "profile");
-  const profile = profileResult.data.length === 1 ? profileResult.data[0] : null;
+  let profile =
+    !profileResult.error && profileResult.data.length === 1 ? profileResult.data[0] : null;
+  if (profileResult.error) {
+    const legacyResult = await client
+      .from("public_player_profiles")
+      .select("id,full_name,slug,is_public")
+      .eq("slug", slug)
+      .eq("is_public", true)
+      .limit(2);
+    ensure(legacyResult.error);
+    const legacy = legacyResult.data.length === 1 ? legacyResult.data[0] : null;
+    profile = legacy
+      ? {
+          ...legacy,
+          nickname: null,
+          birth_year: null,
+          bio: null,
+          height_cm: null,
+          weight_kg: null,
+          main_position: null,
+          hand: null,
+          home_city: null,
+          home_state: null,
+        }
+      : null;
+  }
   if (!profile?.id || !profile.full_name || !profile.slug) return null;
 
   const rosterResult = await client
@@ -84,14 +108,14 @@ export async function loadPublicPlayerProfile(
     .eq("player_id", profile.id)
     .eq("status", "active")
     .limit(1);
-  ensure(rosterResult.error, "roster");
+  ensure(rosterResult.error);
   if (rosterResult.data.length !== 1) return null;
 
   const statisticsResult = await client
     .from("competition_player_statistics")
     .select("*")
     .eq("player_id", profile.id);
-  ensure(statisticsResult.error, "statistics");
+  ensure(statisticsResult.error);
 
   const contextById = new Map(contexts.map((item) => [item.competitionId, item]));
   const competitions = statisticsResult.data
@@ -121,7 +145,7 @@ export async function loadPublicPlayerProfile(
         right.context.competitionId - left.context.competitionId,
     );
 
-  const [honorsResult, gameStatisticsResult] = await Promise.all([
+  const [honorsResult, gameStatisticsResult, achievementsResult] = await Promise.all([
     client
       .from("player_honors")
       .select("id,title,description,year,competition_id,status,confirmed_at")
@@ -133,9 +157,15 @@ export async function loadPublicPlayerProfile(
       .from("game_player_statistics")
       .select("game_id,competition_id,team_name,jersey_number,points")
       .eq("player_id", profile.id),
+    client
+      .from("player_achievements")
+      .select(
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label,team_name,team_slug",
+      )
+      .eq("player_id", profile.id)
+      .order("year", { ascending: false }),
   ]);
-  ensure(honorsResult.error, "honors");
-  ensure(gameStatisticsResult.error, "game-statistics");
+  ensure(gameStatisticsResult.error);
 
   const gameIds = gameStatisticsResult.data.flatMap((row) =>
     row.game_id === null ? [] : [row.game_id],
@@ -148,7 +178,7 @@ export async function loadPublicPlayerProfile(
         .in("status", ["live", "final"])
         .order("scheduled_at", { ascending: false, nullsFirst: false })
     : { data: [], error: null };
-  ensure(gameResult.error, "games");
+  ensure(gameResult.error);
 
   const statByGame = new Map(
     gameStatisticsResult.data.flatMap((row) =>
@@ -173,7 +203,38 @@ export async function loadPublicPlayerProfile(
       competitions.find((item) => item.context.competitionId === context.competitionId) ?? null,
     career: addPlayerTotals(competitions),
     competitions,
-    honors: honorsResult.data.map((honor) => ({
+    achievements: achievementsResult.error
+      ? []
+      : achievementsResult.data.flatMap((achievement): PublicAchievement[] => {
+          if (
+            achievement.competition_id === null ||
+            achievement.competition_display_name === null ||
+            achievement.series_name === null ||
+            achievement.series_slug === null ||
+            achievement.year === null ||
+            achievement.category_name === null ||
+            achievement.category_slug === null ||
+            achievement.placement === null
+          ) {
+            return [];
+          }
+          return [
+            {
+              competitionId: achievement.competition_id,
+              competitionDisplayName: achievement.competition_display_name,
+              seriesName: achievement.series_name,
+              seriesSlug: achievement.series_slug,
+              year: achievement.year,
+              categoryName: achievement.category_name,
+              categorySlug: achievement.category_slug,
+              placement: achievement.placement,
+              resultLabel: achievement.result_label,
+              teamName: achievement.team_name ?? undefined,
+              teamSlug: achievement.team_slug ?? undefined,
+            },
+          ];
+        }),
+    honors: (honorsResult.error ? [] : honorsResult.data).map((honor) => ({
       id: honor.id,
       title: honor.title,
       description: honor.description,
