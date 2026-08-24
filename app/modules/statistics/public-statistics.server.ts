@@ -318,7 +318,7 @@ export async function loadPublicGameDetail(
           const score = scoresResult.data.find(
             (item) => item.registration_id === participant.registration_id,
           )?.score;
-          return score === undefined ? null : pointsReconcile(score, totals);
+          return score === undefined || score === null ? null : pointsReconcile(score, totals);
         })(),
         statistics: (() => {
           const statistics = teamStatisticsResult.data.find(
