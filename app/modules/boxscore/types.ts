@@ -36,12 +36,33 @@ export interface ParsedBoxscorePlayer {
   points: number;
 }
 
+export interface ParsedBoxscoreTeamStatistics {
+  pointsFromTurnovers: number;
+  pointsInPaint: number;
+  pointsInPaintMade: number;
+  pointsInPaintAttempted: number;
+  secondChancePoints: number;
+  fastBreakPoints: number;
+  fastBreakPointsFromTurnovers: number;
+  benchPoints: number;
+  largestLead: number;
+  largestScoringRun: number;
+  pointsPerPossession: number;
+  timeLeadingSeconds: number;
+}
+
+export interface ParsedBoxscoreGameStatistics {
+  leadChanges: number;
+  timesTied: number;
+}
+
 export interface ParsedBoxscoreTeam {
   name: string;
   abbreviation: string;
   score: number;
   periodScores: number[];
   players: ParsedBoxscorePlayer[];
+  teamStatistics?: ParsedBoxscoreTeamStatistics;
 }
 
 export interface ParsedBoxscore {
@@ -53,6 +74,7 @@ export interface ParsedBoxscore {
   durationSeconds: number;
   venue: string;
   teams: [ParsedBoxscoreTeam, ParsedBoxscoreTeam];
+  gameStatistics?: ParsedBoxscoreGameStatistics;
   warnings: string[];
 }
 

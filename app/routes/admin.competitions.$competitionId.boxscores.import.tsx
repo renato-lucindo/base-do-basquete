@@ -7,6 +7,7 @@ import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
   extractFibaGeniusBoxscore,
   MAX_PDF_BYTES,
+  sha256Bytes,
   validatePdfUpload,
 } from "../modules/boxscore/extract.server";
 import { suggestPlayerMatch } from "../modules/boxscore/matching";
@@ -19,6 +20,22 @@ import type { Json } from "../types/database.generated";
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+type PlayerResolution =
+  | { action: "existing_roster"; rosterEntryId: number }
+  | { action: "add_existing"; playerId: number }
+  | { action: "create_new" };
+
+function parsePlayerResolution(value: FormDataEntryValue | null): PlayerResolution | null {
+  const text = typeof value === "string" ? value : "";
+  if (text === "new") return { action: "create_new" };
+  const match = text.match(/^(roster|player):([1-9][0-9]*)$/);
+  if (!match) return null;
+  const id = Number(match[2]);
+  return match[1] === "roster"
+    ? { action: "existing_roster", rosterEntryId: id }
+    : { action: "add_existing", playerId: id };
 }
 
 function normalizeTeam(value: string): string {
@@ -57,6 +74,20 @@ function mapImportError(code: string | undefined): { message: string; status: nu
       return { message: "A extração excedeu o tempo seguro permitido.", status: 408 };
     case "BD305":
       return { message: "Revise todas as associações de equipe e atleta.", status: 400 };
+    case "BD104":
+      return { message: "O atleta selecionado já está em outra equipe desta edição.", status: 409 };
+    case "BD105":
+      return {
+        message: "A camisa do boxscore já está ocupada no elenco selecionado.",
+        status: 409,
+      };
+    case "BD308":
+      return {
+        message: "Já existe um atleta com esse nome. Associe o cadastro existente.",
+        status: 409,
+      };
+    case "BD310":
+      return { message: "As estatísticas coletivas do PDF são inválidas.", status: 422 };
     case "BD306":
       return { message: "Já existe um jogo com esse número nesta edição.", status: 409 };
     default:
@@ -119,7 +150,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     auth.client.from("players").select("id,full_name").eq("is_active", true).order("full_name"),
     auth.client
       .from("boxscore_imports")
-      .select("id,source_filename,status,game_id,created_at,error_code")
+      .select("id,source_filename,status,game_id,parser_version,created_at,error_code")
       .eq("competition_id", competitionId)
       .order("created_at", { ascending: false })
       .limit(10),
@@ -148,6 +179,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .filter((entry) => entry.registration_id === registration.id)
       .map((entry) => ({
         rosterEntryId: entry.id,
+        playerId: entry.player_id,
         playerName: playerById.get(entry.player_id) ?? "Atleta indisponível",
         jerseyNumber: entry.jersey_number,
       })),
@@ -161,6 +193,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       source_player_name: string;
       source_jersey_number: string;
       roster_entry_id: number | null;
+      suggested_player_id: number | null;
+      suggestion_payload: Json;
       suggestion_kind: string;
       similarity_score: number | null;
     }>;
@@ -176,7 +210,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       auth.client
         .from("boxscore_import_player_matches")
         .select(
-          "source_team_name,source_player_name,source_jersey_number,roster_entry_id,suggestion_kind,similarity_score",
+          "source_team_name,source_player_name,source_jersey_number,roster_entry_id,suggested_player_id,suggestion_payload,suggestion_kind,similarity_score",
         )
         .eq("import_id", importId)
         .order("id"),
@@ -197,7 +231,9 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       csrfToken: auth.payload.csrfToken,
       imports: importsResult.data,
       registrations,
+      players: playersResult.data,
       review,
+      refreshedGameId: parseId(url.searchParams.get("refreshed")),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -236,6 +272,74 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
 
+  if (mode === "refresh-stats") {
+    const importId = parseId(formData.get("importId"));
+    if (!importId) return data({ error: "Importação inválida." }, { status: 400 });
+    try {
+      const importResult = await auth.client
+        .from("boxscore_imports")
+        .select("id,status,game_id,storage_path,sha256")
+        .eq("id", importId)
+        .eq("competition_id", competitionId)
+        .single();
+      if (
+        importResult.error ||
+        importResult.data.status !== "confirmed" ||
+        !importResult.data.game_id
+      ) {
+        return data({ error: "Importação confirmada não encontrada." }, { status: 404 });
+      }
+      const stored = await auth.client.storage
+        .from("boxscore-pdfs")
+        .download(importResult.data.storage_path);
+      if (stored.error) throw new Error("BDB_PDF_STORAGE_READ");
+      const bytes = new Uint8Array(await stored.data.arrayBuffer());
+      if (bytes.length > MAX_PDF_BYTES || (await sha256Bytes(bytes)) !== importResult.data.sha256) {
+        throw new Error("BDB_PDF_STORED_HASH");
+      }
+      const parsed = await withExtractionDeadline(extractFibaGeniusBoxscore(bytes));
+      const validation = validateParsedBoxscore(parsed);
+      if (!validation.valid) throw new Error(validation.issues[0]?.code ?? "BDB_PDF_INVALID");
+      const refreshed = await auth.client.rpc("admin_refresh_boxscore_team_statistics", {
+        p_import_id: importId,
+        p_parsed_payload: parsed as unknown as Json,
+        p_validation_payload: validation as unknown as Json,
+      });
+      if (refreshed.error) {
+        const mapped = mapImportError(refreshed.error.code);
+        return data({ error: mapped.message }, { status: mapped.status });
+      }
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.refresh_stats",
+        outcome: "success",
+        status: 303,
+        context: { competitionId, entityId: importId },
+      });
+      throw redirect(
+        `/admin/competitions/${competitionId}/boxscores/import?refreshed=${refreshed.data}`,
+        { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+      );
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      const mapped = mapImportError(error instanceof Error ? error.message : undefined);
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.refresh_stats",
+        outcome: mapped.status < 500 ? "blocked" : "failure",
+        status: mapped.status,
+        context: {
+          competitionId,
+          entityId: importId,
+          errorCode: error instanceof Error ? error.message : undefined,
+        },
+      });
+      return data({ error: mapped.message }, { status: mapped.status });
+    }
+  }
+
   if (mode === "upload") {
     const uploaded = formData.get("boxscore");
     if (!(uploaded instanceof File)) return data({ error: "Selecione um PDF." }, { status: 400 });
@@ -270,6 +374,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const playerNames = new Map(
         playersResult.data.map((player) => [player.id, player.full_name]),
       );
+      const activeRosterByPlayer = new Map(
+        rosterResult.data.map((entry) => [entry.player_id, entry]),
+      );
       const matches = parsed.teams.flatMap((team) => {
         const selectedTeam = teamsResult.data.find(
           (candidate) =>
@@ -279,19 +386,27 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         const registration = selectedTeam
           ? registrationsResult.data.find((candidate) => candidate.team_id === selectedTeam.id)
           : undefined;
-        const candidates = registration
-          ? rosterResult.data
-              .filter((entry) => entry.registration_id === registration.id)
-              .map((entry) => ({
-                rosterEntryId: entry.id,
-                playerName: playerNames.get(entry.player_id) ?? "",
-                jerseyNumber: entry.jersey_number,
-              }))
-          : [];
+        const candidates = playersResult.data.map((candidate) => {
+          const activeRoster = activeRosterByPlayer.get(candidate.id);
+          const activeRegistration = activeRoster
+            ? registrationsResult.data.find((item) => item.id === activeRoster.registration_id)
+            : undefined;
+          const activeTeam = activeRegistration
+            ? teamsResult.data.find((item) => item.id === activeRegistration.team_id)
+            : undefined;
+          return {
+            playerId: candidate.id,
+            rosterEntryId: activeRoster?.id ?? null,
+            registrationId: activeRoster?.registration_id ?? null,
+            playerName: playerNames.get(candidate.id) ?? "",
+            jerseyNumber: activeRoster?.jersey_number ?? null,
+            teamName: activeTeam?.name ?? null,
+          };
+        });
         return team.players.map((player) => ({
           sourceTeamName: team.name,
           sourcePlayerName: player.name,
-          ...suggestPlayerMatch(player.name, player.jerseyNumber, candidates),
+          ...suggestPlayerMatch(player.name, player.jerseyNumber, registration ? candidates : []),
         }));
       });
       const storagePath = `${competitionId}/${validated.sha256}.pdf`;
@@ -376,16 +491,17 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       sourceTeamName: String(formData.get(`teamName-${index}`) ?? ""),
       registrationId: parseId(formData.get(`registration-${index}`)),
     }));
-    const players = Array.from({ length: playerCount }, (_, index) => ({
-      sourceTeamName: String(formData.get(`playerTeam-${index}`) ?? ""),
-      sourcePlayerName: String(formData.get(`playerName-${index}`) ?? ""),
-      rosterEntryId: parseId(formData.get(`playerRoster-${index}`)),
-    }));
+    const players = Array.from({ length: playerCount }, (_, index) => {
+      const resolution = parsePlayerResolution(formData.get(`playerResolution-${index}`));
+      return {
+        sourceTeamName: String(formData.get(`playerTeam-${index}`) ?? ""),
+        sourcePlayerName: String(formData.get(`playerName-${index}`) ?? ""),
+        ...(resolution ?? { action: null }),
+      };
+    });
     if (
       teams.some((team) => !team.sourceTeamName || !team.registrationId) ||
-      players.some(
-        (player) => !player.sourceTeamName || !player.sourcePlayerName || !player.rosterEntryId,
-      )
+      players.some((player) => !player.sourceTeamName || !player.sourcePlayerName || !player.action)
     ) {
       return data({ error: "Associe todas as equipes e todos os atletas." }, { status: 400 });
     }
@@ -455,6 +571,14 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
     );
   const reviewPlayers =
     review?.parsed.teams.flatMap((team) => team.players.map((player) => ({ team, player }))) ?? [];
+  const rosteredPlayerIds = new Set(
+    loaderData.registrations.flatMap((registration) =>
+      registration.roster.map((entry) => entry.playerId),
+    ),
+  );
+  const unrosteredPlayers = loaderData.players.filter(
+    (player) => !rosteredPlayerIds.has(player.id),
+  );
 
   return (
     <main className="admin-shell">
@@ -479,6 +603,11 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           <p className="form-error" role="alert">
             {actionData.error}
           </p>
+        ) : null}
+        {loaderData.refreshedGameId ? (
+          <output className="form-success">
+            Estatísticas coletivas recuperadas para o jogo {loaderData.refreshedGameId}.
+          </output>
         ) : null}
 
         <section className="admin-panel">
@@ -535,6 +664,26 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                   </label>
                 ))}
               </div>
+              {review.parsed.teams.every((team) => team.teamStatistics) ? (
+                <section
+                  className="boxscore-team-metrics"
+                  aria-label="Estatísticas coletivas extraídas"
+                >
+                  {review.parsed.teams.map((team) => {
+                    const statistics = team.teamStatistics;
+                    if (!statistics) return null;
+                    return (
+                      <article key={team.name}>
+                        <h3>{team.abbreviation}</h3>
+                        <p>Garrafão: {statistics.pointsInPaint}</p>
+                        <p>2ª chance: {statistics.secondChancePoints}</p>
+                        <p>Contra-ataque: {statistics.fastBreakPoints}</p>
+                        <p>Banco: {statistics.benchPoints}</p>
+                      </article>
+                    );
+                  })}
+                </section>
+              ) : null}
               <div className="table-scroll">
                 <table className="stats-table">
                   <thead>
@@ -549,6 +698,29 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                     {reviewPlayers.map(({ team, player }, index) => {
                       const match = matches.get(`${team.name}\u0000${player.name}`);
                       const selectedTeam = matchedRegistration(team);
+                      const suggestedRoster = match?.roster_entry_id
+                        ? selectedTeam?.roster.find(
+                            (entry) => entry.rosterEntryId === match.roster_entry_id,
+                          )
+                        : null;
+                      const suggestedPlayerIsFree = match?.suggested_player_id
+                        ? !rosteredPlayerIds.has(match.suggested_player_id)
+                        : false;
+                      const defaultResolution =
+                        match?.suggestion_kind === "exact" && suggestedRoster
+                          ? `roster:${suggestedRoster.rosterEntryId}`
+                          : match?.suggestion_kind === "exact" && suggestedPlayerIsFree
+                            ? `player:${match.suggested_player_id}`
+                            : match?.suggestion_kind === "unmatched"
+                              ? "new"
+                              : "";
+                      const suggestions = Array.isArray(match?.suggestion_payload)
+                        ? (match.suggestion_payload as Array<{
+                            playerName?: string;
+                            score?: number;
+                            teamName?: string | null;
+                          }>)
+                        : [];
                       return (
                         <tr key={`${team.name}-${player.jerseyNumber}-${player.name}`}>
                           <td>
@@ -562,8 +734,8 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                           </td>
                           <td>
                             <select
-                              name={`playerRoster-${index}`}
-                              defaultValue={match?.roster_entry_id ?? ""}
+                              name={`playerResolution-${index}`}
+                              defaultValue={defaultResolution}
                               required
                               aria-label={`Associar ${player.name}`}
                             >
@@ -573,14 +745,23 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                               {loaderData.registrations.flatMap((registration) =>
                                 registration.roster.map((candidate) => (
                                   <option
-                                    key={candidate.rosterEntryId}
-                                    value={candidate.rosterEntryId}
+                                    key={`roster-${candidate.rosterEntryId}`}
+                                    value={`roster:${candidate.rosterEntryId}`}
                                   >
                                     {registration.teamName} · {candidate.playerName} · #
                                     {candidate.jerseyNumber ?? "—"}
                                   </option>
                                 )),
                               )}
+                              {unrosteredPlayers.map((candidate) => (
+                                <option
+                                  key={`player-${candidate.id}`}
+                                  value={`player:${candidate.id}`}
+                                >
+                                  Adicionar ao elenco: {candidate.full_name}
+                                </option>
+                              ))}
+                              <option value="new">Criar novo atleta e adicionar ao elenco</option>
                             </select>
                           </td>
                           <td>
@@ -594,6 +775,18 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                                   : "sem correspondência"}
                             </span>
                             {selectedTeam ? null : <small> Equipe não encontrada</small>}
+                            {suggestions.length ? (
+                              <small className="match-suggestions">
+                                {suggestions
+                                  .map(
+                                    (suggestion) =>
+                                      `${suggestion.playerName ?? "Atleta"} (${Math.round(
+                                        (suggestion.score ?? 0) * 100,
+                                      )}%${suggestion.teamName ? ` · ${suggestion.teamName}` : ""})`,
+                                  )
+                                  .join("; ")}
+                              </small>
+                            ) : null}
                           </td>
                         </tr>
                       );
@@ -602,8 +795,8 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                 </table>
               </div>
               <p className="admin-note">
-                Sugestões por similaridade nunca são confirmadas sem esta revisão. A confirmação
-                cria jogo, períodos, relacionados, estatísticas e auditoria em uma única transação.
+                Sugestões por similaridade nunca são pré-selecionadas. A confirmação pode associar,
+                adicionar ao elenco ou criar o atleta e grava tudo em uma única transação.
               </p>
               <button className="button button-primary" type="submit">
                 Confirmar importação atômica
@@ -620,7 +813,18 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                 <li key={item.id}>
                   <span>{item.source_filename}</span>
                   <strong>{item.status}</strong>
+                  <span>{item.parser_version}</span>
                   {item.status === "review" ? <Link to={`?import=${item.id}`}>Revisar</Link> : null}
+                  {item.status === "confirmed" &&
+                  item.parser_version !== FIBA_GENIUS_PARSER_VERSION ? (
+                    <Form method="post" action="?mode=refresh-stats">
+                      <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                      <input type="hidden" name="importId" value={item.id} />
+                      <button className="button button-secondary" type="submit">
+                        Recuperar estatísticas coletivas
+                      </button>
+                    </Form>
+                  ) : null}
                 </li>
               ))}
             </ul>

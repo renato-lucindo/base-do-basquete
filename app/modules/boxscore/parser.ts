@@ -1,13 +1,15 @@
 import type {
   BoxscoreValidation,
   ParsedBoxscore,
+  ParsedBoxscoreGameStatistics,
   ParsedBoxscorePlayer,
   ParsedBoxscoreTeam,
+  ParsedBoxscoreTeamStatistics,
   PositionedTextItem,
   ShootingLine,
 } from "./types";
 
-export const FIBA_GENIUS_PARSER_VERSION = "fiba-genius-v1";
+export const FIBA_GENIUS_PARSER_VERSION = "fiba-genius-v2";
 
 interface TextRow {
   y: number;
@@ -89,6 +91,168 @@ function parseMinutes(value: string | undefined): number {
   const seconds = Number(match[2]);
   if (seconds > 59) throw new Error("BDB_PDF_PLAYER_MINUTES");
   return Number(match[1]) * 60 + seconds;
+}
+
+function parseClock(value: string | undefined, code: string): number {
+  const match = requireMatch(value ?? "", /^(\d{1,3}):(\d{2})$/, code);
+  const seconds = Number(match[2]);
+  if (seconds > 59) throw new Error(code);
+  return Number(match[1]) * 60 + seconds;
+}
+
+function parseDecimal(value: string | undefined, code: string): number {
+  if (!value || !/^\d+(?:,\d+)?$/.test(value)) throw new Error(code);
+  return Number(value.replace(",", "."));
+}
+
+function rowStartingWith(rows: TextRow[], label: string): TextRow | undefined {
+  return rows.find((row) => rowText(row).startsWith(label));
+}
+
+function rowContaining(rows: TextRow[], label: string): TextRow | undefined {
+  return rows.find((row) => rowText(row).includes(label));
+}
+
+function itemTextIn(row: TextRow, minimum: number, maximum: number): string | undefined {
+  return compact(
+    row.items
+      .filter((item) => item.x >= minimum && item.x < maximum)
+      .map((item) => item.str)
+      .join(" "),
+  );
+}
+
+function parseMetricPair(
+  rows: TextRow[],
+  label: string,
+  code: string,
+  parser: (value: string | undefined, code: string) => number = parseInteger,
+): [number, number] {
+  const row = rowContaining(rows, label);
+  if (!row) throw new Error(code);
+  return [parser(itemTextIn(row, 165, 230), code), parser(itemTextIn(row, 230, 290), code)];
+}
+
+function parseRightMetricPair(
+  rows: TextRow[],
+  label: string,
+  code: string,
+  parser: (value: string | undefined, code: string) => number = parseInteger,
+): [number, number] {
+  const row = rowContaining(rows, label);
+  if (!row) throw new Error(code);
+  return [parser(itemTextIn(row, 450, 510), code), parser(itemTextIn(row, 510, 570), code)];
+}
+
+function parseLeadingInteger(value: string | undefined, code: string): number {
+  const match = requireMatch(value ?? "", /^(\d+)/, code);
+  return Number(match[1]);
+}
+
+function parsePaintMetric(value: string | undefined): {
+  points: number;
+  made: number;
+  attempted: number;
+} {
+  const match = requireMatch(
+    value ?? "",
+    /^(\d+)\s+\((\d+)\/(\d+)\)\s+\d+(?:,\d+)?$/,
+    "BDB_PDF_TEAM_PAINT",
+  );
+  return {
+    points: Number(match[1]),
+    made: Number(match[2]),
+    attempted: Number(match[3]),
+  };
+}
+
+function parseTeamStatistics(rows: TextRow[]): {
+  teams?: [ParsedBoxscoreTeamStatistics, ParsedBoxscoreTeamStatistics];
+  game?: ParsedBoxscoreGameStatistics;
+} {
+  if (!rowStartingWith(rows, "Pontos de Erros")) return {};
+
+  const pointsFromTurnovers = parseMetricPair(
+    rows,
+    "Pontos de Erros",
+    "BDB_PDF_TEAM_POINTS_FROM_TURNOVERS",
+  );
+  const paintRow = requireValue(rowStartingWith(rows, "Pontos no Garrafão"), "BDB_PDF_TEAM_PAINT");
+  const paint = [
+    parsePaintMetric(itemTextIn(paintRow, 165, 230)),
+    parsePaintMetric(itemTextIn(paintRow, 230, 290)),
+  ] as const;
+  const secondChancePoints = parseMetricPair(
+    rows,
+    "Pontos de Segunda Chance",
+    "BDB_PDF_TEAM_SECOND_CHANCE",
+  );
+  const fastBreakPoints = parseMetricPair(
+    rows,
+    "Pontos de Contra-ataque",
+    "BDB_PDF_TEAM_FAST_BREAK",
+  );
+  const fastBreakPointsFromTurnovers = parseMetricPair(
+    rows,
+    "Fast Break Points from Turnovers",
+    "BDB_PDF_TEAM_FAST_BREAK_TURNOVERS",
+  );
+  const benchPoints = parseMetricPair(rows, "Pontos do Banco", "BDB_PDF_TEAM_BENCH");
+  const largestLead = parseRightMetricPair(
+    rows,
+    "Maior Liderança",
+    "BDB_PDF_TEAM_LARGEST_LEAD",
+    parseLeadingInteger,
+  );
+  const largestScoringRun = parseRightMetricPair(
+    rows,
+    "Maior Sequência de Pontos",
+    "BDB_PDF_TEAM_LARGEST_RUN",
+    parseLeadingInteger,
+  );
+  const pointsPerPossession = parseRightMetricPair(
+    rows,
+    "Points per Possession",
+    "BDB_PDF_TEAM_POSSESSION",
+    parseDecimal,
+  );
+  const timeLeadingSeconds = parseRightMetricPair(
+    rows,
+    "Tempo na Liderança",
+    "BDB_PDF_TEAM_TIME_LEADING",
+    parseClock,
+  );
+
+  const leadChangesRow = requireValue(
+    rowContaining(rows, "Mudanças na Liderança"),
+    "BDB_PDF_GAME_LEAD_CHANGES",
+  );
+  const timesTiedRow = requireValue(
+    rowContaining(rows, "Vezes Empatadas"),
+    "BDB_PDF_GAME_TIMES_TIED",
+  );
+  const game = {
+    leadChanges: parseInteger(itemTextIn(leadChangesRow, 490, 520), "BDB_PDF_GAME_LEAD_CHANGES"),
+    timesTied: parseInteger(itemTextIn(timesTiedRow, 490, 520), "BDB_PDF_GAME_TIMES_TIED"),
+  };
+
+  return {
+    teams: [0, 1].map((index) => ({
+      pointsFromTurnovers: pointsFromTurnovers[index] as number,
+      pointsInPaint: paint[index]?.points as number,
+      pointsInPaintMade: paint[index]?.made as number,
+      pointsInPaintAttempted: paint[index]?.attempted as number,
+      secondChancePoints: secondChancePoints[index] as number,
+      fastBreakPoints: fastBreakPoints[index] as number,
+      fastBreakPointsFromTurnovers: fastBreakPointsFromTurnovers[index] as number,
+      benchPoints: benchPoints[index] as number,
+      largestLead: largestLead[index] as number,
+      largestScoringRun: largestScoringRun[index] as number,
+      pointsPerPossession: pointsPerPossession[index] as number,
+      timeLeadingSeconds: timeLeadingSeconds[index] as number,
+    })) as [ParsedBoxscoreTeamStatistics, ParsedBoxscoreTeamStatistics],
+    game,
+  };
 }
 
 function parseName(rows: TextRow[], rowIndex: number): { name: string; captain: boolean } {
@@ -285,6 +449,7 @@ export function parseFibaGeniusBoxscore(pages: PositionedTextItem[][]): ParsedBo
   const venueAndDate = rows.find((row) => rowText(row).includes("Hora de Início:"));
   if (!venueAndDate) throw new Error("BDB_PDF_SCHEDULE");
   const venue = compact(requireValue(rowText(venueAndDate).split(",")[0], "BDB_PDF_SCHEDULE"));
+  const statistics = parseTeamStatistics(rows);
   const result: ParsedBoxscore = {
     format: "FIBA_GENIUS_SPORTS",
     parserVersion: FIBA_GENIUS_PARSER_VERSION,
@@ -296,19 +461,26 @@ export function parseFibaGeniusBoxscore(pages: PositionedTextItem[][]): ParsedBo
       Number(requireValue(duration[2], "BDB_PDF_DURATION")) * 60,
     venue,
     teams: [
-      parseTeam(
-        rows,
-        requireValue(headerIndexes[0], "BDB_PDF_TEAM_COUNT"),
-        Number(requireValue(scoreMatch[2], "BDB_PDF_SCORE")),
-        periodPairs.map((pair) => pair[0]),
-      ),
-      parseTeam(
-        rows,
-        requireValue(headerIndexes[1], "BDB_PDF_TEAM_COUNT"),
-        Number(requireValue(scoreMatch[3], "BDB_PDF_SCORE")),
-        periodPairs.map((pair) => pair[1]),
-      ),
+      {
+        ...parseTeam(
+          rows,
+          requireValue(headerIndexes[0], "BDB_PDF_TEAM_COUNT"),
+          Number(requireValue(scoreMatch[2], "BDB_PDF_SCORE")),
+          periodPairs.map((pair) => pair[0]),
+        ),
+        teamStatistics: statistics.teams?.[0],
+      },
+      {
+        ...parseTeam(
+          rows,
+          requireValue(headerIndexes[1], "BDB_PDF_TEAM_COUNT"),
+          Number(requireValue(scoreMatch[3], "BDB_PDF_SCORE")),
+          periodPairs.map((pair) => pair[1]),
+        ),
+        teamStatistics: statistics.teams?.[1],
+      },
     ],
+    gameStatistics: statistics.game,
     warnings: [],
   };
   const validation = validateParsedBoxscore(result);
@@ -320,6 +492,8 @@ export function parseFibaGeniusBoxscore(pages: PositionedTextItem[][]): ParsedBo
 
 export function validateParsedBoxscore(boxscore: ParsedBoxscore): BoxscoreValidation {
   const issues: BoxscoreValidation["issues"] = [];
+  const periodCount = boxscore.teams[0].periodScores.length;
+  const gameClockSeconds = 2400 + Math.max(periodCount - 4, 0) * 300;
   if (boxscore.teams[0].name === boxscore.teams[1].name) {
     issues.push({ code: "BDB_PDF_DUPLICATE_TEAM", message: "As equipes devem ser diferentes." });
   }
@@ -370,6 +544,49 @@ export function validateParsedBoxscore(boxscore: ParsedBoxscore): BoxscoreValida
         });
       }
     }
+    const stats = team.teamStatistics;
+    if (
+      stats &&
+      (stats.pointsInPaintMade > stats.pointsInPaintAttempted ||
+        stats.pointsInPaint !== stats.pointsInPaintMade * 2 ||
+        stats.fastBreakPointsFromTurnovers > stats.fastBreakPoints ||
+        stats.timeLeadingSeconds > gameClockSeconds ||
+        Object.values(stats).some((value) => value < 0))
+    ) {
+      issues.push({
+        code: "BDB_PDF_TEAM_STATISTICS",
+        message: `Os indicadores coletivos de ${team.name} são inconsistentes.`,
+      });
+    }
+  }
+  const teamStatistics = boxscore.teams.map((team) => team.teamStatistics);
+  if (
+    boxscore.parserVersion === FIBA_GENIUS_PARSER_VERSION &&
+    (teamStatistics.some((statistics) => !statistics) || !boxscore.gameStatistics)
+  ) {
+    issues.push({
+      code: "BDB_PDF_TEAM_STATISTICS_MISSING",
+      message: "O bloco de estatísticas coletivas FIBA/Genius está ausente.",
+    });
+  }
+  if (
+    teamStatistics.every((statistics) => statistics) &&
+    teamStatistics.reduce((total, statistics) => total + (statistics?.timeLeadingSeconds ?? 0), 0) >
+      gameClockSeconds
+  ) {
+    issues.push({
+      code: "BDB_PDF_TEAM_STATISTICS",
+      message: "A soma do tempo em vantagem excede o tempo regulamentar do jogo.",
+    });
+  }
+  if (
+    boxscore.gameStatistics &&
+    (boxscore.gameStatistics.leadChanges < 0 || boxscore.gameStatistics.timesTied < 0)
+  ) {
+    issues.push({
+      code: "BDB_PDF_GAME_STATISTICS",
+      message: "Os indicadores gerais do jogo são inconsistentes.",
+    });
   }
   return { valid: issues.length === 0, issues };
 }

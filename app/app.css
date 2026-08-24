@@ -528,6 +528,13 @@ a {
   padding: 13px 16px;
 }
 
+.form-success {
+  border-left: 3px solid var(--green);
+  background: rgba(40, 215, 132, 0.12);
+  margin: 22px 0 0;
+  padding: 13px 16px;
+}
+
 .mfa-enrollment {
   display: grid;
   gap: 20px;
@@ -1385,6 +1392,30 @@ a {
   width: 100%;
 }
 
+.boxscore-team-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.boxscore-team-metrics article {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.boxscore-team-metrics h3,
+.boxscore-team-metrics p {
+  margin: 0;
+}
+
+.boxscore-team-metrics article {
+  display: grid;
+  gap: 6px;
+}
+
 .match-pill {
   display: inline-flex;
   border-radius: 999px;
@@ -1409,6 +1440,12 @@ a {
   color: #831f1f;
 }
 
+.match-suggestions {
+  display: block;
+  margin-top: 7px;
+  line-height: 1.45;
+}
+
 .import-history {
   display: grid;
   gap: 8px;
@@ -1423,6 +1460,22 @@ a {
   gap: 16px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
+}
+
+.import-history form {
+  margin: 0;
+}
+
+.game-collective-statistics {
+  display: grid;
+  gap: 14px;
+}
+
+.collective-game-summary {
+  margin: 0;
+  padding: 12px 16px;
+  border-left: 3px solid var(--orange);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 @media (max-width: 820px) {
@@ -1446,7 +1499,8 @@ a {
 
   .scoresheet-header-grid,
   .participant-grid,
-  .boxscore-team-resolution {
+  .boxscore-team-resolution,
+  .boxscore-team-metrics {
     grid-template-columns: 1fr;
   }
 

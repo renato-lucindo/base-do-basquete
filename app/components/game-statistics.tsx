@@ -17,6 +17,11 @@ function periodLabel(period: number) {
   return period <= 4 ? `Q${period}` : `OT${period - 4}`;
 }
 
+function clock(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 function TeamScore({ context, team }: { context: CompetitionContext; team: PublicGameTeam }) {
   return (
     <div>
@@ -95,6 +100,82 @@ export function GameStatistics({
             </tbody>
           </table>
         </div>
+      ) : null}
+
+      {game.teams.every((team) => team.statistics) ? (
+        <section className="game-team-statistics game-collective-statistics">
+          <h2>Estatísticas coletivas</h2>
+          <div className="statistics-table-wrap">
+            <table className="period-score-table">
+              <caption>Indicadores FIBA/Genius Sports por equipe</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Indicador</th>
+                  {game.teams.map((team) => (
+                    <th scope="col" key={team.registrationId}>
+                      {team.teamName}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  [
+                    "Pontos de erros",
+                    (team: PublicGameTeam) => team.statistics?.pointsFromTurnovers,
+                  ],
+                  [
+                    "Pontos no garrafão",
+                    (team: PublicGameTeam) =>
+                      `${team.statistics?.pointsInPaint} (${team.statistics?.pointsInPaintMade}/${team.statistics?.pointsInPaintAttempted})`,
+                  ],
+                  [
+                    "Pontos de segunda chance",
+                    (team: PublicGameTeam) => team.statistics?.secondChancePoints,
+                  ],
+                  [
+                    "Pontos de contra-ataque",
+                    (team: PublicGameTeam) => team.statistics?.fastBreakPoints,
+                  ],
+                  [
+                    "Contra-ataque após erros",
+                    (team: PublicGameTeam) => team.statistics?.fastBreakPointsFromTurnovers,
+                  ],
+                  ["Pontos do banco", (team: PublicGameTeam) => team.statistics?.benchPoints],
+                  ["Maior liderança", (team: PublicGameTeam) => team.statistics?.largestLead],
+                  ["Maior sequência", (team: PublicGameTeam) => team.statistics?.largestScoringRun],
+                  [
+                    "Pontos por posse",
+                    (team: PublicGameTeam) =>
+                      team.statistics?.pointsPerPossession.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }),
+                  ],
+                  [
+                    "Tempo na liderança",
+                    (team: PublicGameTeam) => clock(team.statistics?.timeLeadingSeconds ?? 0),
+                  ],
+                ].map(([label, value]) => (
+                  <tr key={String(label)}>
+                    <th scope="row">{String(label)}</th>
+                    {game.teams.map((team) => (
+                      <td key={team.registrationId}>
+                        {typeof value === "function" ? value(team) : null}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {game.gameStatistics ? (
+            <p className="collective-game-summary">
+              <strong>{game.gameStatistics.leadChanges}</strong> mudanças na liderança ·{" "}
+              <strong>{game.gameStatistics.timesTied}</strong> vezes empatado
+            </p>
+          ) : null}
+        </section>
       ) : null}
 
       {game.players.length > 0 ? (

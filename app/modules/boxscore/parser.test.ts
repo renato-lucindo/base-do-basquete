@@ -36,7 +36,30 @@ describe("FIBA/Genius Sports parser", () => {
       captain: true,
       didNotPlay: true,
     });
+    expect(parsed.teams[0].teamStatistics).toEqual({
+      pointsFromTurnovers: 13,
+      pointsInPaint: 28,
+      pointsInPaintMade: 14,
+      pointsInPaintAttempted: 39,
+      secondChancePoints: 15,
+      fastBreakPoints: 21,
+      fastBreakPointsFromTurnovers: 8,
+      benchPoints: 28,
+      largestLead: 0,
+      largestScoringRun: 9,
+      pointsPerPossession: 0.7,
+      timeLeadingSeconds: 0,
+    });
+    expect(parsed.teams[1].teamStatistics?.pointsInPaint).toBe(32);
+    expect(parsed.gameStatistics).toEqual({ leadChanges: 1, timesTied: 4 });
     expect(validateParsedBoxscore(parsed).valid).toBe(true);
+
+    const incomplete = structuredClone(parsed);
+    delete incomplete.teams[0].teamStatistics;
+    delete incomplete.gameStatistics;
+    expect(validateParsedBoxscore(incomplete).issues).toContainEqual(
+      expect.objectContaining({ code: "BDB_PDF_TEAM_STATISTICS_MISSING" }),
+    );
   });
 
   it("parses IVV x CAC from the supported fixture", async () => {
@@ -57,6 +80,19 @@ describe("FIBA/Genius Sports parser", () => {
     expect(parsed.teams[1].players.find((player) => player.jerseyNumber === "36")?.name).toBe(
       "Thierry Botelho de Oliveira Claudino",
     );
+    expect(parsed.teams[0].teamStatistics).toMatchObject({
+      pointsFromTurnovers: 20,
+      pointsInPaint: 48,
+      secondChancePoints: 28,
+      fastBreakPoints: 20,
+      fastBreakPointsFromTurnovers: 7,
+      benchPoints: 41,
+      largestLead: 55,
+      largestScoringRun: 18,
+      pointsPerPossession: 1.11,
+      timeLeadingSeconds: 1964,
+    });
+    expect(parsed.gameStatistics).toEqual({ leadChanges: 4, timesTied: 2 });
     expect(validateParsedBoxscore(parsed).valid).toBe(true);
   });
 

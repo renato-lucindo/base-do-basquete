@@ -39,6 +39,22 @@ export interface PublicGameTeam {
   teamSlug: string;
   score: number;
   periodScores: Array<{ periodNumber: number; points: number }>;
+  statistics: PublicGameTeamStatistics | null;
+}
+
+export interface PublicGameTeamStatistics {
+  pointsFromTurnovers: number;
+  pointsInPaint: number;
+  pointsInPaintMade: number;
+  pointsInPaintAttempted: number;
+  secondChancePoints: number;
+  fastBreakPoints: number;
+  fastBreakPointsFromTurnovers: number;
+  benchPoints: number;
+  largestLead: number;
+  largestScoringRun: number;
+  pointsPerPossession: number;
+  timeLeadingSeconds: number;
 }
 
 export interface PublicGamePlayer {
@@ -62,6 +78,7 @@ export interface PublicGameDetail {
   venue: string | null;
   advanced: boolean;
   teams: [PublicGameTeam, PublicGameTeam];
+  gameStatistics: { leadChanges: number; timesTied: number } | null;
   players: PublicGamePlayer[];
 }
 
@@ -180,7 +197,14 @@ export async function loadPublicGameDetail(
   const game = gameResult.data.length === 1 ? gameResult.data[0] : null;
   if (!game) return null;
 
-  const [participantsResult, scoresResult, periodScoresResult, playerResult] = await Promise.all([
+  const [
+    participantsResult,
+    scoresResult,
+    periodScoresResult,
+    playerResult,
+    teamStatisticsResult,
+    gameStatisticsResult,
+  ] = await Promise.all([
     client
       .from("game_participants")
       .select("registration_id,side")
@@ -197,11 +221,19 @@ export async function loadPublicGameDetail(
       .eq("game_id", gameId)
       .order("period_number"),
     client.from("game_player_statistics").select("*").eq("game_id", gameId),
+    client.from("game_team_statistics").select("*").eq("game_id", gameId),
+    client
+      .from("game_statistics")
+      .select("lead_changes,times_tied")
+      .eq("game_id", gameId)
+      .maybeSingle(),
   ]);
   ensure(participantsResult.error);
   ensure(scoresResult.error);
   ensure(periodScoresResult.error);
   ensure(playerResult.error);
+  ensure(teamStatisticsResult.error);
+  ensure(gameStatisticsResult.error);
   if (participantsResult.data.length !== 2) return null;
 
   const registrationIds = participantsResult.data.map((participant) => participant.registration_id);
@@ -244,6 +276,27 @@ export async function loadPublicGameDetail(
         periodScores: periodScoresResult.data
           .filter((score) => score.registration_id === participant.registration_id)
           .map((score) => ({ periodNumber: score.period_number, points: score.points })),
+        statistics: (() => {
+          const statistics = teamStatisticsResult.data.find(
+            (item) => item.registration_id === participant.registration_id,
+          );
+          return statistics
+            ? {
+                pointsFromTurnovers: statistics.points_from_turnovers,
+                pointsInPaint: statistics.points_in_paint,
+                pointsInPaintMade: statistics.points_in_paint_made,
+                pointsInPaintAttempted: statistics.points_in_paint_attempted,
+                secondChancePoints: statistics.second_chance_points,
+                fastBreakPoints: statistics.fast_break_points,
+                fastBreakPointsFromTurnovers: statistics.fast_break_points_from_turnovers,
+                benchPoints: statistics.bench_points,
+                largestLead: statistics.largest_lead,
+                largestScoringRun: statistics.largest_scoring_run,
+                pointsPerPossession: statistics.points_per_possession,
+                timeLeadingSeconds: statistics.time_leading_seconds,
+              }
+            : null;
+        })(),
       };
     })
     .filter((team): team is PublicGameTeam => team !== null)
@@ -259,6 +312,12 @@ export async function loadPublicGameDetail(
     venue: game.venue,
     advanced: categoryCapabilities(context.category.hasAdvancedStats).advanced,
     teams: teams as [PublicGameTeam, PublicGameTeam],
+    gameStatistics: gameStatisticsResult.data
+      ? {
+          leadChanges: gameStatisticsResult.data.lead_changes,
+          timesTied: gameStatisticsResult.data.times_tied,
+        }
+      : null,
     players: playerResult.data.map((row) => ({
       playerId: row.player_id as number,
       playerName: row.player_name as string,

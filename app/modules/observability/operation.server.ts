@@ -5,6 +5,7 @@ export type OperationalName =
   | "auth"
   | "boxscore"
   | "boxscore.commit"
+  | "boxscore.refresh_stats"
   | "boxscore.upload"
   | "health"
   | "public"

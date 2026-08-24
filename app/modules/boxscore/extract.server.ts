@@ -15,6 +15,11 @@ function toHex(bytes: ArrayBuffer): string {
   return [...new Uint8Array(bytes)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
+  const copy = Uint8Array.from(bytes);
+  return toHex(await crypto.subtle.digest("SHA-256", copy.buffer));
+}
+
 export async function validatePdfUpload(file: File): Promise<ValidatedPdf> {
   if (file.size < 5 || file.size > MAX_PDF_BYTES) throw new Error("BDB_PDF_SIZE");
   if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
@@ -24,8 +29,7 @@ export async function validatePdfUpload(file: File): Promise<ValidatedPdf> {
   if (new TextDecoder("ascii").decode(bytes.slice(0, 5)) !== "%PDF-") {
     throw new Error("BDB_PDF_SIGNATURE");
   }
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return { bytes, filename: file.name.slice(0, 160), sha256: toHex(digest) };
+  return { bytes, filename: file.name.slice(0, 160), sha256: await sha256Bytes(bytes) };
 }
 
 export async function extractFibaGeniusBoxscore(bytes: Uint8Array) {
