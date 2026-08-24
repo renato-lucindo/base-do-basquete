@@ -71,77 +71,77 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
   return (
     <search>
       <form
-        className="contextual-search"
-      onSubmit={(event) => {
-        event.preventDefault();
-        selectItem(items[activeIndex] ?? items[0]);
-      }}
-      >
-      <label htmlFor={`${listboxId}-input`}>Buscar nesta edição</label>
-      <input
-        aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
-        aria-autocomplete="list"
-        aria-controls={listboxId}
-        aria-expanded={expanded}
-        autoComplete="off"
-        id={`${listboxId}-input`}
-        onChange={(event) => setQuery(event.currentTarget.value)}
-        onKeyDown={(event) => {
-          if (event.key === "ArrowDown" && items.length > 0) {
-            event.preventDefault();
-            setActiveIndex((current) => (current + 1) % items.length);
-          } else if (event.key === "ArrowUp" && items.length > 0) {
-            event.preventDefault();
-            setActiveIndex((current) => (current <= 0 ? items.length - 1 : current - 1));
-          } else if (event.key === "Escape") {
-            setQuery("");
-            setGroups([]);
-            setStatus("idle");
-          }
+          className="contextual-search"
+        onSubmit={(event) => {
+          event.preventDefault();
+          selectItem(items[activeIndex] ?? items[0]);
         }}
-        placeholder="Atleta, equipe, categoria ou ano"
-        role="combobox"
-        type="search"
-        value={query}
-      />
-      <span aria-live="polite" className="sr-only">
-        {status === "loading"
-          ? "Buscando"
-          : status === "ready"
-            ? `${items.length} resultado(s) encontrados`
-            : status === "error"
-              ? "Busca indisponível"
-              : "Digite ao menos dois caracteres"}
-      </span>
-
-      {expanded ? (
-        <div className="contextual-search-results" id={listboxId} role="listbox">
-          {status === "loading" ? <p>Buscando…</p> : null}
-          {status === "error" ? <p>Busca temporariamente indisponível.</p> : null}
-          {status === "ready" && items.length === 0 ? <p>Nenhum resultado encontrado.</p> : null}
-          {groups.map((group) => (
-            <fieldset key={group.type}>
-              <legend>{group.label}</legend>
-              {group.items.map((item) => {
-                const index = items.findIndex((candidate) => candidate.id === item.id);
-                return (
-                  <Link
-                    aria-selected={activeIndex === index}
-                    id={`${listboxId}-option-${index}`}
-                    key={item.id}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    role="option"
-                    to={item.href}
-                  >
-                    <span>{item.label}</span>
-                    <small>{item.description}</small>
-                  </Link>
-                );
-              })}
-            </fieldset>
-          ))}
-        </div>
-      ) : null}
+        >
+        <label htmlFor={`${listboxId}-input`}>Buscar nesta edição</label>
+        <input
+          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={expanded}
+          autoComplete="off"
+          id={`${listboxId}-input`}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && items.length > 0) {
+              event.preventDefault();
+              setActiveIndex((current) => (current + 1) % items.length);
+            } else if (event.key === "ArrowUp" && items.length > 0) {
+              event.preventDefault();
+              setActiveIndex((current) => (current <= 0 ? items.length - 1 : current - 1));
+            } else if (event.key === "Escape") {
+              setQuery("");
+              setGroups([]);
+              setStatus("idle");
+            }
+          }}
+          placeholder="Atleta, equipe, categoria ou ano"
+          role="combobox"
+          type="search"
+          value={query}
+        />
+        <span aria-live="polite" className="sr-only">
+          {status === "loading"
+            ? "Buscando"
+            : status === "ready"
+              ? `${items.length} resultado(s) encontrados`
+              : status === "error"
+                ? "Busca indisponível"
+                : "Digite ao menos dois caracteres"}
+        </span>
+  
+        {expanded ? (
+          <div className="contextual-search-results" id={listboxId} role="listbox">
+            {status === "loading" ? <p>Buscando…</p> : null}
+            {status === "error" ? <p>Busca temporariamente indisponível.</p> : null}
+            {status === "ready" && items.length === 0 ? <p>Nenhum resultado encontrado.</p> : null}
+            {groups.map((group) => (
+              <fieldset key={group.type}>
+                <legend>{group.label}</legend>
+                {group.items.map((item) => {
+                  const index = items.findIndex((candidate) => candidate.id === item.id);
+                  return (
+                    <Link
+                      aria-selected={activeIndex === index}
+                      id={`${listboxId}-option-${index}`}
+                      key={item.id}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      role="option"
+                      to={item.href}
+                    >
+                      <span>{item.label}</span>
+                      <small>{item.description}</small>
+                    </Link>
+                  );
+                })}
+              </fieldset>
+            ))}
+          </div>
+        ) : null}
       </form>
     </search>
   );
