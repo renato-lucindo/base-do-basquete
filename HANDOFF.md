@@ -8,10 +8,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-13 concluídos e integrados; release de produção encerrada.
-- Status geral: `DONE`; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. O responsável recusou conscientemente a rotação recomendada e aceitou o risco residual da senha exibida na saída técnica de inspeção.
+- Fase: WP-00 a WP-13 concluídos; WP-14 implementado e em gate de integração/produção.
+- Status geral: `IN PROGRESS`; estatísticas coletivas FIBA e cadastro assistido aprovados localmente e na PR #24. A migration está aplicada no Supabase; produção ainda executa a release anterior até o merge pela `main`.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-final-handoff`, exclusiva para registrar este estado pós-merge.
+- Branch atual: `codex/wp-14-import-team-stats-players`.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: release `v1.0.3` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; preview fixo também restaurado e saudável.
 - Cloudflare: produção ativa em 100% na candidata `c98935fa`; versão anterior `d59fd181` preservada para rollback; logs 179 sucessos/0 erros na janela validada.
@@ -32,6 +32,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Primeira temporada com um único administrador, MFA e `aal2`.
 - Multiadmin, convites, RBAC e gestão de usuários ficam para fase futura.
 - Importação restrita ao único modelo FIBA/Genius Sports documentado, usando os dois PDFs fornecidos como fixtures.
+- O parser FIBA/Genius v2 persiste também os indicadores coletivos do rodapé; os PDFs privados confirmados são a fonte do retroprocessamento idempotente.
+- Similaridade de nomes é somente apoio à decisão: alternativas nunca são pré-selecionadas. Vincular atleta existente ou criar um novo ocorre na mesma transação do jogo, com duplicidade normalizada recusada no banco.
 - OCR open source é alternativa futura e não deve ser pesquisado ou implementado agora.
 - Domínio será decidido posteriormente; usar URLs temporárias das plataformas.
 
@@ -77,9 +79,9 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Não há implementação pendente no plano atual. Na próxima alteração autorizada, ler este handoff e confirmar `main` no GitHub e `/health` com `environment=production` e `status=ok`.
-2. Criar uma nova branch curta `codex/wp-*` a partir da `main` atual; não reutilizar as branches dos pacotes encerrados.
-3. Se a mudança for operacional ou resposta a incidente, seguir o runbook correspondente em `docs/runbooks/` e validar a recuperação antes de alterar produção.
+1. Atualizar `docs/execution/WP-14.md`, enviar o commit documental e reconfirmar `gate`, `database`, `upload` e `analyze` no head da PR #24.
+2. Marcar a PR pronta, integrar por squash e publicar produção exclusivamente por workflow disparado na `main`; validar `/health` e o smoke contextual.
+3. Abrir o importador administrativo no host de produção, exigir sessão real `aal2` e retroprocessar os dois PDFs confirmados; reconciliar 4 linhas coletivas, 2 linhas gerais, 2 auditorias e as páginas públicas dos jogos.
 
 ### Primeiros arquivos a abrir
 
@@ -111,6 +113,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
 | WP-13 — Release de produção | `DONE` | `v1.0.3` ativa; rollout, métricas, logs, smoke público e smoke administrativo `aal2` aprovados; risco residual aceito pelo responsável |
+| WP-14 — Estatísticas coletivas e cadastro assistido | `IN PROGRESS` | PR #24 com quatro checks verdes; migration `20260824163802` aplicada; merge, release e retroprocessamento pendentes |
 
 ## 8. Arquivos e referências importantes
 
@@ -178,6 +181,9 @@ CLOUDFLARE_ACCOUNT_ID
 - Decisão de risco: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas, nenhuma persistência em código ou serviços e rotação recomendada; o responsável recusou conscientemente a alteração e aceitou o risco residual.
 - Recovery não utilizado: Supabase Auth confirmou `user_recovery_requested`, `/recover` HTTP 200 e envio do e-mail `recovery`; o responsável pode descartar a mensagem.
 - WP-13 gate após o incidente: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 303 arquivos aprovados; nenhum segredo persistido no Git.
+- WP-14 gate local: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 305 arquivos aprovados.
+- WP-14 banco: migration integral aprovada em rollback e persistida; CI/database desde zero aprovou 28/28 novas asserções de RLS, métricas, criação/vinculação, duplicidade, rollback, auditoria, refresh e idempotência.
+- WP-14 remoto: PR #24 com `gate`, `database`, `upload` e `analyze` aprovados no head `917f25c`; preview público e smoke contextual aprovados.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -229,10 +235,11 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch documental pós-release: `codex/wp-13-final-handoff`.
+- Branch de trabalho: `codex/wp-14-import-team-stats-players`.
 - Evidência final integrada em `main`: PR #22 por squash no commit `2e7e530`.
 - Checks do head final da PR #22: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
+- PR atual: #24 em draft; três commits funcionais enviados, quatro checks verdes no head `917f25c`; merge ainda não realizado.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -310,3 +317,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | Smoke de produção confirmou `aal2`, hub, logout e auditoria; senha autofill apareceu na inspeção e foi declarada comprometida | Responsável rotaciona a senha no Supabase sem compartilhá-la; novo login/MFA libera o gate final da PR #22 |
 | 2026-08-24 | Responsável/Codex | Responsável recusou conscientemente a rotação e aceitou o risco residual; WP-13 marcado `DONE` sem reduzir os controles de segurança | Executar gate final, integrar PR #22 por squash e confirmar produção saudável |
 | 2026-08-24 | Codex | PR #22 integrada por squash em `2e7e530` após quatro checks verdes; produção respondeu `production/ok` | Plano atual encerrado; próxima mudança começa em nova branch WP após conferir `main` e `/health` |
+| 2026-08-24 | Codex | WP-14 implementado; migration validada/aplicada; 28 pgTAP, CI, CodeQL e preview público aprovados na PR #24 | Enviar evidência documental, integrar pela `main`, publicar produção e retroprocessar os dois PDFs em `aal2` |

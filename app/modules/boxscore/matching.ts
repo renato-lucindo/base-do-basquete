@@ -1,16 +1,25 @@
 export interface RosterMatchCandidate {
-  rosterEntryId: number;
+  playerId: number;
+  rosterEntryId: number | null;
+  registrationId: number | null;
   playerName: string;
   jerseyNumber: string | null;
+  teamName: string | null;
+}
+
+export interface PlayerMatchAlternative extends RosterMatchCandidate {
+  score: number;
 }
 
 export interface PlayerMatchSuggestion {
   sourceName: string;
   sourceJersey: string;
   kind: "exact" | "similar" | "unmatched";
+  playerId: number | null;
   rosterEntryId: number | null;
+  registrationId: number | null;
   score: number | null;
-  alternatives: Array<{ rosterEntryId: number; playerName: string; score: number }>;
+  alternatives: PlayerMatchAlternative[];
 }
 
 export function normalizePersonName(value: string): string {
@@ -65,30 +74,36 @@ export function suggestPlayerMatch(
       sourceName,
       sourceJersey,
       kind: "exact",
+      playerId: candidate.playerId,
       rosterEntryId: candidate.rosterEntryId,
+      registrationId: candidate.registrationId,
       score: 1,
-      alternatives: [
-        { rosterEntryId: candidate.rosterEntryId, playerName: candidate.playerName, score: 1 },
-      ],
+      alternatives: [{ ...candidate, score: 1 }],
     };
   }
   const ranked = candidates
     .map((candidate) => ({
-      rosterEntryId: candidate.rosterEntryId,
-      playerName: candidate.playerName,
+      ...candidate,
       score: nameSimilarity(sourceName, candidate.playerName),
     }))
     .filter((candidate) => candidate.score >= 0.78)
-    .sort(
-      (left, right) =>
-        right.score - left.score || left.playerName.localeCompare(right.playerName, "pt-BR"),
-    )
+    .sort((left, right) => {
+      const scoreOrder = right.score - left.score;
+      if (scoreOrder !== 0) return scoreOrder;
+      const leftSameJersey = left.jerseyNumber === sourceJersey ? 1 : 0;
+      const rightSameJersey = right.jerseyNumber === sourceJersey ? 1 : 0;
+      return (
+        rightSameJersey - leftSameJersey || left.playerName.localeCompare(right.playerName, "pt-BR")
+      );
+    })
     .slice(0, 3);
   return {
     sourceName,
     sourceJersey,
     kind: ranked.length ? "similar" : "unmatched",
-    rosterEntryId: ranked[0]?.rosterEntryId ?? null,
+    playerId: null,
+    rosterEntryId: null,
+    registrationId: null,
     score: ranked[0]?.score ?? null,
     alternatives: ranked,
   };

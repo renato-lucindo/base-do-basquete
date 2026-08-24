@@ -74,12 +74,15 @@ export type Database = {
           id: number;
           import_id: number;
           roster_entry_id: number | null;
+          resolution_kind: string | null;
           similarity_score: number | null;
           source_jersey_number: string;
           source_player_name: string;
           source_team_name: string;
           status: string;
+          suggested_player_id: number | null;
           suggestion_kind: string;
+          suggestion_payload: Json;
           updated_at: string;
         };
         Insert: {
@@ -90,12 +93,15 @@ export type Database = {
           id?: never;
           import_id: number;
           roster_entry_id?: number | null;
+          resolution_kind?: string | null;
           similarity_score?: number | null;
           source_jersey_number?: string;
           source_player_name: string;
           source_team_name: string;
           status?: string;
+          suggested_player_id?: number | null;
           suggestion_kind?: string;
+          suggestion_payload?: Json;
           updated_at?: string;
         };
         Update: {
@@ -106,12 +112,15 @@ export type Database = {
           id?: never;
           import_id?: number;
           roster_entry_id?: number | null;
+          resolution_kind?: string | null;
           similarity_score?: number | null;
           source_jersey_number?: string;
           source_player_name?: string;
           source_team_name?: string;
           status?: string;
+          suggested_player_id?: number | null;
           suggestion_kind?: string;
+          suggestion_payload?: Json;
           updated_at?: string;
         };
         Relationships: [
@@ -121,6 +130,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "boxscore_imports";
             referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "boxscore_import_player_matches_suggested_player_id_fkey";
+            columns: ["suggested_player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
           },
           {
             foreignKeyName: "boxscore_import_player_matches_roster_competition_fkey";
@@ -419,6 +435,109 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "game_roster_slots";
             referencedColumns: ["id", "game_id"];
+          },
+        ];
+      };
+      game_statistics: {
+        Row: {
+          created_at: string;
+          game_id: number;
+          lead_changes: number;
+          source_parser_version: string;
+          times_tied: number;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          game_id: number;
+          lead_changes: number;
+          source_parser_version: string;
+          times_tied: number;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          game_id?: number;
+          lead_changes?: number;
+          source_parser_version?: string;
+          times_tied?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_statistics_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: true;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      game_team_statistics: {
+        Row: {
+          bench_points: number;
+          created_at: string;
+          fast_break_points: number;
+          fast_break_points_from_turnovers: number;
+          game_id: number;
+          largest_lead: number;
+          largest_scoring_run: number;
+          points_from_turnovers: number;
+          points_in_paint: number;
+          points_in_paint_attempted: number;
+          points_in_paint_made: number;
+          points_per_possession: number;
+          registration_id: number;
+          second_chance_points: number;
+          source_parser_version: string;
+          time_leading_seconds: number;
+          updated_at: string;
+        };
+        Insert: {
+          bench_points: number;
+          created_at?: string;
+          fast_break_points: number;
+          fast_break_points_from_turnovers: number;
+          game_id: number;
+          largest_lead: number;
+          largest_scoring_run: number;
+          points_from_turnovers: number;
+          points_in_paint: number;
+          points_in_paint_attempted: number;
+          points_in_paint_made: number;
+          points_per_possession: number;
+          registration_id: number;
+          second_chance_points: number;
+          source_parser_version: string;
+          time_leading_seconds: number;
+          updated_at?: string;
+        };
+        Update: {
+          bench_points?: number;
+          created_at?: string;
+          fast_break_points?: number;
+          fast_break_points_from_turnovers?: number;
+          game_id?: number;
+          largest_lead?: number;
+          largest_scoring_run?: number;
+          points_from_turnovers?: number;
+          points_in_paint?: number;
+          points_in_paint_attempted?: number;
+          points_in_paint_made?: number;
+          points_per_possession?: number;
+          registration_id?: number;
+          second_chance_points?: number;
+          source_parser_version?: string;
+          time_leading_seconds?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_team_statistics_participant_fkey";
+            columns: ["game_id", "registration_id"];
+            isOneToOne: true;
+            referencedRelation: "game_participants";
+            referencedColumns: ["game_id", "registration_id"];
           },
         ];
       };
@@ -1166,6 +1285,14 @@ export type Database = {
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };
+        Returns: number;
+      };
+      admin_refresh_boxscore_team_statistics: {
+        Args: {
+          p_import_id: number;
+          p_parsed_payload: Json;
+          p_validation_payload: Json;
+        };
         Returns: number;
       };
       admin_confirm_final_placement: {
