@@ -680,6 +680,7 @@ a {
 }
 
 .compact-admin-form input,
+.inline-admin-form input,
 .inline-admin-form select,
 .roster-form input[type="text"],
 .roster-form input:not([type]) {
@@ -690,6 +691,17 @@ a {
   color: var(--paper);
   font: inherit;
   padding: 10px 12px;
+}
+
+.final-result-form {
+  grid-template-columns: repeat(3, minmax(150px, 1fr)) auto;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.final-result-form small {
+  grid-column: 1 / -1;
+  color: var(--green);
 }
 
 .admin-panel {
@@ -958,6 +970,41 @@ a {
 .detail-card > p:last-child {
   max-width: 620px;
   margin-top: 28px;
+}
+
+.achievement-panel {
+  padding: 40px 0 80px;
+  border-top: 1px solid var(--line);
+}
+
+.achievement-list {
+  display: grid;
+  gap: 1px;
+  margin: 24px 0 0;
+  padding: 1px;
+  background: var(--line);
+  list-style: none;
+}
+
+.achievement-list li {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(220px, 1.5fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  padding: 20px;
+  background: var(--ink);
+}
+
+.achievement-list span {
+  color: var(--muted);
+}
+
+.achievement-list a {
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-decoration: none;
+  text-transform: uppercase;
 }
 
 .scoresheet-editor {
@@ -1468,7 +1515,8 @@ a {
   .admin-competition-grid,
   .admin-global-grid,
   .admin-action-grid,
-  .inline-admin-form {
+  .inline-admin-form,
+  .achievement-list li {
     grid-template-columns: 1fr;
   }
 

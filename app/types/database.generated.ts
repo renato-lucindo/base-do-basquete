@@ -327,9 +327,10 @@ export type Database = {
           confirmed_by: string | null;
           created_at: string;
           id: number;
-          placement: number;
+          placement: number | null;
           registration_id: number;
           result_label: string | null;
+          result_status: string;
           updated_at: string;
         };
         Insert: {
@@ -338,9 +339,10 @@ export type Database = {
           confirmed_by?: string | null;
           created_at?: string;
           id?: never;
-          placement: number;
+          placement?: number | null;
           registration_id: number;
           result_label?: string | null;
+          result_status?: string;
           updated_at?: string;
         };
         Update: {
@@ -349,9 +351,10 @@ export type Database = {
           confirmed_by?: string | null;
           created_at?: string;
           id?: never;
-          placement?: number;
+          placement?: number | null;
           registration_id?: number;
           result_label?: string | null;
+          result_status?: string;
           updated_at?: string;
         };
         Relationships: [
@@ -1030,12 +1033,21 @@ export type Database = {
       };
       player_achievements: {
         Row: {
+          category_name: string | null;
+          category_slug: string | null;
+          competition_display_name: string | null;
           competition_id: number | null;
           confirmed_at: string | null;
           placement: number | null;
           player_id: number | null;
           registration_id: number | null;
           result_label: string | null;
+          series_name: string | null;
+          series_slug: string | null;
+          team_id: number | null;
+          team_name: string | null;
+          team_slug: string | null;
+          year: number | null;
         };
         Relationships: [
           {
@@ -1057,6 +1069,13 @@ export type Database = {
             columns: ["player_id"];
             isOneToOne: false;
             referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "team_registrations_team_id_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
             referencedColumns: ["id"];
           },
         ];
@@ -1105,12 +1124,18 @@ export type Database = {
       };
       team_achievements: {
         Row: {
+          category_name: string | null;
+          category_slug: string | null;
+          competition_display_name: string | null;
           competition_id: number | null;
           confirmed_at: string | null;
           placement: number | null;
           registration_id: number | null;
           result_label: string | null;
+          series_name: string | null;
+          series_slug: string | null;
           team_id: number | null;
+          year: number | null;
         };
         Relationships: [
           {
@@ -1142,6 +1167,32 @@ export type Database = {
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };
         Returns: number;
+      };
+      admin_confirm_final_placement: {
+        Args: {
+          p_placement?: number;
+          p_registration_id: number;
+          p_result_label?: string;
+          p_result_status: string;
+        };
+        Returns: {
+          competition_id: number;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          id: number;
+          placement: number | null;
+          registration_id: number;
+          result_label: string | null;
+          result_status: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "final_placements";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       admin_create_boxscore_import_draft: {
         Args: {

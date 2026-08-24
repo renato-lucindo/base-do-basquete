@@ -1,10 +1,14 @@
-import { data, Form, Link, redirect } from "react-router";
+import { data, Form, Link, redirect, useNavigation } from "react-router";
 
 import type { Route } from "./+types/admin.competitions.$competitionId";
 import { cloudflareContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
-import { mapAdminDomainError, normalizeJersey } from "../modules/competition/admin-domain";
+import {
+  mapAdminDomainError,
+  normalizeFinalResult,
+  normalizeJersey,
+} from "../modules/competition/admin-domain";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
@@ -37,6 +41,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     teamsResult,
     playersResult,
     gamesResult,
+    placementsResult,
   ] = await Promise.all([
     auth.client.from("competition_series").select("name").eq("id", competition.series_id).single(),
     auth.client.from("categories").select("name").eq("id", competition.category_id).single(),
@@ -59,6 +64,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .from("games")
       .select("id", { count: "exact", head: true })
       .eq("competition_id", competitionId),
+    auth.client
+      .from("final_placements")
+      .select("id,registration_id,result_status,placement,result_label,confirmed_at")
+      .eq("competition_id", competitionId),
   ]);
 
   if (
@@ -67,7 +76,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     registrationsResult.error ||
     teamsResult.error ||
     playersResult.error ||
-    gamesResult.error
+    gamesResult.error ||
+    placementsResult.error
   )
     throw new Error("Competition hub query failed");
 
@@ -86,6 +96,9 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     ...registration,
     teamName: teamNames.get(registration.team_id) ?? "Equipe indisponível",
     roster: rosterResult.data.filter((entry) => entry.registration_id === registration.id),
+    finalPlacement:
+      placementsResult.data.find((placement) => placement.registration_id === registration.id) ??
+      null,
   }));
   const registeredTeamIds = new Set(registrations.map((registration) => registration.team_id));
 
@@ -147,6 +160,21 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       p_registration_id: registrationId,
       p_entries: entries,
     });
+  } else if (intent === "confirm-placement") {
+    const registrationId = parseId(formData.get("registrationId"));
+    if (!registrationId) return data({ error: "Inscrição inválida." }, { status: 400 });
+    const normalized = normalizeFinalResult(
+      String(formData.get("resultStatus") ?? ""),
+      String(formData.get("placement") ?? ""),
+      String(formData.get("resultLabel") ?? ""),
+    );
+    if (!normalized.ok) return data({ error: normalized.error.message }, { status: 400 });
+    result = await auth.client.rpc("admin_confirm_final_placement", {
+      p_registration_id: registrationId,
+      p_result_status: normalized.value.status,
+      p_placement: normalized.value.placement ?? undefined,
+      p_result_label: normalized.value.label ?? undefined,
+    });
   } else {
     throw new Response("Ação inválida", { status: 400 });
   }
@@ -168,6 +196,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
 export default function CompetitionHub({ loaderData, actionData }: Route.ComponentProps) {
   const { competition } = loaderData;
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state !== "idle";
   return (
     <main className="admin-shell">
       <header className="site-header admin-header">
@@ -293,6 +323,60 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                   <button className="button button-primary" type="submit">
                     Salvar elenco em uma transação
                   </button>
+                </Form>
+              ) : null}
+              {registration.status !== "draft" ? (
+                <Form method="post" className="inline-admin-form final-result-form">
+                  <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                  <input type="hidden" name="intent" value="confirm-placement" />
+                  <input type="hidden" name="registrationId" value={registration.id} />
+                  <label>
+                    Resultado final
+                    <select
+                      name="resultStatus"
+                      required
+                      defaultValue={registration.finalPlacement?.result_status ?? ""}
+                    >
+                      <option value="" disabled>
+                        Selecione
+                      </option>
+                      <option value="placed">Classificada</option>
+                      <option value="withdrawn">Retirada</option>
+                      <option value="disqualified">Desclassificada</option>
+                    </select>
+                  </label>
+                  <label>
+                    Colocação
+                    <input
+                      name="placement"
+                      type="number"
+                      min="1"
+                      step="1"
+                      defaultValue={registration.finalPlacement?.placement ?? ""}
+                      placeholder="Somente classificada"
+                    />
+                  </label>
+                  <label>
+                    Rótulo editorial
+                    <input
+                      name="resultLabel"
+                      minLength={2}
+                      maxLength={80}
+                      defaultValue={registration.finalPlacement?.result_label ?? ""}
+                      placeholder="Ex.: Campeã estadual"
+                    />
+                  </label>
+                  <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Confirmando…" : "Confirmar resultado final"}
+                  </button>
+                  {registration.finalPlacement?.confirmed_at ? (
+                    <small>
+                      Confirmado: {registration.finalPlacement.result_status}
+                      {registration.finalPlacement.placement
+                        ? ` · ${registration.finalPlacement.placement}º lugar`
+                        : ""}
+                    </small>
+                  ) : null}
                 </Form>
               ) : null}
             </article>

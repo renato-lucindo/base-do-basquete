@@ -14,12 +14,67 @@ export interface PublicResourceItem {
 export interface PublicDetail {
   label: string;
   description: string;
+  achievements: PublicAchievement[];
+}
+
+export interface PublicAchievement {
+  competitionId: number;
+  competitionDisplayName: string;
+  seriesName: string;
+  seriesSlug: string;
+  year: number;
+  categoryName: string;
+  categorySlug: string;
+  placement: number;
+  resultLabel: string | null;
+  teamName?: string;
+  teamSlug?: string;
 }
 
 function ensureQuery(error: unknown): asserts error is null {
   if (error) {
     throw new PublicContextQueryError();
   }
+}
+
+function toPublicAchievement(achievement: {
+  category_name: string | null;
+  category_slug: string | null;
+  competition_display_name: string | null;
+  competition_id: number | null;
+  placement: number | null;
+  result_label: string | null;
+  series_name: string | null;
+  series_slug: string | null;
+  team_name?: string | null;
+  team_slug?: string | null;
+  year: number | null;
+}): PublicAchievement | null {
+  if (
+    achievement.competition_id === null ||
+    achievement.competition_display_name === null ||
+    achievement.series_name === null ||
+    achievement.series_slug === null ||
+    achievement.year === null ||
+    achievement.category_name === null ||
+    achievement.category_slug === null ||
+    achievement.placement === null
+  ) {
+    return null;
+  }
+  return {
+    competitionId: achievement.competition_id,
+    competitionDisplayName: achievement.competition_display_name,
+    seriesName: achievement.series_name,
+    seriesSlug: achievement.series_slug,
+    year: achievement.year,
+    categoryName: achievement.category_name,
+    categorySlug: achievement.category_slug,
+    placement: achievement.placement,
+    resultLabel: achievement.result_label,
+    teamName: achievement.team_name ?? undefined,
+    teamSlug: achievement.team_slug ?? undefined,
+  };
 }
 
 async function teamItems(
@@ -159,12 +214,23 @@ export async function loadPublicDetail(
       .in("status", ["confirmed", "completed"])
       .limit(1);
     ensureQuery(registrationResult.error);
-    return registrationResult.data.length === 1
-      ? {
-          label: team.name,
-          description: team.abbreviation ?? "Equipe inscrita nesta edição.",
-        }
-      : null;
+    if (registrationResult.data.length !== 1) return null;
+    const achievementsResult = await client
+      .from("team_achievements")
+      .select(
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label",
+      )
+      .eq("team_id", team.id)
+      .order("year", { ascending: false })
+      .order("placement");
+    ensureQuery(achievementsResult.error);
+    return {
+      label: team.name,
+      description: team.abbreviation ?? "Equipe inscrita nesta edição.",
+      achievements: achievementsResult.data
+        .map(toPublicAchievement)
+        .filter((achievement): achievement is PublicAchievement => achievement !== null),
+    };
   }
 
   if (resource === "jogadores") {
@@ -202,6 +268,15 @@ export async function loadPublicDetail(
     ensureQuery(primaryJerseyResult.error);
     const currentJersey = rosterResult.data[0]?.jersey_number;
     const primaryJersey = primaryJerseyResult.data[0];
+    const achievementsResult = await client
+      .from("player_achievements")
+      .select(
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label,team_name,team_slug",
+      )
+      .eq("player_id", player.id)
+      .order("year", { ascending: false })
+      .order("placement");
+    ensureQuery(achievementsResult.error);
     return {
       label: player.full_name,
       description: [
@@ -210,6 +285,9 @@ export async function loadPublicDetail(
           ? `Camisa histórica: ${primaryJersey.jersey_number} em ${primaryJersey.game_count} jogo(s).`
           : "Sem histórico de jogos finalizados.",
       ].join(" "),
+      achievements: achievementsResult.data
+        .map(toPublicAchievement)
+        .filter((achievement): achievement is PublicAchievement => achievement !== null),
     };
   }
 
@@ -235,5 +313,6 @@ export async function loadPublicDetail(
   return {
     label: game.game_number ? `Jogo ${game.game_number}` : `Jogo ${game.id}`,
     description: game.venue ?? `Status: ${game.status}`,
+    achievements: [],
   };
 }
