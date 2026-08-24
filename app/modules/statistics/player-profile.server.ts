@@ -77,7 +77,7 @@ export async function loadPublicPlayerProfile(
     !profileResult.error && profileResult.data.length === 1 ? profileResult.data[0] : null;
   if (profileResult.error) {
     const legacyResult = await client
-      .from("public_player_profiles")
+      .from("players")
       .select("id,full_name,slug,is_public")
       .eq("slug", slug)
       .eq("is_public", true)
