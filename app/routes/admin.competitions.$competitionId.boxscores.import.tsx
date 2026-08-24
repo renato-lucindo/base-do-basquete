@@ -14,6 +14,7 @@ import {
 import { suggestPlayerMatch } from "../modules/boxscore/matching";
 import { FIBA_GENIUS_PARSER_VERSION, validateParsedBoxscore } from "../modules/boxscore/parser";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
+import { FormDraftNotice } from "../modules/admin/form-draft-notice";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
@@ -485,6 +486,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!importId) return data({ error: "Importação inválida." }, { status: 400 });
     const teamCount = Number(formData.get("teamCount"));
     const playerCount = Number(formData.get("playerCount"));
+    if (formData.get("irreversibleConfirmed") !== "yes") {
+      return data({ error: "Confirme a revisão final antes de importar." }, { status: 400 });
+    }
     if (teamCount !== 2 || !Number.isInteger(playerCount) || playerCount < 10 || playerCount > 24) {
       return data({ error: "Revisão incompleta." }, { status: 400 });
     }
@@ -580,6 +584,10 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
   const unrosteredPlayers = loaderData.players.filter(
     (player) => !rosteredPlayerIds.has(player.id),
   );
+  const pendingAssociations = reviewPlayers.filter(({ team, player }) => {
+    const match = matches.get(`${team.name}\u0000${player.name}`);
+    return match?.suggestion_kind !== "exact";
+  }).length;
 
   return (
     <main className="admin-shell">
@@ -638,11 +646,24 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
               {review.parsed.teams[0].score} × {review.parsed.teams[1].score}{" "}
               {review.parsed.teams[1].name}
             </p>
-            <Form method="post" action="?mode=confirm">
+            <Form id="boxscore-review-form" method="post" action="?mode=confirm">
               <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
               <input type="hidden" name="importId" value={review.id} />
               <input type="hidden" name="teamCount" value="2" />
               <input type="hidden" name="playerCount" value={reviewPlayers.length} />
+              <FormDraftNotice
+                contextId={`competition-${loaderData.competition.id}-import-${review.id}`}
+                formId="boxscore-review-form"
+              />
+              <aside className="admin-review-summary" aria-live="polite">
+                <strong>
+                  Placar extraído: {review.parsed.teams[0].score} ×{" "}
+                  {review.parsed.teams[1].score}
+                </strong>
+                <span>
+                  {pendingAssociations} vínculo(s) sem correspondência exata exigem revisão.
+                </span>
+              </aside>
               <div className="boxscore-team-resolution">
                 {review.parsed.teams.map((team, index) => (
                   <label key={team.name}>
@@ -799,6 +820,11 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                 Sugestões por similaridade nunca são pré-selecionadas. A confirmação pode associar,
                 adicionar ao elenco ou criar o atleta e grava tudo em uma única transação.
               </p>
+              <label className="irreversible-confirmation">
+                <input name="irreversibleConfirmed" required type="checkbox" value="yes" />
+                Revisei equipes, atletas, placar e associações. Confirmo a importação atômica e
+                irreversível.
+              </label>
               <button className="button button-primary" type="submit">
                 Confirmar importação atômica
               </button>

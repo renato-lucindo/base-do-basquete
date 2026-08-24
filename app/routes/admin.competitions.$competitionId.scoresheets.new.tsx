@@ -172,6 +172,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const auth = await requireAdminAal2(request, env);
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
+  if (formData.get("irreversibleConfirmed") !== "yes") {
+    return badRequest("Confirme a revisão final antes de encerrar a súmula.");
+  }
 
   const idempotencyKey = String(formData.get("idempotencyKey") ?? "");
   const scheduledLocal = String(formData.get("scheduledLocal") ?? "");

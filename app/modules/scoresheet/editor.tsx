@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Form, Link, useNavigation } from "react-router";
 
+import { FormDraftNotice } from "../admin/form-draft-notice";
+
 import {
   buildPrefillSlots,
   calculatePoints,
@@ -171,10 +173,14 @@ export function ManualScoresheetEditor({
           </p>
         ) : null}
 
-        <Form method="post" className="scoresheet-form">
+        <Form method="post" className="scoresheet-form" id="manual-scoresheet-form">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
           <input type="hidden" name="periodCount" value={periodCount} />
+          <FormDraftNotice
+            contextId={`competition-${competitionId}`}
+            formId="manual-scoresheet-form"
+          />
 
           <fieldset className="scoresheet-header-grid">
             <legend>Cabeçalho do jogo</legend>
@@ -404,6 +410,11 @@ export function ManualScoresheetEditor({
 
           <div className="scoresheet-submit">
             <p>O jogo será encerrado como final. Empate exige OT e é recusado pelo banco.</p>
+            <label className="irreversible-confirmation">
+              <input name="irreversibleConfirmed" required type="checkbox" value="yes" />
+              Revisei equipes, atletas, períodos, faltas e placar. Confirmo o encerramento
+              irreversível desta súmula.
+            </label>
             <button
               className="button button-primary"
               type="submit"

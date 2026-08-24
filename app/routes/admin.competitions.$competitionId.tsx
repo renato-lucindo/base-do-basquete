@@ -9,6 +9,8 @@ import {
   normalizeFinalResult,
   normalizeJersey,
 } from "../modules/competition/admin-domain";
+import { FormDraftNotice } from "../modules/admin/form-draft-notice";
+import { RosterFormTools } from "../modules/admin/roster-form-tools";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
@@ -315,18 +317,35 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                 </Form>
               ) : null}
               {registration.status !== "withdrawn" && registration.status !== "completed" ? (
-                <Form method="post" className="roster-form">
+                <Form
+                  method="post"
+                  className="roster-form"
+                  id={`roster-form-${registration.id}`}
+                >
                   <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
                   <input type="hidden" name="intent" value="replace-roster" />
                   <input type="hidden" name="registrationId" value={registration.id} />
+                  <FormDraftNotice
+                    contextId={`competition-${competition.id}-registration-${registration.id}`}
+                    formId={`roster-form-${registration.id}`}
+                  />
+                  <RosterFormTools formId={`roster-form-${registration.id}`} />
                   <fieldset>
                     <legend>Elenco completo</legend>
                     {loaderData.players.map((player) => {
                       const current = registration.roster.find(
                         (entry) => entry.player_id === player.id,
                       );
+                      const otherRegistration = loaderData.registrations.find(
+                        (candidate) =>
+                          candidate.id !== registration.id &&
+                          candidate.roster.some((entry) => entry.player_id === player.id),
+                      );
                       return (
-                        <label key={player.id}>
+                        <label
+                          data-roster-player={`${player.full_name} ${otherRegistration?.teamName ?? ""}`}
+                          key={player.id}
+                        >
                           <input
                             type="checkbox"
                             name="playerId"
@@ -340,6 +359,12 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                             defaultValue={current?.jersey_number ?? ""}
                             placeholder="Camisa"
                           />
+                          {otherRegistration ? (
+                            <small className="roster-warning">
+                              Inscrito também por {otherRegistration.teamName}; a validação final
+                              permanece no servidor.
+                            </small>
+                          ) : null}
                         </label>
                       );
                     })}
