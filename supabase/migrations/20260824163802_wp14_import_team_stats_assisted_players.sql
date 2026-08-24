@@ -650,18 +650,26 @@ begin
           end if;
           existing_count := existing_count + 1;
         else
+          select roster.id into resolved_roster_entry_id
+          from public.roster_entries roster
+          where roster.registration_id = registration_id
+            and roster.player_id = resolved_player_id
+          for update;
           begin
-            insert into public.roster_entries (
-              competition_id, registration_id, player_id, jersey_number, status, left_on
-            ) values (
-              import_record.competition_id, registration_id, resolved_player_id,
-              source_jersey, 'active', null
-            )
-            on conflict (registration_id, player_id) do update
-            set jersey_number = excluded.jersey_number,
-                status = 'active',
-                left_on = null
-            returning id into resolved_roster_entry_id;
+            if resolved_roster_entry_id is null then
+              insert into public.roster_entries (
+                competition_id, registration_id, player_id, jersey_number, status, left_on
+              ) values (
+                import_record.competition_id, registration_id, resolved_player_id,
+                source_jersey, 'active', null
+              ) returning id into resolved_roster_entry_id;
+            else
+              update public.roster_entries
+              set jersey_number = source_jersey,
+                  status = 'active',
+                  left_on = null
+              where id = resolved_roster_entry_id;
+            end if;
           exception when unique_violation then
             get stacked diagnostics violated_constraint = constraint_name;
             if violated_constraint = 'roster_entries_active_competition_player_uidx' then

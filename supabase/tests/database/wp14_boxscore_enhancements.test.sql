@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(27);
 set constraints all deferred;
 
 insert into auth.users (
@@ -52,12 +52,11 @@ overriding system value
 select
   94140 + number,
   9414,
-  case when number <= 4 then 9414 else 9415 end,
+  case when number <= 5 then 9414 else 9415 end,
   94140 + number,
-  case when number <= 4 then number::text else (number - 5)::text end,
-  'active'
-from generate_series(1, 9) number
-where number <> 5;
+  case when number <= 5 then number::text else (number - 5)::text end,
+  case when number = 5 then 'inactive' else 'active' end
+from generate_series(1, 9) number;
 
 create temp table wp14_test_data (
   parsed jsonb,
