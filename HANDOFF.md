@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-09 concluídos e integrados; WP-10 pronto para integração.
-- Status geral: `READY TO MERGE` no WP-10; PR #15 com banco, UI, perfis históricos, gate local/remoto e smokes público/administrativo aprovados.
+- Fase: WP-00 a WP-10 concluídos e integrados; WP-11 em validação.
+- Status geral: `READY TO VALIDATE` no WP-11; metas, benchmark SQL representativo, benchmark HTTP, advisors e decisão de não adicionar cache concluídos.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-10-history-achievements`.
-- Último commit integrado em `main`: `91c59dd` (`WP-09 — Importação segura de boxscore FIBA (#14)`).
+- Branch atual: `codex/wp-11-performance-cache`.
+- Último commit integrado em `main`: `191069c` (`WP-10 — Histórico, colocações e conquistas (#15)`).
 - Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-10 está na branch própria e na PR #15. Colocações finais possuem estado explícito, constraints, RPC idempotente `aal2`, timestamp/auditoria autoritativos e escrita direta revogada. Conquistas de equipe e atleta são views derivadas com `security_invoker`; atletas recebem somente resultados da inscrição em cujo elenco constavam. Migration, 27 pgTAP, fixtures, advisors, gate local, checks remotos e perfis públicos 2025/2026 passaram. O smoke administrativo real em `aal2` alterou e restaurou um rótulo, gerou duas auditorias append-only e preservou o resultado derivado final.
+WP-11 está na branch própria. O benchmark SQL temporário simulou 250 jogos, 240 atletas, 6.000 escalações e 24.000 linhas por período: 158,089 ms simples e 196,174 ms avançado. No preview, 30 amostras resultaram em p95 711 ms para estatísticas e 597 ms para jogo. Todas as metas foram atendidas; cache não foi adicionado, preservando consistência imediata e evitando infraestrutura sem evidência de necessidade.
 
 ## 6. Próximo passo exato
 
-1. Executar novamente o gate local após esta atualização documental e a varredura de segredos.
-2. Enviar o head documental, reconfirmar `gate`, `database`, `upload` e `analyze`, marcar a PR #15 pronta e integrar por squash sem publicar produção.
-3. Atualizar `main` e criar `codex/wp-11-performance-cache` para medir consultas e decidir cache somente pela evidência.
+1. Executar `npm run check` e confirmar que o novo benchmark/relatório não introduziu regressão ou segredo.
+2. Commitar o WP-11, abrir PR draft e validar `gate`, `database`, `upload` e `analyze` no head final.
+3. Repetir o smoke público no preview da PR, integrar por squash sem produção e criar `codex/wp-12-observability-recovery`.
 
 ### Primeiros arquivos a abrir
 
@@ -83,7 +83,7 @@ WP-10 está na branch própria e na PR #15. Colocações finais possuem estado e
 
 ### Resultado esperado do próximo passo
 
-WP-10 integrado sem deploy de produção; branch WP-11 criada a partir de `main` atualizado.
+WP-11 integrado sem cache desnecessário e sem deploy de produção; branch WP-12 criada a partir de `main` atualizado.
 
 ## 7. Pacotes de trabalho
 
@@ -99,8 +99,9 @@ WP-10 integrado sem deploy de produção; branch WP-11 criada a partir de `main`
 | WP-07 — Jogos e súmula manual | `DONE` | PR #12 integrada por squash no commit `49890f6`; produção não publicada |
 | WP-08 — Página do jogo e estatísticas | `DONE` | PR #13 integrada por squash no commit `0cdd560`; produção não publicada |
 | WP-09 — Importação de boxscore PDF | `DONE` | PR #14 integrada por squash no commit `91c59dd`; produção não publicada |
-| WP-10 — Histórico, colocações e conquistas | `READY TO MERGE` | Migration/RPC/views/UI, 27 pgTAP, gate remoto e smokes público/administrativo aprovados |
-| WP-11 a WP-13 | `BACKLOG` | Seguir dependências do plano |
+| WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
+| WP-11 — Desempenho e cache condicionado | `READY TO VALIDATE` | Metas e benchmarks aprovados; cache dispensado por evidência; falta PR/preview |
+| WP-12 a WP-13 | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
 
@@ -199,13 +200,17 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-10 gate local: Biome, TypeScript strict, 11 arquivos/40 testes Vitest, builds cliente/SSR Worker e scan de 286 arquivos aprovados.
 - WP-10 preview administrativo: sessão real `aal2`; alteração/restauração do rótulo confirmadas pelo RPC, duas auditorias `final_placement_confirmed` registradas e fixture final preservada.
 - WP-10 remoto: PR #15 limpa para merge; `gate`, `database`, `upload` e `analyze` aprovados no head `225df5b` antes da evidência documental final.
+- WP-10 merge: PR #15 integrada por squash no commit `191069c`; produção não publicada.
+- WP-11 SQL representativo: 250 jogos/240 atletas/6.000 slots/24.000 linhas; simples 158,089 ms e avançado 196,174 ms, abaixo da meta de 250 ms.
+- WP-11 HTTP no preview, 30 amostras: estatísticas p50 318 ms/p95 711 ms; jogo FIBA p50 374 ms/p95 597 ms, abaixo das metas de 1.000/1.500 ms.
+- WP-11 decisão: nenhum cache ou índice novo; medições e advisors não demonstraram necessidade.
 
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `codex/wp-10-history-achievements`.
-- Base integrada em `main`: `91c59dd`.
-- Head funcional da branch: `225df5b`; o head documental final contém este handoff, com smoke administrativo concluído e gate local repetido. Resta somente a integração.
+- Branch: `codex/wp-11-performance-cache`.
+- Base integrada em `main`: `191069c`.
+- Head atual: ainda sem commit próprio; benchmark reproduzível, ADR e relatório do WP-11 estão no worktree e aguardam gate/commit.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
@@ -274,3 +279,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | WP-09 validado em `aal2`: dois jogos finais, duplicata recusada, banco/Storage/auditoria reconciliados | Enviar evidências, reconfirmar o head da PR #14 e integrar sem produção |
 | 2026-08-24 | Codex | PR #14 integrada; WP-10 com RPC `aal2`, views históricas, 27 pgTAP, fixtures e gate local aprovados | Abrir PR do WP-10 e validar administração/perfis no preview |
 | 2026-08-24 | Codex | PR #15 com todos os gates verdes; smoke `aal2`, auditoria e históricos de equipe/atleta reconciliados | Enviar evidência final, integrar WP-10 e criar a branch do WP-11 |
+| 2026-08-24 | Codex | PR #15 integrada; WP-11 mediu SQL/HTTP com volume e metas explícitos, sem justificar cache | Executar gate, abrir PR do WP-11 e validar o preview final |
