@@ -111,10 +111,7 @@ export function serializeColumns(columns: AdvancedColumn[]): string {
   return columns.filter((column) => allowedColumns.has(column)).join(",");
 }
 
-export function parseSortKey(
-  value: string | null,
-  fallback: StatisticsSortKey,
-): StatisticsSortKey {
+export function parseSortKey(value: string | null, fallback: StatisticsSortKey): StatisticsSortKey {
   return value && allowedSortKeys.has(value as StatisticsSortKey)
     ? (value as StatisticsSortKey)
     : fallback;

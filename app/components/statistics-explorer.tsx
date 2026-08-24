@@ -149,9 +149,7 @@ function headerSort(
 ) {
   return (
     <th
-      aria-sort={
-        sortKey === key ? (direction === "asc" ? "ascending" : "descending") : "none"
-      }
+      aria-sort={sortKey === key ? (direction === "asc" ? "ascending" : "descending") : "none"}
       scope="col"
     >
       <SortButton
@@ -474,11 +472,7 @@ export function StatisticsExplorer({
 
   const advancedPlayers = useMemo(() => {
     if (statistics.kind !== "advanced") return [];
-    const filtered = applyStatisticFilters(
-      searchedPlayers as PlayerStatistics[],
-      filters,
-      mode,
-    );
+    const filtered = applyStatisticFilters(searchedPlayers as PlayerStatistics[], filters, mode);
     return [...filtered].sort(
       (left, right) =>
         compareValues(
@@ -636,9 +630,7 @@ export function StatisticsExplorer({
                   {metricLabels[filter.metric]} {filter.operator} {displayNumber(filter.value)}
                   <button
                     aria-label={`Remover filtro ${metricLabels[filter.metric]}`}
-                    onClick={() =>
-                      updateFilters(filters.filter((item) => item.id !== filter.id))
-                    }
+                    onClick={() => updateFilters(filters.filter((item) => item.id !== filter.id))}
                     type="button"
                   >
                     ×
@@ -734,12 +726,8 @@ export function StatisticsExplorer({
             </label>
           </div>
           {(() => {
-            const left = statistics.players.find(
-              (player) => String(player.playerId) === leftId,
-            );
-            const right = statistics.players.find(
-              (player) => String(player.playerId) === rightId,
-            );
+            const left = statistics.players.find((player) => String(player.playerId) === leftId);
+            const right = statistics.players.find((player) => String(player.playerId) === rightId);
             return left && right ? (
               <ul className="comparison-grid">
                 {(["points", "rebounds", "assists", "efficiency"] as const).map((item) => {

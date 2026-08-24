@@ -25,17 +25,12 @@ describe("statistics table controls", () => {
     expect(parseSortKey("drop table", "points")).toBe("points");
     expect(parseSortDirection("asc")).toBe("asc");
     expect(parseSortDirection("sideways")).toBe("desc");
-    expect(parseColumns("points,assists,unknown,points", "summary")).toEqual([
-      "points",
-      "assists",
-    ]);
+    expect(parseColumns("points,assists,unknown,points", "summary")).toEqual(["points", "assists"]);
     expect(parseColumns("", "shooting")).toEqual(advancedColumnPresets.shooting);
   });
 
   it("serializes stable column preferences", () => {
-    expect(serializeColumns(["points", "assists", "plusMinus"])).toBe(
-      "points,assists,plusMinus",
-    );
+    expect(serializeColumns(["points", "assists", "plusMinus"])).toBe("points,assists,plusMinus");
   });
 
   it("sorts text, numbers and unavailable values deterministically", () => {

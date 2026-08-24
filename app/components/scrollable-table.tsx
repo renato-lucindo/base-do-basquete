@@ -1,12 +1,6 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
-export function ScrollableTable({
-  children,
-  label,
-}: {
-  children: ReactNode;
-  label: string;
-}) {
+export function ScrollableTable({ children, label }: { children: ReactNode; label: string }) {
   const topRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const syncing = useRef(false);
@@ -57,12 +51,7 @@ export function ScrollableTable({
       data-shadow-left={edges.left || undefined}
       data-shadow-right={edges.right || undefined}
     >
-      <div
-        aria-hidden="true"
-        className="scrollable-table-top"
-        ref={topRef}
-        tabIndex={-1}
-      >
+      <div aria-hidden="true" className="scrollable-table-top" ref={topRef} tabIndex={-1}>
         <div style={{ width: scrollWidth }} />
       </div>
       <div
