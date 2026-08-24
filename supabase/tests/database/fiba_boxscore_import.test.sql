@@ -4,6 +4,23 @@ create extension if not exists pgtap with schema extensions;
 select plan(23);
 set constraints all deferred;
 
+insert into auth.users (
+  id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '11111111-1111-4111-8111-111111111111',
+  'authenticated',
+  'authenticated',
+  'boxscore-fixture@example.invalid',
+  '',
+  now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{}'::jsonb,
+  now(),
+  now()
+)
+on conflict (id) do nothing;
+
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
 where not exists (select 1 from private.admin_accounts);
