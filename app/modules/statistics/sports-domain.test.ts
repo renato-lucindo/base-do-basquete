@@ -77,7 +77,7 @@ describe("public sports domain", () => {
   it("derives team averages and percentages from authoritative totals", () => {
     expect(
       summarizeTeamStatistics({
-        ...teams[0],
+        ...(teams[0] as PublicTeamSummary),
         games: 2,
         points: 150,
         offensiveRebounds: 10,
