@@ -77,7 +77,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. No Supabase Auth do projeto `yjnbemfeyjhxhomprlnm`, o responsável altera a senha da única conta administrativa sem compartilhar o valor e informa somente que a rotação terminou.
+1. O e-mail de recuperação já foi enviado pelo Supabase e confirmado nos logs. O responsável abre a mensagem, define uma senha nova e única sem compartilhar o valor e informa somente que a rotação terminou.
 2. No host estável de produção, o responsável entra com a nova senha e conclui o TOTP; o Codex confirma `aal2`, acesso protegido e auditoria sem inspecionar campos de formulário.
 3. Marcar WP-13 como `DONE`, executar o gate consolidado, commit/push da evidência, tornar a PR #22 pronta e integrar somente com os quatro checks verdes.
 
@@ -176,6 +176,7 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-13 gate local inicial: Biome em 71 arquivos, TypeScript strict, 43 Vitest, quatro runbooks, build e scan de 301 arquivos aprovados.
 - WP-13 smoke administrativo em produção: sessão `aal2`, dashboard e hub protegido aprovados; logout e nova tentativa anônima redirecionaram para `/admin/login`; auditoria confirmou `mfa_verified`, `admin_access` e `logout`.
 - Incidente aberto: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas; nenhuma persistência em código ou serviços; rotação humana obrigatória antes de integrar a PR final.
+- Recuperação iniciada: Supabase Auth confirmou `user_recovery_requested`, `/recover` HTTP 200 e envio do e-mail `recovery`; falta o responsável concluir o link recebido.
 - WP-13 gate após o incidente: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 303 arquivos aprovados; nenhum segredo persistido no Git.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
