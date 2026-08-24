@@ -12,9 +12,11 @@ interface FormDraftNoticeProps {
   formId: string;
 }
 
-function controlsByName(form: HTMLFormElement, name: string): Element[] {
+type DraftControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+function controlsByName(form: HTMLFormElement, name: string): DraftControl[] {
   return Array.from(form.elements).filter(
-    (element) =>
+    (element): element is DraftControl =>
       (element instanceof HTMLInputElement ||
         element instanceof HTMLSelectElement ||
         element instanceof HTMLTextAreaElement) &&
