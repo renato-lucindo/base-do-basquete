@@ -73,9 +73,9 @@ insert into public.foul_events
   (game_roster_slot_id, game_id, period_number, sequence_number, foul_code)
 values (9101, 9101, 1, 1, 'U2');
 insert into public.final_placements
-  (id, competition_id, registration_id, placement, result_label, confirmed_by, confirmed_at)
+  (id, competition_id, registration_id, placement, result_label, result_status, confirmed_by, confirmed_at)
 overriding system value
-select 9101, 9101, 9101, 1, 'Campeao', user_id, now()
+select 9101, 9101, 9101, 1, 'Campeao', 'placed', user_id, now()
 from private.admin_accounts;
 insert into public.boxscore_imports
   (id, competition_id, game_id, sha256, storage_path, parser_version, created_by)
