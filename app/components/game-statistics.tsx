@@ -10,6 +10,23 @@ import type {
 import { ResourceState } from "./resource-state";
 import { ScrollableTable } from "./scrollable-table";
 
+const advancedColumns = [
+  "min",
+  "points",
+  "two-point",
+  "three-point",
+  "free-throw",
+  "rebounds",
+  "offensive-rebounds",
+  "defensive-rebounds",
+  "assists",
+  "turnovers",
+  "steals",
+  "blocks",
+  "efficiency",
+  "plus-minus",
+] as const;
+
 function available(value: number | null | undefined, suffix = ""): string {
   return value === null || value === undefined
     ? "—"
@@ -47,8 +64,8 @@ function AdvancedPlayerCells({ player }: { player: PublicGamePlayer }) {
   if (player.didNotPlay) {
     return (
       <>
-        {Array.from({ length: 14 }, (_, index) => (
-          <td key={index}>—</td>
+        {advancedColumns.map((column) => (
+          <td key={column}>—</td>
         ))}
       </>
     );
