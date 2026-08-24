@@ -20,6 +20,10 @@ export async function sha256Bytes(bytes: Uint8Array): Promise<string> {
   return toHex(await crypto.subtle.digest("SHA-256", copy.buffer));
 }
 
+export function createPdfStorageBody(bytes: Uint8Array): Blob {
+  return new Blob([Uint8Array.from(bytes)], { type: "application/pdf" });
+}
+
 export async function validatePdfUpload(file: File): Promise<ValidatedPdf> {
   if (file.size < 5 || file.size > MAX_PDF_BYTES) throw new Error("BDB_PDF_SIZE");
   if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
