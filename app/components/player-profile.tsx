@@ -12,19 +12,19 @@ import { ScrollableTable } from "./scrollable-table";
 
 const profileSections = [
   ["resumo", "Resumo"],
-  ["estatisticas", "EstatÃ­sticas"],
+  ["estatisticas", "Estatísticas"],
   ["conquistas-honrarias", "Conquistas e honrarias"],
   ["jogos", "Jogos"],
-  ["historico", "HistÃ³rico"],
+  ["historico", "Histórico"],
 ] as const;
 
 function average(value: number, games: number): string {
   const result = perGame(value, games);
-  return result === null ? "â€”" : result.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+  return result === null ? "—" : result.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 }
 
 function dateLabel(value: string | null): string {
-  if (!value) return "Data nÃ£o informada";
+  if (!value) return "Data não informada";
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -34,7 +34,7 @@ function dateLabel(value: string | null): string {
 
 function placementLabel(placement: number, resultLabel: string | null): string {
   if (resultLabel) return resultLabel;
-  return placement === 1 ? "CampeÃ£o" : `${placement}Âº lugar`;
+  return placement === 1 ? "Campeão" : `${placement}º lugar`;
 }
 
 function Summary({ label, totals }: { label: string; totals: PlayerTotals | null }) {
@@ -56,7 +56,7 @@ function Summary({ label, totals }: { label: string; totals: PlayerTotals | null
             <dd>{average(totals.points, totals.games)}</dd>
           </div>
           <div>
-            <dt>AssistÃªncias/jogo</dt>
+            <dt>Assistências/jogo</dt>
             <dd>{average(totals.assists, totals.games)}</dd>
           </div>
           <div>
@@ -65,7 +65,7 @@ function Summary({ label, totals }: { label: string; totals: PlayerTotals | null
           </div>
         </dl>
       ) : (
-        <p>Sem jogos finalizados para calcular estatÃ­sticas.</p>
+        <p>Sem jogos finalizados para calcular estatísticas.</p>
       )}
     </article>
   );
@@ -80,17 +80,17 @@ export function PlayerProfile({
   context: CompetitionContext;
   profile: PublicPlayerProfileDto;
 }) {
-  const location = [profile.homeCity, profile.homeState].filter(Boolean).join(" Â· ");
+  const location = [profile.homeCity, profile.homeState].filter(Boolean).join(" · ");
   return (
     <article className="player-profile">
       <header className="player-profile-header">
         <div>
-          <p className="eyebrow">Perfil pÃºblico Â· {context.displayName}</p>
+          <p className="eyebrow">Perfil público · {context.displayName}</p>
           <h1>{profile.fullName}</h1>
           <p className="player-nickname">
-            {profile.nickname ? `â€œ${profile.nickname}â€` : "Apelido nÃ£o informado"}
+            {profile.nickname ? `“${profile.nickname}”` : "Apelido não informado"}
           </p>
-          <p>{profile.bio ?? "Biografia ainda nÃ£o informada."}</p>
+          <p>{profile.bio ?? "Biografia ainda não informada."}</p>
         </div>
         <dl className="player-public-fields">
           <div>
@@ -99,28 +99,28 @@ export function PlayerProfile({
           </div>
           <div>
             <dt>Altura</dt>
-            <dd>{profile.heightCm ? `${profile.heightCm} cm` : "NÃ£o informada"}</dd>
+            <dd>{profile.heightCm ? `${profile.heightCm} cm` : "Não informada"}</dd>
           </div>
           <div>
             <dt>Peso</dt>
-            <dd>{profile.weightKg ? `${profile.weightKg} kg` : "NÃ£o informado"}</dd>
+            <dd>{profile.weightKg ? `${profile.weightKg} kg` : "Não informado"}</dd>
           </div>
           <div>
-            <dt>PosiÃ§Ã£o</dt>
+            <dt>Posição</dt>
             <dd>{publicProfileValue(profile.mainPosition)}</dd>
           </div>
           <div>
-            <dt>MÃ£o dominante</dt>
+            <dt>Mão dominante</dt>
             <dd>{publicProfileValue(profile.hand)}</dd>
           </div>
           <div>
             <dt>Origem</dt>
-            <dd>{location || "NÃ£o informada"}</dd>
+            <dd>{location || "Não informada"}</dd>
           </div>
         </dl>
       </header>
 
-      <nav aria-label="SeÃ§Ãµes do perfil" className="player-profile-nav">
+      <nav aria-label="Seções do perfil" className="player-profile-nav">
         {profileSections.map(([id, label]) => (
           <a href={`#${id}`} key={id}>
             {label}
@@ -129,24 +129,24 @@ export function PlayerProfile({
       </nav>
 
       <section className="player-profile-section" id="resumo">
-        <p className="eyebrow">VisÃ£o geral</p>
+        <p className="eyebrow">Visão geral</p>
         <h2>Resumo</h2>
         <div className="player-summary-grid">
-          <Summary label="EdiÃ§Ã£o atual" totals={profile.current} />
+          <Summary label="Edição atual" totals={profile.current} />
           <Summary label="Carreira publicada" totals={profile.career} />
         </div>
       </section>
 
       <section className="player-profile-section" id="estatisticas">
-        <p className="eyebrow">Por ediÃ§Ã£o</p>
-        <h2>EstatÃ­sticas</h2>
+        <p className="eyebrow">Por edição</p>
+        <h2>Estatísticas</h2>
         {profile.competitions.length ? (
-          <ScrollableTable label="EstatÃ­sticas do atleta por ediÃ§Ã£o">
+          <ScrollableTable label="Estatísticas do atleta por edição">
             <table className="statistics-table">
-              <caption>Totais e mÃ©dias somente de jogos finalizados</caption>
+              <caption>Totais e médias somente de jogos finalizados</caption>
               <thead>
                 <tr>
-                  <th scope="col">EdiÃ§Ã£o</th>
+                  <th scope="col">Edição</th>
                   <th scope="col">Equipe</th>
                   <th scope="col">J</th>
                   <th scope="col">Tit.</th>
@@ -161,10 +161,10 @@ export function PlayerProfile({
                   <tr key={item.context.competitionId}>
                     <th scope="row">
                       <Link to={contextPath(item.context, "jogadores", profile.slug)}>
-                        {item.context.year} Â· {item.context.category.name}
+                        {item.context.year} · {item.context.category.name}
                       </Link>
                     </th>
-                    <td>{item.teamName ?? "â€”"}</td>
+                    <td>{item.teamName ?? "—"}</td>
                     <td>{item.games}</td>
                     <td>{item.starterAppearances}</td>
                     <td>{item.points}</td>
@@ -179,8 +179,8 @@ export function PlayerProfile({
         ) : (
           <ResourceState
             kind="empty"
-            title="Sem estatÃ­sticas publicadas"
-            detail="O atleta estÃ¡ inscrito, mas ainda nÃ£o possui jogos finalizados."
+            title="Sem estatísticas publicadas"
+            detail="O atleta está inscrito, mas ainda não possui jogos finalizados."
           />
         )}
       </section>
@@ -195,7 +195,7 @@ export function PlayerProfile({
                 <span>Conquista coletiva</span>
                 <h3>{placementLabel(achievement.placement, achievement.resultLabel)}</h3>
                 <p>
-                  {achievement.year} Â· {achievement.seriesName} Â· {achievement.categoryName}
+                  {achievement.year} · {achievement.seriesName} · {achievement.categoryName}
                 </p>
               </article>
             ))}
@@ -204,8 +204,8 @@ export function PlayerProfile({
                 <span>Honraria individual</span>
                 <h3>{honor.title}</h3>
                 <p>
-                  {[honor.year, honor.competitionName].filter(Boolean).join(" Â· ") ||
-                    "Sem ediÃ§Ã£o vinculada"}
+                  {[honor.year, honor.competitionName].filter(Boolean).join(" · ") ||
+                    "Sem edição vinculada"}
                 </p>
                 {honor.description ? <p>{honor.description}</p> : null}
               </article>
@@ -215,13 +215,13 @@ export function PlayerProfile({
           <ResourceState
             kind="empty"
             title="Nenhuma conquista confirmada"
-            detail="Somente resultados e honrarias confirmados sÃ£o exibidos publicamente."
+            detail="Somente resultados e honrarias confirmados são exibidos publicamente."
           />
         )}
       </section>
 
       <section className="player-profile-section" id="jogos">
-        <p className="eyebrow">ParticipaÃ§Ãµes publicadas</p>
+        <p className="eyebrow">Participações publicadas</p>
         <h2>Jogos</h2>
         {profile.games.length ? (
           <ol className="player-game-list">
@@ -230,11 +230,11 @@ export function PlayerProfile({
                 <div>
                   <strong>{game.label}</strong>
                   <span>
-                    {dateLabel(game.scheduledAt)} Â· {game.context.displayName}
+                    {dateLabel(game.scheduledAt)} · {game.context.displayName}
                   </span>
                 </div>
                 <span>
-                  {game.teamName ?? "Equipe nÃ£o informada"} Â· camisa {game.jerseyNumber ?? "â€”"} Â·{" "}
+                  {game.teamName ?? "Equipe não informada"} · camisa {game.jerseyNumber ?? "—"} ·{" "}
                   {game.points} pts
                 </span>
                 <Link to={contextPath(game.context, "jogos", game.id)}>Abrir jogo</Link>
@@ -245,33 +245,32 @@ export function PlayerProfile({
           <ResourceState
             kind="empty"
             title="Nenhum jogo publicado"
-            detail="A inscriÃ§Ã£o estÃ¡ confirmada, mas ainda nÃ£o hÃ¡ participaÃ§Ãµes em jogos iniciados ou finalizados."
+            detail="A inscrição está confirmada, mas ainda não há participações em jogos iniciados ou finalizados."
           />
         )}
       </section>
 
       <section className="player-profile-section" id="historico">
-        <p className="eyebrow">TrajetÃ³ria publicada</p>
-        <h2>HistÃ³rico</h2>
+        <p className="eyebrow">Trajetória publicada</p>
+        <h2>Histórico</h2>
         {profile.competitions.length ? (
           <ol className="player-history">
             {profile.competitions.map((item) => (
               <li key={item.context.competitionId}>
                 <strong>
-                  {item.context.year} Â· {item.context.series.name} Â· {item.context.category.name}
+                  {item.context.year} · {item.context.series.name} · {item.context.category.name}
                 </strong>
                 <span>
-                  {item.teamName ?? "Equipe nÃ£o informada"} Â· camisa {item.jerseyNumber ?? "â€”"} Â·{" "}
-                  {item.position ?? profile.mainPosition ?? "posiÃ§Ã£o nÃ£o informada"}
+                  {item.teamName ?? "Equipe não informada"} · camisa {item.jerseyNumber ?? "—"} ·{" "}
+                  {item.position ?? profile.mainPosition ?? "posição não informada"}
                 </span>
               </li>
             ))}
           </ol>
         ) : (
-          <p>Sem histÃ³rico de jogos finalizados.</p>
+          <p>Sem histórico de jogos finalizados.</p>
         )}
       </section>
     </article>
   );
 }
-

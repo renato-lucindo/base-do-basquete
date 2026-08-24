@@ -23,17 +23,17 @@ import type { Route } from "./+types/public-detail";
 function notFound(): never {
   throw data(null, {
     status: 404,
-    statusText: "Registro nÃ£o encontrado neste contexto",
+    statusText: "Registro não encontrado neste contexto",
   });
 }
 
 export function meta() {
-  return [{ title: "Detalhe â€” Base do Basquete" }];
+  return [{ title: "Detalhe — Base do Basquete" }];
 }
 
 function placementLabel(placement: number, resultLabel: string | null): string {
   if (resultLabel) return resultLabel;
-  return placement === 1 ? "CampeÃ£o" : `${placement}Âº lugar`;
+  return placement === 1 ? "Campeão" : `${placement}º lugar`;
 }
 
 export async function loader({ params, context }: Route.LoaderArgs) {
@@ -115,7 +115,7 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
               <p>{detail.description}</p>
             </article>
             <section className="achievement-panel" aria-labelledby="achievement-title">
-              <p className="eyebrow">HistÃ³rico derivado</p>
+              <p className="eyebrow">Histórico derivado</p>
               <h2 id="achievement-title">Conquistas confirmadas</h2>
               {detail.achievements.length ? (
                 <ol className="achievement-list">
@@ -127,14 +127,14 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
                           {placementLabel(achievement.placement, achievement.resultLabel)}
                         </strong>
                         <span>
-                          {achievement.year} Â· {achievement.seriesName} Â· {achievement.categoryName}
+                          {achievement.year} · {achievement.seriesName} · {achievement.categoryName}
                         </span>
                         {achievement.teamName && achievement.teamSlug ? (
                           <Link to={`${contextPath}/equipes/${achievement.teamSlug}`}>
                             {achievement.teamName}
                           </Link>
                         ) : null}
-                        <Link to={`${contextPath}/classificacao`}>Abrir ediÃ§Ã£o</Link>
+                        <Link to={`${contextPath}/classificacao`}>Abrir edição</Link>
                       </li>
                     );
                   })}
@@ -149,4 +149,3 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
     </main>
   );
 }
-

@@ -28,8 +28,7 @@ describe("player profile domain", () => {
   });
 
   it("uses an explicit fallback only for missing public data", () => {
-    expect(publicProfileValue(null)).toBe("NÃ£o informado");
+    expect(publicProfileValue(null)).toBe("Não informado");
     expect(publicProfileValue(0)).toBe("0");
   });
 });
-

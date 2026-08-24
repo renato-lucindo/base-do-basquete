@@ -26,7 +26,6 @@ export function addPlayerTotals(rows: PlayerTotals[]): PlayerTotals {
 }
 
 export function publicProfileValue(value: string | number | null): string {
-  if (value === null || value === "") return "NÃ£o informado";
+  if (value === null || value === "") return "Não informado";
   return String(value);
 }
-
