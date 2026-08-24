@@ -19,6 +19,9 @@
       "name": "base-do-basquete-preview",
       "workers_dev": true,
       "preview_urls": true,
+      "secrets": {
+        "required": ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SESSION_SECRET"]
+      },
       "vars": {
         "APP_ENV": "preview"
       }
@@ -27,6 +30,9 @@
       "name": "base-do-basquete-prod",
       "workers_dev": true,
       "preview_urls": false,
+      "secrets": {
+        "required": ["SUPABASE_URL", "SUPABASE_PUBLISHABLE_KEY", "SESSION_SECRET"]
+      },
       "vars": {
         "APP_ENV": "production"
       }

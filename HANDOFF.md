@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-11 concluídos e integrados; WP-12 em implementação e validação.
-- Status geral: `READY TO MERGE` no WP-12; instrumentação, runbooks, recuperação, logs ao vivo, gate remoto e preview da PR #17 aprovados.
+- Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
+- Status geral: `IN PROGRESS` no WP-13; advisors/reconciliação, secrets isolados de produção e mecanismo de release seguro preparados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-12-observability-recovery`.
-- Último commit integrado em `main`: `572127c` (`WP-11 — Desempenho e cache condicionado (#16)`).
+- Branch atual: `codex/wp-13-production-release`.
+- Último commit integrado em `main`: `526e900` (`WP-12 — Observabilidade e recuperação (#17)`).
 - Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-11 concluídos e WP-12 em validação.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-12 concluídos e WP-13 em validação.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -65,14 +65,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-12 está na branch própria e na PR #17. Eventos `bdb.operation` rastreiam request, autenticação e mutações críticas com correlation ID, duração e resultado sem payload sensível. Quatro runbooks foram adicionados. Gate local passou com 43 testes e os quatro checks remotos passaram no commit `a575eb1`. No staging, restauração lógica confirmou contagens/checksum; rollback real detectou incompatibilidade pelo smoke público e a candidata foi restaurada. O head WP-12 está no Worker fixo de staging, com saúde/público/login aprovados e eventos `health`/`auth` redigidos confirmados ao vivo.
+WP-13 está na branch própria. Advisors não apontam vulnerabilidade de schema acionável; a reconciliação confirmou singleton/MFA, RLS integral e ausência de órfãos. O environment GitHub `production` recebeu três bindings próprios sem exposição. O workflow agora exige secrets declarados, envia code/secrets atomicamente, executa smoke/benchmark e permite upload de candidata para rollout gradual. Gate local inicial passou com 43 testes.
 
 ## 6. Próximo passo exato
 
-1. Commitar e enviar estas evidências finais na branch `codex/wp-12-observability-recovery`.
-2. Reconfirmar `gate`, `database`, `upload` e `analyze` no head final da PR #17.
-3. Marcar a PR pronta e integrar por squash sem publicar produção.
-4. Atualizar `main` e criar `codex/wp-13-production-release`; executar advisors, reconciliação e checklist de release antes de qualquer deploy de produção.
+1. Commitar e enviar o mecanismo de release na branch `codex/wp-13-production-release`; abrir a PR #18.
+2. Validar CI/database/CodeQL/preview e integrar por squash.
+3. Marcar a versão integrada e disparar `Bootstrap Worker deploy` pela `main`, environment `production`, modo `deploy`.
+4. Validar smokes, benchmark e logs; executar `upload-candidate`, rollout gradual 10% → 100% e confirmar a versão anterior recuperável.
 
 ### Primeiros arquivos a abrir
 
@@ -84,7 +84,7 @@ WP-12 está na branch própria e na PR #17. Eventos `bdb.operation` rastreiam re
 
 ### Resultado esperado do próximo passo
 
-WP-12 integrado com operações rastreáveis, recuperação comprovada em staging e sem deploy de produção; branch WP-13 criada a partir de `main` atualizado.
+Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas aprovados, versão anterior recuperável e documentação final atualizada.
 
 ## 7. Pacotes de trabalho
 
@@ -102,8 +102,8 @@ WP-12 integrado com operações rastreáveis, recuperação comprovada em stagin
 | WP-09 — Importação de boxscore PDF | `DONE` | PR #14 integrada por squash no commit `91c59dd`; produção não publicada |
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
-| WP-12 — Observabilidade e recuperação | `READY TO MERGE` | PR #17 com gates, staging, rollback/restauração e Workers Logs aprovados |
-| WP-13 — Release de produção | `BACKLOG` | Seguir dependências do plano |
+| WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
+| WP-13 — Release de produção | `IN PROGRESS` | Advisors/reconciliação e fluxo seguro de release preparados; falta PR e publicação |
 
 ## 8. Arquivos e referências importantes
 
@@ -165,6 +165,8 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-12 gate local: Biome em 69 arquivos, TypeScript strict, 12 arquivos/43 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 298 arquivos aprovados.
 - WP-12 staging: cópia lógica temporária preservou 3/3 linhas e checksum; rollback real do Worker detectou incompatibilidade pelo smoke público e restauração da candidata recuperou `/health` e HTTP 200.
 - WP-12 observabilidade: eventos `health` e `auth` conferidos ao vivo no Worker fixo de staging; o log customizado contém somente a allowlist operacional e nenhum payload da aplicação.
+- WP-13 pré-release: 1 usuário/1 MFA/1 admin, 4 competições, 6 equipes, 44 atletas, 9 jogos, 2 imports confirmados, 2 PDFs privados, 23 eventos de auditoria, RLS integral e 0 órfãos.
+- WP-13 gate local inicial: Biome em 71 arquivos, TypeScript strict, 43 Vitest, quatro runbooks, build e scan de 301 arquivos aprovados.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -291,3 +293,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #16 com gates verdes; benchmark opt-in separado de pgTAP e preview público aprovado | Enviar evidência final, integrar WP-11 e criar a branch do WP-12 |
 | 2026-08-24 | Codex | PR #16 integrada; WP-12 instrumentado e gate local/ensaios de recuperação em staging aprovados | Commitar WP-12, abrir PR #17 e validar logs redigidos no Worker de preview |
 | 2026-08-24 | Codex | PR #17 com quatro checks verdes; head promovido em staging e eventos redigidos confirmados ao vivo | Enviar evidências finais, reconfirmar gates e integrar WP-12 sem produção |
+| 2026-08-24 | Codex | PR #17 integrada; WP-13 com advisors/reconciliação, secrets isolados e workflow de release seguro preparado | Abrir PR #18, integrar com gates verdes e publicar pela `main` |
