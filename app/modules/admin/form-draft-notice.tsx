@@ -15,13 +15,15 @@ interface FormDraftNoticeProps {
 type DraftControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 function controlsByName(form: HTMLFormElement, name: string): DraftControl[] {
-  return Array.from(form.elements).filter(
-    (element): element is DraftControl =>
-      (element instanceof HTMLInputElement ||
-        element instanceof HTMLSelectElement ||
-        element instanceof HTMLTextAreaElement) &&
-      element.name === name,
-  );
+  return Array.from(form.elements)
+    .filter(
+      (element) =>
+        (element instanceof HTMLInputElement ||
+          element instanceof HTMLSelectElement ||
+          element instanceof HTMLTextAreaElement) &&
+        element.name === name,
+    )
+    .map((element) => element as unknown as DraftControl);
 }
 
 function restoreFields(form: HTMLFormElement, draft: AdminFormDraft) {
