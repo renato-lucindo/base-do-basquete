@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-13 concluídos; resta somente integrar a evidência final da PR #22 por squash após os quatro checks verdes.
+- Fase: WP-00 a WP-13 concluídos e integrados; release de produção encerrada.
 - Status geral: `DONE`; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. O responsável recusou conscientemente a rotação recomendada e aceitou o risco residual da senha exibida na saída técnica de inspeção.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-13-release-evidence`.
-- Último commit integrado em `main`: `47ecc34` (`WP-13 — Aguardar propagação inicial do Worker (#21)`).
+- Branch atual: `codex/wp-13-final-handoff`, exclusiva para registrar este estado pós-merge.
+- Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: release `v1.0.3` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; preview fixo também restaurado e saudável.
 - Cloudflare: produção ativa em 100% na candidata `c98935fa`; versão anterior `d59fd181` preservada para rollback; logs 179 sucessos/0 erros na janela validada.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -77,9 +77,9 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Executar o gate consolidado após esta decisão documental e enviar o commit final para `codex/wp-13-release-evidence`.
-2. Tornar a PR #22 pronta e integrá-la por squash somente após `gate`, `database`, `upload` e `analyze` aprovarem o head final.
-3. Confirmar `main` limpa e produção saudável; qualquer evolução futura deve começar em nova branch WP, preservando este release.
+1. Não há implementação pendente no plano atual. Na próxima alteração autorizada, ler este handoff e confirmar `main` no GitHub e `/health` com `environment=production` e `status=ok`.
+2. Criar uma nova branch curta `codex/wp-*` a partir da `main` atual; não reutilizar as branches dos pacotes encerrados.
+3. Se a mudança for operacional ou resposta a incidente, seguir o runbook correspondente em `docs/runbooks/` e validar a recuperação antes de alterar produção.
 
 ### Primeiros arquivos a abrir
 
@@ -229,17 +229,18 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `codex/wp-13-release-evidence`.
-- Base integrada em `main`: `47ecc34`.
-- Head remoto antes da decisão final: `f5f0676`; a PR #22 deve ser marcada pronta e integrada por squash somente após os quatro checks do novo head.
-- `git status` estava limpo antes desta atualização documental.
+- Branch documental pós-release: `codex/wp-13-final-handoff`.
+- Evidência final integrada em `main`: PR #22 por squash no commit `2e7e530`.
+- Checks do head final da PR #22: `gate`, `database`, `upload` e `analyze` aprovados.
+- Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
+- Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
 
 - Não existe acesso ao repositório antigo; isso é decisão de greenfield, não bloqueio.
 - Login, MFA ou CAPTCHA podem exigir ação pontual do responsável.
 - Qualquer plano pago exige aprovação explícita.
-- Uma branch Supabase isolada custaria US$ 0,01344/h; não foi criada. O projeto atual ainda é pré-produção e foi validado transacionalmente antes das migrations persistidas.
+- Uma branch Supabase isolada custaria US$ 0,01344/h; não foi criada. O banco de produção foi validado transacionalmente antes das migrations persistidas e reconciliado antes do release.
 - Docker não está instalado neste host; o reset local do Supabase desde zero não pôde ser executado. O fallback remoto foi DDL integral em rollback, aplicação versionada e testes repetidos no esquema persistido.
 - O advisor informa que a proteção de senhas vazadas está desativada; o recurso exige plano Pro e não será habilitado sem autorização de upgrade. A política gratuita já exige 12 caracteres, maiúsculas, minúsculas, dígitos e símbolos, além de MFA obrigatório.
 - O advisor informa RLS sem policy em `private.admin_accounts`; isso é intencional porque o schema é privado, sem grants ao cliente, e a consulta ocorre somente por função interna restrita.
@@ -308,3 +309,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | `v1.0.3` publicada; gate automatizado, logs, métricas e rollout 10% → 100% aprovados, com rollback preservado | Responsável conclui login/TOTP no host estável; Codex valida `aal2` e integra a evidência final |
 | 2026-08-24 | Codex | Smoke de produção confirmou `aal2`, hub, logout e auditoria; senha autofill apareceu na inspeção e foi declarada comprometida | Responsável rotaciona a senha no Supabase sem compartilhá-la; novo login/MFA libera o gate final da PR #22 |
 | 2026-08-24 | Responsável/Codex | Responsável recusou conscientemente a rotação e aceitou o risco residual; WP-13 marcado `DONE` sem reduzir os controles de segurança | Executar gate final, integrar PR #22 por squash e confirmar produção saudável |
+| 2026-08-24 | Codex | PR #22 integrada por squash em `2e7e530` após quatro checks verdes; produção respondeu `production/ok` | Plano atual encerrado; próxima mudança começa em nova branch WP após conferir `main` e `/health` |
