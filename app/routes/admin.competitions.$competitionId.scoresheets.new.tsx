@@ -1,10 +1,11 @@
 import { data, redirect } from "react-router";
 
 import type { Route } from "./+types/admin.competitions.$competitionId.scoresheets.new";
-import { cloudflareContext } from "../context";
+import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import { normalizeJersey } from "../modules/competition/admin-domain";
+import { logOperationalEvent } from "../modules/observability/operation.server";
 import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
 import {
   buildPublicGamePath,
@@ -166,6 +167,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const competitionId = parseId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const { env } = context.get(cloudflareContext);
+  const correlationId = context.get(correlationIdContext);
+  const startedAt = Date.now();
   const auth = await requireAdminAal2(request, env);
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
@@ -309,14 +312,32 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     p_payload: payload as unknown as Json,
   });
   if (result.error) {
+    const status = result.error.code === "BD401" ? 403 : 400;
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "scoresheet.save",
+      outcome: status === 403 ? "blocked" : "failure",
+      status,
+      context: { competitionId, errorCode: result.error.code },
+    });
     return data(
       { error: mapScoresheetError(result.error.code) },
       {
-        status: result.error.code === "BD401" ? 403 : 400,
+        status,
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
       },
     );
   }
+
+  logOperationalEvent({
+    correlationId,
+    durationMs: Date.now() - startedAt,
+    operation: "scoresheet.save",
+    outcome: "success",
+    status: 303,
+    context: { competitionId, entityId: result.data },
+  });
 
   const competitionResult = await auth.client
     .from("competitions")

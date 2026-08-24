@@ -1,7 +1,7 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 
 import type { Route } from "./+types/admin.competitions.$competitionId";
-import { cloudflareContext } from "../context";
+import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
@@ -9,6 +9,7 @@ import {
   normalizeFinalResult,
   normalizeJersey,
 } from "../modules/competition/admin-domain";
+import { logOperationalEvent } from "../modules/observability/operation.server";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
@@ -124,6 +125,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const competitionId = parseId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const { env } = context.get(cloudflareContext);
+  const correlationId = context.get(correlationIdContext);
+  const startedAt = Date.now();
   const auth = await requireAdminAal2(request, env);
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
@@ -181,13 +184,34 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   if (result.error) {
     const mapped = mapAdminDomainError(result.error.code);
+    const status = mapped.code === "authorization" ? 403 : 400;
+    if (intent === "replace-roster") {
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "roster.replace",
+        outcome: mapped.code === "authorization" ? "blocked" : "failure",
+        status,
+        context: { competitionId, errorCode: result.error.code },
+      });
+    }
     return data(
       { error: mapped.message },
       {
-        status: mapped.code === "authorization" ? 403 : 400,
+        status,
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
       },
     );
+  }
+  if (intent === "replace-roster") {
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "roster.replace",
+      outcome: "success",
+      status: 303,
+      context: { competitionId },
+    });
   }
   throw redirect(`/admin/competitions/${competitionId}`, {
     headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
