@@ -79,9 +79,7 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
     >
       <label htmlFor={`${listboxId}-input`}>Buscar nesta edição</label>
       <input
-        aria-activedescendant={
-          activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
-        }
+        aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
         aria-autocomplete="list"
         aria-controls={listboxId}
         aria-expanded={expanded}
@@ -122,11 +120,7 @@ export function ContextualSearch({ context }: { context: CompetitionContext }) {
           {status === "error" ? <p>Busca temporariamente indisponível.</p> : null}
           {status === "ready" && items.length === 0 ? <p>Nenhum resultado encontrado.</p> : null}
           {groups.map((group) => (
-            <section
-              aria-labelledby={`${listboxId}-${group.type}`}
-              key={group.type}
-              role="group"
-            >
+            <section aria-labelledby={`${listboxId}-${group.type}`} key={group.type} role="group">
               <strong id={`${listboxId}-${group.type}`}>{group.label}</strong>
               {group.items.map((item) => {
                 const index = items.findIndex((candidate) => candidate.id === item.id);

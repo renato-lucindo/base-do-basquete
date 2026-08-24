@@ -2323,7 +2323,6 @@ a {
   }
 }
 
-
 .public-header-tools {
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) auto;

@@ -106,12 +106,7 @@ export function buildContextualSearchResults(
       label: "Edições e categorias",
       items: contexts
         .filter((item) =>
-          matches(query, [
-            item.year,
-            item.displayName,
-            item.series.name,
-            item.category.name,
-          ]),
+          matches(query, [item.year, item.displayName, item.series.name, item.category.name]),
         )
         .slice(0, 4)
         .map((item) => ({

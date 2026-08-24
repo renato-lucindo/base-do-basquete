@@ -45,8 +45,12 @@ describe("public contextual search", () => {
   });
 
   it("matches substring, nickname and team abbreviation", () => {
-    expect(buildContextualSearchResults("silv", context, players, teams, [])[0]?.items).toHaveLength(1);
-    expect(buildContextualSearchResults("jojo", context, players, teams, [])[0]?.items[0]?.label).toContain("Jojô");
+    expect(
+      buildContextualSearchResults("silv", context, players, teams, [])[0]?.items,
+    ).toHaveLength(1);
+    expect(
+      buildContextualSearchResults("jojo", context, players, teams, [])[0]?.items[0]?.label,
+    ).toContain("Jojô");
     expect(buildContextualSearchResults("ads", context, players, teams, [])[0]?.type).toBe("teams");
   });
 

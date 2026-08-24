@@ -125,7 +125,10 @@ export function PublicHeader({ context, contexts, resource }: PublicNavigationPr
           <div>
             {[
               { label: "Adulto", options: contexts.filter(isAdultContext) },
-              { label: "Categorias de base", options: contexts.filter((option) => !isAdultContext(option)) },
+              {
+                label: "Categorias de base",
+                options: contexts.filter((option) => !isAdultContext(option)),
+              },
             ].map((group) =>
               group.options.length > 0 ? (
                 <section key={group.label}>
