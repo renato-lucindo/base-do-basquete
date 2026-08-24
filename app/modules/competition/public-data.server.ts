@@ -252,12 +252,7 @@ export async function loadPublicDetail(
       return null;
     }
     const player = playerResult.data[0];
-    if (
-      !player ||
-      player.id === null ||
-      player.full_name === null ||
-      player.slug === null
-    ) {
+    if (!player || player.id === null || player.full_name === null || player.slug === null) {
       return null;
     }
 
