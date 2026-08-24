@@ -4,13 +4,13 @@ import { PublicBreadcrumb, PublicHeader, resourceLabel } from "../components/pub
 import { PublicSportsCore } from "../components/public-sports-core";
 import { StatisticsExplorer } from "../components/statistics-explorer";
 import { cloudflareContext } from "../context";
-import { contextPath, isPublicResource, parsePublicYear } from "../modules/competition/context";
+import { isPublicResource, parsePublicYear } from "../modules/competition/context";
 import {
   contextPreferenceCookie,
   listPublicContexts,
   resolveCompetitionContext,
 } from "../modules/competition/context.server";
- import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import { loadCompetitionStatistics } from "../modules/statistics/public-statistics.server";
 import { loadPublicSportsCore } from "../modules/statistics/public-sports.server";
 import type { Route } from "./+types/public-context";
