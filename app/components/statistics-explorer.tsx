@@ -375,6 +375,8 @@ function filterFromUrl(searchParams: URLSearchParams): StatisticFilter[] {
       const [metric, operator, rawValue] = value.split(":");
       const numericValue = Number(rawValue);
       if (
+        metric === undefined ||
+        operator === undefined ||
         !(metric in metricLabels) ||
         ![">=", "<=", ">", "<"].includes(operator) ||
         !Number.isFinite(numericValue)
@@ -455,7 +457,8 @@ export function StatisticsExplorer({
 
   const sortedSimplePlayers = useMemo(() => {
     if (statistics.kind !== "simple") return [];
-    return [...searchedPlayers].sort((left, right) => {
+    const simplePlayers = searchedPlayers as SimplePlayerStatistics[];
+    return [...simplePlayers].sort((left, right) => {
       const value = (player: SimplePlayerStatistics): number | string | null => {
         if (sortKey === "player") return player.playerName;
         if (sortKey === "team") return player.teamName;
