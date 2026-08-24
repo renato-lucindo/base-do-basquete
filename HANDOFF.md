@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-12 concluídos e integrados; WP-13 em implementação e validação.
-- Status geral: `IN PROGRESS` no gate final do WP-13; produção pública, métricas, logs e rollout aprovados, faltando apenas smoke administrativo real em `aal2`.
+- Fase: WP-00 a WP-12 concluídos e integrados; WP-13 tecnicamente validado e bloqueado somente pela rotação da credencial administrativa.
+- Status geral: `BLOCKED` no gate final do WP-13; produção pública, métricas, logs, rollout e smoke administrativo `aal2` aprovados. A senha preenchida automaticamente apareceu em uma saída técnica de inspeção e deve ser rotacionada antes do fechamento.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/wp-13-release-evidence`.
 - Último commit integrado em `main`: `47ecc34` (`WP-13 — Aguardar propagação inicial do Worker (#21)`).
@@ -73,11 +73,13 @@ O primeiro job válido, execução #32736328449, passou build e deploy, mas o sm
 
 A execução #32737628228 restaurou o preview e `/health` confirmou `environment=preview`. O primeiro deploy de produção correto recebeu 404 durante a propagação do novo hostname; a PR #21 integrou retry limitado para 404/502/503/504. A release `v1.0.3` passou integralmente no workflow #32738728739. A candidata foi exercitada em 10%/90%, passou 50/50 health requests e smokes, foi promovida a 100% e manteve a versão anterior recuperável. O benchmark pós-promoção ficou em p95 263,6 ms para jogadores e 337,0 ms para jogo FIBA. Observability confirmou 0 erros e log customizado somente com a allowlist operacional.
 
+O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, porém, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. Por segurança, o gate permanece bloqueado até a rotação humana da senha e um novo login com MFA.
+
 ## 6. Próximo passo exato
 
-1. No host estável de produção já aberto em `/admin/login`, o responsável faz login e conclui o TOTP sem compartilhar senha ou código.
-2. O Codex valida no navegador o selo `AAL2`, dashboard administrativo e logout; em seguida confirma o evento de autenticação no log/auditoria sem dados sensíveis.
-3. Marcar WP-13 como `DONE`, executar o gate documental, commit/push da evidência, abrir PR e integrar somente com os quatro checks verdes.
+1. No Supabase Auth do projeto `yjnbemfeyjhxhomprlnm`, o responsável altera a senha da única conta administrativa sem compartilhar o valor e informa somente que a rotação terminou.
+2. No host estável de produção, o responsável entra com a nova senha e conclui o TOTP; o Codex confirma `aal2`, acesso protegido e auditoria sem inspecionar campos de formulário.
+3. Marcar WP-13 como `DONE`, executar o gate consolidado, commit/push da evidência, tornar a PR #22 pronta e integrar somente com os quatro checks verdes.
 
 ### Primeiros arquivos a abrir
 
@@ -108,7 +110,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
 | WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
-| WP-13 — Release de produção | `IN PROGRESS` | `v1.0.3` ativa após rollout 10% → 100%; falta somente smoke administrativo `aal2` e PR de evidência |
+| WP-13 — Release de produção | `BLOCKED` | `v1.0.3` ativa; smoke `aal2` passou, mas a senha autofill exposta na inspeção precisa ser rotacionada antes da PR final |
 
 ## 8. Arquivos e referências importantes
 
@@ -126,7 +128,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 
 ## 9. Serviços e variáveis
 
-Serviços configurados: repositório privado e environments no GitHub, Worker de preview no Cloudflare e projeto gratuito saudável no Supabase. Produção permanece intencionalmente não publicada.
+Serviços configurados: repositório privado e environments no GitHub, Workers de preview e produção no Cloudflare e projeto gratuito saudável no Supabase. A produção `v1.0.3` está publicada na URL temporária da plataforma.
 
 Registre aqui somente nomes de variáveis quando forem definidos. Nunca registre valores, tokens, cookies, senhas, chaves privadas, URLs com credenciais ou connection strings.
 
@@ -172,6 +174,9 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-12 observabilidade: eventos `health` e `auth` conferidos ao vivo no Worker fixo de staging; o log customizado contém somente a allowlist operacional e nenhum payload da aplicação.
 - WP-13 pré-release: 1 usuário/1 MFA/1 admin, 4 competições, 6 equipes, 44 atletas, 9 jogos, 2 imports confirmados, 2 PDFs privados, 23 eventos de auditoria, RLS integral e 0 órfãos.
 - WP-13 gate local inicial: Biome em 71 arquivos, TypeScript strict, 43 Vitest, quatro runbooks, build e scan de 301 arquivos aprovados.
+- WP-13 smoke administrativo em produção: sessão `aal2`, dashboard e hub protegido aprovados; logout e nova tentativa anônima redirecionaram para `/admin/login`; auditoria confirmou `mfa_verified`, `admin_access` e `logout`.
+- Incidente aberto: senha administrativa preenchida automaticamente apareceu na saída técnica da inspeção pós-logout. Sessões encerradas; nenhuma persistência em código ou serviços; rotação humana obrigatória antes de integrar a PR final.
+- WP-13 gate após o incidente: Biome em 72 arquivos, TypeScript strict, 12 arquivos/43 Vitest, quatro runbooks, builds cliente/SSR e scan de 303 arquivos aprovados; nenhum segredo persistido no Git.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -223,11 +228,10 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch: `codex/wp-11-performance-cache`.
-- Base integrada em `main`: `191069c`.
-- Head funcional: `88135ca`; o head documental final contém este handoff. Resta integrar a PR #16.
-
-Substitua esta seção por dados reais assim que o repositório for criado.
+- Branch: `codex/wp-13-release-evidence`.
+- Base integrada em `main`: `47ecc34`.
+- Head remoto antes deste handoff: `ef28eff`; PR #22 permanece em rascunho até a rotação da senha e o novo login com MFA.
+- `git status` estava limpo antes desta atualização documental.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
 
@@ -301,3 +305,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #17 integrada; WP-13 com advisors/reconciliação, secrets isolados e workflow de release seguro preparado | Abrir PR #18, integrar com gates verdes e publicar pela `main` |
 | 2026-08-24 | Codex | PR #18 integrada e tag `v1.0.0` criada; primeiro dispatch recusado por YAML antes de qualquer deploy | Integrar correção em bloco literal e repetir o dispatch pela `main` |
 | 2026-08-24 | Codex | `v1.0.3` publicada; gate automatizado, logs, métricas e rollout 10% → 100% aprovados, com rollback preservado | Responsável conclui login/TOTP no host estável; Codex valida `aal2` e integra a evidência final |
+| 2026-08-24 | Codex | Smoke de produção confirmou `aal2`, hub, logout e auditoria; senha autofill apareceu na inspeção e foi declarada comprometida | Responsável rotaciona a senha no Supabase sem compartilhá-la; novo login/MFA libera o gate final da PR #22 |
