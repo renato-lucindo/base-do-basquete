@@ -2285,6 +2285,9 @@ a {
 }
 
 .more-game-statistics {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--line);
 }
 
