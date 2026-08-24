@@ -8,10 +8,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados.
-- Status geral: `DONE`; estatísticas coletivas FIBA, cadastro assistido, hotfix binário e recuperação dos dois imports históricos foram publicados, exercitados em `aal2` e reconciliados no banco e nas páginas públicas.
+- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 em revisão na PR #27.
+- Status geral: `EVOLUTION_ACTIVE`; WP-15 implementa a fundação de perfis, privacidade e read models. CI, banco desde zero, pgTAP, preview/smoke e CodeQL passaram no head `737b321`; merge e produção não foram executados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-14-final-handoff`, criada de `origin/main` após as PRs #24 e #25.
+- Branch atual: `feature/01-player-data-foundation`, criada da `main` em `f6b4f3e`; PR #27 aberta como draft.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
@@ -79,9 +79,10 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Integrar a atualização documental final da branch `codex/wp-14-final-handoff` somente após `format:check`, `check:runbooks` e varredura de segredos aprovados.
-2. Na próxima demanda de produto, criar uma nova branch curta a partir da `main` atual e definir o próximo WP antes de alterar código ou serviços.
-3. Não remover os dois objetos históricos vazios preservados no Storage sem autorização explícita para a ação destrutiva em produção.
+1. Manter a PR #27 em draft e não fazer merge nem deploy sem autorização explícita.
+2. Criar `feature/02-table-infrastructure` a partir do head validado da PR #27 e abrir a PR 2 empilhada com base temporária em `feature/01-player-data-foundation`.
+3. Implementar UX-01, UX-02 e UX-03 com componentes reutilizáveis, testes de teclado e responsividade.
+4. Não aplicar a migration do WP-15 diretamente em produção antes de sua revisão e integração autorizada.
 
 ### Primeiros arquivos a abrir
 
@@ -114,6 +115,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-12 — Observabilidade e recuperação | `DONE` | PR #17 integrada por squash no commit `526e900`; produção não publicada |
 | WP-13 — Release de produção | `DONE` | `v1.0.3` ativa; rollout, métricas, logs, smoke público e smoke administrativo `aal2` aprovados; risco residual aceito pelo responsável |
 | WP-14 — Estatísticas coletivas e cadastro assistido | `DONE` | PRs #24/#25 integradas; parser v2, hotfix de Storage, produção, retroprocessamento `aal2`, banco e páginas públicas aprovados |
+| WP-15 — Fundação de perfis e privacidade | `READY` | PR #27 draft; gate, banco desde zero, pgTAP, preview/smoke e CodeQL aprovados no head `737b321`; sem merge/deploy |
 
 ## 8. Arquivos e referências importantes
 
@@ -187,6 +189,7 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-14 hotfix: PR #25 e `main` com CI, banco desde zero e CodeQL aprovados; workflow `32764216293` publicou a versão `1f004752-dd64-4bc7-8406-917c0ba30248` e aprovou os smokes.
 - WP-14 recuperação: objetos novos com 105.166/104.676 bytes e MIME PDF; imports 12/13 apontam para os caminhos recuperados, parser `fiba-genius-v2`, 2 linhas coletivas e 1 geral por jogo, além de 1 auditoria por import.
 - WP-14 público: jogos 62 e 63 exibem garrafão, segunda chance, contra-ataque, banco, liderança, sequência, pontos por posse, tempo em vantagem, mudanças de liderança e empates com os valores dos fixtures.
+- WP-15 remoto: PR #27 no head `737b321`; CI #80 aprovou gate e banco desde zero/pgTAP, preview #60 aprovou upload/smoke e CodeQL #81 foi concluído com sucesso.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -238,11 +241,11 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `codex/wp-14-final-handoff`.
+- Branch de trabalho: `feature/01-player-data-foundation`.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
-- PR funcional atual: nenhuma; a branch final contém somente o fechamento documental pós-reconciliação.
+- PR funcional atual: #27 em draft, empilhamento da PR 2 autorizado pelo plano; nenhum merge ou deploy executado.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -323,3 +326,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #22 integrada por squash em `2e7e530` após quatro checks verdes; produção respondeu `production/ok` | Plano atual encerrado; próxima mudança começa em nova branch WP após conferir `main` e `/health` |
 | 2026-08-24 | Codex | WP-14 implementado; migration validada/aplicada; 28 pgTAP, CI, CodeQL e preview público aprovados na PR #24 | Enviar evidência documental, integrar pela `main`, publicar produção e retroprocessar os dois PDFs em `aal2` |
 | 2026-08-24 | Responsável/Codex | PRs #24/#25 publicadas; arquivos recuperados; imports 12/13 retroprocessados em `aal2`; banco, auditoria e jogos 62/63 reconciliados | Integrar o handoff final e iniciar novo WP somente após nova demanda de produto |
+| 2026-08-24 | Codex | WP-15 implementado na PR #27; gate, migrations desde zero, 26 pgTAP novos, preview/smoke e CodeQL aprovados | Manter PR #27 draft e criar PR 2 empilhada a partir do head `737b321` |
