@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 
 export function ScrollableTable({ children, label }: { children: ReactNode; label: string }) {
   const topRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLElement>(null);
   const syncing = useRef(false);
   const [scrollWidth, setScrollWidth] = useState(0);
   const [edges, setEdges] = useState({ left: false, right: false });
@@ -19,7 +19,7 @@ export function ScrollableTable({ children, label }: { children: ReactNode; labe
         right: viewport.scrollLeft + viewport.clientWidth < viewport.scrollWidth - 1,
       });
     };
-    const sync = (source: HTMLDivElement, target: HTMLDivElement) => {
+    const sync = (source: HTMLElement, target: HTMLElement) => {
       if (syncing.current) return;
       syncing.current = true;
       target.scrollLeft = source.scrollLeft;
@@ -54,15 +54,9 @@ export function ScrollableTable({ children, label }: { children: ReactNode; labe
       <div aria-hidden="true" className="scrollable-table-top" ref={topRef} tabIndex={-1}>
         <div style={{ width: scrollWidth }} />
       </div>
-      <div
-        aria-label={label}
-        className="statistics-table-wrap"
-        ref={viewportRef}
-        role="region"
-        tabIndex={0}
-      >
+      <section aria-label={label} className="statistics-table-wrap" ref={viewportRef}>
         {children}
-      </div>
+      </section>
     </div>
   );
 }
