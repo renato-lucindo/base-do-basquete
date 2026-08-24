@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-10 concluídos e integrados; WP-11 em validação.
-- Status geral: `READY TO MERGE` no WP-11; metas, benchmarks, advisors, decisão de não adicionar cache, gate remoto e preview da PR #16 aprovados.
+- Fase: WP-00 a WP-11 concluídos e integrados; WP-12 em implementação e validação.
+- Status geral: `IN PROGRESS` no WP-12; instrumentação, runbooks, gate local, restauração lógica e rollback real em preview aprovados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/wp-11-performance-cache`.
-- Último commit integrado em `main`: `191069c` (`WP-10 — Histórico, colocações e conquistas (#15)`).
+- Branch atual: `codex/wp-12-observability-recovery`.
+- Último commit integrado em `main`: `572127c` (`WP-11 — Desempenho e cache condicionado (#16)`).
 - Aplicação publicada: previews temporários por PR estão saudáveis; produção ainda não publicada.
 - Cloudflare: autenticado; token mínimo de CI criado, secrets cadastrados no GitHub e Worker de preview saudável.
 - Supabase: projeto `base-do-basquete` criado na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável.
@@ -49,7 +49,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Repositório Git local inicializado em branch própria do WP-00.
 - [x] Plano importado e ordem de leitura obrigatória concluída.
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
-- [ ] Aplicação implementada integralmente; WP-00 a WP-09 concluídos e WP-10 em validação.
+- [ ] Aplicação implementada integralmente; WP-00 a WP-11 concluídos e WP-12 em validação.
 - [x] Serviços cloud básicos configurados.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
@@ -65,13 +65,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-11 está na branch própria e na PR #16. O benchmark SQL temporário simulou 250 jogos, 240 atletas, 6.000 escalações e 24.000 linhas por período: 158,089 ms simples e 196,174 ms avançado. No preview, 30 amostras resultaram em p95 711 ms para estatísticas e 597 ms para jogo. Todas as metas foram atendidas; cache não foi adicionado. Gate, banco desde zero, CodeQL, deploy e smoke público passaram no head `88135ca`.
+WP-12 está na branch própria. Eventos `bdb.operation` rastreiam request, autenticação e mutações críticas com correlation ID, duração e resultado sem payload sensível. Quatro runbooks foram adicionados. Gate local passou com 43 testes. No staging, restauração lógica confirmou contagens e checksum em transação com rollback. No Cloudflare preview, o rollback real mostrou que a versão anterior passava em `/health`, mas falhava no smoke público; a versão candidata foi restaurada e ambos os smokes voltaram a passar.
 
 ## 6. Próximo passo exato
 
-1. Enviar o head documental final da PR #16 e reconfirmar os quatro checks.
-2. Marcar a PR pronta e integrar por squash sem publicar produção.
-3. Atualizar `main` e criar `codex/wp-12-observability-recovery` para instrumentar fluxos e testar runbooks em staging.
+1. Commitar e enviar a instrumentação/runbooks do WP-12 na branch `codex/wp-12-observability-recovery` e abrir a PR #17.
+2. Aguardar CI/database/CodeQL/upload e promover o head no Worker de preview fixo.
+3. Gerar requests de saúde, público e autenticação e confirmar eventos redigidos `bdb.operation` nos Workers Logs.
+4. Atualizar `docs/execution/WP-12.md` e este handoff; integrar somente com todos os gates verdes, sem publicar produção.
 
 ### Primeiros arquivos a abrir
 
@@ -83,7 +84,7 @@ WP-11 está na branch própria e na PR #16. O benchmark SQL temporário simulou 
 
 ### Resultado esperado do próximo passo
 
-WP-11 integrado sem cache desnecessário e sem deploy de produção; branch WP-12 criada a partir de `main` atualizado.
+WP-12 integrado com operações rastreáveis, recuperação comprovada em staging e sem deploy de produção; branch WP-13 criada a partir de `main` atualizado.
 
 ## 7. Pacotes de trabalho
 
@@ -100,8 +101,9 @@ WP-11 integrado sem cache desnecessário e sem deploy de produção; branch WP-1
 | WP-08 — Página do jogo e estatísticas | `DONE` | PR #13 integrada por squash no commit `0cdd560`; produção não publicada |
 | WP-09 — Importação de boxscore PDF | `DONE` | PR #14 integrada por squash no commit `91c59dd`; produção não publicada |
 | WP-10 — Histórico, colocações e conquistas | `DONE` | PR #15 integrada por squash no commit `191069c`; produção não publicada |
-| WP-11 — Desempenho e cache condicionado | `READY TO MERGE` | Metas/benchmarks, gate remoto e preview aprovados; cache dispensado por evidência |
-| WP-12 a WP-13 | `BACKLOG` | Seguir dependências do plano |
+| WP-11 — Desempenho e cache condicionado | `DONE` | PR #16 integrada por squash no commit `572127c`; cache dispensado por evidência |
+| WP-12 — Observabilidade e recuperação | `IN PROGRESS` | Instrumentação/runbooks e ensaios de restauração/rollback aprovados; falta PR e validação de logs do head |
+| WP-13 — Release de produção | `BACKLOG` | Seguir dependências do plano |
 
 ## 8. Arquivos e referências importantes
 
@@ -142,6 +144,7 @@ CLOUDFLARE_ACCOUNT_ID
 - `npm test` — executa Vitest.
 - `npm run build` — gera builds cliente e SSR.
 - `npm run scan:secrets` — varre arquivos versionáveis por credenciais conhecidas.
+- `npm run check:runbooks` — valida conteúdo mínimo dos runbooks operacionais.
 - `npm run check` — gate completo local e remoto.
 - `npm run deploy:preview` — deploy do Worker de preview.
 - `npm run deploy:production` — deploy de produção; permitido somente a partir de `main`.
@@ -159,6 +162,8 @@ CLOUDFLARE_ACCOUNT_ID
 - Falhas conhecidas: nenhuma funcional no WP-03.
 - Incidente de CI resolvido: o teste de adulteração alterava o último caractere Base64URL, que podia preservar os bytes decodificados por causa do padding; agora altera deterministicamente o meio do ciphertext autenticado.
 - Evidências de pacotes: registrar em `docs/execution/WP-XX.md`.
+- WP-12 gate local: Biome em 69 arquivos, TypeScript strict, 12 arquivos/43 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 298 arquivos aprovados.
+- WP-12 staging: cópia lógica temporária preservou 3/3 linhas e checksum; rollback real do Worker detectou incompatibilidade pelo smoke público e restauração da candidata recuperou `/health` e HTTP 200.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
 - WP-04 gate local: Biome em 34 arquivos, TypeScript strict, 4 arquivos/6 testes Vitest, builds cliente/SSR e varredura de 238 arquivos aprovados.
@@ -283,3 +288,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | PR #15 com todos os gates verdes; smoke `aal2`, auditoria e históricos de equipe/atleta reconciliados | Enviar evidência final, integrar WP-10 e criar a branch do WP-11 |
 | 2026-08-24 | Codex | PR #15 integrada; WP-11 mediu SQL/HTTP com volume e metas explícitos, sem justificar cache | Executar gate, abrir PR do WP-11 e validar o preview final |
 | 2026-08-24 | Codex | PR #16 com gates verdes; benchmark opt-in separado de pgTAP e preview público aprovado | Enviar evidência final, integrar WP-11 e criar a branch do WP-12 |
+| 2026-08-24 | Codex | PR #16 integrada; WP-12 instrumentado e gate local/ensaios de recuperação em staging aprovados | Commitar WP-12, abrir PR #17 e validar logs redigidos no Worker de preview |

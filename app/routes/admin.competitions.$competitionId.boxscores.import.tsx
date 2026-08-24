@@ -1,7 +1,7 @@
 import { data, Form, Link, redirect } from "react-router";
 
 import type { Route } from "./+types/admin.competitions.$competitionId.boxscores.import";
-import { cloudflareContext } from "../context";
+import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
@@ -12,6 +12,7 @@ import {
 import { suggestPlayerMatch } from "../modules/boxscore/matching";
 import { FIBA_GENIUS_PARSER_VERSION, validateParsedBoxscore } from "../modules/boxscore/parser";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
+import { logOperationalEvent } from "../modules/observability/operation.server";
 import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
 
@@ -207,6 +208,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const competitionId = parseId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const { env } = context.get(cloudflareContext);
+  const correlationId = context.get(correlationIdContext);
+  const startedAt = Date.now();
   const auth = await requireAdminAal2(request, env);
   const mode = new URL(request.url).searchParams.get("mode");
 
@@ -218,6 +221,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const claim = await auth.client.rpc("admin_claim_boxscore_upload");
     if (claim.error) {
       const mapped = mapImportError(claim.error.code);
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.upload",
+        outcome: mapped.status < 500 ? "blocked" : "failure",
+        status: mapped.status,
+        context: { competitionId, errorCode: claim.error.code },
+      });
       return data({ error: mapped.message }, { status: mapped.status });
     }
   }
@@ -314,14 +325,41 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       });
       if (draft.error) {
         const mapped = mapImportError(draft.error.code);
+        logOperationalEvent({
+          correlationId,
+          durationMs: Date.now() - startedAt,
+          operation: "boxscore.upload",
+          outcome: mapped.status < 500 ? "blocked" : "failure",
+          status: mapped.status,
+          context: { competitionId, errorCode: draft.error.code },
+        });
         return data({ error: mapped.message }, { status: mapped.status });
       }
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.upload",
+        outcome: "success",
+        status: 303,
+        context: { competitionId, entityId: draft.data },
+      });
       throw redirect(`/admin/competitions/${competitionId}/boxscores/import?import=${draft.data}`, {
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
       });
     } catch (error) {
       if (error instanceof Response) throw error;
       const mapped = mapImportError(error instanceof Error ? error.message : undefined);
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.upload",
+        outcome: mapped.status < 500 ? "blocked" : "failure",
+        status: mapped.status,
+        context: {
+          competitionId,
+          errorCode: error instanceof Error ? error.message : undefined,
+        },
+      });
       return data({ error: mapped.message }, { status: mapped.status });
     }
   }
@@ -357,8 +395,24 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     });
     if (commit.error) {
       const mapped = mapImportError(commit.error.code);
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.commit",
+        outcome: mapped.status < 500 ? "blocked" : "failure",
+        status: mapped.status,
+        context: { competitionId, entityId: importId, errorCode: commit.error.code },
+      });
       return data({ error: mapped.message }, { status: mapped.status });
     }
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "boxscore.commit",
+      outcome: "success",
+      status: 303,
+      context: { competitionId, entityId: commit.data },
+    });
     const competition = await auth.client
       .from("competitions")
       .select("year,series_id,category_id")
