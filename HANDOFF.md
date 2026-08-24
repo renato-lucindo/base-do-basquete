@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: WP-00 a WP-09 concluídos e integrados; WP-10 em validação.
-- Status geral: `IN VALIDATION` no WP-10; confirmação transacional de colocações, conquistas derivadas e perfis históricos implementados, com 27 pgTAP, 40 Vitest e gate local aprovados.
+- Status geral: `IN VALIDATION` no WP-10; PR #15 com banco, UI e perfis históricos implementados. Gate local, 27 pgTAP e smoke público passaram; o CI foi reenviado após corrigir uma fixture legada, e falta o smoke administrativo `aal2` no host novo.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/wp-10-history-achievements`.
 - Último commit integrado em `main`: `91c59dd` (`WP-09 — Importação segura de boxscore FIBA (#14)`).
@@ -65,13 +65,13 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 5. Em andamento
 
-WP-10 está na branch própria. Colocações finais agora possuem estado explícito, constraints, RPC idempotente `aal2`, timestamp/auditoria autoritativos e escrita direta revogada. Conquistas de equipe e atleta são views derivadas com `security_invoker`; atletas recebem somente resultados da inscrição em cujo elenco constavam. Hub administrativo e perfis públicos foram atualizados. Migration em rollback/persistida, 27 pgTAP, fixtures 2025/2026, advisors e gate local passaram.
+WP-10 está na branch própria e na PR #15. Colocações finais possuem estado explícito, constraints, RPC idempotente `aal2`, timestamp/auditoria autoritativos e escrita direta revogada. Conquistas de equipe e atleta são views derivadas com `security_invoker`; atletas recebem somente resultados da inscrição em cujo elenco constavam. Migration, 27 pgTAP, fixtures, advisors, gate local e perfis públicos 2025/2026 passaram. O CI foi reenviado após alinhar a fixture canônica legada; o preview está em `/admin/login` aguardando login/MFA para o smoke administrativo.
 
 ## 6. Próximo passo exato
 
-1. Enviar `97a7ea1` e o handoff documental para a branch WP-10, abrir PR em rascunho e aguardar CI/database, preview e CodeQL.
-2. No preview, confirmar uma colocação com sessão `aal2`, verificar auditoria e os perfis históricos de equipe/atleta em 2025/2026.
-3. Reconfirmar o head final e integrar por squash sem publicar produção.
+1. No preview da PR #15, o responsável faz login e MFA; confirmar o selo `AAL2` no painel.
+2. Confirmar uma colocação pelo hub, verificar auditoria e que apenas o resultado `placed` aparece nos perfis.
+3. Reconfirmar `gate`, `database`, `upload` e `analyze` no head final e integrar por squash sem publicar produção.
 
 ### Primeiros arquivos a abrir
 
@@ -203,7 +203,7 @@ CLOUDFLARE_ACCOUNT_ID
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
 - Branch: `codex/wp-10-history-achievements`.
 - Base integrada em `main`: `91c59dd`.
-- Head funcional da branch: `97a7ea1`; implementação, migration e testes do WP-10 validados local/remotamente. Resta o commit documental, push e preview.
+- Head atual da branch: `5bb5aa2`; implementação, migration, testes e correção da fixture canônica enviados à PR #15. Resta o smoke administrativo e o head documental final.
 
 Substitua esta seção por dados reais assim que o repositório for criado.
 
