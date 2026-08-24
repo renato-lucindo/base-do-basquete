@@ -247,14 +247,20 @@ function CollectiveStatistics({ game }: { game: PublicGameDetail }) {
   );
   return (
     <section className="game-team-statistics game-collective-statistics">
-      <h2>Estatísticas coletivas</h2>
-      {table("Indicadores FIBA/Genius Sports por equipe", [...essential, ...more])}
-      {game.gameStatistics ? (
-        <p className="collective-game-summary">
-          <strong>{game.gameStatistics.leadChanges}</strong> mudanças na liderança ·{" "}
-          <strong>{game.gameStatistics.timesTied}</strong> vezes empatado
-        </p>
-      ) : null}
+      <h2>Resumo da partida</h2>
+      {table("Indicadores essenciais por equipe", essential)}
+      <details className="more-game-statistics">
+        <summary>Mais estatísticas</summary>
+        {table("Indicadores ampliados por equipe", more)}
+        {game.gameStatistics ? (
+          <p className="collective-game-summary">
+            <strong>{game.gameStatistics.leadChanges}</strong> mudanças na liderança ·{" "}
+            <strong>{game.gameStatistics.timesTied}</strong> vezes empatado
+          </p>
+        ) : (
+          <p className="collective-game-summary">Mudanças de liderança e empates indisponíveis.</p>
+        )}
+      </details>
     </section>
   );
 }
