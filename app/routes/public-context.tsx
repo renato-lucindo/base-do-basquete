@@ -1,6 +1,7 @@
-import { data, Link } from "react-router";
+import { data } from "react-router";
 
 import { PublicBreadcrumb, PublicHeader, resourceLabel } from "../components/public-navigation";
+import { PublicSportsCore } from "../components/public-sports-core";
 import { StatisticsExplorer } from "../components/statistics-explorer";
 import { cloudflareContext } from "../context";
 import { contextPath, isPublicResource, parsePublicYear } from "../modules/competition/context";
@@ -9,9 +10,9 @@ import {
   listPublicContexts,
   resolveCompetitionContext,
 } from "../modules/competition/context.server";
-import { loadPublicResourceItems } from "../modules/competition/public-data.server";
-import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+ import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import { loadCompetitionStatistics } from "../modules/statistics/public-statistics.server";
+import { loadPublicSportsCore } from "../modules/statistics/public-sports.server";
 import type { Route } from "./+types/public-context";
 
 function notFound(): never {
@@ -39,30 +40,30 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     return notFound();
   }
 
-  const [contexts, items, playerStatistics] = await Promise.all([
+  const [contexts, playerStatistics, sportsCore] = await Promise.all([
     listPublicContexts(client),
-    params.resource === "jogadores"
-      ? Promise.resolve([])
-      : loadPublicResourceItems(client, resolvedContext, params.resource),
     params.resource === "jogadores"
       ? loadCompetitionStatistics(client, resolvedContext)
       : Promise.resolve(null),
+    params.resource === "jogadores"
+      ? Promise.resolve(null)
+      : loadPublicSportsCore(client, resolvedContext),
   ]);
 
   return data(
     {
       context: resolvedContext,
       contexts,
-      items,
       playerStatistics,
       resource: params.resource,
+      sportsCore,
     },
     { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } },
   );
 }
 
 export default function PublicContextPage({ loaderData }: Route.ComponentProps) {
-  const { context, contexts, items, playerStatistics, resource } = loaderData;
+  const { context, contexts, playerStatistics, resource, sportsCore } = loaderData;
   const title = resourceLabel(resource);
 
   return (
@@ -84,22 +85,9 @@ export default function PublicContextPage({ loaderData }: Route.ComponentProps) 
             key={context.competitionId}
             statistics={playerStatistics}
           />
-        ) : items.length > 0 ? (
-          <div className="resource-grid">
-            {items.map((item, index) => (
-              <article className="resource-card" key={item.id}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <h2>{item.label}</h2>
-                <p>{item.detail}</p>
-                {item.detailKey && resource !== "classificacao" ? (
-                  <Link to={contextPath(context, resource, item.detailKey)}>Ver no contexto</Link>
-                ) : null}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="empty-resource">Ainda não há registros públicos para este recorte.</p>
-        )}
+        ) : sportsCore ? (
+          <PublicSportsCore context={context} data={sportsCore} resource={resource} />
+        ) : null}
       </div>
     </main>
   );
