@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { data } from "react-router";
 
 import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
-import { PublicContextQueryError } from "../competition/context.server";
 import type { PublicAchievement } from "../competition/public-data.server";
 import { addPlayerTotals, type PlayerTotals } from "./player-profile-domain";
 
@@ -51,8 +51,8 @@ export interface PublicPlayerProfileDto {
   }>;
 }
 
-function ensure(error: unknown): asserts error is null {
-  if (error) throw new PublicContextQueryError();
+function ensure(error: unknown, statusText: string): asserts error is null {
+  if (error) throw data(null, { status: 503, statusText });
 }
 
 function numberValue(value: number | null): number {
@@ -82,7 +82,7 @@ export async function loadPublicPlayerProfile(
       .eq("slug", slug)
       .eq("is_public", true)
       .limit(2);
-    ensure(legacyResult.error);
+    ensure(legacyResult.error, "Perfil público temporariamente indisponível");
     const legacy = legacyResult.data.length === 1 ? legacyResult.data[0] : null;
     profile = legacy
       ? {
@@ -108,14 +108,14 @@ export async function loadPublicPlayerProfile(
     .eq("player_id", profile.id)
     .eq("status", "active")
     .limit(1);
-  ensure(rosterResult.error);
+  ensure(rosterResult.error, "Inscrição pública temporariamente indisponível");
   if (rosterResult.data.length !== 1) return null;
 
   const statisticsResult = await client
     .from("competition_player_statistics")
     .select("*")
     .eq("player_id", profile.id);
-  ensure(statisticsResult.error);
+  ensure(statisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
 
   const contextById = new Map(contexts.map((item) => [item.competitionId, item]));
   const competitions = statisticsResult.data
@@ -165,7 +165,7 @@ export async function loadPublicPlayerProfile(
       .eq("player_id", profile.id)
       .order("year", { ascending: false }),
   ]);
-  ensure(gameStatisticsResult.error);
+  ensure(gameStatisticsResult.error, "Participações públicas temporariamente indisponíveis");
 
   const gameIds = gameStatisticsResult.data.flatMap((row) =>
     row.game_id === null ? [] : [row.game_id],
@@ -178,7 +178,7 @@ export async function loadPublicPlayerProfile(
         .in("status", ["live", "final"])
         .order("scheduled_at", { ascending: false, nullsFirst: false })
     : { data: [], error: null };
-  ensure(gameResult.error);
+  ensure(gameResult.error, "Jogos públicos temporariamente indisponíveis");
 
   const statByGame = new Map(
     gameStatisticsResult.data.flatMap((row) =>
