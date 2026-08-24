@@ -5,6 +5,7 @@ import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
+  createPdfStorageBody,
   extractFibaGeniusBoxscore,
   MAX_PDF_BYTES,
   sha256Bytes,
@@ -412,7 +413,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const storagePath = `${competitionId}/${validated.sha256}.pdf`;
       const storage = await auth.client.storage
         .from("boxscore-pdfs")
-        .upload(storagePath, validated.bytes, {
+        .upload(storagePath, createPdfStorageBody(validated.bytes), {
           contentType: "application/pdf",
           upsert: false,
         });
