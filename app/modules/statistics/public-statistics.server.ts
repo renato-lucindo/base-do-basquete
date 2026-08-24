@@ -272,9 +272,7 @@ export async function loadPublicGameDetail(
     registrationsResult.data.map((registration) => [registration.id, registration]),
   );
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
-  const starterBySlot = new Map(
-    rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]),
-  );
+  const starterBySlot = new Map(rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]));
   const players: PublicGamePlayer[] = playerResult.data.map((row) => ({
     playerId: row.player_id as number,
     playerName: row.player_name as string,
