@@ -32,13 +32,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       categorySlug: preference.categorySlug,
     });
     if (preferredContext) {
-      throw redirect(contextPath(preferredContext, "classificacao"));
+      throw redirect(contextPath(preferredContext, "visao-geral"));
     }
   }
 
   const recentContext = await latestPublicContext(client);
   if (recentContext) {
-    throw redirect(contextPath(recentContext, "classificacao"));
+    throw redirect(contextPath(recentContext, "visao-geral"));
   }
 
   return { empty: true };

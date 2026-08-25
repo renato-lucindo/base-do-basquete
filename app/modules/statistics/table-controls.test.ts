@@ -6,6 +6,8 @@ import {
   matchesStatisticsSearch,
   nextSort,
   parseColumns,
+  parseColumnPreset,
+  parsePage,
   parseSortDirection,
   parseSortKey,
   serializeColumns,
@@ -25,8 +27,14 @@ describe("statistics table controls", () => {
     expect(parseSortKey("drop table", "points")).toBe("points");
     expect(parseSortDirection("asc")).toBe("asc");
     expect(parseSortDirection("sideways")).toBe("desc");
-    expect(parseColumns("points,assists,unknown,points", "summary")).toEqual(["points", "assists"]);
-    expect(parseColumns("", "shooting")).toEqual(advancedColumnPresets.shooting);
+    expect(parseColumns("points,assists,unknown,points", "essentials")).toEqual([
+      "points",
+      "assists",
+    ]);
+    expect(parseColumns("", "all")).toEqual(advancedColumnPresets.all);
+    expect(parseColumnPreset("anything")).toBe("essentials");
+    expect(parsePage("3")).toBe(3);
+    expect(parsePage("-1")).toBe(1);
   });
 
   it("serializes stable column preferences", () => {

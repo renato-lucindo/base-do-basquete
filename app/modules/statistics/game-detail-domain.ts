@@ -16,6 +16,7 @@ export function emptyStatisticTotals(): StatisticTotals {
     turnovers: 0,
     steals: 0,
     blocks: 0,
+    fouls: 0,
     plusMinus: 0,
   };
 }
@@ -37,6 +38,7 @@ export function sumStatisticTotals(rows: StatisticTotals[]): StatisticTotals {
       turnovers: total.turnovers + row.turnovers,
       steals: total.steals + row.steals,
       blocks: total.blocks + row.blocks,
+      fouls: total.fouls + row.fouls,
       plusMinus: total.plusMinus + row.plusMinus,
     }),
     emptyStatisticTotals(),

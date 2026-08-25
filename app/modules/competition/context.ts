@@ -1,7 +1,13 @@
-export const PUBLIC_RESOURCES = ["classificacao", "jogadores", "equipes", "jogos"] as const;
+export const PUBLIC_RESOURCES = [
+  "visao-geral",
+  "classificacao",
+  "jogos",
+  "equipes",
+  "jogadores",
+] as const;
 
 export type PublicResource = (typeof PUBLIC_RESOURCES)[number];
-export type DetailResource = Exclude<PublicResource, "classificacao">;
+export type DetailResource = Exclude<PublicResource, "classificacao" | "visao-geral">;
 
 export interface CompetitionContext {
   competitionId: number;
@@ -58,7 +64,7 @@ export function isPublicResource(value: string | undefined): value is PublicReso
 }
 
 export function isDetailResource(value: PublicResource): value is DetailResource {
-  return value !== "classificacao";
+  return value !== "classificacao" && value !== "visao-geral";
 }
 
 export function parsePublicYear(value: string | undefined): number | null {

@@ -40,10 +40,6 @@ create table public.player_profiles (
 create table private.player_private (
   player_id bigint primary key references public.players(id) on delete restrict,
   birth_date date,
-  federation_no text check (
-    federation_no is null or
-    (federation_no = btrim(federation_no) and char_length(federation_no) between 1 and 80)
-  ),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -339,7 +335,7 @@ comment on column public.players.nickname is
 comment on table public.player_profiles is
   'Optional public-by-default biographical fields in a one-to-one player profile.';
 comment on table private.player_private is
-  'Non-exposed full birth date and federation registration for one player.';
+  'Non-exposed private identity data for one player.';
 comment on table public.player_honors is
   'Manual individual honors; anonymous access is restricted to confirmed rows.';
 comment on view public.public_player_profiles is

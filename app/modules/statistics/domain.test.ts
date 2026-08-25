@@ -17,6 +17,7 @@ const player = (playerId: number, points: number, gamesPlayed = 2): PlayerStatis
   playerSlug: `atleta-${playerId}`,
   teamName: "Equipe Teste",
   teamSlug: "equipe-teste",
+  teamAbbreviation: "ET",
   gamesPlayed,
   totals: {
     secondsPlayed: 1200,
@@ -33,6 +34,7 @@ const player = (playerId: number, points: number, gamesPlayed = 2): PlayerStatis
     turnovers: 1,
     steals: 2,
     blocks: 1,
+    fouls: 2,
     plusMinus: 5,
   },
 });
@@ -81,6 +83,24 @@ describe("statistics domain", () => {
         "totals",
       ),
     ).toThrow(RangeError);
+  });
+
+  it("supports equality and treats ER and FC as lower-is-better", () => {
+    expect(
+      applyStatisticFilters(
+        [player(1, 8), player(2, 3)],
+        [{ id: "equal", metric: "points", operator: "=", value: 8 }],
+        "totals",
+      ).map((item) => item.playerId),
+    ).toEqual([1]);
+    const left = player(1, 8);
+    const right = player(2, 3);
+    left.totals.turnovers = 1;
+    right.totals.turnovers = 3;
+    expect(compareStatistic(left, right, "turnovers", "totals")).toEqual({
+      left: "better",
+      right: "worse",
+    });
   });
 
   it("compares equivalent modes with explicit non-color states", () => {

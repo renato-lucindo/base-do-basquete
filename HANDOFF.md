@@ -8,10 +8,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão nas PRs #27 a #32.
-- Status geral: `EVOLUTION_ACTIVE`; WP-15 estabelece dados/privacidade, WP-16 entrega tabelas, WP-17 entrega o núcleo esportivo e WP-18 entrega o perfil completo do atleta, WP-19 amplia o detalhe da partida e WP-20 integra busca, navegação e comparação. Gates, preview, CodeQL e QA responsivo passaram; merge e produção não foram executados.
+- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX público aprovado.
+- Status geral: `EVOLUTION_ACTIVE`; a implementação consolidada passou o gate local com 65 testes e aguarda preview, QA responsiva e checks remotos. Merge e produção não foram executados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `feature/06-contextual-search-comparator`, empilhada sobre `feature/05-expanded-game-detail`; PRs #27 a #32 abertas como draft.
+- Branch atual: `feature/ui-ux-implementation`, baseada no head da PR #32 para consolidar a experiência pública sem incorporar o hardening administrativo fora do escopo.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
@@ -79,10 +79,10 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Manter as PRs #27 a #32 em draft e não fazer merge nem deploy sem autorização explícita.
-2. Criar `feature/07-admin-hardening` a partir do head documentado da PR #32.
-3. Implementar validação administrativa reutilizável, rascunhos locais e revisão de hardening.
-4. Validar recuperação, descarte, mensagens de erro, teclado e gates de segurança.
+1. Publicar a branch `feature/ui-ux-implementation` e abrir uma PR draft contra `main`.
+2. Aguardar gate, database, preview e CodeQL no mesmo head.
+3. Executar QA visual e de teclado em 320, 390, 736, 1024 e 1280 px no preview.
+4. Apresentar o preview ao produto; não fazer merge nem deploy de produção sem aprovação explícita.
 
 ### Primeiros arquivos a abrir
 
@@ -119,6 +119,9 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-16 — Infraestrutura de tabelas e estados | `READY` | PR #28 draft; CI, preview, CodeQL e QA 390/1280 px aprovados; sem merge/deploy |
 | WP-17 — Núcleo esportivo público | `READY` | PR #29 draft; CI #90, preview #70, CodeQL #91 e QA esportivo aprovados; sem merge/deploy |
 | WP-18 — Perfil público do jogador | `READY` | PR #30 draft; CI #103, preview #83, CodeQL #104 e QA 390/1280 px aprovados; sem merge/deploy |
+| WP-19 — Detalhe expandido do jogo | `READY` | PR #31 draft; CI, preview, CodeQL, reconciliação e QA aprovados; sem merge/deploy |
+| WP-20 — Busca, navegação e comparador | `READY` | PR #32 draft; CI, preview, CodeQL e QA acessível aprovados; sem merge/deploy |
+| WP-22 — Consolidação UI/UX pública | `VALIDATING` | Gate local e 65 testes aprovados; aguarda PR, preview, checks remotos e QA em cinco larguras |
 
 ## 8. Arquivos e referências importantes
 

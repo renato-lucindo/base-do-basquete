@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import type { CompetitionContext } from "../modules/competition/context";
+import { emptyPlayerTotals } from "../modules/statistics/player-profile-domain";
 import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
 import { PlayerProfile } from "./player-profile";
 
@@ -28,7 +29,7 @@ const profile: PublicPlayerProfileDto = {
   homeCity: null,
   homeState: null,
   current: null,
-  career: { games: 0, points: 0, assists: 0, rebounds: 0, steals: 0, blocks: 0 },
+  career: { ...emptyPlayerTotals },
   competitions: [],
   achievements: [],
   honors: [],
@@ -36,7 +37,7 @@ const profile: PublicPlayerProfileDto = {
 };
 
 describe("PlayerProfile", () => {
-  it("renders all hash sections and the honest empty-game state", () => {
+  it("renders only the three primary sections and the honest empty-game state", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter>
         <PlayerProfile achievements={[]} context={context} profile={profile} />
@@ -45,15 +46,32 @@ describe("PlayerProfile", () => {
 
     expect(html).toContain('href="#resumo"');
     expect(html).toContain('id="estatisticas"');
-    expect(html).toContain('id="conquistas-honrarias"');
     expect(html).toContain('id="jogos"');
-    expect(html).toContain('id="historico"');
+    expect(html).not.toContain('href="#conquistas-honrarias"');
+    expect(html).not.toContain('href="#historico"');
     expect(html).toContain("Nenhum jogo publicado");
     expect(html).not.toContain("0,0");
   });
 
   it("renders published statistics, honors and games", () => {
-    const totals = { games: 3, points: 13, assists: 3, rebounds: 10, steals: 2, blocks: 1 };
+    const totals = {
+      ...emptyPlayerTotals,
+      games: 3,
+      secondsPlayed: 1800,
+      points: 13,
+      twoPointMade: 4,
+      twoPointAttempted: 8,
+      threePointMade: 1,
+      threePointAttempted: 3,
+      freeThrowMade: 2,
+      freeThrowAttempted: 2,
+      offensiveRebounds: 2,
+      defensiveRebounds: 8,
+      assists: 3,
+      steals: 2,
+      blocks: 1,
+      plusMinus: 4,
+    };
     const richProfile: PublicPlayerProfileDto = {
       ...profile,
       current: {
@@ -61,6 +79,7 @@ describe("PlayerProfile", () => {
         context,
         teamName: "Dourada",
         teamSlug: "dourada",
+        teamAbbreviation: "DOU",
         jerseyNumber: "10",
         position: "Ala",
         starterAppearances: 2,
@@ -72,6 +91,7 @@ describe("PlayerProfile", () => {
           context,
           teamName: "Dourada",
           teamSlug: "dourada",
+          teamAbbreviation: "DOU",
           jerseyNumber: "10",
           position: "Ala",
           starterAppearances: 2,
@@ -95,7 +115,10 @@ describe("PlayerProfile", () => {
           context,
           teamName: "Dourada",
           jerseyNumber: "10",
-          points: 13,
+          opponentName: "Azul",
+          result: "Vitória",
+          score: "70 × 62",
+          totals,
         },
       ],
     };
@@ -125,7 +148,7 @@ describe("PlayerProfile", () => {
     );
 
     expect(html).toContain("Destaque");
-    expect(html).toContain("Jogo 10");
+    expect(html).toContain("Azul");
     expect(html).toContain("4,3");
   });
 });

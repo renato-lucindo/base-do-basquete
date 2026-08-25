@@ -10,6 +10,7 @@ export interface PlayerCompetitionSummary extends PlayerTotals {
   context: CompetitionContext;
   teamName: string | null;
   teamSlug: string | null;
+  teamAbbreviation: string | null;
   jerseyNumber: string | null;
   position: string | null;
   starterAppearances: number;
@@ -47,7 +48,10 @@ export interface PublicPlayerProfileDto {
     context: CompetitionContext;
     teamName: string | null;
     jerseyNumber: string | null;
-    points: number;
+    opponentName: string | null;
+    result: string | null;
+    score: string | null;
+    totals: PlayerTotals;
   }>;
 }
 
@@ -57,6 +61,45 @@ function ensure(error: unknown, statusText: string): asserts error is null {
 
 function numberValue(value: number | null): number {
   return value ?? 0;
+}
+
+function totalsFromRow(row: {
+  seconds_played: number | null;
+  points: number | null;
+  two_point_made: number | null;
+  two_point_attempted: number | null;
+  three_point_made: number | null;
+  three_point_attempted: number | null;
+  free_throw_made: number | null;
+  free_throw_attempted: number | null;
+  offensive_rebounds: number | null;
+  defensive_rebounds: number | null;
+  assists: number | null;
+  turnovers: number | null;
+  steals: number | null;
+  blocks: number | null;
+  fouls: number | null;
+  plus_minus: number | null;
+}): PlayerTotals {
+  return {
+    games: 1,
+    secondsPlayed: numberValue(row.seconds_played),
+    points: numberValue(row.points),
+    twoPointMade: numberValue(row.two_point_made),
+    twoPointAttempted: numberValue(row.two_point_attempted),
+    threePointMade: numberValue(row.three_point_made),
+    threePointAttempted: numberValue(row.three_point_attempted),
+    freeThrowMade: numberValue(row.free_throw_made),
+    freeThrowAttempted: numberValue(row.free_throw_attempted),
+    offensiveRebounds: numberValue(row.offensive_rebounds),
+    defensiveRebounds: numberValue(row.defensive_rebounds),
+    assists: numberValue(row.assists),
+    turnovers: numberValue(row.turnovers),
+    steals: numberValue(row.steals),
+    blocks: numberValue(row.blocks),
+    fouls: numberValue(row.fouls),
+    plusMinus: numberValue(row.plus_minus),
+  };
 }
 
 export async function loadPublicPlayerProfile(
@@ -127,15 +170,27 @@ export async function loadPublicPlayerProfile(
           context: rowContext,
           teamName: row.team_name,
           teamSlug: row.team_slug,
+          teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
           starterAppearances: numberValue(row.starter_appearances),
           games: numberValue(row.games_played),
+          secondsPlayed: numberValue(row.seconds_played),
           points: numberValue(row.points),
+          twoPointMade: numberValue(row.two_point_made),
+          twoPointAttempted: numberValue(row.two_point_attempted),
+          threePointMade: numberValue(row.three_point_made),
+          threePointAttempted: numberValue(row.three_point_attempted),
+          freeThrowMade: numberValue(row.free_throw_made),
+          freeThrowAttempted: numberValue(row.free_throw_attempted),
+          offensiveRebounds: numberValue(row.offensive_rebounds),
+          defensiveRebounds: numberValue(row.defensive_rebounds),
           assists: numberValue(row.assists),
-          rebounds: numberValue(row.offensive_rebounds) + numberValue(row.defensive_rebounds),
+          turnovers: numberValue(row.turnovers),
           steals: numberValue(row.steals),
           blocks: numberValue(row.blocks),
+          fouls: numberValue(row.fouls),
+          plusMinus: numberValue(row.plus_minus),
         },
       ];
     })
@@ -153,10 +208,7 @@ export async function loadPublicPlayerProfile(
       .eq("status", "confirmed")
       .not("confirmed_at", "is", null)
       .order("year", { ascending: false, nullsFirst: false }),
-    client
-      .from("game_player_statistics")
-      .select("game_id,competition_id,team_name,jersey_number,points")
-      .eq("player_id", profile.id),
+    client.from("game_player_statistics").select("*").eq("player_id", profile.id),
     client
       .from("player_achievements")
       .select(
@@ -180,11 +232,38 @@ export async function loadPublicPlayerProfile(
     : { data: [], error: null };
   ensure(gameResult.error, "Jogos públicos temporariamente indisponíveis");
 
+  const participantsResult = gameIds.length
+    ? await client
+        .from("game_participants")
+        .select("game_id,registration_id,side")
+        .in("game_id", gameIds)
+    : { data: [], error: null };
+  ensure(participantsResult.error, "Adversários temporariamente indisponíveis");
+  const registrationIds = participantsResult.data.map((item) => item.registration_id);
+  const registrationsResult = registrationIds.length
+    ? await client.from("team_registrations").select("id,team_id").in("id", registrationIds)
+    : { data: [], error: null };
+  ensure(registrationsResult.error, "Equipes temporariamente indisponíveis");
+  const teamIds = registrationsResult.data.map((item) => item.team_id);
+  const teamsResult = teamIds.length
+    ? await client.from("teams").select("id,name").in("id", teamIds).eq("is_public", true)
+    : { data: [], error: null };
+  ensure(teamsResult.error, "Equipes temporariamente indisponíveis");
+  const scoresResult = gameIds.length
+    ? await client
+        .from("game_scores")
+        .select("game_id,registration_id,score")
+        .in("game_id", gameIds)
+    : { data: [], error: null };
+  ensure(scoresResult.error, "Resultados temporariamente indisponíveis");
+
   const statByGame = new Map(
     gameStatisticsResult.data.flatMap((row) =>
       row.game_id === null ? [] : ([[row.game_id, row]] as const),
     ),
   );
+  const registrationById = new Map(registrationsResult.data.map((item) => [item.id, item]));
+  const teamById = new Map(teamsResult.data.map((item) => [item.id, item]));
 
   return {
     id: profile.id,
@@ -248,6 +327,33 @@ export async function loadPublicPlayerProfile(
       const rowContext = contextById.get(game.competition_id);
       const stats = statByGame.get(game.id);
       if (!rowContext || !stats) return [];
+      const participants = participantsResult.data.filter((item) => item.game_id === game.id);
+      const ownParticipant = participants.find(
+        (item) => registrationById.get(item.registration_id)?.team_id === stats.team_id,
+      );
+      const opponentParticipant = participants.find(
+        (item) => item.registration_id !== ownParticipant?.registration_id,
+      );
+      const opponentRegistration = opponentParticipant
+        ? registrationById.get(opponentParticipant.registration_id)
+        : null;
+      const opponent = opponentRegistration ? teamById.get(opponentRegistration.team_id) : null;
+      const ownScore = scoresResult.data.find(
+        (item) =>
+          item.game_id === game.id && item.registration_id === ownParticipant?.registration_id,
+      )?.score;
+      const opponentScore = scoresResult.data.find(
+        (item) =>
+          item.game_id === game.id && item.registration_id === opponentParticipant?.registration_id,
+      )?.score;
+      const result =
+        game.status !== "final" || ownScore == null || opponentScore == null
+          ? "Em andamento"
+          : ownScore > opponentScore
+            ? "Vitória"
+            : ownScore < opponentScore
+              ? "Derrota"
+              : "Empate";
       return [
         {
           id: game.id,
@@ -257,7 +363,11 @@ export async function loadPublicPlayerProfile(
           context: rowContext,
           teamName: stats.team_name,
           jerseyNumber: stats.jersey_number,
-          points: numberValue(stats.points),
+          opponentName: opponent?.name ?? null,
+          result,
+          score:
+            ownScore == null || opponentScore == null ? null : `${ownScore} × ${opponentScore}`,
+          totals: totalsFromRow(stats),
         },
       ];
     }),

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { CompetitionContext } from "../competition/context";
 import {
   buildContextualSearchResults,
+  buildGlobalSearchResults,
   normalizePublicSearch,
   type SearchPlayer,
   type SearchTeam,
@@ -73,5 +74,26 @@ describe("public contextual search", () => {
     const result = buildContextualSearchResults("sub 15", context, players, teams, [context]);
     expect(result[0]?.type).toBe("contexts");
     expect(result[0]?.items[0]?.description).toContain("2026");
+  });
+
+  it("groups global games and keeps destination context in the URL", () => {
+    const result = buildGlobalSearchResults(
+      "aguias",
+      [context],
+      players.map((player) => ({ ...player, context })),
+      teams.map((team) => ({ ...team, context })),
+      [
+        {
+          id: 7,
+          label: "Jogo 7",
+          homeName: "Águias do Sul",
+          awayName: "Estrelas",
+          context,
+        },
+      ],
+    );
+
+    expect(result.map((group) => group.type)).toEqual(["players", "teams", "games"]);
+    expect(result.at(-1)?.items[0]?.href).toBe("/2026/liga-de-desenvolvimento/sub-15/jogos/7");
   });
 });

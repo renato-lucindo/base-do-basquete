@@ -10,6 +10,7 @@ import {
 } from "../modules/competition/context";
 
 const resourceLabels: Record<PublicResource, string> = {
+  "visao-geral": "Visão geral",
   classificacao: "Classificação",
   jogadores: "Jogadores",
   equipes: "Equipes",
@@ -51,12 +52,13 @@ export function PublicHeader({ context, contexts, resource }: PublicNavigationPr
   return (
     <header className="public-header">
       <div className="public-header-topline">
-        <Link className="brand" to={contextPath(context, "classificacao")}>
+        <Link className="brand" to={contextPath(context, "visao-geral")}>
           <span className="brand-mark" aria-hidden="true">
             BB
           </span>
           <span>Base do Basquete</span>
         </Link>
+        <ContextualSearch context={context} resource={resource} />
         <Link className="admin-link" to="/admin">
           Administração
         </Link>
@@ -119,7 +121,6 @@ export function PublicHeader({ context, contexts, resource }: PublicNavigationPr
       </fieldset>
 
       <div className="public-header-tools">
-        <ContextualSearch context={context} />
         <details className="context-quick-menu">
           <summary>Trocar edição rapidamente</summary>
           <div>
@@ -172,7 +173,7 @@ export function PublicBreadcrumb({ context, resource, detailLabel }: PublicNavig
     <nav className="breadcrumb" aria-label="Caminho atual">
       <ol>
         <li>
-          <Link to={contextPath(context, "classificacao")}>{context.series.name}</Link>
+          <Link to={contextPath(context, "visao-geral")}>{context.series.name}</Link>
         </li>
         <li>
           <Link to={contextPath(context, resource)}>

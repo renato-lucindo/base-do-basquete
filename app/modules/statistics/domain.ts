@@ -1,5 +1,5 @@
 export type StatisticsMode = "totals" | "averages";
-export type FilterOperator = ">=" | "<=" | ">" | "<";
+export type FilterOperator = ">=" | ">" | "<=" | "<" | "=";
 export type ComparisonState = "better" | "worse" | "equal" | "unavailable";
 
 export interface CategoryCapabilities {
@@ -23,6 +23,7 @@ export interface StatisticTotals {
   turnovers: number;
   steals: number;
   blocks: number;
+  fouls: number;
   plusMinus: number;
 }
 
@@ -33,11 +34,28 @@ export interface PlayerStatistics {
   playerSlug: string;
   teamName: string | null;
   teamSlug: string | null;
+  teamAbbreviation: string | null;
   gamesPlayed: number;
   totals: StatisticTotals;
 }
 
-export type FilterMetric = "points" | "rebounds" | "assists" | "steals" | "blocks" | "efficiency";
+export type FilterMetric =
+  | "games"
+  | "minutes"
+  | "points"
+  | "rebounds"
+  | "offensiveRebounds"
+  | "defensiveRebounds"
+  | "assists"
+  | "steals"
+  | "blocks"
+  | "turnovers"
+  | "fouls"
+  | "fieldGoalPercentage"
+  | "threePointPercentage"
+  | "freeThrowPercentage"
+  | "efficiency"
+  | "plusMinus";
 
 export interface StatisticFilter {
   id: string;
@@ -96,20 +114,52 @@ export function statisticValue(
 ): number | null {
   const total = (() => {
     switch (metric) {
+      case "games":
+        return player.gamesPlayed;
+      case "minutes":
+        return player.totals.secondsPlayed / 60;
       case "points":
         return player.totals.points;
       case "rebounds":
         return rebounds(player.totals);
+      case "offensiveRebounds":
+        return player.totals.offensiveRebounds;
+      case "defensiveRebounds":
+        return player.totals.defensiveRebounds;
       case "assists":
         return player.totals.assists;
       case "steals":
         return player.totals.steals;
       case "blocks":
         return player.totals.blocks;
+      case "turnovers":
+        return player.totals.turnovers;
+      case "fouls":
+        return player.totals.fouls;
+      case "fieldGoalPercentage":
+        return percentage(
+          player.totals.twoPointMade + player.totals.threePointMade,
+          player.totals.twoPointAttempted + player.totals.threePointAttempted,
+        );
+      case "threePointPercentage":
+        return percentage(player.totals.threePointMade, player.totals.threePointAttempted);
+      case "freeThrowPercentage":
+        return percentage(player.totals.freeThrowMade, player.totals.freeThrowAttempted);
       case "efficiency":
         return efficiency(player.totals);
+      case "plusMinus":
+        return player.totals.plusMinus;
     }
   })();
+  if (total === null) return null;
+  if (
+    metric === "games" ||
+    metric === "fieldGoalPercentage" ||
+    metric === "threePointPercentage" ||
+    metric === "freeThrowPercentage"
+  ) {
+    return total;
+  }
   return mode === "totals" ? total : perGame(total, player.gamesPlayed);
 }
 
@@ -117,7 +167,8 @@ function matches(value: number, operator: FilterOperator, target: number): boole
   if (operator === ">=") return value >= target;
   if (operator === "<=") return value <= target;
   if (operator === ">") return value > target;
-  return value < target;
+  if (operator === "<") return value < target;
+  return value === target;
 }
 
 export function applyStatisticFilters(
@@ -148,7 +199,7 @@ export function compareStatistic(
     return { left: "unavailable", right: "unavailable" };
   }
   if (leftValue === rightValue) return { left: "equal", right: "equal" };
-  return leftValue > rightValue
-    ? { left: "better", right: "worse" }
-    : { left: "worse", right: "better" };
+  const lowerIsBetter = metric === "turnovers" || metric === "fouls";
+  const leftIsBetter = lowerIsBetter ? leftValue < rightValue : leftValue > rightValue;
+  return leftIsBetter ? { left: "better", right: "worse" } : { left: "worse", right: "better" };
 }

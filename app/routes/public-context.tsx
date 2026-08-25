@@ -72,11 +72,7 @@ export default function PublicContextPage({ loaderData }: Route.ComponentProps) 
       <div className="public-content">
         <PublicBreadcrumb context={context} contexts={contexts} resource={resource} />
         <section className="context-hero">
-          <p className="eyebrow">{context.displayName}</p>
           <h1>{title}</h1>
-          <p>
-            {context.series.name} · {context.year} · {context.category.name}
-          </p>
         </section>
 
         {resource === "jogadores" && playerStatistics ? (

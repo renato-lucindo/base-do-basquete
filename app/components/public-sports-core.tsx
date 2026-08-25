@@ -244,6 +244,32 @@ export function PublicSportsCore({
   data: PublicSportsCoreDto;
   resource: PublicResource;
 }) {
+  if (resource === "visao-geral") {
+    const nextGame = data.games.find((game) => game.status !== "final");
+    return (
+      <section aria-label="Visão geral da edição" className="public-overview">
+        <article>
+          <span>Equipes</span>
+          <strong>{data.teams.length}</strong>
+          <Link to={contextPath(context, "equipes")}>Ver equipes</Link>
+        </article>
+        <article>
+          <span>Jogos publicados</span>
+          <strong>{data.games.length}</strong>
+          <Link to={contextPath(context, "jogos")}>Ver jogos</Link>
+        </article>
+        <article>
+          <span>Próxima partida</span>
+          <strong>
+            {nextGame
+              ? `${nextGame.home.abbreviation ?? nextGame.home.name} × ${nextGame.away.abbreviation ?? nextGame.away.name}`
+              : "A definir"}
+          </strong>
+          <Link to={contextPath(context, "classificacao")}>Ver classificação</Link>
+        </article>
+      </section>
+    );
+  }
   if (resource === "jogos") {
     return <GamesSection context={context} games={data.games} teams={data.teams} />;
   }

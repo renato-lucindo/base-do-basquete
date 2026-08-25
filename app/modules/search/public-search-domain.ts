@@ -11,6 +11,7 @@ export interface SearchPlayer {
   slug: string;
   teamName: string | null;
   isPublic: boolean;
+  context?: CompetitionContext;
 }
 
 export interface SearchTeam {
@@ -19,6 +20,15 @@ export interface SearchTeam {
   abbreviation: string | null;
   slug: string;
   isPublic: boolean;
+  context?: CompetitionContext;
+}
+
+export interface SearchGame {
+  id: number;
+  label: string;
+  homeName: string;
+  awayName: string;
+  context: CompetitionContext;
 }
 
 export interface PublicSearchItem {
@@ -29,9 +39,19 @@ export interface PublicSearchItem {
 }
 
 export interface PublicSearchGroup {
-  type: "players" | "teams" | "contexts";
+  type: "players" | "teams" | "contexts" | "games";
   label: string;
   items: PublicSearchItem[];
+}
+
+function detailHref(
+  context: CompetitionContext,
+  resource: "jogadores" | "equipes" | "jogos",
+  detail: string | number,
+): string {
+  return `/${context.year}/${encodeURIComponent(context.series.slug)}/${encodeURIComponent(
+    context.category.slug,
+  )}/${resource}/${encodeURIComponent(String(detail))}`;
 }
 
 export function normalizePublicSearch(value: string): string {
@@ -79,11 +99,7 @@ export function buildContextualSearchResults(
           id: `player-${player.id}`,
           label: player.nickname ? `${player.name} (${player.nickname})` : player.name,
           description: player.teamName ?? "Sem equipe nesta edição",
-          href: `/${context.year}/${encodeURIComponent(
-            context.series.slug,
-          )}/${encodeURIComponent(context.category.slug)}/jogadores/${encodeURIComponent(
-            player.slug,
-          )}`,
+          href: detailHref(context, "jogadores", player.slug),
         })),
     },
     {
@@ -97,9 +113,7 @@ export function buildContextualSearchResults(
           id: `team-${team.id}`,
           label: team.name,
           description: team.abbreviation ?? "Equipe da edição",
-          href: `/${context.year}/${encodeURIComponent(
-            context.series.slug,
-          )}/${encodeURIComponent(context.category.slug)}/equipes/${encodeURIComponent(team.slug)}`,
+          href: detailHref(context, "equipes", team.slug),
         })),
     },
     {
@@ -124,5 +138,99 @@ export function buildContextualSearchResults(
     const items = group.items.slice(0, remaining);
     remaining -= items.length;
     return items.length > 0 ? [{ ...group, items }] : [];
+  });
+}
+
+export function buildGlobalSearchResults(
+  rawQuery: string,
+  contexts: CompetitionContext[],
+  players: SearchPlayer[],
+  teams: SearchTeam[],
+  games: SearchGame[],
+  limit = PUBLIC_SEARCH_LIMIT,
+): PublicSearchGroup[] {
+  const query = normalizePublicSearch(rawQuery);
+  if (query.length < PUBLIC_SEARCH_MIN_LENGTH) return [];
+  const uniquePlayers = [
+    ...new Map(players.filter((item) => item.isPublic).map((item) => [item.id, item])).values(),
+  ];
+  const uniqueTeams = [
+    ...new Map(teams.filter((item) => item.isPublic).map((item) => [item.id, item])).values(),
+  ];
+  const groups: PublicSearchGroup[] = [
+    {
+      type: "players",
+      label: "Atletas",
+      items: uniquePlayers
+        .filter((player) => matches(query, [player.name, player.nickname, player.teamName]))
+        .slice(0, 5)
+        .flatMap((player) =>
+          player.context
+            ? [
+                {
+                  id: `player-${player.id}`,
+                  label: player.nickname ? `${player.name} (${player.nickname})` : player.name,
+                  description: `${player.teamName ?? "Sem equipe"} · ${player.context.displayName}`,
+                  href: detailHref(player.context, "jogadores", player.slug),
+                },
+              ]
+            : [],
+        ),
+    },
+    {
+      type: "teams",
+      label: "Equipes",
+      items: uniqueTeams
+        .filter((team) => matches(query, [team.name, team.abbreviation]))
+        .slice(0, 4)
+        .flatMap((team) =>
+          team.context
+            ? [
+                {
+                  id: `team-${team.id}`,
+                  label: team.name,
+                  description: `${team.abbreviation ?? "Equipe"} · ${team.context.displayName}`,
+                  href: detailHref(team.context, "equipes", team.slug),
+                },
+              ]
+            : [],
+        ),
+    },
+    {
+      type: "contexts",
+      label: "Competições e categorias",
+      items: contexts
+        .filter((item) =>
+          matches(query, [item.year, item.displayName, item.series.name, item.category.name]),
+        )
+        .slice(0, 4)
+        .map((item) => ({
+          id: `context-${item.competitionId}`,
+          label: item.displayName,
+          description: `${item.year} · ${item.category.name}`,
+          href: contextHref(item),
+        })),
+    },
+    {
+      type: "games",
+      label: "Jogos",
+      items: games
+        .filter((game) =>
+          matches(query, [game.label, game.homeName, game.awayName, game.context.displayName]),
+        )
+        .slice(0, 4)
+        .map((game) => ({
+          id: `game-${game.id}`,
+          label: `${game.homeName} × ${game.awayName}`,
+          description: `${game.label} · ${game.context.displayName}`,
+          href: detailHref(game.context, "jogos", game.id),
+        })),
+    },
+  ];
+  let remaining = Math.max(1, Math.min(limit, PUBLIC_SEARCH_LIMIT));
+  return groups.flatMap((group) => {
+    const items = group.items.slice(0, remaining);
+    remaining -= items.length;
+    return items.length ? [{ ...group, items }] : [];
   });
 }

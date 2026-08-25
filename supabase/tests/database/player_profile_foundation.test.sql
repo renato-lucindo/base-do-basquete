@@ -29,10 +29,10 @@ insert into public.player_profiles
 values
   (9801, 2008, 'Perfil público de teste.', 188, 82.50, 'Ala', 'Direita', 'São Paulo', 'SP'),
   (9802, 2007, 'Perfil privado de teste.', 180, 75.00, 'Armador', 'Esquerda', 'Santos', 'SP');
-insert into private.player_private (player_id, birth_date, federation_no)
+insert into private.player_private (player_id, birth_date)
 values
-  (9801, '2008-04-12', 'FED-PRIVADO-9801'),
-  (9802, '2007-05-13', 'FED-PRIVADO-9802');
+  (9801, '2008-04-12'),
+  (9802, '2007-05-13');
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values
@@ -102,8 +102,8 @@ select is(
   'private storage preserves the full birth date'
 );
 select throws_ok(
-  $$insert into private.player_private (player_id, federation_no)
-    values (9801, 'OUTRO')$$,
+  $$insert into private.player_private (player_id, birth_date)
+    values (9801, '2000-01-01')$$,
   '23505',
   'duplicate key value violates unique constraint "player_private_pkey"',
   'one private identity row exists per player'

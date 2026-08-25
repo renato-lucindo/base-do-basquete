@@ -10,7 +10,19 @@ export type StatisticsSortKey =
   | "points"
   | "pointsPerGame"
   | "rebounds"
+  | "offensiveRebounds"
+  | "defensiveRebounds"
   | "assists"
+  | "steals"
+  | "blocks"
+  | "turnovers"
+  | "fouls"
+  | "fieldGoals"
+  | "fieldGoalPercentage"
+  | "threePointers"
+  | "threePointPercentage"
+  | "freeThrows"
+  | "freeThrowPercentage"
   | "efficiency"
   | "plusMinus";
 
@@ -22,6 +34,10 @@ export type AdvancedColumn =
   | "offensiveRebounds"
   | "defensiveRebounds"
   | "assists"
+  | "steals"
+  | "blocks"
+  | "turnovers"
+  | "fouls"
   | "fieldGoals"
   | "fieldGoalPercentage"
   | "threePointers"
@@ -31,21 +47,22 @@ export type AdvancedColumn =
   | "efficiency"
   | "plusMinus";
 
-export type ColumnPreset = "summary" | "shooting" | "complete";
+export type ColumnPreset = "essentials" | "all" | "custom";
 
 export const advancedColumnPresets: Record<ColumnPreset, AdvancedColumn[]> = {
-  summary: ["games", "minutes", "points", "rebounds", "assists", "efficiency", "plusMinus"],
-  shooting: [
+  essentials: [
     "games",
+    "minutes",
     "points",
-    "fieldGoals",
+    "rebounds",
+    "assists",
     "fieldGoalPercentage",
-    "threePointers",
     "threePointPercentage",
-    "freeThrows",
     "freeThrowPercentage",
+    "efficiency",
+    "plusMinus",
   ],
-  complete: [
+  all: [
     "games",
     "minutes",
     "points",
@@ -53,6 +70,10 @@ export const advancedColumnPresets: Record<ColumnPreset, AdvancedColumn[]> = {
     "offensiveRebounds",
     "defensiveRebounds",
     "assists",
+    "steals",
+    "blocks",
+    "turnovers",
+    "fouls",
     "fieldGoals",
     "fieldGoalPercentage",
     "threePointers",
@@ -62,9 +83,10 @@ export const advancedColumnPresets: Record<ColumnPreset, AdvancedColumn[]> = {
     "efficiency",
     "plusMinus",
   ],
+  custom: [],
 };
 
-const allowedColumns = new Set<AdvancedColumn>(advancedColumnPresets.complete);
+const allowedColumns = new Set<AdvancedColumn>(advancedColumnPresets.all);
 const allowedSortKeys = new Set<StatisticsSortKey>([
   "player",
   "team",
@@ -73,7 +95,19 @@ const allowedSortKeys = new Set<StatisticsSortKey>([
   "points",
   "pointsPerGame",
   "rebounds",
+  "offensiveRebounds",
+  "defensiveRebounds",
   "assists",
+  "steals",
+  "blocks",
+  "turnovers",
+  "fouls",
+  "fieldGoals",
+  "fieldGoalPercentage",
+  "threePointers",
+  "threePointPercentage",
+  "freeThrows",
+  "freeThrowPercentage",
   "efficiency",
   "plusMinus",
 ]);
@@ -96,15 +130,26 @@ export function matchesStatisticsSearch(
 }
 
 export function parseColumnPreset(value: string | null): ColumnPreset {
-  return value === "shooting" || value === "complete" ? value : "summary";
+  if (value === "all" || value === "custom") return value;
+  return "essentials";
 }
 
 export function parseColumns(value: string | null, fallback: ColumnPreset): AdvancedColumn[] {
-  if (!value) return advancedColumnPresets[fallback];
+  if (!value) {
+    return fallback === "custom"
+      ? advancedColumnPresets.essentials
+      : advancedColumnPresets[fallback];
+  }
   const columns = value
     .split(",")
     .filter((column): column is AdvancedColumn => allowedColumns.has(column as AdvancedColumn));
   return columns.length > 0 ? [...new Set(columns)] : advancedColumnPresets[fallback];
+}
+
+export function parsePage(value: string | null): number {
+  if (!value || !/^[1-9][0-9]*$/.test(value)) return 1;
+  const page = Number(value);
+  return Number.isSafeInteger(page) ? page : 1;
 }
 
 export function serializeColumns(columns: AdvancedColumn[]): string {
