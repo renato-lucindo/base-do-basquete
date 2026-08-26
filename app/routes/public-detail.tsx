@@ -100,7 +100,12 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
   const { context, contexts, detail, game, playerProfile, resource } = loaderData;
   return (
     <main className="public-shell">
-      <PublicHeader context={context} contexts={contexts} resource={resource} />
+      <PublicHeader
+        context={context}
+        contexts={contexts}
+        detailLabel={detail.label}
+        resource={resource}
+      />
       <div className="public-content">
         <PublicBreadcrumb
           context={context}

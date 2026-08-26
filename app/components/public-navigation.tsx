@@ -32,7 +32,7 @@ function isAdultContext(context: CompetitionContext): boolean {
   return /adult|livre|senior|sênior/i.test(`${context.category.name} ${context.category.slug}`);
 }
 
-export function PublicHeader({ context, contexts, resource }: PublicNavigationProps) {
+export function PublicHeader({ context, contexts, detailLabel, resource }: PublicNavigationProps) {
   const navigate = useNavigate();
   const years = unique(contexts.map((option) => option.year));
   const series = contexts.filter((option) => option.year === context.year);
@@ -58,7 +58,10 @@ export function PublicHeader({ context, contexts, resource }: PublicNavigationPr
           </span>
           <span>Base do Basquete</span>
         </Link>
-        <ContextualSearch context={context} resource={resource} />
+        <ContextualSearch
+          context={context}
+          currentPageSupported={resource === "jogadores" && !detailLabel}
+        />
         <Link className="admin-link" to="/admin">
           Administração
         </Link>

@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 
-import type { CompetitionContext, PublicResource } from "../modules/competition/context";
+import type { CompetitionContext } from "../modules/competition/context";
 import {
   normalizePublicSearch,
   PUBLIC_SEARCH_MIN_LENGTH,
@@ -18,16 +18,15 @@ type SearchScope = "current" | "global";
 
 export function ContextualSearch({
   context,
-  resource,
+  currentPageSupported,
 }: {
   context: CompetitionContext;
-  resource: PublicResource;
+  currentPageSupported: boolean;
 }) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const listboxId = useId();
   const formRef = useRef<HTMLFormElement>(null);
-  const currentPageSupported = resource === "jogadores";
   const [scope, setScope] = useState<SearchScope>(currentPageSupported ? "current" : "global");
   const [globalQuery, setGlobalQuery] = useState("");
   const [groups, setGroups] = useState<PublicSearchGroup[]>([]);
