@@ -16,7 +16,13 @@ alter table public.admin_mutation_audit
   ),
   drop constraint admin_mutation_audit_entity_type_check,
   add constraint admin_mutation_audit_entity_type_check check (
-    entity_type in ('team_registration', 'game', 'boxscore_import', 'player')
+    entity_type in (
+      'team_registration',
+      'game',
+      'boxscore_import',
+      'final_placement',
+      'player'
+    )
   );
 
 create function public.admin_search_players(

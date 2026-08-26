@@ -70,7 +70,7 @@ select set_config(
 set local role authenticated;
 
 select results_eq(
-  $$select full_name from public.admin_search_players(9701, 'JOAO', null, 12)$$,
+  $$select full_name from public.admin_search_players(9701, 'JOAO DA SILVA', null, 12)$$,
   $$values ('João da Silva'::text)$$,
   'search ignores accents and case'
 );
@@ -80,7 +80,7 @@ select results_eq(
   'search supports nickname substrings'
 );
 select is(
-  (select conflict_registration_id from public.admin_search_players(9701, 'joao', null, 12)),
+  (select conflict_registration_id from public.admin_search_players(9701, 'joao da silva', null, 12)),
   9701::bigint,
   'search reports an edition roster conflict'
 );
