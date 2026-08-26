@@ -17,6 +17,7 @@ export default [
   ),
   route("admin/competitions/:competitionId", "routes/admin.competitions.$competitionId.tsx"),
   route("api/public-search", "routes/api.public-search.tsx"),
+  route("api/admin/players", "routes/api.admin-players.tsx"),
   route(":year/:competition/:category/:resource", "routes/public-context.tsx"),
   route(":year/:competition/:category/:resource/:detail", "routes/public-detail.tsx"),
 ] satisfies RouteConfig;

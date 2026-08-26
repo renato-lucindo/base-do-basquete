@@ -8,10 +8,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX aprovado em todo o produto.
+- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX; WP-23 implementa os novos fluxos administrativos sobre a branch do WP-22.
 - Status geral: `READY_FOR_PRODUCT_APPROVAL`; a implementação consolidada passou gate, database, preview, CodeQL e QA em cinco larguras na PR #34. Merge e produção não foram executados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `feature/ui-ux-implementation`, baseada no head da PR #32 para consolidar a experiência pública sem incorporar o hardening administrativo fora do escopo.
+- Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
@@ -122,6 +122,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-19 — Detalhe expandido do jogo | `READY` | PR #31 draft; CI, preview, CodeQL, reconciliação e QA aprovados; sem merge/deploy |
 | WP-20 — Busca, navegação e comparador | `READY` | PR #32 draft; CI, preview, CodeQL e QA acessível aprovados; sem merge/deploy |
 | WP-22 — Consolidação UI/UX do produto | `READY` | PR #34 draft; área pública, administração e autenticação no mesmo padrão branco/azul; CI, preview, CodeQL e QA responsiva aprovados; sem merge/deploy |
+| WP-23 — Fluxos administrativos ágeis | `IN_PROGRESS` | Busca/criação segura de atletas, elenco, rascunhos, revisão de PDF e súmula compacta implementados localmente; gate da aplicação aprovado; pgTAP e preview ainda pendentes |
 
 ## 8. Arquivos e referências importantes
 

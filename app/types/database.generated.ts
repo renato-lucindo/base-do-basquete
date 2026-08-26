@@ -1423,6 +1423,42 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_player: {
+        Args: { p_allow_similar?: boolean; p_full_name: string; p_nickname?: string };
+        Returns: {
+          created_at: string;
+          full_name: string;
+          id: number;
+          is_active: boolean;
+          is_public: boolean;
+          nickname: string | null;
+          slug: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "players";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_search_players: {
+        Args: {
+          p_competition_id: number;
+          p_limit?: number;
+          p_query: string;
+          p_registration_id?: number;
+        };
+        Returns: {
+          conflict_registration_id: number | null;
+          conflict_team_name: string | null;
+          current_team_name: string | null;
+          edition_jersey: string | null;
+          full_name: string;
+          id: number;
+          nickname: string | null;
+        }[];
+      };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };

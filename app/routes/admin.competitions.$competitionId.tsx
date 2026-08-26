@@ -1,6 +1,7 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 
 import type { Route } from "./+types/admin.competitions.$competitionId";
+import { RosterEditor } from "../components/admin/roster-editor";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
@@ -40,7 +41,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     categoryResult,
     registrationsResult,
     teamsResult,
-    playersResult,
+    playerCountResult,
     gamesResult,
     placementsResult,
   ] = await Promise.all([
@@ -56,11 +57,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,name,slug,abbreviation,is_active")
       .eq("is_active", true)
       .order("name"),
-    auth.client
-      .from("players")
-      .select("id,full_name,slug,is_active")
-      .eq("is_active", true)
-      .order("full_name"),
+    auth.client.from("players").select("id", { count: "exact", head: true }).eq("is_active", true),
     auth.client
       .from("games")
       .select("id", { count: "exact", head: true })
@@ -76,7 +73,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     categoryResult.error ||
     registrationsResult.error ||
     teamsResult.error ||
-    playersResult.error ||
+    playerCountResult.error ||
     gamesResult.error ||
     placementsResult.error
   )
@@ -92,11 +89,123 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     : { data: [], error: null };
   if (rosterResult.error) throw new Error("Competition roster query failed");
 
+  const teamIds = registrationsResult.data.map((registration) => registration.team_id);
+  const previousRegistrationsResult = teamIds.length
+    ? await auth.client
+        .from("team_registrations")
+        .select("id,team_id,competition_id,updated_at")
+        .in("team_id", teamIds)
+        .neq("competition_id", competitionId)
+        .in("status", ["confirmed", "completed"])
+        .order("updated_at", { ascending: false })
+    : { data: [], error: null };
+  if (previousRegistrationsResult.error) throw new Error("Previous roster query failed");
+  const latestPreviousByTeam = new Map<number, (typeof previousRegistrationsResult.data)[number]>();
+  for (const registration of previousRegistrationsResult.data) {
+    if (!latestPreviousByTeam.has(registration.team_id)) {
+      latestPreviousByTeam.set(registration.team_id, registration);
+    }
+  }
+  const previousRegistrationIds = [...latestPreviousByTeam.values()].map(({ id }) => id);
+  const previousRosterResult = previousRegistrationIds.length
+    ? await auth.client
+        .from("roster_entries")
+        .select("registration_id,player_id,jersey_number,status")
+        .in("registration_id", previousRegistrationIds)
+        .eq("status", "active")
+    : { data: [], error: null };
+  if (previousRosterResult.error) throw new Error("Previous roster entries query failed");
+
+  const playerIds = [
+    ...new Set(
+      [...rosterResult.data, ...previousRosterResult.data].map((entry) => entry.player_id),
+    ),
+  ];
+  const rosterPlayersResult = playerIds.length
+    ? await auth.client.from("players").select("id,full_name,nickname").in("id", playerIds)
+    : { data: [], error: null };
+  if (rosterPlayersResult.error) throw new Error("Roster players query failed");
+  const previousCompetitionIds = [
+    ...new Set([...latestPreviousByTeam.values()].map(({ competition_id }) => competition_id)),
+  ];
+  const previousCompetitionsResult = previousCompetitionIds.length
+    ? await auth.client
+        .from("competitions")
+        .select("id,display_name")
+        .in("id", previousCompetitionIds)
+    : { data: [], error: null };
+  if (previousCompetitionsResult.error) throw new Error("Previous competition query failed");
+
   const teamNames = new Map(teamsResult.data.map((team) => [team.id, team.name]));
+  const registrationById = new Map(
+    registrationsResult.data.map((registration) => [registration.id, registration]),
+  );
+  const currentRosterByPlayer = new Map(rosterResult.data.map((entry) => [entry.player_id, entry]));
+  const playerById = new Map(rosterPlayersResult.data.map((player) => [player.id, player]));
+  const previousCompetitionNames = new Map(
+    previousCompetitionsResult.data.map((item) => [item.id, item.display_name]),
+  );
   const registrations = registrationsResult.data.map((registration) => ({
     ...registration,
     teamName: teamNames.get(registration.team_id) ?? "Equipe indisponível",
-    roster: rosterResult.data.filter((entry) => entry.registration_id === registration.id),
+    roster: rosterResult.data
+      .filter((entry) => entry.registration_id === registration.id)
+      .flatMap((entry) => {
+        const player = playerById.get(entry.player_id);
+        return player
+          ? [
+              {
+                id: player.id,
+                fullName: player.full_name,
+                nickname: player.nickname,
+                currentTeamName: teamNames.get(registration.team_id) ?? null,
+                editionJersey: entry.jersey_number,
+                conflict: null,
+                jerseyNumber: entry.jersey_number ?? "",
+              },
+            ]
+          : [];
+      }),
+    suggestedRoster: (() => {
+      const previous = latestPreviousByTeam.get(registration.team_id);
+      if (!previous) return [];
+      return previousRosterResult.data
+        .filter((entry) => entry.registration_id === previous.id)
+        .flatMap((entry) => {
+          const player = playerById.get(entry.player_id);
+          const currentEntry = currentRosterByPlayer.get(entry.player_id);
+          const conflictRegistration = currentEntry
+            ? registrationById.get(currentEntry.registration_id)
+            : null;
+          return player
+            ? [
+                {
+                  id: player.id,
+                  fullName: player.full_name,
+                  nickname: player.nickname,
+                  currentTeamName: null,
+                  editionJersey: entry.jersey_number,
+                  conflict:
+                    currentEntry && currentEntry.registration_id !== registration.id
+                      ? {
+                          registrationId: currentEntry.registration_id,
+                          teamName:
+                            (conflictRegistration && teamNames.get(conflictRegistration.team_id)) ??
+                            "outra equipe",
+                        }
+                      : null,
+                  jerseyNumber: entry.jersey_number ?? "",
+                },
+              ]
+            : [];
+        });
+    })(),
+    suggestionLabel: (() => {
+      const previous = latestPreviousByTeam.get(registration.team_id);
+      return previous
+        ? `Elenco de ${previousCompetitionNames.get(previous.competition_id) ?? "edição anterior"}`
+        : null;
+    })(),
     finalPlacement:
       placementsResult.data.find((placement) => placement.registration_id === registration.id) ??
       null,
@@ -113,8 +222,9 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       },
       registrations,
       availableTeams: teamsResult.data.filter((team) => !registeredTeamIds.has(team.id)),
-      players: playersResult.data,
+      playerCount: playerCountResult.count ?? 0,
       gameCount: gamesResult.count ?? 0,
+      savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -213,9 +323,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       context: { competitionId },
     });
   }
-  throw redirect(`/admin/competitions/${competitionId}`, {
-    headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
-  });
+  throw redirect(
+    intent === "replace-roster"
+      ? `/admin/competitions/${competitionId}?savedRoster=${formData.get("registrationId")}`
+      : `/admin/competitions/${competitionId}`,
+    {
+      headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+    },
+  );
 }
 
 export default function CompetitionHub({ loaderData, actionData }: Route.ComponentProps) {
@@ -250,7 +365,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           </article>
           <article>
             <span>Atletas disponíveis</span>
-            <strong>{loaderData.players.length}</strong>
+            <strong>{loaderData.playerCount}</strong>
           </article>
           <article>
             <span>Jogos</span>
@@ -315,39 +430,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                 </Form>
               ) : null}
               {registration.status !== "withdrawn" && registration.status !== "completed" ? (
-                <Form method="post" className="roster-form">
-                  <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-                  <input type="hidden" name="intent" value="replace-roster" />
-                  <input type="hidden" name="registrationId" value={registration.id} />
-                  <fieldset>
-                    <legend>Elenco completo</legend>
-                    {loaderData.players.map((player) => {
-                      const current = registration.roster.find(
-                        (entry) => entry.player_id === player.id,
-                      );
-                      return (
-                        <label key={player.id}>
-                          <input
-                            type="checkbox"
-                            name="playerId"
-                            value={player.id}
-                            defaultChecked={Boolean(current)}
-                          />
-                          <span>{player.full_name}</span>
-                          <input
-                            aria-label={`Camisa de ${player.full_name}`}
-                            name={`jersey-${player.id}`}
-                            defaultValue={current?.jersey_number ?? ""}
-                            placeholder="Camisa"
-                          />
-                        </label>
-                      );
-                    })}
-                  </fieldset>
-                  <button className="button button-primary" type="submit">
-                    Salvar elenco em uma transação
-                  </button>
-                </Form>
+                <RosterEditor
+                  competitionId={competition.id}
+                  csrfToken={loaderData.csrfToken}
+                  registrationId={registration.id}
+                  teamName={registration.teamName}
+                  currentRoster={registration.roster}
+                  suggestedRoster={registration.suggestedRoster}
+                  suggestionLabel={registration.suggestionLabel}
+                  saved={loaderData.savedRosterId === registration.id}
+                />
               ) : null}
               {registration.status !== "draft" ? (
                 <Form method="post" className="inline-admin-form final-result-form">

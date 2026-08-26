@@ -1,0 +1,152 @@
+import type { KeyboardEvent } from "react";
+
+import { calculatePoints, type EditorSlot, type RosterCandidate, type TeamSide } from "./domain";
+
+const compactFields = [
+  ["two", "2P"],
+  ["three", "3P"],
+  ["free", "LL"],
+  ["fouls", "Faltas"],
+] as const;
+
+interface CompactScoresheetGridProps {
+  side: TeamSide;
+  teamName: string;
+  slots: EditorSlot[];
+  roster: RosterCandidate[];
+  periodCount: number;
+  periodNumber: number;
+  stats: Record<string, string>;
+  disqualificationFor: (
+    side: TeamSide,
+    slotNumber: number,
+  ) => { periodNumber: number; reason: string } | null;
+  onChange: (key: string, value: string) => void;
+}
+
+function statKey(side: TeamSide, slotNumber: number, periodNumber: number, field: string) {
+  return `${side}-${slotNumber}-${periodNumber}-${field}`;
+}
+
+export function CompactScoresheetGrid({
+  side,
+  teamName,
+  slots,
+  roster,
+  periodCount,
+  periodNumber,
+  stats,
+  disqualificationFor,
+  onChange,
+}: CompactScoresheetGridProps) {
+  const active = slots.filter((slot) => slot.rosterEntryId !== null);
+  const moveVertically = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const input = event.currentTarget;
+    const column = input.dataset.gridColumn;
+    const row = Number(input.dataset.gridRow);
+    const direction = event.shiftKey ? -1 : 1;
+    const target = document.querySelector<HTMLInputElement>(
+      `[data-grid-side="${side}"][data-grid-column="${column}"][data-grid-row="${row + direction}"]`,
+    );
+    target?.focus();
+    target?.select();
+  };
+
+  return (
+    <section className="compact-grid-section">
+      <header>
+        <h2>{teamName}</h2>
+        <span>
+          Período em edição: {periodNumber <= 4 ? `Q${periodNumber}` : `OT${periodNumber - 4}`}
+        </span>
+      </header>
+      <div className="compact-grid-scroll">
+        <table className="compact-data-grid">
+          <caption>Lançamentos compactos de {teamName}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Camisa</th>
+              <th scope="col">Atleta</th>
+              {compactFields.map(([, label]) => (
+                <th scope="col" key={label}>
+                  {label}
+                </th>
+              ))}
+              <th scope="col">Total</th>
+              <th scope="col">Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {active.map((slot, rowIndex) => {
+              const player = roster.find((item) => item.rosterEntryId === slot.rosterEntryId);
+              const disqualification = disqualificationFor(side, slot.slotNumber);
+              const locked = Boolean(
+                disqualification && periodNumber > disqualification.periodNumber,
+              );
+              let total = 0;
+              try {
+                for (let period = 1; period <= periodCount; period += 1) {
+                  total += calculatePoints(
+                    Number(stats[statKey(side, slot.slotNumber, period, "two")] || 0),
+                    Number(stats[statKey(side, slot.slotNumber, period, "three")] || 0),
+                    Number(stats[statKey(side, slot.slotNumber, period, "free")] || 0),
+                  );
+                }
+              } catch {
+                total = Number.NaN;
+              }
+              return (
+                <tr key={slot.slotNumber} data-locked={locked || undefined}>
+                  <th scope="row">{slot.jerseyNumber || "—"}</th>
+                  <td>{player?.playerName ?? "Atleta"}</td>
+                  {compactFields.map(([field, label], columnIndex) => {
+                    const key = statKey(side, slot.slotNumber, periodNumber, field);
+                    const fouls = field === "fouls";
+                    return (
+                      <td key={field}>
+                        <label>
+                          <span className="sr-only">
+                            {label} de {player?.playerName}
+                          </span>
+                          <input
+                            aria-label={`${label} de ${player?.playerName}`}
+                            name={`stat-${key}`}
+                            inputMode={fouls ? "text" : "numeric"}
+                            pattern={fouls ? undefined : "(?:0|[1-9][0-9]?)"}
+                            placeholder={fouls ? "P,T" : "0"}
+                            value={stats[key] ?? (fouls ? "" : "0")}
+                            disabled={locked}
+                            data-grid-side={side}
+                            data-grid-row={rowIndex}
+                            data-grid-column={columnIndex}
+                            onKeyDown={moveVertically}
+                            onChange={(event) => onChange(key, event.currentTarget.value)}
+                          />
+                        </label>
+                      </td>
+                    );
+                  })}
+                  <td>
+                    <strong>{Number.isFinite(total) ? total : "—"}</strong>
+                  </td>
+                  <td>
+                    {disqualification
+                      ? `GD ${disqualification.reason}`
+                      : locked
+                        ? "Bloqueado"
+                        : "Ativo"}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="admin-note">
+        Enter avança para o próximo atleta na mesma coluna; Shift + Enter retorna.
+      </p>
+    </section>
+  );
+}

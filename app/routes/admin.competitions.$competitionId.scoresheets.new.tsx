@@ -76,38 +76,36 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     throw new Response("Edição indisponível", { status: 404 });
   }
 
-  const [registrationsResult, teamsResult, rosterResult, playersResult, prefillResult] =
-    await Promise.all([
-      auth.client
-        .from("team_registrations")
-        .select("id,team_id")
-        .eq("competition_id", competitionId)
-        .eq("status", "confirmed")
-        .order("id"),
-      auth.client.from("teams").select("id,name").eq("is_active", true).order("name"),
-      auth.client
-        .from("roster_entries")
-        .select("id,registration_id,player_id,jersey_number")
-        .eq("competition_id", competitionId)
-        .eq("status", "active")
-        .order("id"),
-      auth.client.from("players").select("id,full_name").eq("is_active", true),
-      auth.client
-        .from("manual_scoresheet_prefill")
-        .select("registration_id,slot_number,roster_entry_id,jersey_number")
-        .eq("competition_id", competitionId)
-        .order("slot_number"),
-    ]);
+  const [registrationsResult, teamsResult, rosterResult, prefillResult] = await Promise.all([
+    auth.client
+      .from("team_registrations")
+      .select("id,team_id")
+      .eq("competition_id", competitionId)
+      .eq("status", "confirmed")
+      .order("id"),
+    auth.client.from("teams").select("id,name").eq("is_active", true).order("name"),
+    auth.client
+      .from("roster_entries")
+      .select("id,registration_id,player_id,jersey_number")
+      .eq("competition_id", competitionId)
+      .eq("status", "active")
+      .order("id"),
+    auth.client
+      .from("manual_scoresheet_prefill")
+      .select("registration_id,slot_number,roster_entry_id,jersey_number")
+      .eq("competition_id", competitionId)
+      .order("slot_number"),
+  ]);
 
-  if (
-    registrationsResult.error ||
-    teamsResult.error ||
-    rosterResult.error ||
-    playersResult.error ||
-    prefillResult.error
-  ) {
+  if (registrationsResult.error || teamsResult.error || rosterResult.error || prefillResult.error) {
     throw new Error("Manual scoresheet context query failed");
   }
+
+  const rosterPlayerIds = [...new Set(rosterResult.data.map((entry) => entry.player_id))];
+  const playersResult = rosterPlayerIds.length
+    ? await auth.client.from("players").select("id,full_name").in("id", rosterPlayerIds)
+    : { data: [], error: null };
+  if (playersResult.error) throw new Error("Manual scoresheet player query failed");
 
   const teamNames = new Map(teamsResult.data.map((team) => [team.id, team.name]));
   const playerNames = new Map(playersResult.data.map((player) => [player.id, player.full_name]));
