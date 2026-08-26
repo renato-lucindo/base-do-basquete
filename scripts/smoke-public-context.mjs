@@ -12,7 +12,7 @@ async function request(path, init = {}) {
   });
 }
 
-const latest = "/2026/copa-es-ouro/fixture-fiba/classificacao";
+const latest = "/2026/copa-es-ouro/fixture-fiba/visao-geral";
 const older = "/2025/liga-de-desenvolvimento/sub-15/equipes";
 const secondCategory = "/2026/liga-de-desenvolvimento/sub-17/jogadores";
 
@@ -51,7 +51,7 @@ const preferredRoot = await request("/", {
 assert.equal(preferredRoot.status, 302);
 assert.equal(
   preferredRoot.headers.get("location"),
-  "/2025/liga-de-desenvolvimento/sub-15/classificacao",
+  "/2025/liga-de-desenvolvimento/sub-15/visao-geral",
 );
 
 const adminResponse = await request("/admin");

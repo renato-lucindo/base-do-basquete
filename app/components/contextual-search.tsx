@@ -40,6 +40,15 @@ export function ContextualSearch({
   const expanded = scope === "global" && open && normalized.length >= PUBLIC_SEARCH_MIN_LENGTH;
 
   useEffect(() => {
+    setScope(currentPageSupported ? "current" : "global");
+    setGlobalQuery("");
+    setGroups([]);
+    setStatus("idle");
+    setActiveIndex(-1);
+    setOpen(false);
+  }, [currentPageSupported]);
+
+  useEffect(() => {
     if (scope !== "global" || normalized.length < PUBLIC_SEARCH_MIN_LENGTH) {
       setGroups([]);
       setStatus("idle");

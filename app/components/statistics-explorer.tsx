@@ -756,7 +756,8 @@ export function StatisticsExplorer({
       : [newDraftFilter()],
   );
   const [filterOpen, setFilterOpen] = useState(false);
-  const selected = comparisonIds(searchParams);
+  const selectedRef = useRef<[string, string]>(comparisonIds(searchParams));
+  const [selected, setSelected] = useState<[string, string]>(selectedRef.current);
   const [comparisonOpen, setComparisonOpen] = useState(Boolean(selected[0] || selected[1]));
   const [customOpen, setCustomOpen] = useState(false);
   const [filterError, setFilterError] = useState("");
@@ -778,6 +779,14 @@ export function StatisticsExplorer({
   const sortKey =
     statistics.kind === "advanced" && !visibleSorts.has(parsedSort) ? "player" : parsedSort;
   const direction = parseSortDirection(searchParams.get("dir"));
+
+  useEffect(() => {
+    const next = comparisonIds(searchParams);
+    if (next[0] === selectedRef.current[0] && next[1] === selectedRef.current[1]) return;
+    selectedRef.current = next;
+    setSelected(next);
+    setComparisonOpen(Boolean(next[0] || next[1]));
+  }, [searchParams]);
 
   const replaceParams = (change: (next: URLSearchParams) => void) => {
     const next = new URLSearchParams(searchParams);
@@ -872,15 +881,19 @@ export function StatisticsExplorer({
       else next.set("page", String(value));
     });
   const setComparedPlayer = (side: 0 | 1, id: string) => {
-    const nextSelected: [string, string] = [...selected] as [string, string];
+    const nextSelected: [string, string] = [...selectedRef.current] as [string, string];
     nextSelected[side] = id;
     if (nextSelected[0] && nextSelected[0] === nextSelected[1]) return;
+    selectedRef.current = nextSelected;
+    setSelected(nextSelected);
     replaceParams((next) => {
       if (nextSelected[0] || nextSelected[1]) next.set("compare", nextSelected.join(","));
       else next.delete("compare");
     });
   };
   const closeComparison = () => {
+    selectedRef.current = ["", ""];
+    setSelected(["", ""]);
     setComparisonOpen(false);
     replaceParams((next) => next.delete("compare"));
   };
