@@ -8,7 +8,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX público aprovado.
+- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX aprovado em todo o produto.
 - Status geral: `READY_FOR_PRODUCT_APPROVAL`; a implementação consolidada passou gate, database, preview, CodeQL e QA em cinco larguras na PR #34. Merge e produção não foram executados.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/ui-ux-implementation`, baseada no head da PR #32 para consolidar a experiência pública sem incorporar o hardening administrativo fora do escopo.
@@ -121,7 +121,7 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-18 — Perfil público do jogador | `READY` | PR #30 draft; CI #103, preview #83, CodeQL #104 e QA 390/1280 px aprovados; sem merge/deploy |
 | WP-19 — Detalhe expandido do jogo | `READY` | PR #31 draft; CI, preview, CodeQL, reconciliação e QA aprovados; sem merge/deploy |
 | WP-20 — Busca, navegação e comparador | `READY` | PR #32 draft; CI, preview, CodeQL e QA acessível aprovados; sem merge/deploy |
-| WP-22 — Consolidação UI/UX pública | `READY` | PR #34 draft; CI #133, preview #113, CodeQL #134 e QA em 320/390/736/1024/1280 px aprovados; sem merge/deploy |
+| WP-22 — Consolidação UI/UX do produto | `READY` | PR #34 draft; área pública, administração e autenticação no mesmo padrão branco/azul; CI, preview, CodeQL e QA responsiva aprovados; sem merge/deploy |
 
 ## 8. Arquivos e referências importantes
 
@@ -206,7 +206,7 @@ CLOUDFLARE_ACCOUNT_ID
 - WP-19 navegador: jogo 63 com placar/totais 93 × 39 reconciliados, titulares, DNP, cinco tabelas e métricas recolhíveis; jogo 5 agendado sem 0 × 0; 390 × 844/1280 × 800 sem overflow.
 - WP-20 remoto: PR #32 no head funcional `f1145db`; CI #120, preview #100 e CodeQL #121 aprovados.
 - WP-20 navegador: busca `alvares` encontrou Álvares sem acento; `2025` agrupou edição/categoria; setas e Escape aprovados; comparador 38 × 34 restaurou seleção e totais pela URL, com links e textos de melhor/menor/empate.
-- WP-22 remoto: PR #34 no head `9a1791f`; CI #133 com gate/database desde zero, preview #113 com smoke contextual e CodeQL #134 aprovados.
+- WP-22 remoto: PR #34 no head `7ef5144`; CI `33009112506`, preview/smoke `33009112457` e CodeQL `33009112447` aprovados.
 - WP-22 navegador: busca local/global, presets, filtro explícito, chips, paginação 20/15, comparador com seleção rápida, Escape/foco e perfil de três seções aprovados; 320/390/736/1024/1280 px sem overflow do documento.
 - WP-04 SQL: 34/34 asserts aprovados em rollback integral e novamente no esquema remoto persistido; todas as 19 tabelas de aplicação com RLS.
 - WP-04 advisors: nenhum item de performance acionável; avisos remanescentes são índices recém-criados ainda sem uso, schema privado sem policy por desenho e proteção de senha vazada disponível apenas no plano pago.
@@ -264,7 +264,7 @@ CLOUDFLARE_ACCOUNT_ID
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
-- Consolidação atual: PR #34 draft contra `main`, head `9a1791f`, todos os checks verdes e preview pronto para aprovação visual; nenhum merge ou deploy de produção executado.
+- Consolidação atual: PR #34 draft contra `main`, head `7ef5144`, todos os checks verdes e preview público/administrativo pronto para aprovação visual; nenhum merge ou deploy de produção executado.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -352,3 +352,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | WP-19 implementado na PR #31; boxscore/totais e métricas expandidas separados, CI #109, preview #89, CodeQL #110, reconciliação e QA responsivo aprovados | Retargetar a PR #31 para a PR #30 e iniciar busca/navegação/comparador na PR 6 |
 | 2026-08-24 | Codex | WP-20 implementado na PR #32; busca server-side limitada, menu agrupado e comparador por URL; CI #120, preview #100, CodeQL #121 e QA acessível aprovados | Retargetar a PR #32 para a PR #31 e iniciar administração/hardening na PR 7 |
 | 2026-08-25 | Codex | WP-22 consolidado na PR #34; gate/database, preview/smoke, CodeQL e QA em cinco larguras aprovados | Apresentar preview ao produto e aguardar aprovação explícita antes de merge/produção |
+| 2026-08-26 | Codex | Escopo do WP-22 ampliado para o projeto inteiro; dashboard, hub, elencos, súmula, importação, autenticação e estados globais migrados para o padrão aprovado, com checks e QA responsiva aprovados | Apresentar a prévia atualizada ao produto e aguardar aprovação explícita antes de merge/produção |
