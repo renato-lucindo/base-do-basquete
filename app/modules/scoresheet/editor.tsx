@@ -150,7 +150,7 @@ export function ManualScoresheetEditor({
     <main className="admin-shell scoresheet-shell">
       <header className="site-header admin-header">
         <Link className="brand" to={`/admin/competitions/${competitionId}`}>
-          <span className="brand-mark">BB</span>
+          <span className="brand-mark">B</span>
           <span>Voltar ao hub</span>
         </Link>
         <span className="environment-pill">

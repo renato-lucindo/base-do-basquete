@@ -226,7 +226,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
     <main className="admin-shell">
       <header className="site-header admin-header">
         <Link className="brand" to="/admin">
-          <span className="brand-mark">BB</span>
+          <span className="brand-mark">B</span>
           <span>Administração</span>
         </Link>
         <span className="environment-pill">

@@ -120,7 +120,7 @@ export default function AdminDashboard({ loaderData, actionData }: Route.Compone
       <header className="site-header admin-header">
         <a className="brand" href="/" aria-label="Base do Basquete — página inicial">
           <span className="brand-mark" aria-hidden="true">
-            BB
+            B
           </span>
           <span>Base do Basquete</span>
         </a>

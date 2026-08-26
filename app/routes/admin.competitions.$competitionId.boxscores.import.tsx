@@ -585,7 +585,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
     <main className="admin-shell">
       <header className="site-header admin-header">
         <Link className="brand" to={`/admin/competitions/${loaderData.competition.id}`}>
-          <span className="brand-mark">BB</span>
+          <span className="brand-mark">B</span>
           <span>Administração</span>
         </Link>
         <span className="environment-pill">
