@@ -547,18 +547,25 @@ function Pagination({
   total: number;
 }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (pages <= 1) return null;
+  const first = total === 0 ? 0 : (current - 1) * PAGE_SIZE + 1;
+  const last = Math.min(current * PAGE_SIZE, total);
   return (
     <nav aria-label="Paginação dos jogadores" className="statistics-pagination">
-      <button disabled={current <= 1} onClick={() => onPage(current - 1)} type="button">
-        Anterior
-      </button>
       <span>
-        Página {current} de {pages}
+        {first}–{last} de {total} atletas
       </span>
-      <button disabled={current >= pages} onClick={() => onPage(current + 1)} type="button">
-        Próxima
-      </button>
+      <div>
+        <span>20 por página</span>
+        <button disabled={current <= 1} onClick={() => onPage(current - 1)} type="button">
+          Anterior
+        </button>
+        <span>
+          Página {current} de {pages}
+        </span>
+        <button disabled={current >= pages} onClick={() => onPage(current + 1)} type="button">
+          Próxima
+        </button>
+      </div>
     </nav>
   );
 }
@@ -900,15 +907,6 @@ export function StatisticsExplorer({
 
   return (
     <section aria-label="Jogadores da edição" className="statistics-explorer">
-      <header className="players-list-header">
-        <div>
-          <p className="eyebrow">Elenco e desempenho</p>
-          <h2>Jogadores</h2>
-        </div>
-        <p aria-live="polite">
-          <strong>{allPlayers.length}</strong> atleta(s) encontrado(s)
-        </p>
-      </header>
       {statistics.kind === "advanced" ? (
         <>
           <div className="statistics-toolbar">
@@ -947,27 +945,29 @@ export function StatisticsExplorer({
                 </label>
               ))}
             </fieldset>
-            <fieldset className="column-presets">
-              <legend className="sr-only">Preset de colunas</legend>
-              {(["essentials", "all", "custom"] as const).map((item) => (
-                <button
-                  aria-pressed={preset === item}
-                  key={item}
-                  onClick={() => {
-                    if (item === "custom") {
-                      setCustomOpen((open) => !open);
-                      setVisibleColumns(columns, "custom");
-                    } else {
-                      setCustomOpen(false);
-                      setVisibleColumns(advancedColumnPresets[item], item);
-                    }
-                  }}
-                  type="button"
-                >
-                  {presetLabels[item]}
-                </button>
-              ))}
-            </fieldset>
+            <label className="column-presets">
+              <span className="sr-only">Exibir colunas</span>
+              <select
+                aria-label="Exibir colunas"
+                onChange={(event) => {
+                  const item = event.currentTarget.value as ColumnPreset;
+                  if (item === "custom") {
+                    setCustomOpen(true);
+                    setVisibleColumns(columns, "custom");
+                  } else {
+                    setCustomOpen(false);
+                    setVisibleColumns(advancedColumnPresets[item], item);
+                  }
+                }}
+                value={preset}
+              >
+                {(["essentials", "all", "custom"] as const).map((item) => (
+                  <option key={item} value={item}>
+                    {presetLabels[item]}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {filterOpen ? (
@@ -1153,6 +1153,17 @@ export function StatisticsExplorer({
           ) : null}
         </>
       ) : null}
+
+      <header className="statistics-table-heading">
+        <div>
+          <h2 aria-live="polite">{allPlayers.length} atletas</h2>
+          <p>
+            {statistics.kind === "advanced" && mode === "totals" ? "Total" : "Por jogo"} · somente
+            jogos finalizados
+          </p>
+        </div>
+        <span className="statistics-scroll-hint">↔ Deslize para ver mais</span>
+      </header>
 
       {allPlayers.length ? (
         statistics.kind === "simple" ? (

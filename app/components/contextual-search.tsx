@@ -123,20 +123,6 @@ export function ContextualSearch({
           Buscar
         </label>
         <div className="search-composite">
-          <select
-            aria-label="Escopo da busca"
-            onChange={(event) => {
-              const value = event.target.value as SearchScope;
-              setScope(value);
-              setOpen(false);
-              setActiveIndex(-1);
-              if (value === "global") setGlobalQuery("");
-            }}
-            value={scope}
-          >
-            {currentPageSupported ? <option value="current">Página atual</option> : null}
-            <option value="global">Toda a base</option>
-          </select>
           <input
             aria-activedescendant={
               activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
@@ -172,6 +158,20 @@ export function ContextualSearch({
             type="search"
             value={query}
           />
+          <select
+            aria-label="Escopo da busca"
+            onChange={(event) => {
+              const value = event.target.value as SearchScope;
+              setScope(value);
+              setOpen(false);
+              setActiveIndex(-1);
+              if (value === "global") setGlobalQuery("");
+            }}
+            value={scope}
+          >
+            {currentPageSupported ? <option value="current">Página atual</option> : null}
+            <option value="global">Toda a base</option>
+          </select>
           {query ? (
             <button
               aria-label="Limpar busca"

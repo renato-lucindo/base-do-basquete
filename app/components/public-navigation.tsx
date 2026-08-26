@@ -54,7 +54,7 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
       <div className="public-header-topline">
         <Link className="brand" to={contextPath(context, "visao-geral")}>
           <span className="brand-mark" aria-hidden="true">
-            BB
+            B
           </span>
           <span>Base do Basquete</span>
         </Link>
@@ -67,66 +67,75 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
         </Link>
       </div>
 
-      <fieldset className="context-bar">
-        <legend className="sr-only">Selecionar edição</legend>
-        <label>
-          <span>Ano</span>
-          <select
-            aria-label="Ano"
-            value={context.year}
-            onChange={(event) =>
-              goTo(contexts.find((option) => option.year === Number(event.currentTarget.value)))
-            }
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Competição</span>
-          <select
-            aria-label="Competição"
-            value={context.series.slug}
-            onChange={(event) =>
-              goTo(series.find((option) => option.series.slug === event.currentTarget.value))
-            }
-          >
-            {seriesOptions.map((option) => (
-              <option key={option.series.slug} value={option.series.slug}>
-                {option.series.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          <span>Categoria</span>
-          <select
-            aria-label="Categoria"
-            value={context.category.slug}
-            onChange={(event) =>
-              goTo(
-                categoryOptions.find(
-                  (option) => option.category.slug === event.currentTarget.value,
-                ),
-              )
-            }
-          >
-            {categoryOptions.map((option) => (
-              <option key={option.category.slug} value={option.category.slug}>
-                {option.category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </fieldset>
-
-      <div className="public-header-tools">
+      <nav className="public-nav" aria-label="Navegação da edição">
         <details className="context-quick-menu">
-          <summary>Trocar edição rapidamente</summary>
+          <summary aria-label="Alterar edição">
+            <span className="context-dot" aria-hidden="true" />
+            <span className="context-summary-copy">
+              <strong>{context.series.name}</strong>
+              <small>
+                {context.year} · {context.category.name}
+              </small>
+            </span>
+          </summary>
           <div>
+            <fieldset className="context-bar">
+              <legend>Selecionar edição</legend>
+              <label>
+                <span>Competição</span>
+                <select
+                  aria-label="Competição"
+                  value={context.series.slug}
+                  onChange={(event) =>
+                    goTo(series.find((option) => option.series.slug === event.currentTarget.value))
+                  }
+                >
+                  {seriesOptions.map((option) => (
+                    <option key={option.series.slug} value={option.series.slug}>
+                      {option.series.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Ano</span>
+                <select
+                  aria-label="Ano"
+                  value={context.year}
+                  onChange={(event) =>
+                    goTo(
+                      contexts.find((option) => option.year === Number(event.currentTarget.value)),
+                    )
+                  }
+                >
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Categoria</span>
+                <select
+                  aria-label="Categoria"
+                  value={context.category.slug}
+                  onChange={(event) =>
+                    goTo(
+                      categoryOptions.find(
+                        (option) => option.category.slug === event.currentTarget.value,
+                      ),
+                    )
+                  }
+                >
+                  {categoryOptions.map((option) => (
+                    <option key={option.category.slug} value={option.category.slug}>
+                      {option.category.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </fieldset>
             {[
               { label: "Adulto", options: contexts.filter(isAdultContext) },
               {
@@ -153,9 +162,7 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
             )}
           </div>
         </details>
-      </div>
-
-      <nav className="public-nav" aria-label="Navegação da edição">
+        <span className="public-nav-divider" aria-hidden="true" />
         {PUBLIC_RESOURCES.map((item) => (
           <NavLink
             key={item}

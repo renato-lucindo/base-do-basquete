@@ -70,10 +70,14 @@ export default function PublicContextPage({ loaderData }: Route.ComponentProps) 
     <main className="public-shell">
       <PublicHeader context={context} contexts={contexts} resource={resource} />
       <div className="public-content">
-        <PublicBreadcrumb context={context} contexts={contexts} resource={resource} />
-        <section className="context-hero">
-          <h1>{title}</h1>
-        </section>
+        {resource === "jogadores" ? null : (
+          <>
+            <PublicBreadcrumb context={context} contexts={contexts} resource={resource} />
+            <section className="context-hero">
+              <h1>{title}</h1>
+            </section>
+          </>
+        )}
 
         {resource === "jogadores" && playerStatistics ? (
           <StatisticsExplorer
