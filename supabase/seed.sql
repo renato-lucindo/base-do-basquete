@@ -24,7 +24,7 @@ join (
 ) as fixture(year, category_slug, display_name) on true
 join public.categories c on c.slug = fixture.category_slug
 where s.slug = 'liga-de-desenvolvimento'
-on conflict (series_id, year, category_id) do update
+on conflict (series_id, category_id, year) where gender_division is null do update
 set display_name = excluded.display_name,
     status = 'published',
     published_at = coalesce(public.competitions.published_at, excluded.published_at);
@@ -343,7 +343,7 @@ select series.id, category.id, 2026, 'Copa ES Ouro 2026 — Fixture FIBA', 'publ
 from public.competition_series series
 cross join public.categories category
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
-on conflict (series_id, year, category_id) do update
+on conflict (series_id, category_id, year) where gender_division is null do update
 set display_name = excluded.display_name,
     status = 'published',
     published_at = coalesce(public.competitions.published_at, excluded.published_at);
