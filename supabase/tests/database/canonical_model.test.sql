@@ -98,8 +98,8 @@ select throws_ok(
       (series_id, category_id, year, display_name, status, published_at)
     values (9101, 9101, 2026, 'Duplicada', 'published', now())$$,
   '23505',
-  'duplicate key value violates unique constraint "competitions_context_unique"',
-  'series/year/category context is unique'
+  'duplicate key value violates unique constraint "competitions_unclassified_context_uidx"',
+  'unclassified series/category/year context is unique'
 );
 select throws_ok(
   $$insert into public.teams (name, slug) values ('Slug Ruim', 'Slug Ruim')$$,

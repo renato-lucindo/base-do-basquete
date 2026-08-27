@@ -32,7 +32,9 @@ values
 insert into private.player_private (player_id, birth_date)
 values
   (9801, '2008-04-12'),
-  (9802, '2007-05-13');
+  (9802, '2007-05-13')
+on conflict (player_id) do update
+set birth_date = excluded.birth_date;
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values

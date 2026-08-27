@@ -570,7 +570,7 @@ begin
 
   insert into private.player_private (player_id, sex, sex_review_required)
   values (p_player_id, p_sex, false)
-  on conflict (player_id) do update
+  on conflict on constraint player_private_pkey do update
   set
     sex = excluded.sex,
     sex_review_required = false;
