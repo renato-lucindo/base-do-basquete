@@ -283,8 +283,14 @@ export type Database = {
         Row: {
           category_id: number;
           created_at: string;
+          data_profile_id: number | null;
+          data_profile_review_required: boolean;
+          data_profile_validated_at: string | null;
+          data_profile_validated_by: string | null;
           display_name: string;
           ends_on: string | null;
+          gender_division: string | null;
+          gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
           series_id: number;
@@ -296,8 +302,14 @@ export type Database = {
         Insert: {
           category_id: number;
           created_at?: string;
+          data_profile_id?: number | null;
+          data_profile_review_required?: boolean;
+          data_profile_validated_at?: string | null;
+          data_profile_validated_by?: string | null;
           display_name: string;
           ends_on?: string | null;
+          gender_division?: string | null;
+          gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
           series_id: number;
@@ -309,8 +321,14 @@ export type Database = {
         Update: {
           category_id?: number;
           created_at?: string;
+          data_profile_id?: number | null;
+          data_profile_review_required?: boolean;
+          data_profile_validated_at?: string | null;
+          data_profile_validated_by?: string | null;
           display_name?: string;
           ends_on?: string | null;
+          gender_division?: string | null;
+          gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
           series_id?: number;
@@ -333,6 +351,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "competition_series";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competitions_data_profile_identity_fkey";
+            columns: ["data_profile_id", "series_id", "category_id", "gender_division"];
+            isOneToOne: false;
+            referencedRelation: "series_category_data_profiles";
+            referencedColumns: ["id", "series_id", "category_id", "gender_division"];
           },
         ];
       };
@@ -1070,6 +1095,66 @@ export type Database = {
           },
         ];
       };
+      series_category_data_profiles: {
+        Row: {
+          activated_at: string | null;
+          activated_by: string | null;
+          category_id: number;
+          change_reason: string | null;
+          created_at: string;
+          created_by: string;
+          gender_division: string;
+          id: number;
+          primary_source: string;
+          series_id: number;
+          status: string;
+          version: number;
+        };
+        Insert: {
+          activated_at?: string | null;
+          activated_by?: string | null;
+          category_id: number;
+          change_reason?: string | null;
+          created_at?: string;
+          created_by?: string;
+          gender_division: string;
+          id?: never;
+          primary_source: string;
+          series_id: number;
+          status?: string;
+          version: number;
+        };
+        Update: {
+          activated_at?: string | null;
+          activated_by?: string | null;
+          category_id?: number;
+          change_reason?: string | null;
+          created_at?: string;
+          created_by?: string;
+          gender_division?: string;
+          id?: never;
+          primary_source?: string;
+          series_id?: number;
+          status?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "series_category_data_profiles_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "series_category_data_profiles_series_id_fkey";
+            columns: ["series_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_series";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       team_registrations: {
         Row: {
           competition_id: number;
@@ -1150,6 +1235,18 @@ export type Database = {
       };
     };
     Views: {
+      active_series_category_data_profiles: {
+        Row: {
+          activated_at: string | null;
+          category_id: number | null;
+          gender_division: string | null;
+          id: number | null;
+          primary_source: string | null;
+          series_id: number | null;
+          version: number | null;
+        };
+        Relationships: [];
+      };
       competition_player_statistics: {
         Row: {
           assists: number | null;
@@ -1277,6 +1374,7 @@ export type Database = {
           competition_display_name: string | null;
           competition_id: number | null;
           confirmed_at: string | null;
+          gender_division: string | null;
           placement: number | null;
           player_id: number | null;
           registration_id: number | null;
@@ -1389,6 +1487,7 @@ export type Database = {
           competition_display_name: string | null;
           competition_id: number | null;
           confirmed_at: string | null;
+          gender_division: string | null;
           placement: number | null;
           registration_id: number | null;
           result_label: string | null;
@@ -1423,6 +1522,86 @@ export type Database = {
       };
     };
     Functions: {
+      admin_activate_series_category_data_profile: {
+        Args: { p_profile_id: number };
+        Returns: {
+          activated_at: string | null;
+          activated_by: string | null;
+          category_id: number;
+          change_reason: string | null;
+          created_at: string;
+          created_by: string;
+          gender_division: string;
+          id: number;
+          primary_source: string;
+          series_id: number;
+          status: string;
+          version: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "series_category_data_profiles";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_assign_competition_data_profile: {
+        Args: { p_competition_id: number; p_profile_id: number };
+        Returns: {
+          category_id: number;
+          created_at: string;
+          data_profile_id: number | null;
+          data_profile_review_required: boolean;
+          data_profile_validated_at: string | null;
+          data_profile_validated_by: string | null;
+          display_name: string;
+          ends_on: string | null;
+          gender_division: string | null;
+          gender_division_review_required: boolean;
+          id: number;
+          published_at: string | null;
+          series_id: number;
+          starts_on: string | null;
+          status: string;
+          updated_at: string;
+          year: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "competitions";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_create_series_category_data_profile: {
+        Args: {
+          p_category_id: number;
+          p_change_reason?: string;
+          p_gender_division: string;
+          p_primary_source: string;
+          p_series_id: number;
+        };
+        Returns: {
+          activated_at: string | null;
+          activated_by: string | null;
+          category_id: number;
+          change_reason: string | null;
+          created_at: string;
+          created_by: string;
+          gender_division: string;
+          id: number;
+          primary_source: string;
+          series_id: number;
+          status: string;
+          version: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "series_category_data_profiles";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_create_player: {
         Args: { p_allow_similar?: boolean; p_full_name: string; p_nickname?: string };
         Returns: {
@@ -1442,6 +1621,34 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_review_competition_gender: {
+        Args: { p_competition_id: number; p_gender_division: string };
+        Returns: {
+          category_id: number;
+          created_at: string;
+          data_profile_id: number | null;
+          data_profile_review_required: boolean;
+          data_profile_validated_at: string | null;
+          data_profile_validated_by: string | null;
+          display_name: string;
+          ends_on: string | null;
+          gender_division: string | null;
+          gender_division_review_required: boolean;
+          id: number;
+          published_at: string | null;
+          series_id: number;
+          starts_on: string | null;
+          status: string;
+          updated_at: string;
+          year: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "competitions";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_search_players: {
         Args: {
           p_competition_id: number;
@@ -1457,6 +1664,13 @@ export type Database = {
           full_name: string;
           id: number;
           nickname: string | null;
+        }[];
+      };
+      admin_set_player_sex: {
+        Args: { p_player_id: number; p_reason: string; p_sex: string };
+        Returns: {
+          eligibility_pending: boolean;
+          player_id: number;
         }[];
       };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };

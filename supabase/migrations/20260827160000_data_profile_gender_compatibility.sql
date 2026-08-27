@@ -98,6 +98,9 @@ create index series_category_data_profiles_activated_by_idx
   on public.series_category_data_profiles (activated_by, activated_at desc)
   where activated_by is not null;
 
+create index series_category_data_profiles_category_id_idx
+  on public.series_category_data_profiles (category_id);
+
 alter table public.competitions
   add column data_profile_id bigint,
   add column data_profile_review_required boolean not null default true,
@@ -128,6 +131,18 @@ alter table public.competitions
 create index competitions_data_profile_idx
   on public.competitions (data_profile_id)
   where data_profile_id is not null;
+
+create index competitions_data_profile_validated_by_idx
+  on public.competitions (data_profile_validated_by)
+  where data_profile_validated_by is not null;
+
+create index competitions_gender_review_queue_idx
+  on public.competitions (id)
+  where gender_division_review_required;
+
+create index player_private_sex_review_queue_idx
+  on private.player_private (player_id)
+  where sex_review_required;
 
 create function private.protect_data_profile_revision()
 returns trigger
@@ -183,9 +198,17 @@ for each row execute function private.protect_data_profile_revision();
 alter table public.series_category_data_profiles enable row level security;
 alter table public.series_category_data_profiles force row level security;
 
-create policy series_category_data_profiles_active_select
+create policy series_category_data_profiles_public_select
 on public.series_category_data_profiles for select to anon, authenticated
-using (status = 'active');
+using (
+  status = 'active' or
+  exists (
+    select 1
+    from public.competitions competition
+    where competition.data_profile_id = series_category_data_profiles.id
+      and competition.status in ('published', 'archived')
+  )
+);
 
 revoke all on public.series_category_data_profiles from public, anon, authenticated;
 revoke all on sequence public.series_category_data_profiles_id_seq
@@ -218,6 +241,63 @@ where profile.status = 'active';
 revoke all on public.active_series_category_data_profiles
   from public, anon, authenticated;
 grant select on public.active_series_category_data_profiles to anon, authenticated;
+
+create or replace view public.team_achievements
+with (security_invoker = true)
+as
+select
+  placement.competition_id,
+  placement.registration_id,
+  registration.team_id,
+  placement.placement,
+  placement.result_label,
+  placement.confirmed_at,
+  series.name as series_name,
+  series.slug as series_slug,
+  competition.year,
+  category.name as category_name,
+  category.slug as category_slug,
+  competition.display_name as competition_display_name,
+  competition.gender_division
+from public.final_placements placement
+join public.team_registrations registration on registration.id = placement.registration_id
+join public.competitions competition on competition.id = placement.competition_id
+join public.competition_series series on series.id = competition.series_id
+join public.categories category on category.id = competition.category_id
+where placement.result_status = 'placed'
+  and placement.confirmed_at is not null;
+
+create or replace view public.player_achievements
+with (security_invoker = true)
+as
+select
+  placement.competition_id,
+  placement.registration_id,
+  roster.player_id,
+  placement.placement,
+  placement.result_label,
+  placement.confirmed_at,
+  registration.team_id,
+  team.name as team_name,
+  team.slug as team_slug,
+  series.name as series_name,
+  series.slug as series_slug,
+  competition.year,
+  category.name as category_name,
+  category.slug as category_slug,
+  competition.display_name as competition_display_name,
+  competition.gender_division
+from public.final_placements placement
+join public.team_registrations registration on registration.id = placement.registration_id
+join public.teams team on team.id = registration.team_id
+join public.roster_entries roster
+  on roster.registration_id = registration.id
+ and roster.competition_id = placement.competition_id
+join public.competitions competition on competition.id = placement.competition_id
+join public.competition_series series on series.id = competition.series_id
+join public.categories category on category.id = competition.category_id
+where placement.result_status = 'placed'
+  and placement.confirmed_at is not null;
 
 create view private.competition_gender_review_queue
 with (security_invoker = true)

@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
-import { type CompetitionContext, contextPath } from "../modules/competition/context";
+import {
+  type CompetitionContext,
+  contextPath,
+  genderDivisionLabel,
+} from "../modules/competition/context";
 import type { PublicAchievement } from "../modules/competition/public-data.server";
+import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
 import {
   efficiency,
-  perGame,
-  percentage,
   type PlayerTotals,
+  percentage,
+  perGame,
 } from "../modules/statistics/player-profile-domain";
-import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
 import { ResourceState } from "./resource-state";
 import { ScrollableTable } from "./scrollable-table";
 
@@ -117,7 +121,8 @@ function AwardsAndHistory({
                 <span>Conquista coletiva</span>
                 <strong>{placementLabel(achievement.placement, achievement.resultLabel)}</strong>
                 <p>
-                  {achievement.year} · {achievement.seriesName} · {achievement.categoryName}
+                  {achievement.year} · {achievement.seriesName} · {achievement.categoryName} ·{" "}
+                  {genderDivisionLabel(achievement.genderDivision)}
                 </p>
               </article>
             ))}

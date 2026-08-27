@@ -11,7 +11,10 @@ import {
 
 const context: CompetitionContext = {
   competitionId: 1,
+  dataProfile: null,
   displayName: "Liga de Desenvolvimento 2026 · Sub-15",
+  genderDivision: null,
+  statisticsMode: "legacy",
   year: 2026,
   series: { id: 1, name: "Liga de Desenvolvimento", slug: "liga-de-desenvolvimento" },
   category: { id: 1, name: "Sub-15", slug: "sub-15", hasAdvancedStats: false },

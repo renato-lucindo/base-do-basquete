@@ -6,18 +6,20 @@ import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation"
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
+  genderDivisionSlug,
   isDetailResource,
   isPublicResource,
+  parseGenderDivisionSlug,
   parsePublicYear,
 } from "../modules/competition/context";
 import {
   contextPreferenceCookie,
-  listPublicContexts,
   resolveCompetitionContext,
 } from "../modules/competition/context.server";
-import { loadPublicDetail } from "../modules/competition/public-data.server";
-import { loadPublicPlayerProfile } from "../modules/statistics/player-profile.server";
-import { loadPublicGameDetail } from "../modules/statistics/public-statistics.server";
+import {
+  loadPublicDetailPayload,
+  type PublicDetailPayload,
+} from "../modules/competition/public-route-data.server";
 import type { Route } from "./+types/public-detail";
 
 function notFound(): never {
@@ -36,10 +38,14 @@ function placementLabel(placement: number, resultLabel: string | null): string {
   return placement === 1 ? "Campeão" : `${placement}º lugar`;
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ params, context, request }: Route.LoaderArgs) {
   const year = parsePublicYear(params.year);
+  const genderDivision = parseGenderDivisionSlug(
+    new URL(request.url).pathname.split("/").filter(Boolean)[3],
+  );
   if (
     !year ||
+    !genderDivision ||
     !isPublicResource(params.resource) ||
     !isDetailResource(params.resource) ||
     !params.detail
@@ -53,51 +59,29 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     year,
     seriesSlug: params.competition,
     categorySlug: params.category,
+    genderDivision,
   });
   if (!resolvedContext) return notFound();
 
-  const contexts = await listPublicContexts(client);
-  const [loadedDetail, game, playerProfile] = await Promise.all([
-    params.resource === "jogadores"
-      ? Promise.resolve(null)
-      : loadPublicDetail(client, resolvedContext, params.resource, params.detail),
-    params.resource === "jogos"
-      ? loadPublicGameDetail(client, resolvedContext, params.detail)
-      : Promise.resolve(null),
-    params.resource === "jogadores"
-      ? loadPublicPlayerProfile(client, resolvedContext, contexts, params.detail)
-      : Promise.resolve(null),
-  ]);
-  const detail = playerProfile
-    ? {
-        label: playerProfile.fullName,
-        description: playerProfile.bio ?? "Perfil público do atleta.",
-        achievements: playerProfile.achievements,
-      }
-    : loadedDetail;
-  if (
-    !detail ||
-    (params.resource === "jogos" && !game) ||
-    (params.resource === "jogadores" && !playerProfile)
-  ) {
-    return notFound();
-  }
-
-  return data(
-    {
-      context: resolvedContext,
-      contexts,
-      detail,
-      game,
-      playerProfile,
-      resource: params.resource,
-    },
-    { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } },
+  const payload = await loadPublicDetailPayload(
+    client,
+    resolvedContext,
+    params.resource,
+    params.detail,
   );
+  if (!payload) return notFound();
+
+  return data(payload, { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } });
 }
 
-export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
-  const { context, contexts, detail, game, playerProfile, resource } = loaderData;
+export function PublicDetailContent({
+  context,
+  contexts,
+  detail,
+  game,
+  playerProfile,
+  resource,
+}: PublicDetailPayload) {
   return (
     <main className="public-shell">
       <PublicHeader
@@ -134,7 +118,10 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
               {detail.achievements.length ? (
                 <ol className="achievement-list">
                   {detail.achievements.map((achievement) => {
-                    const contextPath = `/${achievement.year}/${achievement.seriesSlug}/${achievement.categorySlug}`;
+                    const genderSegment = achievement.genderDivision
+                      ? `/${genderDivisionSlug(achievement.genderDivision)}`
+                      : "";
+                    const contextPath = `/${achievement.year}/${achievement.seriesSlug}/${achievement.categorySlug}${genderSegment}`;
                     return (
                       <li key={`${achievement.competitionId}-${achievement.teamSlug ?? "team"}`}>
                         <strong>
@@ -162,4 +149,8 @@ export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
       </div>
     </main>
   );
+}
+
+export default function PublicDetailPage({ loaderData }: Route.ComponentProps) {
+  return <PublicDetailContent {...loaderData} />;
 }

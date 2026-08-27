@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(47);
+select plan(54);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -19,13 +19,15 @@ insert into public.competitions (
   year,
   display_name,
   gender_division,
-  gender_division_review_required
+  gender_division_review_required,
+  status,
+  published_at
 )
 overriding system value values
-  (9601, 9601, 9601, 2024, 'Liga Perfis 2024', null, true),
-  (9602, 9601, 9601, 2025, 'Liga Perfis Masculino 2025', 'male', false),
-  (9603, 9601, 9601, 2025, 'Liga Perfis Feminino 2025', 'female', false),
-  (9604, 9601, 9601, 2026, 'Liga Perfis 2026', null, true);
+  (9601, 9601, 9601, 2024, 'Liga Perfis 2024', null, true, 'draft', null),
+  (9602, 9601, 9601, 2025, 'Liga Perfis Masculino 2025', 'male', false, 'published', now()),
+  (9603, 9601, 9601, 2025, 'Liga Perfis Feminino 2025', 'female', false, 'published', now()),
+  (9604, 9601, 9601, 2026, 'Liga Perfis 2026', null, true, 'draft', null);
 insert into public.players (id, full_name, slug)
 overriding system value values (9601, 'Atleta Elegibilidade', 'atleta-elegibilidade');
 
@@ -78,6 +80,50 @@ select has_view(
   'private',
   'player_sex_review_queue',
   'the player review queue is private'
+);
+select has_column(
+  'public',
+  'team_achievements',
+  'gender_division',
+  'team achievement links carry the public gender division'
+);
+select has_column(
+  'public',
+  'player_achievements',
+  'gender_division',
+  'player achievement links carry the public gender division'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'series_category_data_profiles_category_id_idx'
+  ),
+  'the profile category foreign key is indexed'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'competitions_data_profile_validated_by_idx'
+  ),
+  'the competition validator foreign key is indexed'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'competitions_gender_review_queue_idx'
+  ),
+  'the competition review queue uses a partial index'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname = 'private'
+      and indexname = 'player_private_sex_review_queue_idx'
+  ),
+  'the private eligibility queue uses a partial index'
 );
 select has_function(
   'public',
@@ -442,6 +488,15 @@ select is(
   ),
   1::bigint,
   'anonymous readers see only the active public capability'
+);
+select is(
+  (
+    select primary_source
+    from public.series_category_data_profiles
+    where id = (select data_profile_id from public.competitions where id = 9602)
+  ),
+  'manual_scoresheet'::text,
+  'a published edition keeps reading its linked superseded profile'
 );
 select throws_ok(
   $$select created_by from public.series_category_data_profiles limit 1$$,

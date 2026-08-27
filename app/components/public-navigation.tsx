@@ -1,13 +1,12 @@
 import { Link, NavLink, useNavigate } from "react-router";
-
-import { ContextualSearch } from "./contextual-search";
-
 import {
-  contextPath,
-  PUBLIC_RESOURCES,
   type CompetitionContext,
+  contextPath,
+  genderDivisionLabel,
+  PUBLIC_RESOURCES,
   type PublicResource,
 } from "../modules/competition/context";
+import { ContextualSearch } from "./contextual-search";
 
 const resourceLabels: Record<PublicResource, string> = {
   "visao-geral": "Visão geral",
@@ -39,8 +38,20 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
   const seriesOptions = unique(series.map((option) => option.series.slug))
     .map((slug) => series.find((option) => option.series.slug === slug))
     .filter((option): option is CompetitionContext => option !== undefined);
-  const categoryOptions = contexts.filter(
+  const categoryContexts = contexts.filter(
     (option) => option.year === context.year && option.series.slug === context.series.slug,
+  );
+  const categoryOptions = unique(categoryContexts.map((option) => option.category.slug))
+    .map(
+      (slug) =>
+        categoryContexts.find(
+          (option) =>
+            option.category.slug === slug && option.genderDivision === context.genderDivision,
+        ) ?? categoryContexts.find((option) => option.category.slug === slug),
+    )
+    .filter((option): option is CompetitionContext => option !== undefined);
+  const genderOptions = categoryContexts.filter(
+    (option) => option.category.slug === context.category.slug,
   );
 
   function goTo(next: CompetitionContext | undefined) {
@@ -74,7 +85,8 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
             <span className="context-summary-copy">
               <strong>{context.series.name}</strong>
               <small>
-                {context.year} · {context.category.name}
+                {context.year} · {context.category.name} ·{" "}
+                {genderDivisionLabel(context.genderDivision)}
               </small>
             </span>
           </summary>
@@ -87,7 +99,15 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
                   aria-label="Competição"
                   value={context.series.slug}
                   onChange={(event) =>
-                    goTo(series.find((option) => option.series.slug === event.currentTarget.value))
+                    goTo(
+                      series.find(
+                        (option) =>
+                          option.series.slug === event.currentTarget.value &&
+                          option.category.slug === context.category.slug &&
+                          option.genderDivision === context.genderDivision,
+                      ) ??
+                        series.find((option) => option.series.slug === event.currentTarget.value),
+                    )
                   }
                 >
                   {seriesOptions.map((option) => (
@@ -104,7 +124,16 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
                   value={context.year}
                   onChange={(event) =>
                     goTo(
-                      contexts.find((option) => option.year === Number(event.currentTarget.value)),
+                      contexts.find(
+                        (option) =>
+                          option.year === Number(event.currentTarget.value) &&
+                          option.series.slug === context.series.slug &&
+                          option.category.slug === context.category.slug &&
+                          option.genderDivision === context.genderDivision,
+                      ) ??
+                        contexts.find(
+                          (option) => option.year === Number(event.currentTarget.value),
+                        ),
                     )
                   }
                 >
@@ -135,6 +164,27 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
                   ))}
                 </select>
               </label>
+              <label>
+                <span>Naipe</span>
+                <select
+                  aria-label="Naipe"
+                  value={context.genderDivision ?? "review"}
+                  onChange={(event) =>
+                    goTo(
+                      genderOptions.find(
+                        (option) =>
+                          (option.genderDivision ?? "review") === event.currentTarget.value,
+                      ),
+                    )
+                  }
+                >
+                  {genderOptions.map((option) => (
+                    <option key={option.competitionId} value={option.genderDivision ?? "review"}>
+                      {genderDivisionLabel(option.genderDivision)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </fieldset>
             {[
               { label: "Adulto", options: contexts.filter(isAdultContext) },
@@ -154,7 +204,8 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
                       key={option.competitionId}
                       to={contextPath(option, resource)}
                     >
-                      {option.year} · {option.series.name} · {option.category.name}
+                      {option.year} · {option.series.name} · {option.category.name} ·{" "}
+                      {genderDivisionLabel(option.genderDivision)}
                     </Link>
                   ))}
                 </section>
@@ -187,7 +238,7 @@ export function PublicBreadcrumb({ context, resource, detailLabel }: PublicNavig
         </li>
         <li>
           <Link to={contextPath(context, resource)}>
-            {context.year} · {context.category.name}
+            {context.year} · {context.category.name} · {genderDivisionLabel(context.genderDivision)}
           </Link>
         </li>
         <li aria-current={detailLabel ? undefined : "page"}>{resourceLabels[resource]}</li>

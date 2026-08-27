@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { data } from "react-router";
 
 import type { Database } from "../../types/database.generated";
-import type { CompetitionContext } from "../competition/context";
+import { type CompetitionContext, isGenderDivision } from "../competition/context";
 import type { PublicAchievement } from "../competition/public-data.server";
 import { addPlayerTotals, type PlayerTotals } from "./player-profile-domain";
 
@@ -212,7 +212,7 @@ export async function loadPublicPlayerProfile(
     client
       .from("player_achievements")
       .select(
-        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label,team_name,team_slug",
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,gender_division,placement,result_label,team_name,team_slug",
       )
       .eq("player_id", profile.id)
       .order("year", { ascending: false }),
@@ -293,6 +293,8 @@ export async function loadPublicPlayerProfile(
             achievement.year === null ||
             achievement.category_name === null ||
             achievement.category_slug === null ||
+            (achievement.gender_division !== null &&
+              !isGenderDivision(achievement.gender_division)) ||
             achievement.placement === null
           ) {
             return [];
@@ -306,6 +308,9 @@ export async function loadPublicPlayerProfile(
               year: achievement.year,
               categoryName: achievement.category_name,
               categorySlug: achievement.category_slug,
+              genderDivision: isGenderDivision(achievement.gender_division)
+                ? achievement.gender_division
+                : null,
               placement: achievement.placement,
               resultLabel: achievement.result_label,
               teamName: achievement.team_name ?? undefined,

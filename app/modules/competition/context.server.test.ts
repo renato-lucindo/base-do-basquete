@@ -5,7 +5,10 @@ import { contextPreferenceCookie, readContextPreference } from "./context.server
 
 const context: CompetitionContext = {
   competitionId: 42,
+  dataProfile: null,
   displayName: "Liga 2026",
+  genderDivision: null,
+  statisticsMode: "legacy",
   year: 2026,
   series: { id: 7, name: "Liga", slug: "liga" },
   category: {
@@ -28,7 +31,8 @@ describe("context preference cookie", () => {
     });
 
     expect(readContextPreference(request)).toEqual({
-      version: 1,
+      version: 2,
+      genderDivision: null,
       year: 2026,
       seriesSlug: "liga",
       categorySlug: "sub-15",

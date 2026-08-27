@@ -4,15 +4,20 @@ import { PublicBreadcrumb, PublicHeader, resourceLabel } from "../components/pub
 import { PublicSportsCore } from "../components/public-sports-core";
 import { StatisticsExplorer } from "../components/statistics-explorer";
 import { cloudflareContext } from "../context";
-import { isPublicResource, parsePublicYear } from "../modules/competition/context";
+import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import {
+  isPublicResource,
+  parseGenderDivisionSlug,
+  parsePublicYear,
+} from "../modules/competition/context";
 import {
   contextPreferenceCookie,
-  listPublicContexts,
   resolveCompetitionContext,
 } from "../modules/competition/context.server";
-import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
-import { loadCompetitionStatistics } from "../modules/statistics/public-statistics.server";
-import { loadPublicSportsCore } from "../modules/statistics/public-sports.server";
+import {
+  loadPublicContextPayload,
+  type PublicContextPayload,
+} from "../modules/competition/public-route-data.server";
 import type { Route } from "./+types/public-context";
 
 function notFound(): never {
@@ -23,9 +28,12 @@ export function meta() {
   return [{ title: "Edição — Base do Basquete" }];
 }
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ params, context, request }: Route.LoaderArgs) {
   const year = parsePublicYear(params.year);
-  if (!year || !isPublicResource(params.resource)) {
+  const genderDivision = parseGenderDivisionSlug(
+    new URL(request.url).pathname.split("/").filter(Boolean)[3],
+  );
+  if (!year || !genderDivision || !isPublicResource(params.resource)) {
     return notFound();
   }
 
@@ -35,35 +43,24 @@ export async function loader({ params, context }: Route.LoaderArgs) {
     year,
     seriesSlug: params.competition,
     categorySlug: params.category,
+    genderDivision,
   });
   if (!resolvedContext) {
     return notFound();
   }
 
-  const [contexts, playerStatistics, sportsCore] = await Promise.all([
-    listPublicContexts(client),
-    params.resource === "jogadores"
-      ? loadCompetitionStatistics(client, resolvedContext)
-      : Promise.resolve(null),
-    params.resource === "jogadores"
-      ? Promise.resolve(null)
-      : loadPublicSportsCore(client, resolvedContext),
-  ]);
-
-  return data(
-    {
-      context: resolvedContext,
-      contexts,
-      playerStatistics,
-      resource: params.resource,
-      sportsCore,
-    },
-    { headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) } },
-  );
+  return data(await loadPublicContextPayload(client, resolvedContext, params.resource), {
+    headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) },
+  });
 }
 
-export default function PublicContextPage({ loaderData }: Route.ComponentProps) {
-  const { context, contexts, playerStatistics, resource, sportsCore } = loaderData;
+export function PublicContextContent({
+  context,
+  contexts,
+  playerStatistics,
+  resource,
+  sportsCore,
+}: PublicContextPayload) {
   const title = resourceLabel(resource);
 
   return (
@@ -91,4 +88,8 @@ export default function PublicContextPage({ loaderData }: Route.ComponentProps) 
       </div>
     </main>
   );
+}
+
+export default function PublicContextPage({ loaderData }: Route.ComponentProps) {
+  return <PublicContextContent {...loaderData} />;
 }

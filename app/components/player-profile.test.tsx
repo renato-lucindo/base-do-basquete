@@ -3,13 +3,16 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import type { CompetitionContext } from "../modules/competition/context";
-import { emptyPlayerTotals } from "../modules/statistics/player-profile-domain";
 import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
+import { emptyPlayerTotals } from "../modules/statistics/player-profile-domain";
 import { PlayerProfile } from "./player-profile";
 
 const context: CompetitionContext = {
   competitionId: 1,
+  dataProfile: null,
   displayName: "Liga 2026 Sub-15",
+  genderDivision: null,
+  statisticsMode: "legacy",
   year: 2026,
   series: { id: 1, name: "Liga", slug: "liga" },
   category: { id: 1, name: "Sub-15", slug: "sub-15", hasAdvancedStats: true },
@@ -135,6 +138,7 @@ describe("PlayerProfile", () => {
               year: context.year,
               categoryName: context.category.name,
               categorySlug: context.category.slug,
+              genderDivision: null,
               placement: 1,
               resultLabel: null,
               teamName: "Dourada",
