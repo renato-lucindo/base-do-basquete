@@ -1,6 +1,5 @@
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 
-import type { Route } from "./+types/admin.competitions.$competitionId";
 import { RosterEditor } from "../components/admin/roster-editor";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
@@ -11,6 +10,7 @@ import {
   normalizeJersey,
 } from "../modules/competition/admin-domain";
 import { logOperationalEvent } from "../modules/observability/operation.server";
+import type { Route } from "./+types/admin.competitions.$competitionId";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
@@ -121,10 +121,29 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       [...rosterResult.data, ...previousRosterResult.data].map((entry) => entry.player_id),
     ),
   ];
-  const rosterPlayersResult = playerIds.length
-    ? await auth.client.from("players").select("id,full_name,nickname").in("id", playerIds)
-    : { data: [], error: null };
-  if (rosterPlayersResult.error) throw new Error("Roster players query failed");
+  let rosterPlayers: Array<{ id: number; full_name: string; nickname: string | null }> = [];
+  if (playerIds.length) {
+    const rosterPlayersResult = await auth.client
+      .from("players")
+      .select("id,full_name,nickname")
+      .in("id", playerIds);
+    if (rosterPlayersResult.error) {
+      // The shared preview database can lag behind a draft PR. Keep the hub
+      // usable without exposing more player data while the nickname migration
+      // is still pending there.
+      const compatiblePlayersResult = await auth.client
+        .from("players")
+        .select("id,full_name")
+        .in("id", playerIds);
+      if (compatiblePlayersResult.error) throw new Error("Roster players query failed");
+      rosterPlayers = compatiblePlayersResult.data.map((player) => ({
+        ...player,
+        nickname: null,
+      }));
+    } else {
+      rosterPlayers = rosterPlayersResult.data;
+    }
+  }
   const previousCompetitionIds = [
     ...new Set([...latestPreviousByTeam.values()].map(({ competition_id }) => competition_id)),
   ];
@@ -141,7 +160,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     registrationsResult.data.map((registration) => [registration.id, registration]),
   );
   const currentRosterByPlayer = new Map(rosterResult.data.map((entry) => [entry.player_id, entry]));
-  const playerById = new Map(rosterPlayersResult.data.map((player) => [player.id, player]));
+  const playerById = new Map(rosterPlayers.map((player) => [player.id, player]));
   const previousCompetitionNames = new Map(
     previousCompetitionsResult.data.map((item) => [item.id, item.display_name]),
   );
