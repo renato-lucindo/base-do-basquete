@@ -23,14 +23,15 @@ Antes da implementação, colocar `AGENTS.md` e `HANDOFF.md` na raiz do novo rep
 
 1. `AGENTS.md`
 2. `HANDOFF.md`
-3. `PROMPT-MESTRE-IDE.md`
-4. `POLITICA-AUTONOMIA-CLOUD.md`
-5. `ARQUITETURA-SEGURANCA.md`
-6. `REQUISITOS-FUNCIONAIS.md`
-7. `MODELO-BOXSCORE-FIBA.md`
-8. `PLANO-EXECUCAO.md`
-9. `MATRIZ-RASTREABILIDADE.md`
-10. `FUTURO-OCR.md`
+3. `PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`
+4. `PROMPT-MESTRE-IDE.md`
+5. `POLITICA-AUTONOMIA-CLOUD.md`
+6. `ARQUITETURA-SEGURANCA.md`
+7. `REQUISITOS-FUNCIONAIS.md`
+8. `MODELO-BOXSCORE-FIBA.md`
+9. `PLANO-EXECUCAO.md`
+10. `MATRIZ-RASTREABILIDADE.md`
+11. `FUTURO-OCR.md`
 
 O texto que inicia a primeira tarefa está em `PROMPT-PARA-EXECUCAO.md`.
 
@@ -80,3 +81,9 @@ Ao concluir o plano devem existir:
 A evolução posterior ao WP-14 está definida em `improvements/PLANO-DE-IMPLEMENTACAO-E-DIVISAO-DAS-PRS.md`, com sete PRs sequenciais. Os requisitos normativos que sustentam esse plano estão no mesmo diretório.
 
 O primeiro pacote é o WP-15, correspondente à PR 1 de fundação de dados, privacidade e read models. Nenhuma PR desse ciclo autoriza merge ou deploy de produção sem os gates e a aprovação humana definidos no plano.
+
+## Plano mestre da PR #35 — 27/08/2026
+
+O plano ativo para continuar a PR draft #35 está em `PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`. Ele consolida a refatoração administrativa, o naipe obrigatório, o sexo privado do atleta, o perfil versionado de dados, a separação entre jogo e submissões e os dois desenhos públicos de jogadores.
+
+Executar os Pacotes 0 a 9 na ordem e pelos checkpoints definidos nesse documento. Os documentos anteriores e o plano de melhorias permanecem como referência complementar quando não conflitarem com o plano mestre. Merge e produção continuam dependentes de autorização explícita.

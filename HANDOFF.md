@@ -8,8 +8,9 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolida o contrato UI/UX; WP-23 implementa os novos fluxos administrativos sobre a branch do WP-22.
-- Status geral: `READY_FOR_PRODUCT_APPROVAL`; a implementação consolidada passou gate, database, preview, CodeQL e QA em cinco larguras na PR #34. Merge e produção não foram executados.
+- Fase: plano mestre da refatoração administrativa aprovado para execução; Pacote 0 em conclusão e Pacote 1 preparado na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; branch e PR reconciliadas no head `89dd9e9`, sem merge nem alteração de produção.
+- Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
@@ -79,10 +80,10 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Apresentar o preview da PR #34 ao produto.
-2. Obter aprovação visual explícita ou registrar os ajustes solicitados.
-3. Somente após aprovação, marcar a PR pronta e executar a sequência de integração definida para a pilha pública.
-4. Não fazer merge nem deploy de produção antes dessa aprovação.
+1. Criar a primeira migration aditiva do Pacote 1 em `supabase/migrations/`, contendo `competitions.gender_division`, `private.player_private.sex` e a fundação versionada de `series_category_data_profiles`.
+2. Preservar naipe e sexo nulos para o histórico, criar filas explícitas de revisão e não inferir valores.
+3. Adicionar RLS, grants mínimos, constraints locais e pgTAP de privacidade/unicidade.
+4. Validar a migration desde zero pela CI/fluxo oficial e manter a PR #35 em draft, sem merge nem deploy de produção.
 
 ### Primeiros arquivos a abrir
 
@@ -94,7 +95,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ### Resultado esperado do próximo passo
 
-Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas aprovados, versão anterior recuperável e documentação final atualizada.
+Primeira unidade segura do Pacote 1 versionada: migrations aditivas e testes provam que Masculino/Feminino podem coexistir, que apenas um perfil fica ativo por combinação e que o sexo não é exposto por contratos públicos.
 
 ## 7. Pacotes de trabalho
 
@@ -123,6 +124,8 @@ Produção publicada na URL temporária do Cloudflare, todos os smokes/métricas
 | WP-20 — Busca, navegação e comparador | `READY` | PR #32 draft; CI, preview, CodeQL e QA acessível aprovados; sem merge/deploy |
 | WP-22 — Consolidação UI/UX do produto | `READY` | PR #34 draft; área pública, administração e autenticação no mesmo padrão branco/azul; CI, preview, CodeQL e QA responsiva aprovados; sem merge/deploy |
 | WP-23 — Fluxos administrativos ágeis | `IN_PROGRESS` | Busca/criação segura de atletas, elenco, rascunhos, revisão de PDF e súmula compacta implementados localmente; gate da aplicação aprovado; pgTAP e preview ainda pendentes |
+| ADM-REF-00 — Reconciliação e documentação | `DONE` | PR #35/branch/head reconciliados; plano mestre importado e índice atualizado; `public/__admin-preview.html` preservado |
+| ADM-REF-01 — Naipe, sexo privado e perfil de dados | `DOING` | Iniciar pela migration aditiva de compatibilidade e respectivos testes de banco/privacidade |
 
 ## 8. Arquivos e referências importantes
 
@@ -170,6 +173,8 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
+- Gate inicial de 27/08/2026: `npm.cmd run check` chegou ao lint e falhou somente nas duas callbacks `forEach` do arquivo não rastreado `public/__admin-preview.html`; a falha foi classificada como preexistente e o arquivo foi preservado sem alterações.
+- Baseline versionada de 27/08/2026: lint/formatação dos 104 arquivos aplicáveis, 20 arquivos/71 testes Vitest, typecheck estrito, quatro runbooks, builds cliente/SSR e scan de 360 arquivos aprovados; Vitest e scan exigiram execução fora do sandbox por bloqueio `EPERM` de subprocessos.
 - Testes executados: `npm run check` aprovado; 6 testes Vitest; quatro cenários RLS diretos aprovados; smokes admin/CSRF/health aprovados.
 - Provisionamento real: exatamente 1 usuário Auth ativo, 1 vínculo em `private.admin_accounts`, 1 fator TOTP verificado e 1 sessão ativa com método `totp`; correspondência singleton confirmada.
 - Auditoria real: 2 eventos `mfa_verified` registrados pelo fluxo; a conta real em `aal2` é reconhecida e enxerga a auditoria sob RLS.
@@ -260,12 +265,12 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/ui-ux-implementation`.
+- Branch de trabalho: `feature/admin-workflow-improvements`, head local/remoto `89dd9e9` na abertura do Pacote 0.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
-- Consolidação atual: PR #34 draft contra `main`, head `7ef5144`, todos os checks verdes e preview público/administrativo pronto para aprovação visual; nenhum merge ou deploy de produção executado.
+- Consolidação atual: PR #35 draft contra `main`, head `89dd9e9`, aberta e mergeável na reconciliação de 27/08/2026; nenhum merge ou deploy de produção executado.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -354,3 +359,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-24 | Codex | WP-20 implementado na PR #32; busca server-side limitada, menu agrupado e comparador por URL; CI #120, preview #100, CodeQL #121 e QA acessível aprovados | Retargetar a PR #32 para a PR #31 e iniciar administração/hardening na PR 7 |
 | 2026-08-25 | Codex | WP-22 consolidado na PR #34; gate/database, preview/smoke, CodeQL e QA em cinco larguras aprovados | Apresentar preview ao produto e aguardar aprovação explícita antes de merge/produção |
 | 2026-08-26 | Codex | Escopo do WP-22 ampliado para o projeto inteiro; dashboard, hub, elencos, súmula, importação, autenticação e estados globais migrados para o padrão aprovado, com checks e QA responsiva aprovados | Apresentar a prévia atualizada ao produto e aguardar aprovação explícita antes de merge/produção |
+| 2026-08-27 | Codex | Pacote 0 reconciliou a PR #35 no head `89dd9e9`, importou o plano mestre e preservou o HTML não rastreado; gate inicial identificou somente o lint preexistente desse HTML | Criar a migration aditiva de compatibilidade do Pacote 1 e provar RLS, privacidade e unicidade por pgTAP |
