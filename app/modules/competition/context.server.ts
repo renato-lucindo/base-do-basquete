@@ -4,6 +4,7 @@ import type { Database } from "../../types/database.generated";
 import {
   type CanonicalContextReference,
   type CompetitionContext,
+  type CompetitionContextRow,
   type ContextPreference,
   compareContextsNewestFirst,
   contextPreference,
@@ -33,6 +34,14 @@ function assertQuerySucceeded(error: unknown): asserts error is null {
   if (error) {
     throw new PublicContextQueryError();
   }
+}
+
+function isCompatibilitySchemaUnavailable(error: unknown): boolean {
+  if (!error || typeof error !== "object" || !("code" in error)) {
+    return false;
+  }
+
+  return ["42703", "42P01", "PGRST204", "PGRST205"].includes(String(error.code));
 }
 
 function toDataProfileContextRow(row: DataProfileCandidate): DataProfileContextRow {
@@ -138,7 +147,7 @@ export async function resolveCompetitionContext(
 export async function listPublicContexts(
   client: SupabaseClient<Database>,
 ): Promise<CompetitionContext[]> {
-  const competitionResult = await client
+  const compatibilityResult = await client
     .from("competitions")
     .select(
       "id,display_name,year,status,series_id,category_id,gender_division,gender_division_review_required,data_profile_id,data_profile_review_required",
@@ -147,14 +156,37 @@ export async function listPublicContexts(
     .order("year", { ascending: false })
     .order("id", { ascending: false });
 
-  assertQuerySucceeded(competitionResult.error);
-  if (competitionResult.data.length === 0) {
+  let competitions: CompetitionContextRow[];
+  if (compatibilityResult.error) {
+    if (!isCompatibilitySchemaUnavailable(compatibilityResult.error)) {
+      throw new PublicContextQueryError();
+    }
+
+    const legacyResult = await client
+      .from("competitions")
+      .select("id,display_name,year,status,series_id,category_id")
+      .in("status", ["published", "archived"])
+      .order("year", { ascending: false })
+      .order("id", { ascending: false });
+    assertQuerySucceeded(legacyResult.error);
+    competitions = legacyResult.data.map((competition) => ({
+      ...competition,
+      data_profile_id: null,
+      data_profile_review_required: true,
+      gender_division: null,
+      gender_division_review_required: true,
+    }));
+  } else {
+    competitions = compatibilityResult.data;
+  }
+
+  if (competitions.length === 0) {
     return [];
   }
 
-  const seriesIds = [...new Set(competitionResult.data.map((row) => row.series_id))];
-  const categoryIds = [...new Set(competitionResult.data.map((row) => row.category_id))];
-  const profileIds = competitionResult.data.flatMap((row) =>
+  const seriesIds = [...new Set(competitions.map((row) => row.series_id))];
+  const categoryIds = [...new Set(competitions.map((row) => row.category_id))];
+  const profileIds = competitions.flatMap((row) =>
     row.data_profile_id === null ? [] : [row.data_profile_id],
   );
   const [seriesResult, categoryResult, profileResult] = await Promise.all([
@@ -189,7 +221,7 @@ export async function listPublicContexts(
     }),
   );
 
-  return competitionResult.data
+  return competitions
     .map((competition) => {
       const series = seriesById.get(competition.series_id);
       const category = categoryById.get(competition.category_id);
