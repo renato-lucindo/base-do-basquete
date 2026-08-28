@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00`, `ADM-REF-01A` e `ADM-REF-01B` concluídas, com `ADM-REF-01C` como única task elegível na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; head documental `14be1bf` e corte funcional `ccef3f1`, sem merge nem alteração de produção.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00`, `ADM-REF-01A` e `ADM-REF-01B` concluídas, com `ADM-REF-01C` em execução na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01C` em `DOING` sobre o head `21c9a68`, sem merge nem alteração de produção.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -82,6 +82,10 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perfil`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01C.md`. Não antecipar o formulário privado de sexo (`01D`) nem regras de elegibilidade (`01E`/`01F`).
 
+Estado reconciliado em 28/08/2026: branch limpa `feature/admin-workflow-improvements`, PR #35 aberta/draft/mergeável e CI, preview e CodeQL aprovados no head `21c9a68`. O projeto Supabase compartilhado está saudável, porém ainda não contém a migration `20260827160000_data_profile_gender_compatibility.sql`; nenhum schema remoto foi alterado. A implementação deve manter compatibilidade explícita com esse rollout e o fluxo novo só poderá receber smoke AAL2 depois de aplicação autorizada da migration no ambiente alvo.
+
+Allowlist inicial de `ADM-REF-01C`: rota do hub/edição e sua nova subrota de revisão, `app/routes.ts`, módulo de domínio de competições, testes afetados, estilos administrativos e este `HANDOFF.md`. Expansões devem ser justificadas aqui.
+
 1. Reconciliar branch, head, PR #35, checks e schema real do preview.
 2. Implementar loader privado de pendências e actions pequenas por intent nas páginas de edição, consumindo somente as RPCs `aal2` aprovadas.
 3. Cobrir seleção explícita sem inferência, combinações incompatíveis, autorização, auditoria e estados vazio/erro/sucesso.
@@ -129,7 +133,7 @@ Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perf
 | ADM-REF-00 — Reconciliação e documentação | `DONE` | PR #35/branch/head reconciliados; plano mestre importado e índice atualizado; `public/__admin-preview.html` preservado |
 | ADM-REF-01A — Compatibilidade de naipe, sexo e perfil | `DONE` | Schema compatível, filas, RPCs AAL2, RLS e pgTAP aprovados |
 | ADM-REF-01B — Contextos e rotas públicas por naipe | `DONE` | Perfil versionado, URLs canônicas, fallback de rollout, 77 Vitest e 268 pgTAP aprovados |
-| ADM-REF-01C — Revisão administrativa de naipe e perfil | `READY` | Única task elegível; formulário privado de sexo e elegibilidade permanecem em cartões posteriores |
+| ADM-REF-01C — Revisão administrativa de naipe e perfil | `DOING` | Branch/PR/checks reconciliados; schema remoto compartilhado ainda está no contrato anterior; formulário privado de sexo e elegibilidade permanecem em cartões posteriores |
 
 ## 8. Arquivos e referências importantes
 
@@ -180,6 +184,7 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
+- ADM-REF-01C local em 28/08/2026: nova rota AAL2 de revisão de naipe/perfil com fallback explícito para schema antigo, seleção sem valor padrão, prévia de impacto e mutações somente pelas RPCs auditadas de `01A`. `npm.cmd run check` aprovou formatação e lint de 111 arquivos, TypeScript estrito, 21 arquivos/81 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 435 arquivos. O teste focado de domínio aprovou 7 cenários; `git diff --check` também passou.
 - Gate inicial de 27/08/2026: `npm.cmd run check` chegou ao lint e falhou somente nas duas callbacks `forEach` do arquivo não rastreado `public/__admin-preview.html`; a falha foi classificada como preexistente e o arquivo foi preservado sem alterações.
 - Baseline versionada de 27/08/2026: lint/formatação dos 104 arquivos aplicáveis, 20 arquivos/71 testes Vitest, typecheck estrito, quatro runbooks, builds cliente/SSR e scan de 360 arquivos aprovados; Vitest e scan exigiram execução fora do sandbox por bloqueio `EPERM` de subprocessos.
 - ADM-REF-01 banco em 27/08/2026: migration `20260827160000_data_profile_gender_compatibility.sql`, seed compatível e 47 novos asserts de naipe/perfil/privacidade; CI `33105220358` reconstruiu o Supabase do zero e aprovou 12 arquivos/261 testes pgTAP, além do gate completo da aplicação.
@@ -274,7 +279,7 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/admin-workflow-improvements`, head funcional local/remoto `ccef3f1` após o corte de contratos/contextos do Pacote 1.
+- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto reconciliado `21c9a68`; a implementação local de `ADM-REF-01C` está pronta para commit WIP e gate remoto.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
@@ -296,6 +301,7 @@ CLOUDFLARE_ACCOUNT_ID
 - A escolha e configuração de domínio devem aguardar instrução futura.
 - Não reduzir MFA, RLS, autorização backend ou proteção de segredos para acelerar a primeira temporada.
 - Dois objetos PDF históricos vazios permanecem no Storage como evidência do incidente; nenhum import aponta para eles. A remoção futura é destrutiva em produção e exige autorização explícita.
+- O projeto Supabase compartilhado ainda não contém `20260827160000_data_profile_gender_compatibility.sql`: a consulta de reconciliação recebeu `42703` para `gender_division_review_required`. O código novo mantém fallback seguro, mas o smoke autenticado do caminho completo de `ADM-REF-01C` depende da aplicação autorizada dessa migration no ambiente alvo; nenhuma alteração remota de schema foi feita nesta task.
 
 ## 14. O que não deve ser refeito ou antecipado
 

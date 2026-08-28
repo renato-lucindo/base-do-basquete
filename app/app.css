@@ -4252,6 +4252,46 @@ body {
   margin: 28px 0;
 }
 
+.data-profile-impact ul {
+  display: grid;
+  gap: 6px;
+  margin: 18px 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.data-profile-source-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.data-profile-source-preview article {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.data-profile-source-preview h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.data-profile-source-preview p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.admin-panel textarea {
+  min-height: 108px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
 .admin-panel > h2,
 .admin-global-grid h2,
 .admin-action-grid h2,
