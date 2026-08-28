@@ -87,3 +87,18 @@ O primeiro pacote é o WP-15, correspondente à PR 1 de fundação de dados, pri
 O plano ativo para continuar a PR draft #35 está em `PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`. Ele consolida a refatoração administrativa, o naipe obrigatório, o sexo privado do atleta, o perfil versionado de dados, a separação entre jogo e submissões e os dois desenhos públicos de jogadores.
 
 Executar os Pacotes 0 a 9 na ordem e pelos checkpoints definidos nesse documento. Os documentos anteriores e o plano de melhorias permanecem como referência complementar quando não conflitarem com o plano mestre. Merge e produção continuam dependentes de autorização explícita.
+
+## Entrada operacional retomável — PR #35
+
+Para executar o plano sem misturar features nem perder contexto entre sessões, usar `PLANO-TASKS-RETOMAVEIS-PR35.md` como índice operacional. O plano mestre continua normativo; o novo arquivo apenas divide seus Pacotes 0 a 9 em tasks atômicas, com dependências, escopo negativo, gates e handoff.
+
+Ordem mínima para cada continuação da PR #35:
+
+1. `AGENTS.md`;
+2. `HANDOFF.md`;
+3. este `README.md`;
+4. regras globais e cartão da task atual em `PLANO-TASKS-RETOMAVEIS-PR35.md`;
+5. seções citadas do `PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`;
+6. demais documentos somente quando o cartão apontar dependência ou houver conflito de decisão.
+
+Somente uma task pode permanecer em `DOING`. Migrations já enviadas ou aplicadas são imutáveis e qualquer correção deve usar nova migration.

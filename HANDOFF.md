@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; Pacote 0 concluído e primeira unidade de banco do Pacote 1 aprovada na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; corte funcional atual no head `ccef3f1`, sem merge nem alteração de produção.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00`, `ADM-REF-01A` e `ADM-REF-01B` concluídas, com `ADM-REF-01C` como única task elegível na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; head documental `14be1bf` e corte funcional `ccef3f1`, sem merge nem alteração de produção.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -80,22 +80,24 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-1. Implementar a revisão administrativa de naipe e perfil de dados nas páginas de edição, consumindo apenas as RPCs `aal2` já aprovadas.
-2. Adicionar a coleta privada de sexo nos formulários global e inline de atletas, sempre sem valor padrão e sem DTO público.
-3. Cobrir autorização, validação, auditoria e estados de erro por Vitest/pgTAP, incluindo rejeição fora de `aal2`.
-4. Repetir o gate completo e o QA autenticado na PR #35, mantendo-a em draft, sem merge nem deploy de produção.
+Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perfil`, conforme `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md`. Não antecipar o formulário privado de sexo (`01D`) nem regras de elegibilidade (`01E`/`01F`).
+
+1. Reconciliar branch, head, PR #35, checks e schema real do preview.
+2. Implementar loader privado de pendências e actions pequenas por intent nas páginas de edição, consumindo somente as RPCs `aal2` aprovadas.
+3. Cobrir seleção explícita sem inferência, combinações incompatíveis, autorização, auditoria e estados vazio/erro/sucesso.
+4. Executar `G-FLOW`, atualizar este handoff e deixar `01D` elegível somente se `01C` estiver concluída.
 
 ### Primeiros arquivos a abrir
 
 - `AGENTS.md`
 - `HANDOFF.md`
 - `docs/plan/README.md`
-- `docs/plan/PROMPT-MESTRE-IDE.md`
-- `docs/plan/PLANO-EXECUCAO.md`
+- `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md`, regras globais e cartão `ADM-REF-01C`
+- `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§5, 11 e 12
 
 ### Resultado esperado do próximo passo
 
-Próxima unidade segura do Pacote 1 versionada: administradores revisam naipe/perfil e registram sexo privado sem inferência, com RPCs `aal2`, auditoria e testes de negação.
+`ADM-REF-01C` versionada e validada: administradores revisam naipe/perfil sem inferência, por RPCs `aal2`, com impacto, auditoria e testes de negação; coleta privada de sexo continua fora deste corte.
 
 ## 7. Pacotes de trabalho
 
@@ -125,7 +127,9 @@ Próxima unidade segura do Pacote 1 versionada: administradores revisam naipe/pe
 | WP-22 — Consolidação UI/UX do produto | `READY` | PR #34 draft; área pública, administração e autenticação no mesmo padrão branco/azul; CI, preview, CodeQL e QA responsiva aprovados; sem merge/deploy |
 | WP-23 — Fluxos administrativos ágeis | `IN_PROGRESS` | Busca/criação segura de atletas, elenco, rascunhos, revisão de PDF e súmula compacta implementados localmente; gate da aplicação aprovado; pgTAP e preview ainda pendentes |
 | ADM-REF-00 — Reconciliação e documentação | `DONE` | PR #35/branch/head reconciliados; plano mestre importado e índice atualizado; `public/__admin-preview.html` preservado |
-| ADM-REF-01 — Naipe, sexo privado e perfil de dados | `DOING` | Banco e contratos/contextos públicos aprovados; revisão administrativa e coleta privada são o próximo corte |
+| ADM-REF-01A — Compatibilidade de naipe, sexo e perfil | `DONE` | Schema compatível, filas, RPCs AAL2, RLS e pgTAP aprovados |
+| ADM-REF-01B — Contextos e rotas públicas por naipe | `DONE` | Perfil versionado, URLs canônicas, fallback de rollout, 77 Vitest e 268 pgTAP aprovados |
+| ADM-REF-01C — Revisão administrativa de naipe e perfil | `READY` | Única task elegível; formulário privado de sexo e elegibilidade permanecem em cartões posteriores |
 
 ## 8. Arquivos e referências importantes
 
@@ -134,6 +138,8 @@ Próxima unidade segura do Pacote 1 versionada: administradores revisam naipe/pe
 | `AGENTS.md` | Regras permanentes para o Codex |
 | `HANDOFF.md` | Estado e continuidade |
 | `docs/plan/README.md` | Entrada do plano ativo |
+| `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md` | Fila operacional, cartões atômicos, dependências, gates e protocolo de retomada |
+| `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md` | Fonte normativa consolidada da PR #35 |
 | `docs/plan/PROMPT-MESTRE-IDE.md` | Mandato de execução |
 | `docs/plan/PLANO-EXECUCAO.md` | Pacotes e critérios de conclusão |
 | `docs/plan/ARQUITETURA-SEGURANCA.md` | Stack e regras obrigatórias |
@@ -365,3 +371,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-27 | Codex | Pacote 0 reconciliou a PR #35 no head `89dd9e9`, importou o plano mestre e preservou o HTML não rastreado; gate inicial identificou somente o lint preexistente desse HTML | Criar a migration aditiva de compatibilidade do Pacote 1 e provar RLS, privacidade e unicidade por pgTAP |
 | 2026-08-27 | Codex | Primeira unidade do ADM-REF-01 no head `6192cde`: compatibilidade de naipe/sexo/perfil, filas e RPCs; CI desde zero e 261 pgTAP aprovados | Atualizar contratos e contextos para consumir o perfil versionado com fallback legado explícito |
 | 2026-08-28 | Codex | Contratos/contextos do ADM-REF-01 no head `ccef3f1`: URLs por naipe, perfil versionado, fallback de rollout, 77 Vitest, 268 pgTAP e preview/smoke aprovados | Implementar revisão administrativa de naipe/perfil e coleta privada de sexo sem valor padrão |
+| 2026-08-28 | Codex | Plano da PR #35 dividido em 50 tasks atômicas, fila serial, gates e protocolo de retomada; `01C` é o único cartão `READY` | Executar somente `ADM-REF-01C` e não antecipar `01D`/`01E`/`01F` |
