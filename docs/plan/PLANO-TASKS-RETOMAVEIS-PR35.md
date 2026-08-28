@@ -1,5 +1,7 @@
 # Plano operacional de tasks retomáveis — PR #35
 
+> Versão consolidada preservada para compatibilidade e auditoria. A entrada operacional preferida é [`tasks-pr35/README.md`](tasks-pr35/README.md), com regras separadas e um arquivo por task. Não manter estado divergente entre as duas representações.
+
 ## 1. Finalidade
 
 Este documento converte o plano mestre e as instruções de refatoração em unidades de execução pequenas, seriadas e retomáveis. Ele não altera decisões de produto: organiza a implementação para impedir mistura de features, migrations difíceis de reverter, regressões silenciosas e perda de contexto entre sessões.

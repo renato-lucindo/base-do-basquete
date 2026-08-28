@@ -90,14 +90,14 @@ Executar os Pacotes 0 a 9 na ordem e pelos checkpoints definidos nesse documento
 
 ## Entrada operacional retomável — PR #35
 
-Para executar o plano sem misturar features nem perder contexto entre sessões, usar `PLANO-TASKS-RETOMAVEIS-PR35.md` como índice operacional. O plano mestre continua normativo; o novo arquivo apenas divide seus Pacotes 0 a 9 em tasks atômicas, com dependências, escopo negativo, gates e handoff.
+Para executar o plano sem misturar features nem perder contexto entre sessões, usar `tasks-pr35/README.md` como índice operacional. O plano mestre continua normativo; esse diretório divide seus Pacotes 0 a 9 em arquivos de tasks atômicas, com dependências, escopo negativo, gates e handoff. `PLANO-TASKS-RETOMAVEIS-PR35.md` fica preservado somente como visão consolidada.
 
 Ordem mínima para cada continuação da PR #35:
 
 1. `AGENTS.md`;
 2. `HANDOFF.md`;
 3. este `README.md`;
-4. regras globais e cartão da task atual em `PLANO-TASKS-RETOMAVEIS-PR35.md`;
+4. regras globais e arquivo da task atual em `tasks-pr35/`;
 5. seções citadas do `PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`;
 6. demais documentos somente quando o cartão apontar dependência ou houver conflito de decisão.
 

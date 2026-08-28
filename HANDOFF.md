@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perfil`, conforme `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md`. Não antecipar o formulário privado de sexo (`01D`) nem regras de elegibilidade (`01E`/`01F`).
+Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perfil`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01C.md`. Não antecipar o formulário privado de sexo (`01D`) nem regras de elegibilidade (`01E`/`01F`).
 
 1. Reconciliar branch, head, PR #35, checks e schema real do preview.
 2. Implementar loader privado de pendências e actions pequenas por intent nas páginas de edição, consumindo somente as RPCs `aal2` aprovadas.
@@ -92,7 +92,7 @@ Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perf
 - `AGENTS.md`
 - `HANDOFF.md`
 - `docs/plan/README.md`
-- `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md`, regras globais e cartão `ADM-REF-01C`
+- `docs/plan/tasks-pr35/README.md`, regras globais, fila e arquivo `ADM-REF-01C`
 - `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§5, 11 e 12
 
 ### Resultado esperado do próximo passo
@@ -138,7 +138,8 @@ Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perf
 | `AGENTS.md` | Regras permanentes para o Codex |
 | `HANDOFF.md` | Estado e continuidade |
 | `docs/plan/README.md` | Entrada do plano ativo |
-| `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md` | Fila operacional, cartões atômicos, dependências, gates e protocolo de retomada |
+| `docs/plan/tasks-pr35/README.md` | Entrada operacional com regras separadas, fila e um arquivo por task |
+| `docs/plan/PLANO-TASKS-RETOMAVEIS-PR35.md` | Visão consolidada preservada para compatibilidade e auditoria |
 | `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md` | Fonte normativa consolidada da PR #35 |
 | `docs/plan/PROMPT-MESTRE-IDE.md` | Mandato de execução |
 | `docs/plan/PLANO-EXECUCAO.md` | Pacotes e critérios de conclusão |
@@ -372,3 +373,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-27 | Codex | Primeira unidade do ADM-REF-01 no head `6192cde`: compatibilidade de naipe/sexo/perfil, filas e RPCs; CI desde zero e 261 pgTAP aprovados | Atualizar contratos e contextos para consumir o perfil versionado com fallback legado explícito |
 | 2026-08-28 | Codex | Contratos/contextos do ADM-REF-01 no head `ccef3f1`: URLs por naipe, perfil versionado, fallback de rollout, 77 Vitest, 268 pgTAP e preview/smoke aprovados | Implementar revisão administrativa de naipe/perfil e coleta privada de sexo sem valor padrão |
 | 2026-08-28 | Codex | Plano da PR #35 dividido em 50 tasks atômicas, fila serial, gates e protocolo de retomada; `01C` é o único cartão `READY` | Executar somente `ADM-REF-01C` e não antecipar `01D`/`01E`/`01F` |
+| 2026-08-28 | Codex | Plano operacional reorganizado em 67 arquivos Markdown: regras, fila, 10 índices de pacote e 50 arquivos de task; ZIP autocontido gerado fora do Git | Abrir `docs/plan/tasks-pr35/README.md` e executar somente o arquivo de `ADM-REF-01C` |
