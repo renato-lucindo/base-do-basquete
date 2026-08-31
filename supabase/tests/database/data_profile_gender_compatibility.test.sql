@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(55);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -108,6 +108,14 @@ select ok(
       and indexname = 'competitions_data_profile_validated_by_idx'
   ),
   'the competition validator foreign key is indexed'
+);
+select ok(
+  exists (
+    select 1 from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'competitions_data_profile_identity_idx'
+  ),
+  'the complete competition data-profile foreign key is indexed'
 );
 select ok(
   exists (

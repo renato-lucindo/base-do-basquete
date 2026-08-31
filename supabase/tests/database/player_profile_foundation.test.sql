@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(27);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -74,7 +74,10 @@ insert into public.player_honors (id, player_id, title, year)
 overriding system value values (9802, 9801, 'Honraria em revisão', 2026);
 
 select has_column('public', 'players', 'nickname', 'players exposes the public nickname');
-select hasnt_column('public', 'players', 'birth_date', 'full birth date left the public table');
+select has_column(
+  'public', 'players', 'birth_date',
+  'legacy birth date column remains for schema compatibility'
+);
 select has_table('public', 'player_profiles', 'public one-to-one profiles exist');
 select has_table('private', 'player_private', 'private player data exists outside public schema');
 select has_table('public', 'player_honors', 'manual player honors exist');
@@ -102,6 +105,12 @@ select is(
   (select birth_date from private.player_private where player_id = 9801),
   '2008-04-12'::date,
   'private storage preserves the full birth date'
+);
+select throws_ok(
+  $$update public.players set birth_date = '2008-04-12' where id = 9801$$,
+  '23514',
+  'new row for relation "players" violates check constraint "players_legacy_birth_date_null_check"',
+  'legacy public birth date column cannot retain private data'
 );
 select throws_ok(
   $$insert into private.player_private (player_id, birth_date)

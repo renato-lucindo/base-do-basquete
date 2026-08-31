@@ -9,14 +9,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00`, `ADM-REF-01A` e `ADM-REF-01B` concluídas, com `ADM-REF-01C` em revisão na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01C` em `REVIEW` no WIP remoto `047f555`, sem merge nem alteração de produção.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01C` em `REVIEW`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
-- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; imports 12/13 em parser v2, 4 estatísticas coletivas, 2 gerais e 2 auditorias reconciliadas.
+- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations de perfis, busca/criação administrativa, compatibilidade de naipe/perfil e índice composto da FK aplicadas em 31/08/2026.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
 
@@ -82,14 +82,13 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 Executar exclusivamente `ADM-REF-01C — Revisão administrativa de naipe e perfil`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01C.md`. Não antecipar o formulário privado de sexo (`01D`) nem regras de elegibilidade (`01E`/`01F`).
 
-Estado reconciliado em 28/08/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta/draft/mergeável e WIP `047f555` enviado. CI `33201272488`, preview `33201272349` e CodeQL `33201272434` passaram; o preview é `https://pr-35-base-do-basquete-preview.renato-lucindo-jr.workers.dev` e a nova rota negou acesso anônimo com `302 /admin/login`. O projeto Supabase compartilhado está saudável, porém ainda não contém a migration `20260827160000_data_profile_gender_compatibility.sql`; nenhum schema remoto foi alterado.
+Estado reconciliado em 31/08/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta/draft/mergeável. O preview é `https://pr-35-base-do-basquete-preview.renato-lucindo-jr.workers.dev`. O Supabase compartilhado recebeu, na ordem, `player_profile_foundation_compat`, `admin_player_search_and_create`, `data_profile_gender_compatibility` e `data_profile_fk_covering_index`. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
 Allowlist inicial de `ADM-REF-01C`: rota do hub/edição e sua nova subrota de revisão, `app/routes.ts`, módulo de domínio de competições, testes afetados, estilos administrativos e este `HANDOFF.md`. Expansões devem ser justificadas aqui.
 
-1. Obter autorização específica antes de aplicar a migration aditiva no projeto compartilhado ou aprovação de custo para um ambiente Supabase temporário; enquanto isso, manter o fallback seguro exibido pelo preview.
-2. Com o schema novo disponível, autenticar a única conta administrativa em AAL2 na PR #35 e validar revisão de naipe, vínculo de perfil existente, criação/ativação idempotente, combinação incompatível, auditoria e ausência de dados privados na resposta.
-3. Executar QA em 390 px, 768 px e desktop, além de teclado, estados vazio/erro/sucesso e repetição da operação.
-4. Somente com `G-FLOW` integral aprovado, mudar `ADM-REF-01C` para `DONE` e deixar `ADM-REF-01D` elegível.
+1. Autenticar a única conta administrativa em AAL2 na PR #35 e validar revisão de naipe, vínculo de perfil existente, criação/ativação idempotente, combinação incompatível, auditoria e ausência de dados privados na resposta.
+2. Executar QA em 390 px, 768 px e desktop, além de teclado, estados vazio/erro/sucesso e repetição da operação.
+3. Somente com `G-FLOW` integral aprovado, mudar `ADM-REF-01C` para `DONE` e deixar `ADM-REF-01D` elegível.
 
 ### Primeiros arquivos a abrir
 
@@ -302,7 +301,7 @@ CLOUDFLARE_ACCOUNT_ID
 - A escolha e configuração de domínio devem aguardar instrução futura.
 - Não reduzir MFA, RLS, autorização backend ou proteção de segredos para acelerar a primeira temporada.
 - Dois objetos PDF históricos vazios permanecem no Storage como evidência do incidente; nenhum import aponta para eles. A remoção futura é destrutiva em produção e exige autorização explícita.
-- O projeto Supabase compartilhado ainda não contém `20260827160000_data_profile_gender_compatibility.sql`: a consulta de reconciliação recebeu `42703` para `gender_division_review_required`. O código novo mantém fallback seguro, mas o smoke autenticado do caminho completo de `ADM-REF-01C` depende da aplicação autorizada dessa migration no ambiente alvo; nenhuma alteração remota de schema foi feita nesta task.
+- O advisor de segurança lista como intencionais as tabelas privadas com RLS sem policy/grants e os cinco RPCs `SECURITY DEFINER` expostos somente a `authenticated`; cada RPC valida o administrador singleton em `aal2` e fixa `search_path = ''`. A proteção de senhas vazadas continua indisponível no plano atual.
 
 ## 14. O que não deve ser refeito ou antecipado
 
@@ -382,3 +381,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-28 | Codex | Plano da PR #35 dividido em 50 tasks atômicas, fila serial, gates e protocolo de retomada; `01C` é o único cartão `READY` | Executar somente `ADM-REF-01C` e não antecipar `01D`/`01E`/`01F` |
 | 2026-08-28 | Codex | Plano operacional reorganizado em 67 arquivos Markdown: regras, fila, 10 índices de pacote e 50 arquivos de task; ZIP autocontido gerado fora do Git | Abrir `docs/plan/tasks-pr35/README.md` e executar somente o arquivo de `ADM-REF-01C` |
 | 2026-08-28 | Codex | `ADM-REF-01C` em `REVIEW` no WIP `047f555`: rota AAL2, fallback de rollout, seleção explícita, impacto e RPCs auditadas; check local, CI/database, preview e CodeQL verdes | Autorizar schema alvo e concluir smoke/QA AAL2 antes de marcar `01C` como `DONE`; não iniciar `01D` |
+| 2026-08-31 | Responsável/Codex | Cadeia de schema da PR #35 aplicada ao Supabase compartilhado com `birth_date` preservada e sempre nula; 27 + 12 + 55 pgTAP remotos passaram e dados canônicos permaneceram reconciliados | Commitar/pushar a compatibilidade, aguardar checks e concluir smoke/QA AAL2 da `ADM-REF-01C`; não iniciar `01D` |

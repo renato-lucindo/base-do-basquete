@@ -53,7 +53,14 @@ select id, birth_date
 from public.players
 where birth_date is not null;
 
-alter table public.players drop column birth_date;
+-- Keep the legacy column for schema compatibility, but never retain private data
+-- in the public schema. The private table above is the only source of truth.
+update public.players
+set birth_date = null
+where birth_date is not null;
+
+alter table public.players
+  add constraint players_legacy_birth_date_null_check check (birth_date is null);
 
 alter table public.roster_entries
   add column position text,
@@ -332,6 +339,8 @@ grant select on public.competition_player_statistics to anon, authenticated;
 
 comment on column public.players.nickname is
   'Optional public and non-unique nickname used by profile and search.';
+comment on column public.players.birth_date is
+  'Deprecated compatibility column. Must remain null; full birth dates belong to private.player_private.';
 comment on table public.player_profiles is
   'Optional public-by-default biographical fields in a one-to-one player profile.';
 comment on table private.player_private is
