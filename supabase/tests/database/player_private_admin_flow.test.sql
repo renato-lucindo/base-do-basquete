@@ -216,7 +216,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select sex from private.player_private where player_id = 9751$$,
-  '42501', 'permission denied for schema private',
+  '42501', 'permission denied for table player_private',
   'even the aal2 browser role cannot query the private table directly'
 );
 

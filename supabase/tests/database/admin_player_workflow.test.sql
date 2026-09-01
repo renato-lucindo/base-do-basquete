@@ -111,10 +111,10 @@ select lives_ok(
 );
 select is(
   (
-    select private_data.sex
-    from private.player_private private_data
-    join public.players player on player.id = private_data.player_id
-    where player.full_name = 'Álvaro Nunes'
+    select private_profile.sex
+    from public.admin_get_player_private_profile(
+      (select id from public.players where full_name = 'Álvaro Nunes')
+    ) private_profile
   ),
   'male'::text,
   'creation stores the explicit value only in the private companion row'
