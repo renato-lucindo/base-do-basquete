@@ -14,8 +14,8 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 
 ## Regra de execução
 
-- Existe somente uma task `READY`: `ADM-REF-01C`.
-- Mude apenas essa task para `DOING` quando a execução começar.
+- Existe somente uma task em execução: `ADM-REF-01D` (`DOING`).
+- Mude apenas a task elegível seguinte quando o gate da atual estiver concluído.
 - Não abra outro cartão até concluir gate, commit, checks e handoff da task atual.
 - `01H` e `02E` são condicionais, mas ambas devem terminar antes de `09A`.
 - Merge e produção continuam proibidos sem autorização específica.
@@ -42,8 +42,8 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 |     1 | `ADM-REF-00`  | `DONE`                                                                   | [ADM-REF-00 — Reconciliação e documentação](tasks/00-reconciliacao/ADM-REF-00.md)                             |
 |     2 | `ADM-REF-01A` | `DONE`                                                                   | [ADM-REF-01A — Compatibilidade de naipe, sexo e perfil](tasks/01-perfil-privacidade/ADM-REF-01A.md)           |
 |     3 | `ADM-REF-01B` | `DONE`                                                                   | [ADM-REF-01B — Contextos e rotas públicas por naipe](tasks/01-perfil-privacidade/ADM-REF-01B.md)              |
-|     4 | `ADM-REF-01C` | `READY`                                                                  | [ADM-REF-01C — Revisão administrativa de naipe e perfil](tasks/01-perfil-privacidade/ADM-REF-01C.md)          |
-|     5 | `ADM-REF-01D` | `BLOCKED` por `01C`                                                      | [ADM-REF-01D — Formulário privado de sexo do atleta](tasks/01-perfil-privacidade/ADM-REF-01D.md)              |
+|     4 | `ADM-REF-01C` | `DONE`                                                                   | [ADM-REF-01C — Revisão administrativa de naipe e perfil](tasks/01-perfil-privacidade/ADM-REF-01C.md)          |
+|     5 | `ADM-REF-01D` | `DOING`                                                                  | [ADM-REF-01D — Formulário privado de sexo do atleta](tasks/01-perfil-privacidade/ADM-REF-01D.md)              |
 |     6 | `ADM-REF-01E` | `BLOCKED` por `01D`                                                      | [ADM-REF-01E — Elegibilidade em elenco e transferência](tasks/01-perfil-privacidade/ADM-REF-01E.md)           |
 |     7 | `ADM-REF-01F` | `BLOCKED` por `01E`                                                      | [ADM-REF-01F — Elegibilidade na confirmação de importação](tasks/01-perfil-privacidade/ADM-REF-01F.md)        |
 |     8 | `ADM-REF-01G` | `BLOCKED` por `01F`                                                      | [ADM-REF-01G — Classificação/backfill administrativo](tasks/01-perfil-privacidade/ADM-REF-01G.md)             |

@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(16);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -36,17 +36,29 @@ select has_function(
 );
 select has_function(
   'public',
-  'admin_create_player',
-  array['text', 'text', 'boolean'],
-  'audited administrative creation RPC exists'
+  'admin_create_player_with_private_profile',
+  array['text', 'text', 'text', 'boolean'],
+  'atomic private administrative creation RPC exists'
 );
 select ok(
   not has_function_privilege('anon', 'public.admin_search_players(bigint,text,bigint,integer)', 'execute'),
   'anonymous role cannot execute administrative search'
 );
 select ok(
-  not has_function_privilege('anon', 'public.admin_create_player(text,text,boolean)', 'execute'),
+  not has_function_privilege(
+    'anon',
+    'public.admin_create_player_with_private_profile(text,text,text,boolean)',
+    'execute'
+  ),
   'anonymous role cannot execute administrative creation'
+);
+select ok(
+  not has_function_privilege(
+    'authenticated',
+    'public.admin_create_player(text,text,boolean)',
+    'execute'
+  ),
+  'the former creation RPC cannot create players without private eligibility data'
 );
 
 select set_config(
@@ -59,6 +71,13 @@ select throws_ok(
   $$select * from public.admin_search_players(9701, 'joao', null, 12)$$,
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'a non-admin at aal2 cannot search players'
+);
+select throws_ok(
+  $$select * from public.admin_create_player_with_private_profile(
+      'Atleta sem autorização', 'male', null, false
+    )$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot create players with private data'
 );
 
 reset role;
@@ -85,8 +104,20 @@ select is(
   'search reports an edition roster conflict'
 );
 select lives_ok(
-  $$select public.admin_create_player('Álvaro Nunes', 'Alvinho', false)$$,
+  $$select public.admin_create_player_with_private_profile(
+      'Álvaro Nunes', 'male', 'Alvinho', false
+    )$$,
   'aal2 administrator creates a private player'
+);
+select is(
+  (
+    select private_data.sex
+    from private.player_private private_data
+    join public.players player on player.id = private_data.player_id
+    where player.full_name = 'Álvaro Nunes'
+  ),
+  'male'::text,
+  'creation stores the explicit value only in the private companion row'
 );
 select is(
   (select count(*) from public.admin_mutation_audit where action = 'player_created'),
@@ -94,14 +125,30 @@ select is(
   'successful creation is audited once'
 );
 select throws_ok(
-  $$select public.admin_create_player('Alvaro Nunes', null, false)$$,
+  $$select public.admin_create_player_with_private_profile(
+      'Alvaro Nunes', 'male', null, false
+    )$$,
   'BD308', 'BDB_PLAYER_ALREADY_EXISTS',
   'normalized exact duplicates are rejected'
 );
 select throws_ok(
-  $$select public.admin_create_player('Maria das', null, false)$$,
+  $$select public.admin_create_player_with_private_profile(
+      'Maria das', 'female', null, false
+    )$$,
   'BD311', 'BDB_PLAYER_SIMILAR_REVIEW_REQUIRED',
   'similar names require explicit review'
+);
+select ok(
+  (
+    select
+      not (metadata ? 'sex') and
+      metadata::text not like '%male%' and
+      metadata::text not like '%female%'
+    from public.admin_mutation_audit
+    where action = 'player_sex_reviewed'
+      and entity_id = (select id from public.players where full_name = 'Álvaro Nunes')
+  ),
+  'creation audit contains no private eligibility value'
 );
 
 reset role;

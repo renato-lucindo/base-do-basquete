@@ -8,6 +8,10 @@ export default [
   route("admin/mfa", "routes/admin.mfa.tsx"),
   route("admin/mfa/enroll", "routes/admin.mfa.enroll.tsx"),
   route(
+    "admin/players/:playerId/private-profile",
+    "routes/admin.players.$playerId.private-profile.tsx",
+  ),
+  route(
     "admin/competitions/:competitionId/scoresheets/new",
     "routes/admin.competitions.$competitionId.scoresheets.new.tsx",
   ),

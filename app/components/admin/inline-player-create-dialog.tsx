@@ -3,6 +3,7 @@ import { useFetcher } from "react-router";
 
 import type { AdminPlayerSearchResult } from "../../modules/players/admin-domain";
 import { InlineFieldError } from "./inline-field-error";
+import { PlayerEligibilitySexField } from "./player-private-fields";
 
 interface CreatePlayerResponse {
   error?: string;
@@ -12,6 +13,7 @@ interface CreatePlayerResponse {
 
 interface InlinePlayerCreateDialogProps {
   csrfToken: string;
+  editionGender: string | null;
   initialName: string;
   open: boolean;
   onClose: () => void;
@@ -20,6 +22,7 @@ interface InlinePlayerCreateDialogProps {
 
 export function InlinePlayerCreateDialog({
   csrfToken,
+  editionGender,
   initialName,
   open,
   onClose,
@@ -53,6 +56,10 @@ export function InlinePlayerCreateDialog({
   useEffect(() => {
     if (fetcher.data?.requiresConfirmation) setAllowSimilar(true);
   }, [fetcher.data]);
+
+  useEffect(() => {
+    if (fetcher.data?.error) nameRef.current?.focus();
+  }, [fetcher.data?.error]);
 
   if (!open) return null;
   const pending = fetcher.state !== "idle";
@@ -112,6 +119,11 @@ export function InlinePlayerCreateDialog({
             Apelido <small>opcional</small>
             <input name="nickname" maxLength={80} />
           </label>
+          <PlayerEligibilitySexField editionGender={editionGender} errorId="new-player-error" />
+          <p className="admin-note">
+            Informação administrativa privada usada somente para validar o naipe. Não será publicada
+            nem inferida pelo nome ou pela edição.
+          </p>
           <InlineFieldError id="new-player-error" message={fetcher.data?.error} />
           {fetcher.data?.requiresConfirmation ? (
             <p className="admin-warning">

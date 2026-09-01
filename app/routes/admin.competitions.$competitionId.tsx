@@ -29,7 +29,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const competitionResult = await auth.client
     .from("competitions")
-    .select("id,display_name,year,status,series_id,category_id")
+    .select("id,display_name,year,status,series_id,category_id,gender_division")
     .eq("id", competitionId)
     .limit(1);
   if (competitionResult.error) throw new Error("Competition hub query failed");
@@ -451,6 +451,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               {registration.status !== "withdrawn" && registration.status !== "completed" ? (
                 <RosterEditor
                   competitionId={competition.id}
+                  competitionGender={competition.gender_division}
                   csrfToken={loaderData.csrfToken}
                   registrationId={registration.id}
                   teamName={registration.teamName}

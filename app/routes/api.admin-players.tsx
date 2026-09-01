@@ -21,7 +21,7 @@ function isPendingPlayerWorkflowMigration(error: { code?: string; message?: stri
     error.code === "42883" ||
     error.code === "PGRST202" ||
     error.message?.includes("admin_search_players") ||
-    error.message?.includes("admin_create_player")
+    error.message?.includes("admin_create_player_with_private_profile")
   );
 }
 
@@ -166,17 +166,24 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   const fullName = String(formData.get("fullName") ?? "").trim();
   const nickname = String(formData.get("nickname") ?? "").trim();
+  const sex = String(formData.get("sex") ?? "");
   const allowSimilar = formData.get("allowSimilar") === "true";
-  if (fullName.length < 2 || fullName.length > 160 || nickname.length > 80) {
+  if (
+    fullName.length < 2 ||
+    fullName.length > 160 ||
+    nickname.length > 80 ||
+    (sex !== "male" && sex !== "female")
+  ) {
     return data(
-      { error: "Revise o nome e o apelido informados." },
+      { error: "Revise o nome, o apelido e a escolha explícita de elegibilidade." },
       { status: 400, headers: headers(auth.cookie) },
     );
   }
 
-  const result = await auth.client.rpc("admin_create_player", {
+  const result = await auth.client.rpc("admin_create_player_with_private_profile", {
     p_full_name: fullName,
     p_nickname: nickname || undefined,
+    p_sex: sex,
     p_allow_similar: allowSimilar,
   });
   if (result.error) {

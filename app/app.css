@@ -4785,6 +4785,81 @@ body {
   font-weight: 720;
 }
 
+.inline-player-form label small,
+.private-profile-form label small {
+  color: var(--muted);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.player-private-links {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+
+.player-private-links summary {
+  color: var(--green);
+  font-size: 0.78rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.player-private-links ul {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  padding: 12px 0 0;
+  margin: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.player-private-links li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-private-profile {
+  max-width: 820px;
+}
+
+.private-impact dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--line);
+}
+
+.private-impact dl > div {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  background: var(--paper);
+}
+
+.private-impact dt {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.private-impact dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.private-profile-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 .admin-warning {
   padding: 10px 12px;
   border: 1px solid #f2cd77;
@@ -5154,5 +5229,9 @@ body {
 
   .wizard-actions .button {
     width: 100%;
+  }
+
+  .private-impact dl {
+    grid-template-columns: 1fr;
   }
 }

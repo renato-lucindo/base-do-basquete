@@ -42,6 +42,7 @@ interface ReviewRegistration {
 interface BoxscoreReviewEditorProps {
   actionError?: string;
   competitionId: number;
+  competitionGender: string | null;
   csrfToken: string;
   review: { id: number; parsed: ParsedBoxscore; matches: ReviewMatch[] };
   registrations: ReviewRegistration[];
@@ -65,6 +66,7 @@ function normalizeTeam(value: string): string {
 export function BoxscoreReviewEditor({
   actionError,
   competitionId,
+  competitionGender,
   csrfToken,
   review,
   registrations,
@@ -387,6 +389,7 @@ export function BoxscoreReviewEditor({
                     <summary>Pesquisar outro atleta</summary>
                     <AdminPlayerSearch
                       competitionId={competitionId}
+                      competitionGender={competitionGender}
                       registrationId={selectedTeam?.id}
                       csrfToken={csrfToken}
                       selectedIds={selectedPlayerId ? new Set([selectedPlayerId]) : undefined}

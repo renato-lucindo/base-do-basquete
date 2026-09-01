@@ -133,7 +133,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   ] = await Promise.all([
     auth.client
       .from("competitions")
-      .select("id,display_name,year,status,series_id,category_id")
+      .select("id,display_name,year,status,series_id,category_id,gender_division")
       .eq("id", competitionId)
       .single(),
     auth.client
@@ -618,6 +618,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           <BoxscoreReviewEditor
             actionError={actionData?.error}
             competitionId={loaderData.competition.id}
+            competitionGender={loaderData.competition.gender_division}
             csrfToken={loaderData.csrfToken}
             review={review}
             registrations={loaderData.registrations}

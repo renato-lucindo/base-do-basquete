@@ -1,5 +1,7 @@
+import { useEffect, useRef } from "react";
 import { data, Form, Link, redirect } from "react-router";
 
+import { PlayerEligibilitySexField } from "../components/admin/player-private-fields";
 import type { Route } from "./+types/admin._index";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { recordAuthAuditEvent } from "../modules/auth/audit.server";
@@ -55,6 +57,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       competitions,
       teams: teamsResult.data,
       players: playersResult.data,
+      savedPlayerId: Number(new URL(request.url).searchParams.get("savedPlayer")) || null,
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -67,17 +70,16 @@ export async function action({ request, context }: Route.ActionArgs) {
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
   const intent = formData.get("intent");
-  const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim();
-
-  if (name.length < 2 || !slugPattern.test(slug)) {
-    return data(
-      { error: "Informe um nome e um slug minúsculo válido." },
-      { status: 400, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
-    );
-  }
 
   if (intent === "create-team") {
+    const name = String(formData.get("name") ?? "").trim();
+    const slug = String(formData.get("slug") ?? "").trim();
+    if (name.length < 2 || !slugPattern.test(slug)) {
+      return data(
+        { error: "Informe um nome e um slug minúsculo válido." },
+        { status: 400, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+      );
+    }
     const abbreviation = String(formData.get("abbreviation") ?? "")
       .trim()
       .toUpperCase();
@@ -94,17 +96,55 @@ export async function action({ request, context }: Route.ActionArgs) {
       );
     }
   } else if (intent === "create-player") {
-    const { error } = await auth.client.from("players").insert({
-      full_name: name,
-      slug,
-      is_public: false,
-    });
-    if (error) {
+    const fullName = String(formData.get("name") ?? "").trim();
+    const nickname = String(formData.get("nickname") ?? "").trim();
+    const sex = String(formData.get("sex") ?? "");
+    const allowSimilar = formData.get("allowSimilar") === "true";
+    if (
+      fullName.length < 2 ||
+      fullName.length > 160 ||
+      nickname.length > 80 ||
+      (sex !== "male" && sex !== "female")
+    ) {
       return data(
-        { error: error.code === "23505" ? "Esse atleta já existe." : "Falha ao criar atleta." },
+        {
+          error: "Revise o nome, o apelido e a escolha explícita de elegibilidade.",
+          playerError: true,
+        },
         { status: 400, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
       );
     }
+    const result = await auth.client.rpc("admin_create_player_with_private_profile", {
+      p_full_name: fullName,
+      p_nickname: nickname || undefined,
+      p_sex: sex,
+      p_allow_similar: allowSimilar,
+    });
+    if (result.error) {
+      const duplicate = result.error.code === "BD308";
+      const similar = result.error.code === "BD311";
+      const migrationPending = result.error.code === "42883" || result.error.code === "PGRST202";
+      return data(
+        {
+          error: migrationPending
+            ? "A criação privada estará disponível após aplicar a migração desta versão."
+            : duplicate
+              ? "Já existe um atleta com esse nome."
+              : similar
+                ? "Há um cadastro semelhante. Revise os atletas existentes antes de confirmar."
+                : "Falha ao criar atleta.",
+          requiresPlayerConfirmation: similar,
+          playerError: true,
+        },
+        {
+          status: migrationPending ? 503 : duplicate ? 409 : similar ? 422 : 400,
+          headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+        },
+      );
+    }
+    throw redirect(`/admin?savedPlayer=${result.data.id}`, {
+      headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+    });
   } else {
     throw new Response("Ação inválida", { status: 400 });
   }
@@ -115,6 +155,16 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function AdminDashboard({ loaderData, actionData }: Route.ComponentProps) {
+  const requiresPlayerConfirmation = Boolean(
+    actionData &&
+      "requiresPlayerConfirmation" in actionData &&
+      actionData.requiresPlayerConfirmation,
+  );
+  const playerNameRef = useRef<HTMLInputElement>(null);
+  const playerError = Boolean(actionData && "playerError" in actionData && actionData.playerError);
+  useEffect(() => {
+    if (playerError) playerNameRef.current?.focus();
+  }, [playerError]);
   return (
     <main className="admin-shell">
       <header className="site-header admin-header">
@@ -135,6 +185,15 @@ export default function AdminDashboard({ loaderData, actionData }: Route.Compone
         <h1 id="admin-title">Escolha uma edição.</h1>
         <p>O contexto é explícito antes de inscrições, elencos, jogos ou importações.</p>
         {actionData?.error ? <p className="form-error">{actionData.error}</p> : null}
+        {loaderData.savedPlayerId ? (
+          <output className="form-success">
+            Atleta criado com o cadastro privado concluído.{" "}
+            <Link to={`/admin/players/${loaderData.savedPlayerId}/private-profile`}>
+              Abrir formulário protegido
+            </Link>
+            .
+          </output>
+        ) : null}
 
         <div className="admin-competition-grid">
           {loaderData.competitions.map((competition) => (
@@ -180,16 +239,34 @@ export default function AdminDashboard({ loaderData, actionData }: Route.Compone
               <input type="hidden" name="intent" value="create-player" />
               <label>
                 Nome completo
-                <input required name="name" />
+                <input ref={playerNameRef} required name="name" />
               </label>
               <label>
-                Slug
-                <input required name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" />
+                Apelido <small>opcional</small>
+                <input name="nickname" maxLength={80} />
               </label>
+              <PlayerEligibilitySexField />
+              <input type="hidden" name="allowSimilar" value={String(requiresPlayerConfirmation)} />
+              {requiresPlayerConfirmation ? (
+                <p className="admin-warning">
+                  Confirme somente depois de verificar que não é um atleta já cadastrado.
+                </p>
+              ) : null}
               <button className="button button-primary" type="submit">
-                Criar atleta
+                {requiresPlayerConfirmation ? "Confirmar novo cadastro" : "Criar atleta"}
               </button>
             </Form>
+            <details className="player-private-links">
+              <summary>Formulários privados dos atletas</summary>
+              <ul>
+                {loaderData.players.map((player) => (
+                  <li key={player.id}>
+                    <span>{player.full_name}</span>
+                    <Link to={`/admin/players/${player.id}/private-profile`}>Abrir</Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
           </section>
         </div>
 

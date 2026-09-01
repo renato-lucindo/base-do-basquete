@@ -11,6 +11,7 @@ interface SearchResponse {
 
 interface AdminPlayerSearchProps {
   competitionId: number;
+  competitionGender: string | null;
   csrfToken: string;
   registrationId?: number;
   selectedIds?: ReadonlySet<number>;
@@ -20,6 +21,7 @@ interface AdminPlayerSearchProps {
 
 export function AdminPlayerSearch({
   competitionId,
+  competitionGender,
   csrfToken,
   registrationId,
   selectedIds = new Set<number>(),
@@ -120,6 +122,7 @@ export function AdminPlayerSearch({
       </div>
       <InlinePlayerCreateDialog
         csrfToken={csrfToken}
+        editionGender={competitionGender}
         initialName={query.trim()}
         open={dialogOpen}
         onClose={closeDialog}

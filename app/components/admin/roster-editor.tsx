@@ -24,6 +24,7 @@ interface RosterDraftData {
 
 interface RosterEditorProps {
   competitionId: number;
+  competitionGender: string | null;
   csrfToken: string;
   registrationId: number;
   teamName: string;
@@ -39,6 +40,7 @@ function playerMap(players: RosterPlayer[]) {
 
 export function RosterEditor({
   competitionId,
+  competitionGender,
   csrfToken,
   registrationId,
   teamName,
@@ -183,6 +185,7 @@ export function RosterEditor({
       ) : null}
       <AdminPlayerSearch
         competitionId={competitionId}
+        competitionGender={competitionGender}
         registrationId={registrationId}
         csrfToken={csrfToken}
         selectedIds={selectedIds}

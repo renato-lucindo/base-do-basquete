@@ -1621,6 +1621,42 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_create_player_with_private_profile: {
+        Args: {
+          p_allow_similar?: boolean;
+          p_full_name: string;
+          p_nickname?: string;
+          p_sex: string;
+        };
+        Returns: {
+          created_at: string;
+          full_name: string;
+          id: number;
+          is_active: boolean;
+          is_public: boolean;
+          nickname: string | null;
+          slug: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "players";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_get_player_private_profile: {
+        Args: { p_player_id: number };
+        Returns: {
+          active_roster_entries: number;
+          affected_competitions: number;
+          eligibility_pending: boolean;
+          full_name: string;
+          player_id: number;
+          roster_entries: number;
+          sex: string | null;
+        }[];
+      };
       admin_review_competition_gender: {
         Args: { p_competition_id: number; p_gender_division: string };
         Returns: {
