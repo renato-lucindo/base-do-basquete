@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `REVIEW`
+- **Estado:** `DONE`
 - **Objetivo:** permitir que admin AAL2 classifique uma edição pendente e vincule/crie/ative o perfil compatível.
 - **Ler:** `M` §§5, 11 e 12; `I` §§11–13 e 17; `A` §5.
 - **Caminhos iniciais:** rota do hub/edição, módulo server de competições, componentes de formulário, testes da rota.
