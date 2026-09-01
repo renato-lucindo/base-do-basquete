@@ -86,6 +86,8 @@ Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`,
 
 Allowlist inicial de `ADM-REF-01D`: nova migration corretiva/aditiva e testes pgTAP; API de criação administrativa; formulário global, criação inline e seus call sites; nova rota privada dedicada de atleta; `app/routes.ts`; contratos privados isolados, tipos gerados, estilos e testes afetados; documentação de estado (`HANDOFF.md`, manifesto e cartão atual). A expansão é necessária porque o cartão exige criação global e inline, edição protegida com impacto e isolamento completo do valor privado.
 
+Expansão de allowlist em 01/09/2026: `scripts/smoke-public-context.mjs`. A classificação manual concluída em `01C` tornou canônica a rota com naipe e revelou que o smoke ainda exigia literalmente a URL legada. O ajuste aceita o redirecionamento canônico Masculino/Feminino e continua validando isolamento de contexto, preferência e precedência administrativa.
+
 1. Ler integralmente o cartão `ADM-REF-01D` e somente as seções obrigatórias indicadas por ele.
 2. Implementar coleta privada de sexo sem valor padrão, por RPC `aal2`, com motivo obrigatório, impacto explícito, auditoria e nenhuma exposição pública.
 3. Executar `G-FLOW`, atualizar evidências e não iniciar `01E` antes de `01D` estar `DONE`.
