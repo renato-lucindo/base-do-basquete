@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(39);
+select plan(40);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -211,8 +211,23 @@ select lives_ok(
 );
 select is(
   (public.admin_get_classification_backfill_report() ->> 'reportVersion')::integer,
-  1,
+  2,
   'the report contract is explicitly versioned'
+);
+select is(
+  (
+    select
+      (coverage ->> 'teamStatisticRows')
+      || ':' ||
+      (coverage ->> 'gameStatisticRows')
+    from jsonb_array_elements(
+      public.admin_get_classification_backfill_report()
+        #> '{historicalIntegrity,advancedCoverageByCompetition}'
+    ) coverage
+    where (coverage ->> 'competitionId')::bigint = 9821
+  ),
+  '0:0'::text,
+  'an edition without advanced statistics reports exact zero coverage'
 );
 select is(
   (

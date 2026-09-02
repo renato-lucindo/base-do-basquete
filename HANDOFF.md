@@ -96,6 +96,10 @@ Allowlist inicial de `ADM-REF-01G`: nova migration aditiva de transação/relat�
 
 Implementação local de `ADM-REF-01G`: migration `20260902112735_classification_backfill_reconciliation.sql`, quatro views privadas sem grants e RPC de relatório somente para `authenticated`, com guarda singleton AAL2 e `search_path` vazio. As escritas continuam exclusivamente nas RPCs explícitas existentes; não foi criado atalho de backfill. O relatório versionado contém evidência factual, filas sem valor privado, snapshots por edição, divergências e checksums históricos. DDL integral, 39 pgTAP focados e regressões 55 + 24 + 26 + 32 passaram em rollback; formatação, lint e TypeScript passaram localmente.
 
+Gate intermediário de `ADM-REF-01G`: o commit `c474540` passou `gate`, banco desde zero, preview e CodeQL. A migration principal foi então aplicada ao Supabase compartilhado como `20260902114439_classification_backfill_reconciliation`. A reconciliação confirmou as contagens esperadas e nenhuma alteração histórica, mas revelou um erro isolado no relatório: o composto nulo de um `LEFT JOIN` era contado como uma linha de estatística coletiva em edições sem cobertura avançada.
+
+Expansão de allowlist de `ADM-REF-01G` em 02/09/2026: migration aditiva `classification_backfill_coverage_fix`, atualização do pgTAP focado e dos relatórios de execução. A migration aplicada não será reescrita. A correção versiona o relatório como v2 e troca somente a contagem de cobertura; em rollback, as 40 asserções passaram e as edições sem estatística retornaram zero, sem alterar filas, dados ou checksums.
+
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
 2. Ler as seções normativas de `ADM-REF-01G`, registrar baseline e allowlist e criar somente a migration aditiva de classificação/backfill administrativo.
 3. Preservar histórico e valores pendentes: nenhuma escolha automática de sexo ou naipe, nenhuma remoção da coluna legada e nenhum `NOT NULL` nesta etapa.

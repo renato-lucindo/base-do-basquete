@@ -34,11 +34,15 @@ As duas edições classificadas já tinham decisões administrativas explícitas
 ## Evidência antes da aplicação persistente
 
 - DDL integral executada em transação com rollback no Supabase compartilhado.
-- 39/39 asserções pgTAP focadas aprovadas em rollback.
+- 40/40 asserções pgTAP focadas aprovadas em rollback.
 - Regressões aprovadas em rollback: perfil/naipe 55/55, fluxo privado 24/24, elenco 26/26 e importação 32/32.
 - Formatação e lint aprovados em 116 arquivos; TypeScript estrito e geração de tipos aprovados.
 - Nenhuma contagem ou checksum histórico foi alterado pelos testes.
 
 ## Aplicação e reconciliação final
 
-Pendente do gate remoto da PR #35. A migration só será aplicada ao Supabase compartilhado depois de `gate`, `database`, preview e CodeQL aprovarem o commit funcional.
+A migration principal foi aplicada ao Supabase compartilhado como `20260902114439_classification_backfill_reconciliation`, somente depois de `gate`, `database`, preview e CodeQL aprovarem o commit `c474540` na PR #35.
+
+A leitura pós-aplicação detectou um erro apenas no relatório: o `LEFT JOIN` contava o composto inteiramente nulo como uma linha de estatística coletiva nas edições sem cobertura avançada. O histórico permaneceu inalterado. Como a migration original já estava versionada e aplicada, ela não foi reescrita; a correção aditiva `classification_backfill_coverage_fix` eleva o contrato para a versão 2 e substitui somente a contagem de cobertura por edição. Em rollback, o resultado corrigido foi `0/0` para as edições 1, 8 e 9 e `4/2` para a edição 20 (linhas coletivas/linhas de jogo).
+
+A aplicação persistente da correção aguarda o novo gate remoto da PR #35.
