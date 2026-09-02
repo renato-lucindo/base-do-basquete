@@ -14,7 +14,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 
 ## Regra de execução
 
-- Existe somente uma task em escrita: `ADM-REF-01E` (`DOING`).
+- Não existe task em escrita: `ADM-REF-01E` está `DONE` e `ADM-REF-01F` é a única task `READY`.
 - Mude apenas a task elegível seguinte quando o gate da atual estiver concluído.
 - Não abra outro cartão até concluir gate, commit, checks e handoff da task atual.
 - `01H` e `02E` são condicionais, mas ambas devem terminar antes de `09A`.
@@ -44,8 +44,8 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 |     3 | `ADM-REF-01B` | `DONE`                                                                   | [ADM-REF-01B — Contextos e rotas públicas por naipe](tasks/01-perfil-privacidade/ADM-REF-01B.md)              |
 |     4 | `ADM-REF-01C` | `DONE`                                                                   | [ADM-REF-01C — Revisão administrativa de naipe e perfil](tasks/01-perfil-privacidade/ADM-REF-01C.md)          |
 |     5 | `ADM-REF-01D` | `DONE`                                                                   | [ADM-REF-01D — Formulário privado de sexo do atleta](tasks/01-perfil-privacidade/ADM-REF-01D.md)              |
-|     6 | `ADM-REF-01E` | `DOING`                                                                  | [ADM-REF-01E — Elegibilidade em elenco e transferência](tasks/01-perfil-privacidade/ADM-REF-01E.md)           |
-|     7 | `ADM-REF-01F` | `BLOCKED` por `01E`                                                      | [ADM-REF-01F — Elegibilidade na confirmação de importação](tasks/01-perfil-privacidade/ADM-REF-01F.md)        |
+|     6 | `ADM-REF-01E` | `DONE`                                                                   | [ADM-REF-01E — Elegibilidade em elenco e transferência](tasks/01-perfil-privacidade/ADM-REF-01E.md)           |
+|     7 | `ADM-REF-01F` | `READY`                                                                  | [ADM-REF-01F — Elegibilidade na confirmação de importação](tasks/01-perfil-privacidade/ADM-REF-01F.md)        |
 |     8 | `ADM-REF-01G` | `BLOCKED` por `01F`                                                      | [ADM-REF-01G — Classificação/backfill administrativo](tasks/01-perfil-privacidade/ADM-REF-01G.md)             |
 |     9 | `ADM-REF-01H` | `CONDITIONAL`                                                            | [ADM-REF-01H — Enforcement final de naipe/perfil](tasks/01-perfil-privacidade/ADM-REF-01H.md)                 |
 |    10 | `ADM-REF-02A` | `BLOCKED` por `01G` e pelo registro da execução ou do adiamento de `01H` | [ADM-REF-02A — Tabela de submissões versionadas](tasks/02-submissoes-autoridade/ADM-REF-02A.md)               |
