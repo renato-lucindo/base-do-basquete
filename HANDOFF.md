@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01G` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02A` está `READY`.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; nenhuma task está em escrita, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01G` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02A` está em execução.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-02A` é a única task em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -99,6 +99,10 @@ Implementação concluída de `ADM-REF-01G`: migrations `20260902112735_classifi
 Gate intermediário de `ADM-REF-01G`: o commit `c474540` passou `gate`, banco desde zero, preview e CodeQL. A migration principal foi então aplicada ao Supabase compartilhado como `20260902114439_classification_backfill_reconciliation`. A reconciliação confirmou as contagens esperadas e nenhuma alteração histórica, mas revelou um erro isolado no relatório: o composto nulo de um `LEFT JOIN` era contado como uma linha de estatística coletiva em edições sem cobertura avançada.
 
 Expansão de allowlist de `ADM-REF-01G` em 02/09/2026: migration aditiva `classification_backfill_coverage_fix`, atualização do pgTAP focado e dos relatórios de execução. A migration aplicada não será reescrita. A correção versiona o relatório como v2 e troca somente a contagem de cobertura; em rollback, as 40 asserções passaram e as edições sem estatística retornaram zero, sem alterar filas, dados ou checksums.
+
+Reconciliação inicial de `ADM-REF-02A` em 02/09/2026: branch limpa no head `8cddd40`; PR #35 aberta/draft com `gate`, banco desde zero, preview e CodeQL verdes; `/health` respondeu `preview/ok`; Supabase compartilhado na migration remota `20260902115601_classification_backfill_coverage_fix`. A baseline contém 9 jogos (5 `seed`, 2 `manual`, 2 `boxscore`), 2 imports confirmados, 4 objetos privados e 19 auditorias; `public.game_data_submissions` ainda não existe. O changelog atual não trouxe quebra aplicável à modelagem, mas a mudança de exposição do Data API exige grants explícitos.
+
+Allowlist inicial de `ADM-REF-02A`: uma nova migration aditiva de `game_data_submissions`; pgTAP focado; tipos TypeScript gerados; `docs/execution/ADM-REF-02A.md`; manifestos do Pacote 2 e `HANDOFF.md`. O escopo não inclui autoridade por domínio, view de estado, UI, backfill, adaptação dos fluxos atuais ou escrita de submissões no banco compartilhado.
 
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
 2. Ler as seções normativas de `ADM-REF-01G`, registrar baseline e allowlist e criar somente a migration aditiva de classificação/backfill administrativo.

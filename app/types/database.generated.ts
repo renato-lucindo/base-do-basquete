@@ -463,6 +463,74 @@ export type Database = {
           },
         ];
       };
+      game_data_submissions: {
+        Row: {
+          created_at: string;
+          game_id: number;
+          id: number;
+          idempotency_key: string;
+          parser_version: string | null;
+          payload_hash: string | null;
+          reason: string | null;
+          role: string;
+          source_type: string;
+          status: string;
+          storage_object_id: string | null;
+          submission_version: number;
+          submitted_at: string;
+          submitted_by: string | null;
+          updated_at: string;
+          validated_at: string | null;
+          validated_by: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          game_id: number;
+          id?: never;
+          idempotency_key: string;
+          parser_version?: string | null;
+          payload_hash?: string | null;
+          reason?: string | null;
+          role: string;
+          source_type: string;
+          status?: string;
+          storage_object_id?: string | null;
+          submission_version: number;
+          submitted_at?: string;
+          submitted_by?: string | null;
+          updated_at?: string;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          game_id?: number;
+          id?: never;
+          idempotency_key?: string;
+          parser_version?: string | null;
+          payload_hash?: string | null;
+          reason?: string | null;
+          role?: string;
+          source_type?: string;
+          status?: string;
+          storage_object_id?: string | null;
+          submission_version?: number;
+          submitted_at?: string;
+          submitted_by?: string | null;
+          updated_at?: string;
+          validated_at?: string | null;
+          validated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_data_submissions_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       game_statistics: {
         Row: {
           created_at: string;
