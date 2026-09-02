@@ -50,4 +50,10 @@ Antes da aplicação, `public.game_data_submissions` não existia. A base tinha 
 
 ## Aplicação e reconciliação final
 
-Pendente do gate remoto do commit de implementação. A migration só será aplicada depois que banco desde zero, gate, preview e CodeQL estiverem aprovados.
+A migration foi aplicada ao Supabase compartilhado como `20260902163902_game_data_submissions`, somente depois que `gate`, banco desde zero, preview e CodeQL aprovaram o commit `2ddd8e9` na PR #35.
+
+O pgTAP persistido passou 40/40. A tabela terminou com zero linhas, confirmando a ausência de backfill, e o bucket permaneceu com 4 objetos. Todas as contagens e checksums da baseline permaneceram idênticos.
+
+Os tipos gerados pelo schema remoto confirmaram integralmente o contrato TypeScript versionado. O advisor de segurança não apresentou achado relacionado à nova tabela. O advisor de desempenho marcou como ainda não usados apenas os três índices parciais de cobertura de FKs (`submitted_by`, `validated_by` e `storage_object_id`), resultado esperado antes da primeira submissão e sem motivo para removê-los.
+
+`ADM-REF-02A` está concluída. `ADM-REF-02B` passa a ser a próxima task elegível; autoridade por domínio, RPCs de ativação e estado derivado continuam fora desta entrega.
