@@ -39,7 +39,7 @@ Antes da aplicação, a base tinha 9 jogos, 2 imports confirmados e 19 auditoria
 ## Evidência pré-aplicação
 
 - DDL integral e pgTAP focado executados juntos no Supabase compartilhado dentro de uma transação com rollback.
-- Os 62 cenários foram percorridos; a primeira execução apontou somente que o plano declarava 60 testes para 62 executados. O plano foi corrigido para 62 sem alterar o comportamento testado.
+- Os 62 cenários foram percorridos; o primeiro ciclo corrigiu o plano declarado de 60 para 62. O banco desde zero revelou depois que `now()` é estável durante toda a transação e impedia uma segunda ativação válida feita no mesmo ciclo; a revisão passou a usar `clock_timestamp()` com avanço mínimo monotônico. O teste da proteção de submissão também passou a exercer o gatilho como proprietário, além do teste separado que comprova a negação da escrita direta ao cliente.
 - A suíte cobre matriz fechada, RLS/grants, AAL2, fonte incapaz, submissão inativa, idempotência, compare-and-swap concorrente, troca justificada, proteção da submissão referenciada, lote atômico e os estados `ready`, `review`, `awaiting_primary_source` e `conflict`.
 - Nenhuma linha ou objeto do banco compartilhado foi persistido pelo ensaio transacional.
 

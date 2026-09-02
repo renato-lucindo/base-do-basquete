@@ -383,7 +383,10 @@ begin
       revision = current_authority.revision + 1,
       change_reason = normalized_reason,
       activated_by = auth.uid(),
-      activated_at = now()
+      activated_at = greatest(
+        clock_timestamp(),
+        current_authority.activated_at + interval '1 microsecond'
+      )
     where authority.game_id = p_game_id
       and authority.domain = normalized_domain
     returning * into saved_authority;

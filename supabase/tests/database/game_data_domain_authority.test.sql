@@ -448,6 +448,8 @@ select ok(
   ),
   'switch audit identifies both versions without storing the reason text'
 );
+
+reset role;
 select throws_ok(
   $$update public.game_data_submissions
     set status = 'superseded', reason = 'Substituída depois da ativação'
@@ -456,6 +458,8 @@ select throws_ok(
   'BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY',
   'an authoritative submission cannot be deactivated'
 );
+
+set local role authenticated;
 select throws_ok(
   $$update public.game_data_domain_authority
     set submission_id = 99231,
