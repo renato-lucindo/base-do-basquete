@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02A` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02B` está pronta para iniciar.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; não há task em `DOING` e `ADM-REF-02B` é a única em `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02A` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02B` está em execução.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-02B` é a única task em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -105,6 +105,12 @@ Reconciliação inicial de `ADM-REF-02A` em 02/09/2026: branch limpa no head `8c
 Allowlist inicial de `ADM-REF-02A`: uma nova migration aditiva de `game_data_submissions`; pgTAP focado; tipos TypeScript gerados; `docs/execution/ADM-REF-02A.md`; manifestos do Pacote 2 e `HANDOFF.md`. O escopo não inclui autoridade por domínio, view de estado, UI, backfill, adaptação dos fluxos atuais ou escrita de submissões no banco compartilhado.
 
 Implementação concluída de `ADM-REF-02A`: o commit `2ddd8e9` passou `gate`, banco desde zero, preview e CodeQL antes da aplicação. A migration foi aplicada como `20260902163902_game_data_submissions`; o pgTAP persistido passou 40/40. A tabela ficou vazia, sem backfill, e os checksums de jogos, participantes, períodos, elencos, estatísticas, faltas, imports e auditoria permaneceram idênticos. Os tipos remotos confirmaram o contrato versionado. Não há advisor de segurança novo; três índices de FKs ainda sem uso são esperados antes da primeira submissão.
+
+Reconciliação inicial de `ADM-REF-02B` em 02/09/2026: branch limpa no head `4a3bf37`; PR #35 aberta/draft com `gate`, banco desde zero, preview e CodeQL verdes; `/health` respondeu `preview/ok`; Supabase compartilhado na migration remota `20260902163902_game_data_submissions`, PostgreSQL 17.6. A baseline contém 9 jogos, 2 imports, 19 auditorias, zero submissões, zero duplicidade ativa e ainda não possui tabela ou view de autoridade. O changelog atual não trouxe quebra aplicável; novos objetos públicos continuarão com RLS e grants explícitos.
+
+Allowlist inicial de `ADM-REF-02B`: uma migration aditiva de autoridade/capacidades/RPCs/view; pgTAP focado inclusive concorrência; tipos TypeScript gerados; `docs/execution/ADM-REF-02B.md`; manifestos do Pacote 2 e `HANDOFF.md`. O escopo não inclui comparação visual, UI, adaptação de súmula/boxscore, backfill, progressão, publicação ou alteração de dados esportivos compartilhados.
+
+Implementação funcional de `ADM-REF-02B`: matriz fechada com 14 capacidades, autoridade única por jogo/domínio, FKs contextuais, proteção de submissão referenciada, RPCs AAL2 com advisory lock e compare-and-swap e visão administrativa derivada. O ensaio integral em rollback percorreu 62 cenários; a única inconsistência inicial foi o plano pgTAP declarado como 60, corrigido para 62. `npm run check` aprovou formatação/lint em 116 arquivos, TypeScript estrito, 23 arquivos/88 testes, runbooks, build e varredura de 457 arquivos. A migration ainda não foi aplicada persistentemente: aguarda os quatro gates remotos do commit funcional.
 
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
 2. Ler integralmente o cartão `ADM-REF-02B`, incluindo `M` §§6.3, 8 e 10 e `I` §§8, 9 e 11.2; registrar baseline e allowlist antes de editar.

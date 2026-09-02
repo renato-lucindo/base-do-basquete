@@ -463,6 +463,85 @@ export type Database = {
           },
         ];
       };
+      game_data_domain_authority: {
+        Row: {
+          activated_at: string;
+          activated_by: string;
+          change_reason: string | null;
+          domain: string;
+          game_id: number;
+          revision: number;
+          source_type: string;
+          submission_id: number;
+          updated_at: string;
+        };
+        Insert: {
+          activated_at?: string;
+          activated_by: string;
+          change_reason?: string | null;
+          domain: string;
+          game_id: number;
+          revision?: number;
+          source_type: string;
+          submission_id: number;
+          updated_at?: string;
+        };
+        Update: {
+          activated_at?: string;
+          activated_by?: string;
+          change_reason?: string | null;
+          domain?: string;
+          game_id?: number;
+          revision?: number;
+          source_type?: string;
+          submission_id?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_data_domain_authority_capability_fkey";
+            columns: ["source_type", "domain"];
+            isOneToOne: false;
+            referencedRelation: "game_data_source_capabilities";
+            referencedColumns: ["source_type", "domain"];
+          },
+          {
+            foreignKeyName: "game_data_domain_authority_game_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_authority_submission_fkey";
+            columns: ["submission_id", "game_id", "source_type"];
+            isOneToOne: false;
+            referencedRelation: "game_data_submissions";
+            referencedColumns: ["id", "game_id", "source_type"];
+          },
+        ];
+      };
+      game_data_source_capabilities: {
+        Row: {
+          domain: string;
+          precision: string;
+          required_when_primary: boolean;
+          source_type: string;
+        };
+        Insert: {
+          domain: string;
+          precision: string;
+          required_when_primary?: boolean;
+          source_type: string;
+        };
+        Update: {
+          domain?: string;
+          precision?: string;
+          required_when_primary?: boolean;
+          source_type?: string;
+        };
+        Relationships: [];
+      };
       game_data_submissions: {
         Row: {
           created_at: string;
@@ -1350,6 +1429,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      game_data_status: {
+        Row: {
+          active_authority_count: number | null;
+          active_sources: string[] | null;
+          active_submission_count: number | null;
+          competition_id: number | null;
+          covered_required_domain_count: number | null;
+          data_status: string | null;
+          expected_primary_source: string | null;
+          game_id: number | null;
+          missing_domains: string[] | null;
+          pending_submission_count: number | null;
+          required_domain_count: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "games_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       game_player_statistics: {
         Row: {
           assists: number | null;
@@ -1590,6 +1693,58 @@ export type Database = {
       };
     };
     Functions: {
+      admin_activate_game_data_authorities: {
+        Args: {
+          p_domains: string[];
+          p_expected_submission_id?: number;
+          p_game_id: number;
+          p_reason?: string;
+          p_submission_id: number;
+        };
+        Returns: {
+          activated_at: string;
+          activated_by: string;
+          change_reason: string | null;
+          domain: string;
+          game_id: number;
+          revision: number;
+          source_type: string;
+          submission_id: number;
+          updated_at: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "game_data_domain_authority";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      admin_activate_game_data_authority: {
+        Args: {
+          p_domain: string;
+          p_expected_submission_id?: number;
+          p_game_id: number;
+          p_reason?: string;
+          p_submission_id: number;
+        };
+        Returns: {
+          activated_at: string;
+          activated_by: string;
+          change_reason: string | null;
+          domain: string;
+          game_id: number;
+          revision: number;
+          source_type: string;
+          submission_id: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "game_data_domain_authority";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_activate_series_category_data_profile: {
         Args: { p_profile_id: number };
         Returns: {
