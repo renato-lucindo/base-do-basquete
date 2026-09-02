@@ -10,5 +10,5 @@
 | `ADM-REF-01D` | `DONE`              | [ADM-REF-01D — Formulário privado de sexo do atleta](ADM-REF-01D.md)       |
 | `ADM-REF-01E` | `DONE`              | [ADM-REF-01E — Elegibilidade em elenco e transferência](ADM-REF-01E.md)    |
 | `ADM-REF-01F` | `DONE`              | [ADM-REF-01F — Elegibilidade na confirmação de importação](ADM-REF-01F.md) |
-| `ADM-REF-01G` | `DOING`             | [ADM-REF-01G — Classificação/backfill administrativo](ADM-REF-01G.md)      |
+| `ADM-REF-01G` | `DONE`              | [ADM-REF-01G — Classificação/backfill administrativo](ADM-REF-01G.md)      |
 | `ADM-REF-01H` | `CONDITIONAL`       | [ADM-REF-01H — Enforcement final de naipe/perfil](ADM-REF-01H.md)          |

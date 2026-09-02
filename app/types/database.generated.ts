@@ -1646,7 +1646,7 @@ export type Database = {
         };
       };
       admin_get_classification_backfill_report: {
-        Args: Record<PropertyKey, never>;
+        Args: never;
         Returns: Json;
       };
       admin_get_player_private_profile: {

@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01F` concluídas; `ADM-REF-01G` está em execução na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01G` em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01G` concluídas na PR draft #35; o próximo passo é avaliar o portão condicional `ADM-REF-01H`.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; nenhuma task está em escrita, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Executar exclusivamente `ADM-REF-01G — Classificação/backfill administrativo`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01G.md`. Não antecipar o enforcement condicional de `01H`.
+Reconciliar branch/PR e avaliar exclusivamente a condição de `ADM-REF-01H — Enforcement final de naipe/perfil`. A base ainda tem 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente; se o cartão exigir filas zeradas, registrar o adiamento objetivo sem implementar enforcement e liberar `ADM-REF-02A` conforme a fila. Não iniciar `02A` antes de concluir esse registro.
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `e60216c`. `gate`, `database`, preview e CodeQL concluíram com sucesso. O Supabase compartilhado contém `roster_eligibility_enforcement` na versão remota `20260902013629`; `admin_replace_roster` exige singleton AAL2, nega `anon` e retorna somente decisões estáveis. As 44 linhas privadas seguem pendentes, sem inferência ou backfill; o banco mantém 48 inscrições de elenco, 48 ativas e 19 auditorias, exatamente como antes dos smokes. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
@@ -94,7 +94,7 @@ Reconciliação inicial de `ADM-REF-01G` em 02/09/2026: branch limpa no head `1e
 
 Allowlist inicial de `ADM-REF-01G`: nova migration aditiva de transação/relatório de classificação; pgTAP focado; tipos TypeScript gerados se o contrato público mudar; relatório versionado em `docs/execution/ADM-REF-01G.md`; manifestos do Pacote 1 e `HANDOFF.md`. O escopo não inclui UI, enforcement, `NOT NULL`, remoção de fallback, alteração de histórico ou preenchimento de naipe/sexo sem entrada explícita.
 
-Implementação local de `ADM-REF-01G`: migration `20260902112735_classification_backfill_reconciliation.sql`, quatro views privadas sem grants e RPC de relatório somente para `authenticated`, com guarda singleton AAL2 e `search_path` vazio. As escritas continuam exclusivamente nas RPCs explícitas existentes; não foi criado atalho de backfill. O relatório versionado contém evidência factual, filas sem valor privado, snapshots por edição, divergências e checksums históricos. DDL integral, 39 pgTAP focados e regressões 55 + 24 + 26 + 32 passaram em rollback; formatação, lint e TypeScript passaram localmente.
+Implementação concluída de `ADM-REF-01G`: migrations `20260902112735_classification_backfill_reconciliation.sql` e `20260902114608_classification_backfill_coverage_fix.sql`, quatro views privadas sem grants e RPC de relatório somente para `authenticated`, com guarda singleton AAL2 e `search_path` vazio. As escritas continuam exclusivamente nas RPCs explícitas existentes; não foi criado atalho de backfill. O relatório v2 contém evidência factual, filas sem valor privado, snapshots por edição, divergências, cobertura exata e checksums históricos. DDL integral, 40 pgTAP focados e regressões 55 + 24 + 26 + 32 passaram; formatação, lint, TypeScript, banco desde zero, preview e CodeQL ficaram verdes.
 
 Gate intermediário de `ADM-REF-01G`: o commit `c474540` passou `gate`, banco desde zero, preview e CodeQL. A migration principal foi então aplicada ao Supabase compartilhado como `20260902114439_classification_backfill_reconciliation`. A reconciliação confirmou as contagens esperadas e nenhuma alteração histórica, mas revelou um erro isolado no relatório: o composto nulo de um `LEFT JOIN` era contado como uma linha de estatística coletiva em edições sem cobertura avançada.
 
@@ -150,6 +150,7 @@ Expansão de allowlist de `ADM-REF-01G` em 02/09/2026: migration aditiva `classi
 | ADM-REF-01D — Formulário privado de sexo do atleta | `DONE` | Fluxos global/inline sem valor padrão, edição AAL2 justificada, impacto, auditoria sem valores, negações e ausência de vazamento validados localmente, no CI, no preview e no Supabase compartilhado |
 | ADM-REF-01E — Elegibilidade em elenco e transferência | `DONE` | Novas associações validadas transacionalmente; histórico preservado; códigos `BD601`/`BD602`, idempotência, 26 pgTAP, rota, CI, preview e Supabase compartilhado aprovados |
 | ADM-REF-01F — Elegibilidade na confirmação de importação | `DONE` | Confirmação FIBA valida criação/vínculo na mesma transação; pendência e incompatibilidade preservam review sem escrita parcial; parser sem inferência; 32 pgTAP, CI, preview e Supabase compartilhado aprovados |
+| ADM-REF-01G — Classificação/backfill administrativo | `DONE` | Relatório v2 aplicado; histórico preservado; 2 edições sem naipe, 2 sem perfil e 44 atletas pendentes identificados; 40 pgTAP, CI, preview, CodeQL e Supabase aprovados |
 
 ## 8. Arquivos e referências importantes
 
