@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01E` concluídas; `ADM-REF-01F` é a única task elegível na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01E` em `DONE` e `ADM-REF-01F` em `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01E` concluídas; `ADM-REF-01F` está em execução na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01F` em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -84,11 +84,15 @@ Executar exclusivamente `ADM-REF-01F — Elegibilidade na confirmação de impor
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `e60216c`. `gate`, `database`, preview e CodeQL concluíram com sucesso. O Supabase compartilhado contém `roster_eligibility_enforcement` na versão remota `20260902013629`; `admin_replace_roster` exige singleton AAL2, nega `anon` e retorna somente decisões estáveis. As 44 linhas privadas seguem pendentes, sem inferência ou backfill; o banco mantém 48 inscrições de elenco, 48 ativas e 19 auditorias, exatamente como antes dos smokes. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
-Allowlist inicial de `ADM-REF-01F` ainda não aberta. Antes de editar, ler o cartão e `M` §§5.5, 7.2 e 11, além de `I` §§11.7, 17 e 18; localizar a transação existente de confirmação FIBA sem antecipar submissões, fallback ou suplemento.
+Reconciliação inicial de 02/09/2026: branch limpa no head `bb8cdc3`; PR #35 aberta/draft com `gate`, `database`, preview e CodeQL verdes; `/health` do preview respondeu `preview/ok`. O Supabase compartilhado mantém migrations até `20260902013629_roster_eligibility_enforcement`, 44/44 perfis privados pendentes, 48/48 elencos ativos e 19 auditorias. O changelog atual não trouxe quebra aplicável a esta transação.
 
-1. Marcar somente `ADM-REF-01F` como `DOING` após a leitura normativa.
-2. Integrar a mesma decisão privada à confirmação existente, retornando pendências por atleta sem sexo e mantendo o import em revisão quando bloqueado.
-3. Executar `G-FLOW` com os dois PDFs fixture, provar ausência de escrita parcial e não iniciar `01G` antes de `01F` estar `DONE`.
+Allowlist inicial de `ADM-REF-01F`: nova migration aditiva e pgTAP focado; rota `app/routes/admin.competitions.$competitionId.boxscores.import.tsx` e teste de domínio da action; componente `app/modules/boxscore/review-editor.tsx`; manifestos do Pacote 1 e `HANDOFF.md`. O escopo integra a decisão privada somente à confirmação FIBA existente, sem criar submissões, fallback ou suplemento e sem alterar o parser.
+
+Expansão de allowlist em 02/09/2026: `supabase/tests/database/fiba_boxscore_import.test.sql` e `supabase/tests/database/wp14_boxscore_enhancements.test.sql`. As fixtures sintéticas anteriores não tinham naipe explícito e a criação automática não transportava a escolha privada transitória; os testes foram classificados explicitamente sem alterar dados reais nem inferir valores.
+
+1. Concluir o gate local da migration `20260902062636_boxscore_import_eligibility_enforcement.sql` e dos contratos da action.
+2. Enviar a unidade à branch da PR #35, aguardar CI/database, preview e CodeQL e só então aplicar a migration aditiva ao Supabase compartilhado.
+3. Executar o fechamento `G-FLOW`, provar import em revisão sem escrita parcial e não iniciar `01G` antes de `01F` estar `DONE`.
 
 ### Primeiros arquivos a abrir
 

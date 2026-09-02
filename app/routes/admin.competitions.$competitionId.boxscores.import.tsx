@@ -27,11 +27,19 @@ function parseId(value: string | FormDataEntryValue | null): number | null {
 type PlayerResolution =
   | { action: "existing_roster"; rosterEntryId: number }
   | { action: "add_existing"; playerId: number }
-  | { action: "create_new" };
+  | { action: "create_new"; eligibilitySex: "male" | "female" };
 
-function parsePlayerResolution(value: FormDataEntryValue | null): PlayerResolution | null {
+export function parsePlayerResolution(
+  value: FormDataEntryValue | null,
+  eligibilitySexValue?: FormDataEntryValue | null,
+): PlayerResolution | null {
   const text = typeof value === "string" ? value : "";
-  if (text === "new") return { action: "create_new" };
+  if (text === "new") {
+    const eligibilitySex = typeof eligibilitySexValue === "string" ? eligibilitySexValue : "";
+    return eligibilitySex === "male" || eligibilitySex === "female"
+      ? { action: "create_new", eligibilitySex }
+      : null;
+  }
   const match = text.match(/^(roster|player):([1-9][0-9]*)$/);
   if (!match) return null;
   const id = Number(match[2]);
@@ -49,7 +57,30 @@ function normalizeTeam(value: string): string {
     .trim();
 }
 
-function mapImportError(code: string | undefined): { message: string; status: number } {
+export function parseEligibilityPlayers(details: string | undefined): string[] {
+  if (!details) return [];
+  try {
+    const parsed = JSON.parse(details) as { players?: unknown };
+    if (!Array.isArray(parsed.players)) return [];
+    return parsed.players
+      .map((item) =>
+        item && typeof item === "object" && "sourcePlayerName" in item
+          ? String(item.sourcePlayerName).trim()
+          : "",
+      )
+      .filter((name) => name.length >= 2 && name.length <= 160)
+      .slice(0, 24);
+  } catch {
+    return [];
+  }
+}
+
+export function mapImportError(
+  code: string | undefined,
+  details?: string,
+): { message: string; status: number } {
+  const eligibilityPlayers = parseEligibilityPlayers(details);
+  const playerSuffix = eligibilityPlayers.length ? `: ${eligibilityPlayers.join("; ")}.` : ".";
   switch (code) {
     case "BD401":
       return { message: "Confirme o segundo fator antes de importar.", status: 403 };
@@ -76,6 +107,20 @@ function mapImportError(code: string | undefined): { message: string; status: nu
       return { message: "A extração excedeu o tempo seguro permitido.", status: 408 };
     case "BD305":
       return { message: "Revise todas as associações de equipe e atleta.", status: 400 };
+    case "BD505":
+      return { message: "Revise o naipe da edição antes de confirmar a importação.", status: 409 };
+    case "BD501":
+      return { message: "Revise o dado privado de elegibilidade do novo atleta.", status: 400 };
+    case "BD601":
+      return {
+        message: `Complete a elegibilidade privada antes de confirmar${playerSuffix}`,
+        status: 400,
+      };
+    case "BD602":
+      return {
+        message: `Atleta não elegível para o naipe desta edição${playerSuffix}`,
+        status: 400,
+      };
     case "BD104":
       return { message: "O atleta selecionado já está em outra equipe desta edição.", status: 409 };
     case "BD105":
@@ -499,7 +544,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       registrationId: parseId(formData.get(`registration-${index}`)),
     }));
     const players = Array.from({ length: playerCount }, (_, index) => {
-      const resolution = parsePlayerResolution(formData.get(`playerResolution-${index}`));
+      const resolution = parsePlayerResolution(
+        formData.get(`playerResolution-${index}`),
+        formData.get(`playerEligibilitySex-${index}`),
+      );
       return {
         sourceTeamName: String(formData.get(`playerTeam-${index}`) ?? ""),
         sourcePlayerName: String(formData.get(`playerName-${index}`) ?? ""),
@@ -517,7 +565,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       p_resolution: { teams, players },
     });
     if (commit.error) {
-      const mapped = mapImportError(commit.error.code);
+      const mapped = mapImportError(commit.error.code, commit.error.details);
       logOperationalEvent({
         correlationId,
         durationMs: Date.now() - startedAt,

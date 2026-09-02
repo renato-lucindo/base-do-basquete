@@ -54,6 +54,8 @@ interface ReviewDraftData {
   resolutions: Record<number, string>;
 }
 
+type NewPlayerEligibilitySex = "" | "female" | "male";
+
 function normalizeTeam(value: string): string {
   return value
     .normalize("NFD")
@@ -125,6 +127,9 @@ export function BoxscoreReviewEditor({
   const [teamRegistrations, setTeamRegistrations] =
     useState<Record<number, number>>(initialRegistrations);
   const [resolutions, setResolutions] = useState<Record<number, string>>(initialResolutions);
+  const [newPlayerEligibility, setNewPlayerEligibility] = useState<
+    Record<number, NewPlayerEligibilitySex>
+  >({});
   const [draft, setDraft] = useState<AdminDraft<ReviewDraftData> | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pendingDraft, setPendingDraft] = useState(false);
@@ -170,8 +175,18 @@ export function BoxscoreReviewEditor({
   );
 
   const change = () => setPendingDraft(true);
-  const pending = players.filter((_, index) => !resolutions[index]).length;
+  const pending = players.filter(
+    (_, index) =>
+      !resolutions[index] || (resolutions[index] === "new" && !newPlayerEligibility[index]),
+  ).length;
   const missingTeams = review.parsed.teams.filter((_, index) => !teamRegistrations[index]).length;
+  const hasTransientPrivateSelection = Object.values(newPlayerEligibility).some(Boolean);
+  const editionGenderLabel =
+    competitionGender === "male"
+      ? "Masculino"
+      : competitionGender === "female"
+        ? "Feminino"
+        : "Pendente de revisão";
 
   const restore = () => {
     if (!draft) return;
@@ -232,7 +247,7 @@ export function BoxscoreReviewEditor({
       ) : null}
       {restoreMessage ? <output className="admin-note">{restoreMessage}</output> : null}
       <Form method="post" action="?mode=confirm" onSubmit={() => setAttempted(true)}>
-        <UnsavedChangesGuard active={pendingDraft} />
+        <UnsavedChangesGuard active={pendingDraft || hasTransientPrivateSelection} />
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="importId" value={review.id} />
         <input type="hidden" name="teamCount" value="2" />
@@ -342,10 +357,18 @@ export function BoxscoreReviewEditor({
                       required
                       aria-invalid={(attempted && !value) || undefined}
                       onChange={(event) => {
+                        const nextResolution = event.currentTarget.value;
                         setResolutions((current) => ({
                           ...current,
-                          [index]: event.currentTarget.value,
+                          [index]: nextResolution,
                         }));
+                        if (nextResolution !== "new") {
+                          setNewPlayerEligibility((current) => {
+                            const next = { ...current };
+                            delete next[index];
+                            return next;
+                          });
+                        }
                         change();
                       }}
                     >
@@ -368,12 +391,50 @@ export function BoxscoreReviewEditor({
                           Adicionar cadastro #{selectedPlayerId} ao elenco
                         </option>
                       ) : null}
-                      <option value="new">Criar automaticamente pelo nome extraído</option>
+                      <option value="new">
+                        Criar automaticamente pelo nome extraído após revisão
+                      </option>
                     </select>
                     <InlineFieldError
                       message={attempted && !value ? "Revise esta associação." : null}
                     />
                   </label>
+                  {value === "new" ? (
+                    <label>
+                      Sexo para elegibilidade
+                      <select
+                        name={`playerEligibilitySex-${index}`}
+                        value={newPlayerEligibility[index] ?? ""}
+                        required
+                        aria-invalid={(attempted && !newPlayerEligibility[index]) || undefined}
+                        onChange={(event) => {
+                          const nextValue = event.currentTarget.value;
+                          if (nextValue !== "female" && nextValue !== "male") return;
+                          setNewPlayerEligibility((current) => ({
+                            ...current,
+                            [index]: nextValue,
+                          }));
+                        }}
+                      >
+                        <option value="" disabled>
+                          Selecione sem inferir
+                        </option>
+                        <option value="female">Feminino</option>
+                        <option value="male">Masculino</option>
+                      </select>
+                      <small>
+                        Naipe da edição: {editionGenderLabel}. Esta escolha privada não é salva no
+                        rascunho.
+                      </small>
+                      <InlineFieldError
+                        message={
+                          attempted && !newPlayerEligibility[index]
+                            ? "Selecione explicitamente para criar o atleta."
+                            : null
+                        }
+                      />
+                    </label>
+                  ) : null}
                   {suggestions.length ? (
                     <p className="match-suggestions">
                       Sugestões:{" "}
@@ -456,11 +517,13 @@ export function BoxscoreReviewEditor({
             { label: "Pendências", value: pending + missingTeams },
           ]}
           status={
-            pendingDraft
-              ? "Salvando rascunho…"
-              : savedAt
-                ? "Rascunho salvo"
-                : "Revisão em andamento"
+            hasTransientPrivateSelection
+              ? "Seleção privada não salva"
+              : pendingDraft
+                ? "Salvando rascunho…"
+                : savedAt
+                  ? "Rascunho salvo"
+                  : "Revisão em andamento"
           }
         >
           {step < 4 ? (

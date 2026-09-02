@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `READY`
+- **Estado:** `DOING`
 - **Objetivo:** impedir que confirmação de importação associe atleta incompatível ou pendente.
 - **Ler:** `M` §§5.5, 7.2 e 11; `I` §§11.7, 17 e 18.
 - **Entregar:** integração da regra na transação existente; retorno de pendências por atleta sem sexo exposto; parser continua sem inferência; import permanece em review na falha.

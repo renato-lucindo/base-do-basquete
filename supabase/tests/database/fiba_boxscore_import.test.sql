@@ -30,9 +30,12 @@ overriding system value values (9401, 'Liga PDF', 'liga-pdf');
 insert into public.categories (id, name, slug)
 overriding system value values (9401, 'Categoria PDF', 'categoria-pdf');
 insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
+  (
+    id, series_id, category_id, year, display_name,
+    gender_division, gender_division_review_required, status, published_at
+  )
 overriding system value values
-  (9401, 9401, 9401, 2026, 'Liga PDF 2026', 'published', now());
+  (9401, 9401, 9401, 2026, 'Liga PDF 2026', 'male', false, 'published', now());
 insert into public.teams (id, name, slug, abbreviation)
 overriding system value values
   (9401, 'Equipe PDF Casa', 'equipe-pdf-casa', 'PDC'),
