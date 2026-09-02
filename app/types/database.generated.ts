@@ -1645,6 +1645,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_get_classification_backfill_report: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
         Returns: {

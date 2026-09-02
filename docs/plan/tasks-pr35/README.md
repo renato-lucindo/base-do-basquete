@@ -14,7 +14,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 
 ## Regra de execução
 
-- Não existe task em escrita; `ADM-REF-01G` é a única task `READY` para o próximo ciclo.
+- Existe somente uma task em escrita: `ADM-REF-01G` (`DOING`).
 - Mude apenas a task elegível seguinte quando o gate da atual estiver concluído.
 - Não abra outro cartão até concluir gate, commit, checks e handoff da task atual.
 - `01H` e `02E` são condicionais, mas ambas devem terminar antes de `09A`.
@@ -46,7 +46,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 |     5 | `ADM-REF-01D` | `DONE`                                                                   | [ADM-REF-01D — Formulário privado de sexo do atleta](tasks/01-perfil-privacidade/ADM-REF-01D.md)              |
 |     6 | `ADM-REF-01E` | `DONE`                                                                   | [ADM-REF-01E — Elegibilidade em elenco e transferência](tasks/01-perfil-privacidade/ADM-REF-01E.md)           |
 |     7 | `ADM-REF-01F` | `DONE`                                                                   | [ADM-REF-01F — Elegibilidade na confirmação de importação](tasks/01-perfil-privacidade/ADM-REF-01F.md)        |
-|     8 | `ADM-REF-01G` | `READY`                                                                  | [ADM-REF-01G — Classificação/backfill administrativo](tasks/01-perfil-privacidade/ADM-REF-01G.md)             |
+|     8 | `ADM-REF-01G` | `DOING`                                                                  | [ADM-REF-01G — Classificação/backfill administrativo](tasks/01-perfil-privacidade/ADM-REF-01G.md)             |
 |     9 | `ADM-REF-01H` | `CONDITIONAL`                                                            | [ADM-REF-01H — Enforcement final de naipe/perfil](tasks/01-perfil-privacidade/ADM-REF-01H.md)                 |
 |    10 | `ADM-REF-02A` | `BLOCKED` por `01G` e pelo registro da execução ou do adiamento de `01H` | [ADM-REF-02A — Tabela de submissões versionadas](tasks/02-submissoes-autoridade/ADM-REF-02A.md)               |
 |    11 | `ADM-REF-02B` | `BLOCKED` por `02A`                                                      | [ADM-REF-02B — Autoridade por domínio e estado derivado](tasks/02-submissoes-autoridade/ADM-REF-02B.md)       |

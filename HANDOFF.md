@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01F` concluídas; `ADM-REF-01G` está pronta para o próximo ciclo na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01G` em `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01F` concluídas; `ADM-REF-01G` está em execução na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01G` em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -89,6 +89,12 @@ Reconciliação inicial de 02/09/2026: branch limpa no head `bb8cdc3`; PR #35 ab
 Allowlist concluída de `ADM-REF-01F`: nova migration aditiva e pgTAP focado; rota `app/routes/admin.competitions.$competitionId.boxscores.import.tsx` e teste de domínio da action; componente `app/modules/boxscore/review-editor.tsx`; manifestos do Pacote 1 e `HANDOFF.md`. O escopo integrou a decisão privada somente à confirmação FIBA existente, sem criar submissões, fallback ou suplemento e sem alterar o parser.
 
 Expansão de allowlist em 02/09/2026: `supabase/tests/database/fiba_boxscore_import.test.sql` e `supabase/tests/database/wp14_boxscore_enhancements.test.sql`. As fixtures sintéticas anteriores não tinham naipe explícito e a criação automática não transportava a escolha privada transitória; os testes foram classificados explicitamente sem alterar dados reais nem inferir valores.
+
+Reconciliação inicial de `ADM-REF-01G` em 02/09/2026: branch limpa no head `1e4806d`; PR #35 aberta/draft com `gate`, `database`, preview e CodeQL verdes; `/health` do preview respondeu `preview/ok`; Supabase compartilhado na migration remota `20260902064839_boxscore_import_eligibility_enforcement`. O baseline possui 4 edições: 2 classificadas e vinculadas explicitamente a perfis, 2 pendentes; 44/44 atletas pendentes, 2 perfis ativos, 9 jogos, 48/48 elencos ativos, 2 imports confirmados e 19 auditorias. O changelog atual não trouxe quebra aplicável; novos contratos de API continuarão com grants explícitos.
+
+Allowlist inicial de `ADM-REF-01G`: nova migration aditiva de transação/relatório de classificação; pgTAP focado; tipos TypeScript gerados se o contrato público mudar; relatório versionado em `docs/execution/ADM-REF-01G.md`; manifestos do Pacote 1 e `HANDOFF.md`. O escopo não inclui UI, enforcement, `NOT NULL`, remoção de fallback, alteração de histórico ou preenchimento de naipe/sexo sem entrada explícita.
+
+Implementação local de `ADM-REF-01G`: migration `20260902112735_classification_backfill_reconciliation.sql`, quatro views privadas sem grants e RPC de relatório somente para `authenticated`, com guarda singleton AAL2 e `search_path` vazio. As escritas continuam exclusivamente nas RPCs explícitas existentes; não foi criado atalho de backfill. O relatório versionado contém evidência factual, filas sem valor privado, snapshots por edição, divergências e checksums históricos. DDL integral, 39 pgTAP focados e regressões 55 + 24 + 26 + 32 passaram em rollback; formatação, lint e TypeScript passaram localmente.
 
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
 2. Ler as seções normativas de `ADM-REF-01G`, registrar baseline e allowlist e criar somente a migration aditiva de classificação/backfill administrativo.
@@ -314,6 +320,7 @@ CLOUDFLARE_ACCOUNT_ID
 - Não reduzir MFA, RLS, autorização backend ou proteção de segredos para acelerar a primeira temporada.
 - Dois objetos PDF históricos vazios permanecem no Storage como evidência do incidente; nenhum import aponta para eles. A remoção futura é destrutiva em produção e exige autorização explícita.
 - O advisor de segurança lista como intencionais as tabelas privadas com RLS sem policy/grants e os RPCs administrativos `SECURITY DEFINER` expostos somente a `authenticated`; cada RPC valida o administrador singleton em `aal2` e fixa `search_path = ''`. A proteção de senhas vazadas continua indisponível no plano atual.
+- `private.boxscore_upload_attempts` permanece sem RLS desde o fluxo legado. A tabela está em schema não exposto e `anon`/`authenticated` não têm privilégios de leitura ou escrita, mas o diagnóstico genérico recomenda RLS como defesa em profundidade. Nenhuma alteração foi feita fora do escopo de `ADM-REF-01G`; reavaliar em um cartão de hardening antes do fechamento global.
 
 ## 14. O que não deve ser refeito ou antecipado
 

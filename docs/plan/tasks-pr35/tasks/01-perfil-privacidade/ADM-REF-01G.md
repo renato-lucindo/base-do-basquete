@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `READY`
+- **Estado:** `DOING`
 - **Objetivo:** persistir escolhas explícitas e produzir relatório de reconciliação sem alterar o histórico.
 - **Ler:** `M` §§11.1, 11.2, 11.5 e 15; `I` §10.
 - **Entregar:** migration nova de classificação; filas por edição/atleta; snapshots por edição quando perfis divergirem; contagens antes/depois; nenhuma escolha automática de sexo ou naipe.
