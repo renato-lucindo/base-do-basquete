@@ -14,7 +14,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 
 ## Regra de execução
 
-- Não existe task em escrita; `ADM-REF-01G` está `DONE` e o próximo passo é avaliar o portão condicional `ADM-REF-01H`.
+- Não existe task em escrita; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02A` é a próxima task `READY`.
 - Mude apenas a task elegível seguinte quando o gate da atual estiver concluído.
 - Não abra outro cartão até concluir gate, commit, checks e handoff da task atual.
 - `01H` e `02E` são condicionais, mas ambas devem terminar antes de `09A`.
@@ -47,8 +47,8 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 |     6 | `ADM-REF-01E` | `DONE`                                                                   | [ADM-REF-01E — Elegibilidade em elenco e transferência](tasks/01-perfil-privacidade/ADM-REF-01E.md)           |
 |     7 | `ADM-REF-01F` | `DONE`                                                                   | [ADM-REF-01F — Elegibilidade na confirmação de importação](tasks/01-perfil-privacidade/ADM-REF-01F.md)        |
 |     8 | `ADM-REF-01G` | `DONE`                                                                   | [ADM-REF-01G — Classificação/backfill administrativo](tasks/01-perfil-privacidade/ADM-REF-01G.md)             |
-|     9 | `ADM-REF-01H` | `CONDITIONAL`                                                            | [ADM-REF-01H — Enforcement final de naipe/perfil](tasks/01-perfil-privacidade/ADM-REF-01H.md)                 |
-|    10 | `ADM-REF-02A` | `BLOCKED` por `01G` e pelo registro da execução ou do adiamento de `01H` | [ADM-REF-02A — Tabela de submissões versionadas](tasks/02-submissoes-autoridade/ADM-REF-02A.md)               |
+|     9 | `ADM-REF-01H` | `CONDITIONAL` — adiada em 02/09/2026 por filas não zeradas e sem autorização | [ADM-REF-01H — Enforcement final de naipe/perfil](tasks/01-perfil-privacidade/ADM-REF-01H.md)              |
+|    10 | `ADM-REF-02A` | `READY`                                                                  | [ADM-REF-02A — Tabela de submissões versionadas](tasks/02-submissoes-autoridade/ADM-REF-02A.md)               |
 |    11 | `ADM-REF-02B` | `BLOCKED` por `02A`                                                      | [ADM-REF-02B — Autoridade por domínio e estado derivado](tasks/02-submissoes-autoridade/ADM-REF-02B.md)       |
 |    12 | `ADM-REF-02C` | `BLOCKED` por `02B`                                                      | [ADM-REF-02C — Backfill de submissões e autoridades](tasks/02-submissoes-autoridade/ADM-REF-02C.md)           |
 |    13 | `ADM-REF-02D` | `BLOCKED` por `02C`                                                      | [ADM-REF-02D — Invólucro estrutural legado e vínculo opcional](tasks/02-submissoes-autoridade/ADM-REF-02D.md) |

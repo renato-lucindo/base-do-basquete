@@ -12,3 +12,7 @@
 - **Não incluir:** apagar atletas com sexo nulo, alterar URLs históricas à força ou remover colunas legadas ainda consumidas.
 - **Gate:** `G-DB` + base representativa.
 - **Concluída quando:** nenhuma linha inválida existe e aplicações antiga/nova obedecem ao plano de rollout acordado.
+
+## Avaliação condicional — 02/09/2026
+
+`DEFERRED`: a entrada obrigatória ainda não existe. O relatório v2 de `ADM-REF-01G` registra 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente, além de `enforcementReady=false`; também não houve autorização específica para aplicar as invariantes finais. Nenhum `NOT NULL`, FK final ou remoção de fallback foi antecipado. Reavaliar antes de `ADM-REF-09A` quando as filas estiverem zeradas no ambiente alvo e houver autorização.

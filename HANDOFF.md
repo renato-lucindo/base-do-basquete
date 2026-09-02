@@ -8,7 +8,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01G` concluídas na PR draft #35; o próximo passo é avaliar o portão condicional `ADM-REF-01H`.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01G` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02A` está `READY`.
 - Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; nenhuma task está em escrita, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Reconciliar branch/PR e avaliar exclusivamente a condição de `ADM-REF-01H — Enforcement final de naipe/perfil`. A base ainda tem 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente; se o cartão exigir filas zeradas, registrar o adiamento objetivo sem implementar enforcement e liberar `ADM-REF-02A` conforme a fila. Não iniciar `02A` antes de concluir esse registro.
+Reconciliar branch/PR e executar exclusivamente `ADM-REF-02A — Tabela de submissões versionadas`, começando pela ordem de leitura e pelo baseline do cartão. `ADM-REF-01H` permanece `CONDITIONAL` e foi adiada porque a base ainda tem 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente, além de não haver autorização para o enforcement final. Reavaliar `01H` antes de `09A`; não antecipar `NOT NULL`, FK final ou remoção de fallback.
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `e60216c`. `gate`, `database`, preview e CodeQL concluíram com sucesso. O Supabase compartilhado contém `roster_eligibility_enforcement` na versão remota `20260902013629`; `admin_replace_roster` exige singleton AAL2, nega `anon` e retorna somente decisões estáveis. As 44 linhas privadas seguem pendentes, sem inferência ou backfill; o banco mantém 48 inscrições de elenco, 48 ativas e 19 auditorias, exatamente como antes dos smokes. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
@@ -411,3 +411,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-01 | Codex | `ADM-REF-01D` concluída: fluxo privado AAL2, 81 Vitest, 24 pgTAP focados, CI/database, preview, CodeQL e Supabase compartilhado reconciliados; automação desta tarefa ativa a cada 5 horas | Executar exclusivamente `ADM-REF-01E` e não antecipar `01F` |
 | 2026-09-01 | Codex | `ADM-REF-01E` concluída: validação transacional de elenco/transferência, histórico preservado, 85 Vitest, 324 pgTAP, CI/database, preview, CodeQL e Supabase compartilhado aprovados | Executar exclusivamente `ADM-REF-01F` e não antecipar `01G` |
 | 2026-09-02 | Codex | `ADM-REF-01F` concluída: importação FIBA valida elegibilidade sem inferência, preserva review e atomicidade, 88 Vitest, 32 pgTAP focados, CI/database, preview, CodeQL e Supabase compartilhado aprovados | Executar exclusivamente `ADM-REF-01G` e não antecipar `01H` |
+| 2026-09-02 | Codex | `ADM-REF-01G` concluída no head `60b00a6`: relatório v2 aplicado, 40 pgTAP e todos os gates verdes; `01H` adiada com 2/2/44 pendências e sem autorização de enforcement | Executar exclusivamente `ADM-REF-02A` |

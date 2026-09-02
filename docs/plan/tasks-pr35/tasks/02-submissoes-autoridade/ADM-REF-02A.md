@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `BLOCKED` por `01G` e pelo registro da execução ou do adiamento de `01H`
+- **Estado:** `READY`
 - **Objetivo:** separar a identidade do jogo das entradas manual/boxscore.
 - **Ler:** `M` §§6.1, 6.2 e 11; `I` §§6, 10 e 11.
 - **Entregar:** `game_data_submissions`, estados, papéis, hash/idempotência, RLS/grants/índices e tipos.
