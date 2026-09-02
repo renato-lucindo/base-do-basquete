@@ -8,15 +8,15 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00`, `ADM-REF-01A`, `ADM-REF-01B` e `ADM-REF-01C` concluídas; `ADM-REF-01D` está em execução na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01D` em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. A implementação atual restringe o sexo do atleta ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01D` concluídas; `ADM-REF-01E` é a única task elegível na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01D` em `DONE` e `ADM-REF-01E` em `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
-- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations de perfis, busca/criação administrativa, compatibilidade de naipe/perfil e índice composto da FK aplicadas em 31/08/2026.
+- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations de perfis, busca/criação administrativa, compatibilidade de naipe/perfil, índice composto da FK e `player_private_admin_flow` aplicadas até 01/09/2026.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
 
@@ -80,29 +80,27 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Executar exclusivamente `ADM-REF-01D — Formulário privado de sexo`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01D.md`. Não antecipar regras de elegibilidade (`01E`/`01F`).
+Executar exclusivamente `ADM-REF-01E — Elegibilidade em elenco e transferência`, conforme `docs/plan/tasks-pr35/tasks/01-perfil-privacidade/ADM-REF-01E.md`. Não antecipar a confirmação de importação de `01F`.
 
-Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta/draft/mergeável no head `149933e`. Os gates remotos da entrega funcional de `01C` passaram, e o fechamento documental foi enviado em seguida. O preview é `https://pr-35-base-do-basquete-preview.renato-lucindo-jr.workers.dev`. O Supabase compartilhado recebeu, na ordem, `player_profile_foundation_compat`, `admin_player_search_and_create`, `data_profile_gender_compatibility` e `data_profile_fk_covering_index`. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
+Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `25887ef`. `gate`, `database`, preview e CodeQL concluíram com sucesso; `/health` do preview respondeu 200. O Supabase compartilhado contém `player_private_admin_flow` na versão remota `20260901201250`; os três RPCs privados têm execução somente para `authenticated`, negam `anon` e as 44 linhas privadas seguem sem classificação, sem inferência ou backfill. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
-Allowlist inicial de `ADM-REF-01D`: nova migration corretiva/aditiva e testes pgTAP; API de criação administrativa; formulário global, criação inline e seus call sites; nova rota privada dedicada de atleta; `app/routes.ts`; contratos privados isolados, tipos gerados, estilos e testes afetados; documentação de estado (`HANDOFF.md`, manifesto e cartão atual). A expansão é necessária porque o cartão exige criação global e inline, edição protegida com impacto e isolamento completo do valor privado.
+Allowlist inicial de `ADM-REF-01E` ainda não aberta. Antes de editar, ler o cartão e `M` §§5.5 e 11, além de `I` §§9, 17 e 18; registrar os caminhos necessários para a validação transacional de elegibilidade em elenco e transferência.
 
-Expansão de allowlist em 01/09/2026: `scripts/smoke-public-context.mjs`. A classificação manual concluída em `01C` tornou canônica a rota com naipe e revelou que o smoke ainda exigia literalmente a URL legada. O ajuste aceita o redirecionamento canônico Masculino/Feminino e continua validando isolamento de contexto, preferência e precedência administrativa.
-
-1. Ler integralmente o cartão `ADM-REF-01D` e somente as seções obrigatórias indicadas por ele.
-2. Implementar coleta privada de sexo sem valor padrão, por RPC `aal2`, com motivo obrigatório, impacto explícito, auditoria e nenhuma exposição pública.
-3. Executar `G-FLOW`, atualizar evidências e não iniciar `01E` antes de `01D` estar `DONE`.
+1. Marcar somente `ADM-REF-01E` como `DOING` após a leitura normativa.
+2. Implementar o contrato autoritativo e transacional de associação/transferência, com códigos estáveis para sexo pendente ou incompatível e sem enviar a regra ao frontend.
+3. Executar `G-DB` e os testes de domínio/rota, atualizar evidências e não iniciar `01F` antes de `01E` estar `DONE`.
 
 ### Primeiros arquivos a abrir
 
 - `AGENTS.md`
 - `HANDOFF.md`
 - `docs/plan/README.md`
-- `docs/plan/tasks-pr35/README.md`, regras globais, fila e arquivo `ADM-REF-01D`
-- `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§5, 11 e 12
+- `docs/plan/tasks-pr35/README.md`, regras globais, fila e arquivo `ADM-REF-01E`
+- `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§5.5 e 11
 
 ### Resultado esperado do próximo passo
 
-`ADM-REF-01D` versionada e validada: administradores registram sexo exclusivamente no fluxo privado, sem sugestão, com motivo, `aal2`, auditoria e nenhuma resposta pública contendo o valor.
+`ADM-REF-01E` versionada e validada: associação e transferência só são gravadas quando o dado privado é conhecido e compatível com o naipe da edição, na mesma transação e sem duplicidade.
 
 ## 7. Pacotes de trabalho
 
@@ -135,6 +133,7 @@ Expansão de allowlist em 01/09/2026: `scripts/smoke-public-context.mjs`. A clas
 | ADM-REF-01A — Compatibilidade de naipe, sexo e perfil | `DONE` | Schema compatível, filas, RPCs AAL2, RLS e pgTAP aprovados |
 | ADM-REF-01B — Contextos e rotas públicas por naipe | `DONE` | Perfil versionado, URLs canônicas, fallback de rollout, 77 Vitest e 268 pgTAP aprovados |
 | ADM-REF-01C — Revisão administrativa de naipe e perfil | `DONE` | Competição 8 classificada explicitamente como masculina e vinculada ao perfil #3 `manual_scoresheet`; sessão AAL2, quatro auditorias, idempotência, privacidade e jogo preservado validados |
+| ADM-REF-01D — Formulário privado de sexo do atleta | `DONE` | Fluxos global/inline sem valor padrão, edição AAL2 justificada, impacto, auditoria sem valores, negações e ausência de vazamento validados localmente, no CI, no preview e no Supabase compartilhado |
 
 ## 8. Arquivos e referências importantes
 
@@ -189,7 +188,7 @@ CLOUDFLARE_ACCOUNT_ID
 - ADM-REF-01C remoto em 28/08/2026: CI `33201272488` aprovou `gate` e `database` com migrations/seed desde zero e pgTAP; preview `33201272349` publicou a PR #35 e aprovou smoke contextual público; CodeQL `33201272434` passou. A rota `/admin/competitions/1/data-profile` respondeu `302 /admin/login` para visitante anônimo. O caminho AAL2 completo continua pendente porque o schema compartilhado ainda está no rollout anterior.
 - ADM-REF-01C em 01/09/2026: sessão real exibiu `aal2`; competição 8 abriu pendente, com 1 jogo preservado, nenhum valor sugerido e nenhum campo privado. HTTP anônimo retornou `302 /admin/login` com cookie `HttpOnly`, `Secure` e `SameSite=Strict`; as views seguras têm 0 colunas privadas e `anon` não executa os RPCs administrativos. QA em 390/768/901 px não encontrou overflow ou erro de console. Auditoria confirmou `mfa_verified` seguido de `admin_access`; `admin_mutation_audit` permaneceu em 11 linhas porque nenhuma classificação foi inferida ou gravada.
 - ADM-REF-01C final em 01/09/2026: o responsável selecionou manualmente `male` e `manual_scoresheet` para a competição 8. O banco confirmou perfil #3 ativo/versão 1, revisão e vínculo concluídos, jogo 6 ainda `scheduled`, quatro eventos auditados e total de auditoria estável em 15 após recarga; nenhuma duplicata ou coluna privada apareceu. `G-FLOW` aprovado e `01D` liberada.
-- ADM-REF-01D local em 01/09/2026: migration aditiva criada pela CLI oficial para cadastro atômico, leitura dedicada e alteração idempotente do dado privado. Cadastro global e inline exigem seleção explícita sem valor padrão; o inline mostra o naipe público ao lado. A edição protegida exige AAL2, motivo e prévia de inscrições/edições afetadas; logs e auditoria omitem valores. O gate local aprovou formatação/lint de 114 arquivos, TypeScript, 21 arquivos/81 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 441 arquivos. O banco local não pôde ser reconstruído porque Docker/Podman não está instalado neste host; a migration e os 24 testes pgTAP focados serão validados pelo job `database` da PR antes de qualquer aplicação no Supabase compartilhado.
+- ADM-REF-01D final em 01/09/2026: migration aditiva criada pela CLI oficial para cadastro atômico, leitura dedicada e alteração idempotente do dado privado. Cadastro global e inline exigem seleção explícita sem valor padrão; o inline mostra o naipe público ao lado. A edição protegida exige AAL2, motivo e prévia de inscrições/edições afetadas; logs e auditoria omitem valores. O gate local aprovou formatação/lint de 114 arquivos, TypeScript, 21 arquivos/81 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 441 arquivos. CI `33553915740` aprovou `gate` e `database` desde zero, incluindo 24 pgTAP focados; preview `33553915719` e CodeQL `33553915725` passaram. O preview aprovou AAL2, negação anônima, QA 390/768/1280, foco do inline, busca genérica sem o campo e smoke público canônico. A migration remota `20260901201250_player_private_admin_flow` foi aplicada; os RPCs negam `anon`, 44/44 perfis continuam pendentes e nenhum dado foi inferido ou preenchido.
 - Gate inicial de 27/08/2026: `npm.cmd run check` chegou ao lint e falhou somente nas duas callbacks `forEach` do arquivo não rastreado `public/__admin-preview.html`; a falha foi classificada como preexistente e o arquivo foi preservado sem alterações.
 - Baseline versionada de 27/08/2026: lint/formatação dos 104 arquivos aplicáveis, 20 arquivos/71 testes Vitest, typecheck estrito, quatro runbooks, builds cliente/SSR e scan de 360 arquivos aprovados; Vitest e scan exigiram execução fora do sandbox por bloqueio `EPERM` de subprocessos.
 - ADM-REF-01 banco em 27/08/2026: migration `20260827160000_data_profile_gender_compatibility.sql`, seed compatível e 47 novos asserts de naipe/perfil/privacidade; CI `33105220358` reconstruiu o Supabase do zero e aprovou 12 arquivos/261 testes pgTAP, além do gate completo da aplicação.
@@ -284,13 +283,13 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto `f9d1e65` da `ADM-REF-01C` com gate local, CI/database, preview e CodeQL aprovados.
+- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto funcional `25887ef` da `ADM-REF-01D` com gate local, CI/database, preview e CodeQL aprovados.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
-- Consolidação atual: PR #35 draft contra `main`, head funcional `ccef3f1`, aberta; nenhum merge ou deploy de produção executado.
-- Execução atual: commits `0c32270`, `6f737ae`, `5de8e99`, `6192cde`, `0d06fe3` e `ccef3f1` enviados à PR #35; CI `33168520809` e preview `33168520776` verdes; descrição/checklist remoto não atualizado porque a política do conector recusou a mutação genérica sem autorização específica para o payload.
+- Consolidação atual: PR #35 draft contra `main`, head funcional `25887ef`, aberta; nenhum merge ou deploy de produção executado.
+- Execução atual: commits `b1da6ad`, `f1c6f1b` e `25887ef` concluíram `ADM-REF-01D`; CI `33553915740`, preview `33553915719` e CodeQL `33553915725` estão verdes.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -306,7 +305,7 @@ CLOUDFLARE_ACCOUNT_ID
 - A escolha e configuração de domínio devem aguardar instrução futura.
 - Não reduzir MFA, RLS, autorização backend ou proteção de segredos para acelerar a primeira temporada.
 - Dois objetos PDF históricos vazios permanecem no Storage como evidência do incidente; nenhum import aponta para eles. A remoção futura é destrutiva em produção e exige autorização explícita.
-- O advisor de segurança lista como intencionais as tabelas privadas com RLS sem policy/grants e os cinco RPCs `SECURITY DEFINER` expostos somente a `authenticated`; cada RPC valida o administrador singleton em `aal2` e fixa `search_path = ''`. A proteção de senhas vazadas continua indisponível no plano atual.
+- O advisor de segurança lista como intencionais as tabelas privadas com RLS sem policy/grants e os RPCs administrativos `SECURITY DEFINER` expostos somente a `authenticated`; cada RPC valida o administrador singleton em `aal2` e fixa `search_path = ''`. A proteção de senhas vazadas continua indisponível no plano atual.
 
 ## 14. O que não deve ser refeito ou antecipado
 
@@ -389,3 +388,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-08-31 | Responsável/Codex | Cadeia de schema da PR #35 aplicada ao Supabase compartilhado com `birth_date` preservada e sempre nula; 27 + 12 + 55 pgTAP remotos passaram e dados canônicos permaneceram reconciliados | Commitar/pushar a compatibilidade, aguardar checks e concluir smoke/QA AAL2 da `ADM-REF-01C`; não iniciar `01D` |
 | 2026-09-01 | Responsável/Codex | Login/MFA real na PR #35 confirmado; rota 01C, negação anônima, privacidade, auditoria e QA responsivo somente leitura aprovados sem qualquer mutação de domínio | Responsável define naipe e fonte principal da competição 8; executar o smoke AAL2 de gravação sem inferência e concluir `G-FLOW` |
 | 2026-09-01 | Responsável/Codex | Responsável concluiu manualmente a competição 8 como masculina com perfil `manual_scoresheet`; perfil #3, quatro auditorias, recarga idempotente, privacidade e jogo preservado reconciliados; `01C` em `DONE` | Executar exclusivamente `ADM-REF-01D` e não antecipar `01E`/`01F` |
+| 2026-09-01 | Codex | `ADM-REF-01D` concluída: fluxo privado AAL2, 81 Vitest, 24 pgTAP focados, CI/database, preview, CodeQL e Supabase compartilhado reconciliados; automação desta tarefa ativa a cada 5 horas | Executar exclusivamente `ADM-REF-01E` e não antecipar `01F` |
