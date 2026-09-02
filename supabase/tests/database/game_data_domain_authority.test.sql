@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(62);
+select plan(64);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -239,6 +239,24 @@ select ok(
       and contype = 'u'
   ),
   'submission identity is unique with its game and source for a contextual FK'
+);
+select ok(
+  exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'game_data_domain_authority_submission_context_idx'
+  ),
+  'the contextual submission foreign key has a covering index'
+);
+select ok(
+  exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'game_data_domain_authority_capability_idx'
+  ),
+  'the capability foreign key has a covering index'
 );
 select ok(
   has_table_privilege('authenticated', 'public.game_data_source_capabilities', 'SELECT')

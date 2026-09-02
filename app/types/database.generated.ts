@@ -217,6 +217,13 @@ export type Database = {
             foreignKeyName: "boxscore_imports_game_competition_fkey";
             columns: ["game_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "boxscore_imports_game_competition_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "games";
             referencedColumns: ["id", "competition_id"];
           },
@@ -509,6 +516,13 @@ export type Database = {
             foreignKeyName: "game_data_domain_authority_game_fkey";
             columns: ["game_id"];
             isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_authority_game_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
             referencedRelation: "games";
             referencedColumns: ["id"];
           },
@@ -605,6 +619,13 @@ export type Database = {
             foreignKeyName: "game_data_submissions_game_id_fkey";
             columns: ["game_id"];
             isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_submissions_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
             referencedRelation: "games";
             referencedColumns: ["id"];
           },
@@ -636,6 +657,13 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "game_statistics_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: true;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
           {
             foreignKeyName: "game_statistics_game_id_fkey";
             columns: ["game_id"];
@@ -737,6 +765,13 @@ export type Database = {
             foreignKeyName: "game_participants_game_competition_fkey";
             columns: ["game_id", "competition_id"];
             isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "game_participants_game_competition_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
             referencedRelation: "games";
             referencedColumns: ["id", "competition_id"];
           },
@@ -819,6 +854,13 @@ export type Database = {
           started_at?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "game_periods_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
           {
             foreignKeyName: "game_periods_game_id_fkey";
             columns: ["game_id"];
@@ -1496,6 +1538,13 @@ export type Database = {
           side: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "game_participants_game_competition_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id", "competition_id"];
+          },
           {
             foreignKeyName: "game_participants_game_competition_fkey";
             columns: ["game_id", "competition_id"];
