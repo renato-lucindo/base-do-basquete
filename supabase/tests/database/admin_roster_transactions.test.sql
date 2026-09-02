@@ -17,6 +17,9 @@ insert into public.competitions
 overriding system value values
   (9201, 9201, 9201, 2026, 'Liga RPC 2026', 'published', now()),
   (9202, 9201, 9201, 2027, 'Liga RPC 2027', 'published', now());
+update public.competitions
+set gender_division = 'male', gender_division_review_required = false
+where id in (9201, 9202);
 insert into public.teams (id, name, slug)
 overriding system value values
   (9201, 'Time RPC Um', 'time-rpc-um'),
@@ -27,6 +30,9 @@ overriding system value values
   (9201, 'Jogador RPC Um', 'jogador-rpc-um'),
   (9202, 'Jogador RPC Dois', 'jogador-rpc-dois'),
   (9203, 'Jogador RPC Tres', 'jogador-rpc-tres');
+update private.player_private
+set sex = 'male', sex_review_required = false
+where player_id in (9201, 9202, 9203);
 
 select set_config(
   'request.jwt.claims',
