@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01D` concluídas; `ADM-REF-01E` é a única task elegível na PR draft #35.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01D` em `DONE` e `ADM-REF-01E` em `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-01D` concluídas; `ADM-REF-01E` está em execução na PR draft #35.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-01E` em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -84,11 +84,13 @@ Executar exclusivamente `ADM-REF-01E — Elegibilidade em elenco e transferênci
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `25887ef`. `gate`, `database`, preview e CodeQL concluíram com sucesso; `/health` do preview respondeu 200. O Supabase compartilhado contém `player_private_admin_flow` na versão remota `20260901201250`; os três RPCs privados têm execução somente para `authenticated`, negam `anon` e as 44 linhas privadas seguem sem classificação, sem inferência ou backfill. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
-Allowlist inicial de `ADM-REF-01E` ainda não aberta. Antes de editar, ler o cartão e `M` §§5.5 e 11, além de `I` §§9, 17 e 18; registrar os caminhos necessários para a validação transacional de elegibilidade em elenco e transferência.
+Allowlist inicial de `ADM-REF-01E`: nova migration aditiva e pgTAP focado; contrato de domínio administrativo e testes; action do hub de edição e teste de rota; tipos gerados; cartão/manifestos do Pacote 1 e `HANDOFF.md`. O escopo substitui somente a RPC autoritativa de elenco para validar novas associações na mesma transação, sem alterar busca, importação, backfill ou remoção histórica.
 
-1. Marcar somente `ADM-REF-01E` como `DOING` após a leitura normativa.
-2. Implementar o contrato autoritativo e transacional de associação/transferência, com códigos estáveis para sexo pendente ou incompatível e sem enviar a regra ao frontend.
-3. Executar `G-DB` e os testes de domínio/rota, atualizar evidências e não iniciar `01F` antes de `01E` estar `DONE`.
+Expansão de allowlist em 01/09/2026: `app/components/admin/roster-editor.tsx`. O atalho de elenco anterior chamava de “elegíveis” atletas filtrados apenas por conflito de equipe; o texto agora os identifica como “sem conflito” e informa que a decisão autoritativa ocorre ao salvar, sem transportar o valor privado ao componente.
+
+1. Enviar a unidade WIP da migration e aguardar o CI reconstruir o banco desde zero e executar o novo pgTAP.
+2. Se `database` ficar verde, aplicar a migration aditiva ao Supabase compartilhado e reconciliar 44 perfis pendentes, contagens de elenco e grants, sem preencher valores.
+3. Validar o fluxo no preview AAL2, executar o fechamento de `G-DB` e não iniciar `01F` antes de `01E` estar `DONE`.
 
 ### Primeiros arquivos a abrir
 
@@ -184,6 +186,7 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
+- ADM-REF-01E local em 01/09/2026: `admin_replace_roster` passou a validar somente atletas que entram/reentram, na mesma transação da associação, com locks do elenco, edição e perfil privado; repetição exata é no-op e associações históricas incompatíveis permanecem preservadas. `BD601` identifica pendência e `BD602` incompatibilidade sem transportar o valor privado. O atalho de elenco deixou de rotular previamente atletas como elegíveis. O gate da aplicação aprovou Biome em 115 arquivos, TypeScript, 22 arquivos/85 Vitest, quatro runbooks, builds cliente/SSR e scan de 444 arquivos. O novo pgTAP tem 26 asserções e aguarda o job `database` desde zero antes de aplicação remota.
 - ADM-REF-01C local em 28/08/2026: nova rota AAL2 de revisão de naipe/perfil com fallback explícito para schema antigo, seleção sem valor padrão, prévia de impacto e mutações somente pelas RPCs auditadas de `01A`. `npm.cmd run check` aprovou formatação e lint de 111 arquivos, TypeScript estrito, 21 arquivos/81 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 435 arquivos. O teste focado de domínio aprovou 7 cenários; `git diff --check` também passou.
 - ADM-REF-01C remoto em 28/08/2026: CI `33201272488` aprovou `gate` e `database` com migrations/seed desde zero e pgTAP; preview `33201272349` publicou a PR #35 e aprovou smoke contextual público; CodeQL `33201272434` passou. A rota `/admin/competitions/1/data-profile` respondeu `302 /admin/login` para visitante anônimo. O caminho AAL2 completo continua pendente porque o schema compartilhado ainda está no rollout anterior.
 - ADM-REF-01C em 01/09/2026: sessão real exibiu `aal2`; competição 8 abriu pendente, com 1 jogo preservado, nenhum valor sugerido e nenhum campo privado. HTTP anônimo retornou `302 /admin/login` com cookie `HttpOnly`, `Secure` e `SameSite=Strict`; as views seguras têm 0 colunas privadas e `anon` não executa os RPCs administrativos. QA em 390/768/901 px não encontrou overflow ou erro de console. Auditoria confirmou `mfa_verified` seguido de `admin_access`; `admin_mutation_audit` permaneceu em 11 linhas porque nenhuma classificação foi inferida ou gravada.

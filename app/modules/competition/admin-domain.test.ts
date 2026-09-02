@@ -25,6 +25,19 @@ describe("admin competition domain", () => {
     expect(mapAdminDomainError("XX000")).toMatchObject({ code: "unknown" });
   });
 
+  it("maps private eligibility decisions without transporting the private value", () => {
+    const pending = mapAdminDomainError("BD601");
+    const incompatible = mapAdminDomainError("BD602");
+
+    expect(pending).toMatchObject({ code: "eligibility-pending", field: "player" });
+    expect(incompatible).toEqual({
+      code: "eligibility-incompatible",
+      field: "player",
+      message: "Atleta não elegível para o naipe desta edição.",
+    });
+    expect(JSON.stringify([pending, incompatible])).not.toMatch(/\b(male|female)\b/);
+  });
+
   it("normalizes authoritative final results", () => {
     expect(normalizeFinalResult("placed", "1", " Campeão ")).toEqual({
       ok: true,

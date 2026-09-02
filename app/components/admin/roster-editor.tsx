@@ -92,11 +92,11 @@ export function RosterEditor({
   }, [competitionId, pendingDraft, registrationId, selected]);
 
   const selectedIds = useMemo(() => new Set(selected.keys()), [selected]);
-  const eligibleSuggestion = useMemo(
+  const availableSuggestion = useMemo(
     () => suggestedRoster.filter((player) => !player.conflict),
     [suggestedRoster],
   );
-  const suggestionConflicts = suggestedRoster.length - eligibleSuggestion.length;
+  const suggestionConflicts = suggestedRoster.length - availableSuggestion.length;
   const duplicateJerseys = useMemo(() => {
     const seen = new Set<string>();
     const duplicates = new Set<string>();
@@ -154,7 +154,7 @@ export function RosterEditor({
   };
 
   const useSuggestion = () => {
-    update(playerMap(eligibleSuggestion));
+    update(playerMap(availableSuggestion));
   };
 
   return (
@@ -174,12 +174,13 @@ export function RosterEditor({
             <small>{suggestionLabel ?? "Último elenco confirmado"}</small>
             {suggestionConflicts ? (
               <small>
-                {suggestionConflicts} atleta(s) já estão em outra equipe e serão ignorados.
+                {suggestionConflicts} atleta(s) já estão em outra equipe e serão ignorados. A
+                elegibilidade será validada ao salvar.
               </small>
             ) : null}
           </span>
           <button className="button button-ghost" type="button" onClick={useSuggestion}>
-            Usar {eligibleSuggestion.length} atletas elegíveis
+            Usar {availableSuggestion.length} atletas sem conflito
           </button>
         </div>
       ) : null}

@@ -4,6 +4,8 @@ export type AdminDomainErrorCode =
   | "transition"
   | "invalid-roster"
   | "player-conflict"
+  | "eligibility-pending"
+  | "eligibility-incompatible"
   | "jersey-conflict"
   | "invalid-result"
   | "result-conflict"
@@ -232,6 +234,19 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
         code: "jersey-conflict",
         field: "jersey",
         message: "Duas pessoas não podem usar a mesma camisa ativa na equipe.",
+      };
+    case "BD601":
+      return {
+        code: "eligibility-pending",
+        field: "player",
+        message:
+          "Complete a elegibilidade do atleta no formulário privado antes de adicioná-lo ao elenco.",
+      };
+    case "BD602":
+      return {
+        code: "eligibility-incompatible",
+        field: "player",
+        message: "Atleta não elegível para o naipe desta edição.",
       };
     case "BD201":
     case "BD202":

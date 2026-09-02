@@ -17,6 +17,31 @@ function parseId(value: string | FormDataEntryValue | null): number | null {
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
 }
 
+export function parseRosterActionEntries(
+  formData: FormData,
+):
+  | { ok: true; entries: Array<{ playerId: number; jerseyNumber: string | null }> }
+  | { ok: false; error: string } {
+  const entries: Array<{ playerId: number; jerseyNumber: string | null }> = [];
+  for (const value of formData.getAll("playerId")) {
+    const playerId = parseId(value);
+    if (!playerId) return { ok: false, error: "Atleta inválido." };
+    const jersey = normalizeJersey(String(formData.get(`jersey-${playerId}`) ?? ""));
+    if (!jersey.ok) return { ok: false, error: jersey.error.message };
+    entries.push({ playerId, jerseyNumber: jersey.value });
+  }
+  return { ok: true, entries };
+}
+
+export function mapRosterActionFailure(code: string | undefined) {
+  const mapped = mapAdminDomainError(code);
+  return {
+    message: mapped.message,
+    outcome: mapped.code === "authorization" ? ("blocked" as const) : ("failure" as const),
+    status: mapped.code === "authorization" ? 403 : 400,
+  };
+}
+
 export function meta() {
   return [{ title: "Hub da edição — Base do Basquete" }];
 }
@@ -280,17 +305,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   } else if (intent === "replace-roster") {
     const registrationId = parseId(formData.get("registrationId"));
     if (!registrationId) return data({ error: "Inscrição inválida." }, { status: 400 });
-    const entries: Array<{ playerId: number; jerseyNumber: string | null }> = [];
-    for (const value of formData.getAll("playerId")) {
-      const playerId = parseId(value);
-      if (!playerId) return data({ error: "Atleta inválido." }, { status: 400 });
-      const jersey = normalizeJersey(String(formData.get(`jersey-${playerId}`) ?? ""));
-      if (!jersey.ok) return data({ error: jersey.error.message }, { status: 400 });
-      entries.push({ playerId, jerseyNumber: jersey.value });
-    }
+    const parsed = parseRosterActionEntries(formData);
+    if (!parsed.ok) return data({ error: parsed.error }, { status: 400 });
     result = await auth.client.rpc("admin_replace_roster", {
       p_registration_id: registrationId,
-      p_entries: entries,
+      p_entries: parsed.entries,
     });
   } else if (intent === "confirm-placement") {
     const registrationId = parseId(formData.get("registrationId"));
@@ -313,19 +332,21 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   if (result.error) {
     const mapped = mapAdminDomainError(result.error.code);
-    const status = mapped.code === "authorization" ? 403 : 400;
+    const rosterFailure =
+      intent === "replace-roster" ? mapRosterActionFailure(result.error.code) : null;
+    const status = rosterFailure?.status ?? (mapped.code === "authorization" ? 403 : 400);
     if (intent === "replace-roster") {
       logOperationalEvent({
         correlationId,
         durationMs: Date.now() - startedAt,
         operation: "roster.replace",
-        outcome: mapped.code === "authorization" ? "blocked" : "failure",
+        outcome: rosterFailure?.outcome ?? "failure",
         status,
         context: { competitionId, errorCode: result.error.code },
       });
     }
     return data(
-      { error: mapped.message },
+      { error: rosterFailure?.message ?? mapped.message },
       {
         status,
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,

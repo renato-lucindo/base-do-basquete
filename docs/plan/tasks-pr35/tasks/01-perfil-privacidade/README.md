@@ -8,7 +8,7 @@
 | `ADM-REF-01B` | `DONE`              | [ADM-REF-01B — Contextos e rotas públicas por naipe](ADM-REF-01B.md)       |
 | `ADM-REF-01C` | `DONE`              | [ADM-REF-01C — Revisão administrativa de naipe e perfil](ADM-REF-01C.md)   |
 | `ADM-REF-01D` | `DONE`              | [ADM-REF-01D — Formulário privado de sexo do atleta](ADM-REF-01D.md)       |
-| `ADM-REF-01E` | `READY`             | [ADM-REF-01E — Elegibilidade em elenco e transferência](ADM-REF-01E.md)    |
+| `ADM-REF-01E` | `DOING`             | [ADM-REF-01E — Elegibilidade em elenco e transferência](ADM-REF-01E.md)    |
 | `ADM-REF-01F` | `BLOCKED` por `01E` | [ADM-REF-01F — Elegibilidade na confirmação de importação](ADM-REF-01F.md) |
 | `ADM-REF-01G` | `BLOCKED` por `01F` | [ADM-REF-01G — Classificação/backfill administrativo](ADM-REF-01G.md)      |
 | `ADM-REF-01H` | `CONDITIONAL`       | [ADM-REF-01H — Enforcement final de naipe/perfil](ADM-REF-01H.md)          |
