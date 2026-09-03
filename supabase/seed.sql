@@ -85,11 +85,6 @@ on conflict (registration_id, player_id) do update
 set jersey_number = excluded.jersey_number,
     status = 'active';
 
--- Migrations run before this deterministic fixture. Encapsulate the completed
--- seed facts only after every sports row exists; the function is private,
--- idempotent and leaves legacy_seed submissions in review without authority.
-select private.backfill_game_data_submissions();
-
 -- Confirmed historical results for public team/player profile fixtures.
 insert into public.final_placements (
   competition_id, registration_id, placement, result_label, result_status,
@@ -484,3 +479,8 @@ where series.slug = 'copa-es-ouro' and competition.year = 2026
 on conflict (registration_id, player_id) do update
 set jersey_number = excluded.jersey_number,
     status = 'active';
+
+-- Migrations run before this deterministic fixture. Encapsulate the completed
+-- seed facts only after every sports row exists; the function is private,
+-- idempotent and leaves legacy_seed submissions in review without authority.
+select private.backfill_game_data_submissions();
