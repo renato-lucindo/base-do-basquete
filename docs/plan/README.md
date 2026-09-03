@@ -102,3 +102,9 @@ Ordem mínima para cada continuação da PR #35:
 6. demais documentos somente quando o cartão apontar dependência ou houver conflito de decisão.
 
 Somente uma task pode permanecer em `DOING`. Migrations já enviadas ou aplicadas são imutáveis e qualquer correção deve usar nova migration.
+
+## Plano acelerado do MVP — 03/09/2026
+
+Por decisão do responsável, a fila operacional ativa da PR #35 passou a ser `acelerado-mvp/README.md`. Os 50 cartões permanecem rastreados em `tasks-pr35/`, mas agora funcionam como requisitos internos de 5 pacotes verticais de MVP e 4 pacotes pós-MVP, sem CI, preview e handoff separados por cartão.
+
+O pacote ativo é `MVP-01 — Jogo estrutural e ingestão principal`. O MVP prioriza o fluxo completo e seguro de criação, equipes/elencos, estrutura, agenda, súmula ou boxscore FIBA, publicação explícita e consulta pública. Funcionalidades adiadas continuam obrigatoriamente mapeadas em `POST-01` a `POST-04`.
