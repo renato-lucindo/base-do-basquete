@@ -1921,6 +1921,10 @@ export type Database = {
         Args: never;
         Returns: Json;
       };
+      admin_get_game_data_backfill_report: {
+        Args: never;
+        Returns: Json;
+      };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
         Returns: {

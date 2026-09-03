@@ -14,7 +14,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 
 ## Regra de execução
 
-- Não existe task em escrita. `ADM-REF-02C` é a única próxima task elegível (`READY`); `ADM-REF-01H` permanece adiada por condição ausente.
+- `ADM-REF-02C` é a única task em escrita (`DOING`); `ADM-REF-01H` permanece adiada por condição ausente.
 - Mude apenas a task elegível seguinte quando o gate da atual estiver concluído.
 - Não abra outro cartão até concluir gate, commit, checks e handoff da task atual.
 - `01H` e `02E` são condicionais, mas ambas devem terminar antes de `09A`.
@@ -50,7 +50,7 @@ Este diretório é a entrada operacional preferida. Cada task possui arquivo pr�
 |     9 | `ADM-REF-01H` | `CONDITIONAL` — adiada em 02/09/2026 por filas não zeradas e sem autorização | [ADM-REF-01H — Enforcement final de naipe/perfil](tasks/01-perfil-privacidade/ADM-REF-01H.md)              |
 |    10 | `ADM-REF-02A` | `DONE`                                                                   | [ADM-REF-02A — Tabela de submissões versionadas](tasks/02-submissoes-autoridade/ADM-REF-02A.md)               |
 |    11 | `ADM-REF-02B` | `DONE`                                                                   | [ADM-REF-02B — Autoridade por domínio e estado derivado](tasks/02-submissoes-autoridade/ADM-REF-02B.md)       |
-|    12 | `ADM-REF-02C` | `READY`                                                                  | [ADM-REF-02C — Backfill de submissões e autoridades](tasks/02-submissoes-autoridade/ADM-REF-02C.md)           |
+|    12 | `ADM-REF-02C` | `DOING`                                                                  | [ADM-REF-02C — Backfill de submissões e autoridades](tasks/02-submissoes-autoridade/ADM-REF-02C.md)           |
 |    13 | `ADM-REF-02D` | `BLOCKED` por `02C`                                                      | [ADM-REF-02D — Invólucro estrutural legado e vínculo opcional](tasks/02-submissoes-autoridade/ADM-REF-02D.md) |
 |    14 | `ADM-REF-02E` | `CONDITIONAL`                                                            | [ADM-REF-02E — Enforcement de novos jogos em confrontos](tasks/02-submissoes-autoridade/ADM-REF-02E.md)       |
 |    15 | `ADM-REF-03A` | `BLOCKED` por `02D`                                                      | [ADM-REF-03A — Comparador e contratos puros de ingestão](tasks/03-ingestao-conciliacao/ADM-REF-03A.md)        |

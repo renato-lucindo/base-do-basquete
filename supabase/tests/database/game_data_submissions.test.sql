@@ -401,7 +401,7 @@ select set_config(
 );
 set local role authenticated;
 select is(
-  (select count(*)::integer from public.game_data_submissions),
+  (select count(*)::integer from public.game_data_submissions where game_id = 9831),
   2,
   'the singleton administrator at aal2 can read submission metadata'
 );

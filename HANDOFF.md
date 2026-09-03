@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02B` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02C` é a próxima task elegível.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; não existe task em escrita e `ADM-REF-02C` está `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02B` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02C` está em execução exclusiva.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-02C` é a única task em escrita (`DOING`), sem merge nem deploy da aplicação em produção. Baseline compartilhado: 9 jogos (5 seed, 2 manuais e 2 boxscores), 0 submissões, 0 autoridades, 2 imports confirmados e 4 objetos privados. Checksums esportivos: períodos `847fefb7c39119447f3ae10eb0419b81`, pontos `957293c09608e9af9fa5cddaddf69c35`, relacionados/DNP `9391932eaa5ffe47e5b4bd6e4d3629ba`, faltas `132d68ea72222f1bd29085a9f4537205`, desqualificações `92e018e0110ffc5cbb510f575323694c` e imports `85419d16fa779a4db25981803e118e58`. A allowlist limita a escrita a submissões, autoridades, relatório privado/RPC administrativo, seed, testes, tipos e documentação; fatos esportivos e colunas legadas permanecem intocados.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
