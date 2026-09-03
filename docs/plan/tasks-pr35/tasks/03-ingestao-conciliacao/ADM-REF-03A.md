@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `BLOCKED` por `02B` e `02D`
+- **Estado:** `BLOCKED` por `02D`
 - **Objetivo:** comparar submissões e mapear capacidades sem banco/UI acoplados.
 - **Ler:** `M` §§6.3 e 8.1; `I` §§8 e 11.2.
 - **Entregar:** funções puras para participantes, placar, períodos, pontos, cestas, camisas como aviso e erros estáveis em português.

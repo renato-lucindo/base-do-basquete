@@ -8,15 +8,15 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02A` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02B` está em execução.
-- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; `ADM-REF-02B` é a única task em `DOING`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
+- Fase: plano mestre da refatoração administrativa em execução; `ADM-REF-00` a `ADM-REF-02B` concluídas na PR draft #35; `ADM-REF-01H` foi adiada por condição ausente e `ADM-REF-02C` é a próxima task elegível.
+- Status geral: `ADMIN_REFACTOR_IN_PROGRESS`; não existe task em escrita e `ADM-REF-02C` está `READY`, sem merge nem deploy da aplicação em produção. A cadeia de schema autorizada foi aplicada ao Supabase compartilhado, preservando `public.players.birth_date` como coluna legada sempre nula. O sexo do atleta permanece restrito ao fluxo administrativo privado, sem inferência nem exposição em contratos gerais.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
 - Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
-- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations aplicadas até `20260902163902_game_data_submissions` em 02/09/2026.
+- Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations aplicadas até `20260903021740_game_data_domain_authority_fk_indexes` em 03/09/2026.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
 
@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Reconciliar branch/PR e executar exclusivamente `ADM-REF-02B — Autoridade por domínio e estado derivado`, começando pela ordem de leitura e pelo baseline do cartão. `ADM-REF-01H` permanece `CONDITIONAL` e foi adiada porque a base ainda tem 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente, além de não haver autorização para o enforcement final. Reavaliar `01H` antes de `09A`; não antecipar `NOT NULL`, FK final ou remoção de fallback.
+Reconciliar branch/PR e executar exclusivamente `ADM-REF-02C — Backfill de submissões e autoridades`, começando pela ordem de leitura e pelos checksums do cartão. `ADM-REF-01H` permanece `CONDITIONAL` e foi adiada porque a base ainda tem 2 edições sem naipe, 2 sem perfil e 44 atletas com revisão privada pendente, além de não haver autorização para o enforcement final. Reavaliar `01H` antes de `09A`; não antecipar `NOT NULL`, FK final ou remoção de fallback.
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `e60216c`. `gate`, `database`, preview e CodeQL concluíram com sucesso. O Supabase compartilhado contém `roster_eligibility_enforcement` na versão remota `20260902013629`; `admin_replace_roster` exige singleton AAL2, nega `anon` e retorna somente decisões estáveis. As 44 linhas privadas seguem pendentes, sem inferência ou backfill; o banco mantém 48 inscrições de elenco, 48 ativas e 19 auditorias, exatamente como antes dos smokes. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
@@ -110,23 +110,23 @@ Reconciliação inicial de `ADM-REF-02B` em 02/09/2026: branch limpa no head `4a
 
 Allowlist inicial de `ADM-REF-02B`: uma migration aditiva de autoridade/capacidades/RPCs/view; pgTAP focado inclusive concorrência; tipos TypeScript gerados; `docs/execution/ADM-REF-02B.md`; manifestos do Pacote 2 e `HANDOFF.md`. O escopo não inclui comparação visual, UI, adaptação de súmula/boxscore, backfill, progressão, publicação ou alteração de dados esportivos compartilhados.
 
-Implementação funcional de `ADM-REF-02B`: matriz fechada com 14 capacidades, autoridade única por jogo/domínio, FKs contextuais, proteção de submissão referenciada, RPCs AAL2 com advisory lock e compare-and-swap e visão administrativa derivada. O primeiro ciclo corrigiu o plano pgTAP de 60 para 62. A CI desde zero revelou ainda que `now()` permanece estável durante a transação e impedia uma troca válida no mesmo ciclo; a ativação passou a usar relógio de parede monotônico em relação à revisão anterior, e o teste do gatilho de proteção passou a executar como proprietário para alcançar a defesa interna além da negação de grants. O head `66c633e` passou gate, banco desde zero com 501 testes, preview e CodeQL; a migration principal foi aplicada como `20260902201619_game_data_domain_authority`. A reconciliação preservou todos os dados e deixou zero submissões/autoridades. Os advisors pediram índices para os dois FKs compostos; a migration aditiva `game_data_domain_authority_fk_indexes` e dois testes elevaram o pgTAP focado para 64 cenários e aguardam novo gate antes da aplicação.
+Implementação concluída de `ADM-REF-02B`: matriz fechada com 14 capacidades, autoridade única por jogo/domínio, FKs contextuais, proteção de submissão referenciada, RPCs AAL2 com advisory lock e compare-and-swap e visão administrativa derivada. O primeiro ciclo corrigiu o plano pgTAP de 60 para 62. A CI desde zero revelou ainda que `now()` permanece estável durante a transação e impedia uma troca válida no mesmo ciclo; a ativação passou a usar relógio de parede monotônico em relação à revisão anterior, e o teste do gatilho de proteção passou a executar como proprietário para alcançar a defesa interna além da negação de grants. O head `66c633e` passou gate, banco desde zero com 501 testes, preview e CodeQL; a migration principal foi aplicada como `20260902201619_game_data_domain_authority`. Os advisors pediram índices para os dois FKs compostos, corrigidos sem reescrever a migration aplicada. O head `7d085e4` passou gate, banco desde zero com 503 testes, preview e CodeQL; a migration aditiva foi aplicada como `20260903021740_game_data_domain_authority_fk_indexes`, o pgTAP persistido passou 64/64 e o advisor deixou de apontar FKs sem cobertura. A reconciliação preservou 9 jogos, 18 participantes, 48 placares por período, 50 vínculos de jogo, 74 estatísticas por atleta/período, 81 faltas, 2 imports e 19 auditorias; ficaram zero submissões/autoridades e 14 capacidades. A PR #35 segue aberta/draft e o preview responde `preview/ok`.
 
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
-2. Ler integralmente o cartão `ADM-REF-02B`, incluindo `M` §§6.3, 8 e 10 e `I` §§8, 9 e 11.2; registrar baseline e allowlist antes de editar.
-3. Implementar somente autoridade por domínio, matriz de capacidades, RPCs de ativação e estado derivado; não antecipar comparação visual, adaptação dos fluxos ou progressão.
+2. Ler integralmente o cartão `ADM-REF-02C`, incluindo `M` §§11.3–11.5 e `I` §10; registrar baseline, checksums e allowlist antes de editar.
+3. Implementar somente o backfill de submissões/autoridades e o relatório de reconciliação; não alterar fatos esportivos, inferir fases ou antecipar a estrutura de confrontos.
 
 ### Primeiros arquivos a abrir
 
 - `AGENTS.md`
 - `HANDOFF.md`
 - `docs/plan/README.md`
-- `docs/plan/tasks-pr35/README.md`, regras globais, fila e arquivo `ADM-REF-02B`
-- `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§6.3, 8 e 10
+- `docs/plan/tasks-pr35/README.md`, regras globais, fila e arquivo `ADM-REF-02C`
+- `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`, §§11.3–11.5
 
 ### Resultado esperado do próximo passo
 
-`ADM-REF-02B` versionada e validada: uma única autoridade compatível por jogo/domínio, concorrência com um vencedor e estado derivado sem divergência das submissões.
+`ADM-REF-02C` versionada e validada: jogos atuais encapsulados em submissões/autoridades explicáveis, com IDs, resultados, pontos, faltas e checksums históricos preservados.
 
 ## 7. Pacotes de trabalho
 
@@ -314,13 +314,13 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto funcional `9f10393` da `ADM-REF-01F` com gate local, CI/database, preview e CodeQL aprovados.
+- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto funcional `7d085e4` da `ADM-REF-02B` com gate local, CI/database, preview e CodeQL aprovados.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
-- Consolidação atual: PR #35 draft contra `main`, head funcional `9f10393`, aberta; nenhum merge ou deploy de produção executado.
-- Execução atual: commit `9f10393` concluiu a unidade funcional de `ADM-REF-01F`; CI `33600273383`, preview `33600273368` e CodeQL `33600273484` estão verdes.
+- Consolidação atual: PR #35 draft contra `main`, head funcional `7d085e4`, aberta; nenhum merge ou deploy de produção executado.
+- Execução atual: commit `7d085e4` concluiu a unidade funcional de `ADM-REF-02B`; CI `33679083941`, preview `33679084032` e CodeQL `33679083904` estão verdes.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -425,3 +425,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-02 | Codex | `ADM-REF-01F` concluída: importação FIBA valida elegibilidade sem inferência, preserva review e atomicidade, 88 Vitest, 32 pgTAP focados, CI/database, preview, CodeQL e Supabase compartilhado aprovados | Executar exclusivamente `ADM-REF-01G` e não antecipar `01H` |
 | 2026-09-02 | Codex | `ADM-REF-01G` concluída no head `60b00a6`: relatório v2 aplicado, 40 pgTAP e todos os gates verdes; `01H` adiada com 2/2/44 pendências e sem autorização de enforcement | Executar exclusivamente `ADM-REF-02A` |
 | 2026-09-02 | Codex | `ADM-REF-02A` concluída: migration `20260902163902_game_data_submissions`, 40 pgTAP, tipos, CI/database, preview, CodeQL, advisors e histórico reconciliados; zero backfill | Executar exclusivamente `ADM-REF-02B` |
+| 2026-09-03 | Codex | `ADM-REF-02B` concluída: migrations de autoridade/índices, 64 pgTAP, 503 testes desde zero, tipos, preview, CodeQL, advisors e histórico reconciliados; zero submissões/autoridades | Executar exclusivamente `ADM-REF-02C` |

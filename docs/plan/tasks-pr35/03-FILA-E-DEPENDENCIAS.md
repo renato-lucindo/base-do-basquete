@@ -1,11 +1,10 @@
 # Fila e dependências
 
 ```text
-Concluído: 00 → 01A → 01B → 01C → 01D → 01E → 01F
+Concluído: 00 → 01A → 01B → 01C → 01D → 01E → 01F → 01G → 02A → 02B
 
 Fila principal:
-01G
-02A → 02B → 02C → 02D
+02C → 02D
 03A → 03B → 03C → 03D → 03E
 04A → 04B → 04C → 04D → 04E
 05A → 05B

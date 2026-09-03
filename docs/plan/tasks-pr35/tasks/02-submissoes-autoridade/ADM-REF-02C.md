@@ -4,7 +4,7 @@
 
 > Antes de editar: leia [Como usar](../../00-COMO-USAR.md), [Regras globais](../../01-REGRAS-GLOBAIS.md), [Protocolo e gates](../../02-PROTOCOLO-E-GATES.md) e confirme este cartão na [fila](../../03-FILA-E-DEPENDENCIAS.md).
 
-- **Estado:** `BLOCKED` por `02B`
+- **Estado:** `READY`
 - **Objetivo:** encapsular jogos atuais sem mudar fatos esportivos.
 - **Ler:** `M` §§11.3–11.5; `I` §10.
 - **Entregar:** migration nova de backfill para manual/boxscore/seed; relatório de hashes, placares, pontos, faltas e cobertura; `legacy_seed` somente histórico.
