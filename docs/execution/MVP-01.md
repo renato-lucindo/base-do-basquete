@@ -24,3 +24,18 @@
 - `games.matchup_id` permanece anulável para compatibilidade e auditoria, mas os fluxos administrativos novos serão bloqueados fora de um confronto válido.
 - Confirmações manual e FIBA passam a operar sobre um jogo existente e ativam apenas domínios compatíveis com sua fonte.
 - Fallback, suplemento, resolução visual de conflitos, editor estrutural e progressão permanecem nos pacotes posteriores previstos no plano.
+
+## Implementação desta unidade
+
+- Súmula manual e confirmação FIBA exigem `gameId`, bloqueiam jogo sem `matchup` e gravam somente no jogo estrutural selecionado.
+- O banco mantém a confirmação atômica e idempotente, rejeita divergência de participantes/dados e ativa apenas as autoridades compatíveis da fonte.
+- A importação FIBA preserva a validação assistida de atletas e as estatísticas coletivas; seu adaptador de compatibilidade não deixa jogo temporário persistente.
+- Novas escritas de jogo sem confronto são bloqueadas pelo banco. Somente fixtures locais versionadas usam a chave interna explícita durante o seed/teste.
+- As telas administrativas exibem apenas jogos estruturais confirmáveis e travam equipes, horário e local segundo o jogo escolhido.
+
+## Evidência local
+
+- `npm.cmd run check`: aprovado em 2026-09-09.
+- Vitest: 24 arquivos e 92 testes aprovados, incluindo as duas fixtures PDF FIBA/Genius Sports.
+- TypeScript, Biome, runbooks, build Worker e varredura de segredos: aprovados.
+- pgTAP atualizado para jogo existente, rollback, elegibilidade, idempotência, estatísticas coletivas e bloqueio de jogo paralelo; execução PostgreSQL limpa fica a cargo do job `database`, pois este host não possui Docker/Podman.

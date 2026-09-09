@@ -950,6 +950,8 @@ export type Database = {
           id: number;
           manual_idempotency_key: string | null;
           manual_payload_hash: string | null;
+          matchup_game_number: number | null;
+          matchup_id: number | null;
           scheduled_at: string | null;
           source: string;
           started_at: string | null;
@@ -966,6 +968,8 @@ export type Database = {
           id?: never;
           manual_idempotency_key?: string | null;
           manual_payload_hash?: string | null;
+          matchup_game_number?: number | null;
+          matchup_id?: number | null;
           scheduled_at?: string | null;
           source?: string;
           started_at?: string | null;
@@ -982,6 +986,8 @@ export type Database = {
           id?: never;
           manual_idempotency_key?: string | null;
           manual_payload_hash?: string | null;
+          matchup_game_number?: number | null;
+          matchup_id?: number | null;
           scheduled_at?: string | null;
           source?: string;
           started_at?: string | null;
@@ -996,6 +1002,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "competitions";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "games_matchup_competition_fkey";
+            columns: ["matchup_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "competition_id"];
           },
         ];
       };

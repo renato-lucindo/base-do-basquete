@@ -137,6 +137,19 @@ export function mapImportError(
       return { message: "As estatísticas coletivas do PDF são inválidas.", status: 422 };
     case "BD306":
       return { message: "Já existe um jogo com esse número nesta edição.", status: 409 };
+    case "BD710":
+      return { message: "O jogo precisa estar vinculado a um confronto válido.", status: 409 };
+    case "BD711":
+      return { message: "O jogo selecionado não está disponível para confirmação.", status: 409 };
+    case "BD712":
+      return {
+        message: "As equipes do PDF não correspondem ao confronto selecionado.",
+        status: 409,
+      };
+    case "BD713":
+      return { message: "O PDF diverge do jogo selecionado e permaneceu em revisão.", status: 409 };
+    case "BD714":
+      return { message: "Este jogo já possui uma confirmação principal.", status: 409 };
     default:
       return { message: "Não foi possível processar o boxscore FIBA/Genius Sports.", status: 400 };
   }
@@ -175,6 +188,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     rosterResult,
     playersResult,
     importsResult,
+    gamesResult,
   ] = await Promise.all([
     auth.client
       .from("competitions")
@@ -201,6 +215,13 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .eq("competition_id", competitionId)
       .order("created_at", { ascending: false })
       .limit(10),
+    auth.client
+      .from("games")
+      .select("id,game_number,scheduled_at,venue,status,matchup_id")
+      .eq("competition_id", competitionId)
+      .in("status", ["draft", "scheduled", "live"])
+      .not("matchup_id", "is", null)
+      .order("scheduled_at", { ascending: true, nullsFirst: false }),
   ]);
   if (
     competitionResult.error ||
@@ -208,10 +229,11 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     teamsResult.error ||
     rosterResult.error ||
     playersResult.error ||
-    importsResult.error
+    importsResult.error ||
+    gamesResult.error
   )
     throw new Error("Boxscore import context query failed");
-  if (competitionResult.data.status !== "published") {
+  if (competitionResult.data.status === "archived") {
     throw new Response("Edição indisponível", { status: 409 });
   }
 
@@ -231,6 +253,43 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         jerseyNumber: entry.jersey_number,
       })),
   }));
+  const gameIds = gamesResult.data.map((game) => game.id);
+  const participantsResult = gameIds.length
+    ? await auth.client
+        .from("game_participants")
+        .select("game_id,registration_id,side")
+        .in("game_id", gameIds)
+    : { data: [], error: null };
+  if (participantsResult.error) throw new Error("Boxscore game participants query failed");
+  const registrationById = new Map(
+    registrations.map((registration) => [registration.id, registration]),
+  );
+  const games = gamesResult.data
+    .map((game) => {
+      const participants = participantsResult.data.filter(
+        (participant) => participant.game_id === game.id,
+      );
+      const homeRegistrationId = participants.find(
+        (participant) => participant.side === "home",
+      )?.registration_id;
+      const awayRegistrationId = participants.find(
+        (participant) => participant.side === "away",
+      )?.registration_id;
+      const home = homeRegistrationId ? registrationById.get(homeRegistrationId) : null;
+      const away = awayRegistrationId ? registrationById.get(awayRegistrationId) : null;
+      if (!home || !away) return null;
+      return {
+        id: game.id,
+        gameNumber: game.game_number,
+        scheduledAt: game.scheduled_at,
+        venue: game.venue,
+        homeRegistrationId: home.id,
+        awayRegistrationId: away.id,
+        homeTeamName: home.teamName,
+        awayTeamName: away.teamName,
+      };
+    })
+    .filter((game): game is NonNullable<typeof game> => game !== null);
 
   let review: null | {
     id: number;
@@ -278,6 +337,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       csrfToken: auth.payload.csrfToken,
       imports: importsResult.data,
       registrations,
+      games,
       review,
       refreshedGameId: parseId(url.searchParams.get("refreshed")),
     },
@@ -527,7 +587,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   if (mode === "confirm") {
     const importId = parseId(formData.get("importId"));
+    const gameId = parseId(formData.get("gameId"));
     if (!importId) return data({ error: "Importação inválida." }, { status: 400 });
+    if (!gameId) return data({ error: "Selecione um jogo estrutural válido." }, { status: 400 });
     const teamCount = Number(formData.get("teamCount"));
     const playerCount = Number(formData.get("playerCount"));
     if (formData.get("confirmImport") !== "yes") {
@@ -562,7 +624,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     }
     const commit = await auth.client.rpc("admin_commit_boxscore_import", {
       p_import_id: importId,
-      p_resolution: { teams, players },
+      p_resolution: { gameId, teams, players },
     });
     if (commit.error) {
       const mapped = mapImportError(commit.error.code, commit.error.details);
@@ -669,6 +731,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
             competitionGender={loaderData.competition.gender_division}
             csrfToken={loaderData.csrfToken}
             review={review}
+            games={loaderData.games}
             registrations={loaderData.registrations}
           />
         ) : null}

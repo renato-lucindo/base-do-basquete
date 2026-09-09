@@ -2,6 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 select plan(5);
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into public.competition_series (id, name, slug)
 overriding system value values (9301, 'Liga Camisas', 'liga-camisas');

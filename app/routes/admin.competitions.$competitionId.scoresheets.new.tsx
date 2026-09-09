@@ -30,6 +30,21 @@ function badRequest(message: string) {
   return data({ error: message }, { status: 400 });
 }
 
+function saoPauloLocalInput(instant: string | null): string {
+  if (!instant) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(instant));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
+}
+
 function mapScoresheetError(code: string | undefined): string {
   switch (code) {
     case "BD401":
@@ -50,6 +65,16 @@ function mapScoresheetError(code: string | undefined): string {
       return "O jogo está empatado. Adicione uma prorrogação antes de encerrar.";
     case "BD209":
       return "A chave desta submissão já foi usada com outro conteúdo.";
+    case "BD710":
+      return "O jogo precisa estar vinculado a um confronto válido.";
+    case "BD711":
+      return "O jogo selecionado não está disponível para confirmação.";
+    case "BD712":
+      return "As equipes não correspondem ao confronto do jogo selecionado.";
+    case "BD713":
+      return "Os dados divergem do jogo selecionado e permaneceram sem confirmação.";
+    case "BD714":
+      return "Este jogo já possui uma confirmação principal.";
     default:
       return "Não foi possível salvar a súmula.";
   }
@@ -72,32 +97,46 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     .limit(1);
   if (competitionResult.error) throw new Error("Manual scoresheet context query failed");
   const competition = competitionResult.data[0];
-  if (!competition || competition.status !== "published") {
+  if (!competition || competition.status === "archived") {
     throw new Response("Edição indisponível", { status: 404 });
   }
 
-  const [registrationsResult, teamsResult, rosterResult, prefillResult] = await Promise.all([
-    auth.client
-      .from("team_registrations")
-      .select("id,team_id")
-      .eq("competition_id", competitionId)
-      .eq("status", "confirmed")
-      .order("id"),
-    auth.client.from("teams").select("id,name").eq("is_active", true).order("name"),
-    auth.client
-      .from("roster_entries")
-      .select("id,registration_id,player_id,jersey_number")
-      .eq("competition_id", competitionId)
-      .eq("status", "active")
-      .order("id"),
-    auth.client
-      .from("manual_scoresheet_prefill")
-      .select("registration_id,slot_number,roster_entry_id,jersey_number")
-      .eq("competition_id", competitionId)
-      .order("slot_number"),
-  ]);
+  const [registrationsResult, teamsResult, rosterResult, prefillResult, gamesResult] =
+    await Promise.all([
+      auth.client
+        .from("team_registrations")
+        .select("id,team_id")
+        .eq("competition_id", competitionId)
+        .eq("status", "confirmed")
+        .order("id"),
+      auth.client.from("teams").select("id,name").eq("is_active", true).order("name"),
+      auth.client
+        .from("roster_entries")
+        .select("id,registration_id,player_id,jersey_number")
+        .eq("competition_id", competitionId)
+        .eq("status", "active")
+        .order("id"),
+      auth.client
+        .from("manual_scoresheet_prefill")
+        .select("registration_id,slot_number,roster_entry_id,jersey_number")
+        .eq("competition_id", competitionId)
+        .order("slot_number"),
+      auth.client
+        .from("games")
+        .select("id,game_number,scheduled_at,venue,status,matchup_id")
+        .eq("competition_id", competitionId)
+        .in("status", ["draft", "scheduled", "live"])
+        .not("matchup_id", "is", null)
+        .order("scheduled_at", { ascending: true, nullsFirst: false }),
+    ]);
 
-  if (registrationsResult.error || teamsResult.error || rosterResult.error || prefillResult.error) {
+  if (
+    registrationsResult.error ||
+    teamsResult.error ||
+    rosterResult.error ||
+    prefillResult.error ||
+    gamesResult.error
+  ) {
     throw new Error("Manual scoresheet context query failed");
   }
 
@@ -145,8 +184,47 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     .filter((registration) => registration.roster.length > 0)
     .sort((left, right) => left.teamName.localeCompare(right.teamName, "pt-BR"));
 
-  if (registrations.length < 2) {
-    throw new Response("Confirme duas equipes com elenco antes de criar o jogo.", { status: 409 });
+  const gameIds = gamesResult.data.map((game) => game.id);
+  const participantsResult = gameIds.length
+    ? await auth.client
+        .from("game_participants")
+        .select("game_id,registration_id,side")
+        .in("game_id", gameIds)
+    : { data: [], error: null };
+  if (participantsResult.error) throw new Error("Manual scoresheet game participants query failed");
+  const availableRegistrationIds = new Set(registrations.map((registration) => registration.id));
+  const games = gamesResult.data
+    .map((game) => {
+      const participants = participantsResult.data.filter(
+        (participant) => participant.game_id === game.id,
+      );
+      const homeRegistrationId = participants.find(
+        (participant) => participant.side === "home",
+      )?.registration_id;
+      const awayRegistrationId = participants.find(
+        (participant) => participant.side === "away",
+      )?.registration_id;
+      if (
+        !homeRegistrationId ||
+        !awayRegistrationId ||
+        !availableRegistrationIds.has(homeRegistrationId) ||
+        !availableRegistrationIds.has(awayRegistrationId)
+      ) {
+        return null;
+      }
+      return {
+        id: game.id,
+        gameNumber: game.game_number,
+        scheduledLocal: saoPauloLocalInput(game.scheduled_at),
+        venue: game.venue ?? "Local a definir",
+        homeRegistrationId,
+        awayRegistrationId,
+      };
+    })
+    .filter((game): game is NonNullable<typeof game> => game !== null);
+
+  if (games.length === 0) {
+    throw new Response("Não há jogo estrutural disponível para receber a súmula.", { status: 409 });
   }
 
   return data(
@@ -154,6 +232,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       competition,
       csrfToken: auth.payload.csrfToken,
       idempotencyKey: crypto.randomUUID(),
+      games,
       registrations,
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
@@ -172,10 +251,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   assertCsrfToken(formData, auth.payload.csrfToken);
 
   const idempotencyKey = String(formData.get("idempotencyKey") ?? "");
+  const gameId = parseId(formData.get("gameId"));
   const scheduledLocal = String(formData.get("scheduledLocal") ?? "");
   const venue = String(formData.get("venue") ?? "").trim();
   const rawGameNumber = String(formData.get("gameNumber") ?? "").trim();
   const periodCount = parseId(formData.get("periodCount"));
+  if (!gameId) return badRequest("Selecione um jogo estrutural válido.");
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(idempotencyKey)
   ) {
@@ -300,6 +381,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const payload: ManualScoresheetPayload = {
     idempotencyKey,
     competitionId,
+    gameId,
     gameNumber: rawGameNumber || null,
     scheduledLocal,
     venue,
@@ -378,6 +460,7 @@ export default function NewManualScoresheet({ loaderData, actionData }: Route.Co
       competitionName={loaderData.competition.display_name}
       csrfToken={loaderData.csrfToken}
       idempotencyKey={loaderData.idempotencyKey}
+      games={loaderData.games}
       registrations={loaderData.registrations}
     />
   );

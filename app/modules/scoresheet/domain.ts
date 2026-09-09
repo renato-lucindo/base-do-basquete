@@ -53,6 +53,7 @@ export interface TeamPayload {
 export interface ManualScoresheetPayload {
   idempotencyKey: string;
   competitionId: number;
+  gameId: number;
   gameNumber: string | null;
   scheduledLocal: string;
   venue: string;

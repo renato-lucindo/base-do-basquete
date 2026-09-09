@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(32);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -82,6 +83,39 @@ update private.player_private
 set sex = null, sex_review_required = true
 where player_id = 9790;
 
+insert into public.competition_ruleset_revisions
+  (id, competition_id, revision_number, structure_kind, status)
+overriding system value values
+  (9781, 9781, 1, 'regulated', 'active');
+insert into public.competition_stages
+  (id, competition_id, ruleset_revision_id, code, name, stage_order, structure_kind)
+overriding system value values
+  (9781, 9781, 9781, 'regular', 'Fase regular', 1, 'regulated');
+insert into public.competition_rounds
+  (id, competition_id, stage_id, code, name, round_order, structure_kind)
+overriding system value values
+  (9781, 9781, 9781, 'rodada_1', 'Rodada 1', 1, 'regulated');
+insert into public.matchups
+  (id, competition_id, round_id, home_registration_id, away_registration_id,
+   matchup_order, structure_kind)
+overriding system value values
+  (97801, 9781, 9781, 9781, 9782, 1, 'regulated');
+insert into public.games
+  (id, competition_id, game_number, status, source, matchup_id, matchup_game_number)
+overriding system value values
+  (97801, 9781, 'IMPORT-ELIGIBILITY-01', 'scheduled', 'seed', 97801, 1);
+insert into public.game_participants
+  (game_id, competition_id, registration_id, side)
+values
+  (97801, 9781, 9781, 'home'),
+  (97801, 9781, 9782, 'away');
+insert into storage.objects (id, bucket_id, name)
+values (
+  '97810000-0000-4000-8000-000000000001',
+  'boxscore-pdfs',
+  '9781/' || repeat('e', 64) || '.pdf'
+);
+
 create temp table boxscore_eligibility_test_data (
   parsed jsonb,
   matches jsonb,
@@ -152,6 +186,7 @@ with players as (
   from players
 ), resolution as (
   select jsonb_build_object(
+    'gameId', 97801,
     'teams', jsonb_build_array(
       jsonb_build_object('sourceTeamName', 'Equipe Import Casa', 'registrationId', 9781),
       jsonb_build_object('sourceTeamName', 'Equipe Import Fora', 'registrationId', 9782)
@@ -324,14 +359,14 @@ select is(
 );
 select is(
   (select count(*)::integer from public.games where game_number = 'IMPORT-ELIGIBILITY-01'),
-  0,
-  'a pending decision creates no game'
+  1,
+  'a pending decision leaves only the empty structural game'
 );
 select is(
   (select count(*)::integer from public.game_participants
    where game_id in (select id from public.games where game_number = 'IMPORT-ELIGIBILITY-01')),
-  0,
-  'a pending decision creates no participants'
+  2,
+  'a pending decision leaves only the structural participants'
 );
 select is(
   (select count(*)::integer from public.boxscore_import_player_matches
@@ -384,8 +419,8 @@ select is(
 );
 select is(
   (select count(*)::integer from public.games where game_number = 'IMPORT-ELIGIBILITY-01'),
-  0,
-  'an incompatible decision leaves no partial game'
+  1,
+  'an incompatible decision leaves no parallel or partial game'
 );
 
 reset role;
@@ -413,9 +448,9 @@ select is(
   'the compatible import is confirmed'
 );
 select is(
-  (select count(*)::integer from public.games where game_number = 'IMPORT-ELIGIBILITY-01'),
-  1,
-  'the compatible import creates exactly one game'
+  (select game_id from boxscore_eligibility_test_data),
+  97801::bigint,
+  'the compatible import confirms the existing structural game'
 );
 select is(
   (select status from public.roster_entries where id = 9790),

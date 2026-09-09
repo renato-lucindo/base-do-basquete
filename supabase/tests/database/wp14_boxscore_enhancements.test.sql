@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(31);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -64,6 +65,39 @@ select
   case when number <= 5 then number::text else (number - 5)::text end,
   case when number = 5 then 'inactive' else 'active' end
 from generate_series(1, 9) number;
+
+insert into public.competition_ruleset_revisions
+  (id, competition_id, revision_number, structure_kind, status)
+overriding system value values
+  (9414, 9414, 1, 'regulated', 'active');
+insert into public.competition_stages
+  (id, competition_id, ruleset_revision_id, code, name, stage_order, structure_kind)
+overriding system value values
+  (9414, 9414, 9414, 'regular', 'Fase regular', 1, 'regulated');
+insert into public.competition_rounds
+  (id, competition_id, stage_id, code, name, round_order, structure_kind)
+overriding system value values
+  (9414, 9414, 9414, 'rodada_1', 'Rodada 1', 1, 'regulated');
+insert into public.matchups
+  (id, competition_id, round_id, home_registration_id, away_registration_id,
+   matchup_order, structure_kind)
+overriding system value values
+  (94141, 9414, 9414, 9414, 9415, 1, 'regulated');
+insert into public.games
+  (id, competition_id, game_number, status, source, matchup_id, matchup_game_number)
+overriding system value values
+  (94141, 9414, 'WP14-ATOMIC-01', 'scheduled', 'seed', 94141, 1);
+insert into public.game_participants
+  (game_id, competition_id, registration_id, side)
+values
+  (94141, 9414, 9414, 'home'),
+  (94141, 9414, 9415, 'away');
+insert into storage.objects (id, bucket_id, name)
+values (
+  '94140000-0000-4000-8000-000000000001',
+  'boxscore-pdfs',
+  '9414/' || repeat('b', 64) || '.pdf'
+);
 
 create temp table wp14_test_data (
   parsed jsonb,
@@ -176,6 +210,7 @@ with players as (
   from players
 ), resolution as (
   select jsonb_build_object(
+    'gameId', 94141,
     'teams', jsonb_build_array(
       jsonb_build_object('sourceTeamName', 'Equipe WP14 Casa', 'registrationId', 9414),
       jsonb_build_object('sourceTeamName', 'Equipe WP14 Fora', 'registrationId', 9415)
@@ -282,8 +317,8 @@ select throws_ok($$
 $$, 'BD308', 'BDB_PDF_PLAYER_ALREADY_EXISTS', 'exact normalized duplicates cannot be created');
 select is(
   (select count(*)::integer from public.games where game_number = 'WP14-ATOMIC-01'),
-  0,
-  'a rejected player resolution rolls back the entire game'
+  1,
+  'a rejected player resolution leaves only the empty structural game'
 );
 select lives_ok($$
   update wp14_test_data

@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(40);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'

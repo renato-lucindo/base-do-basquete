@@ -28,12 +28,22 @@ export interface ScoresheetRegistration {
   previous: Array<{ slotNumber: number; rosterEntryId: number; jerseyNumber: string }>;
 }
 
+export interface ScoresheetGame {
+  id: number;
+  gameNumber: string | null;
+  scheduledLocal: string;
+  venue: string;
+  homeRegistrationId: number;
+  awayRegistrationId: number;
+}
+
 interface ManualScoresheetEditorProps {
   actionError?: string;
   competitionId: number;
   competitionName: string;
   csrfToken: string;
   idempotencyKey: string;
+  games: ScoresheetGame[];
   registrations: ScoresheetRegistration[];
 }
 
@@ -46,6 +56,7 @@ const fields = [
 const scoresheetSteps = ["Jogo", "Equipes", "Lançamentos", "Revisão"] as const;
 
 interface ScoresheetDraftData {
+  gameId: number;
   periodCount: number;
   registrationIds: Record<TeamSide, number>;
   slots: Record<TeamSide, EditorSlot[]>;
@@ -68,6 +79,7 @@ export function ManualScoresheetEditor({
   competitionName,
   csrfToken,
   idempotencyKey,
+  games,
   registrations,
 }: ManualScoresheetEditorProps) {
   const navigation = useNavigation();
@@ -76,12 +88,14 @@ export function ManualScoresheetEditor({
   const [step, setStep] = useState(1);
   const [viewMode, setViewMode] = useState<"cards" | "compact">("cards");
   const [activePeriod, setActivePeriod] = useState(1);
-  const [gameNumber, setGameNumber] = useState("");
-  const [scheduledLocal, setScheduledLocal] = useState("");
-  const [venue, setVenue] = useState("");
+  const firstGame = games[0];
+  const [gameId, setGameId] = useState(firstGame?.id ?? 0);
+  const [gameNumber, setGameNumber] = useState(firstGame?.gameNumber ?? "");
+  const [scheduledLocal, setScheduledLocal] = useState(firstGame?.scheduledLocal ?? "");
+  const [venue, setVenue] = useState(firstGame?.venue ?? "");
   const [registrationIds, setRegistrationIds] = useState<Record<TeamSide, number>>({
-    home: registrations[0]?.id ?? 0,
-    away: registrations[1]?.id ?? 0,
+    home: firstGame?.homeRegistrationId ?? 0,
+    away: firstGame?.awayRegistrationId ?? 0,
   });
   const registrationById = useMemo(
     () => new Map(registrations.map((registration) => [registration.id, registration])),
@@ -126,6 +140,7 @@ export function ManualScoresheetEditor({
       const time = saveAdminDraft(
         { flow: "manual-scoresheet", competitionId },
         {
+          gameId,
           periodCount,
           registrationIds,
           slots,
@@ -146,6 +161,7 @@ export function ManualScoresheetEditor({
     activePeriod,
     competitionId,
     gameNumber,
+    gameId,
     pendingDraft,
     periodCount,
     registrationIds,
@@ -163,6 +179,7 @@ export function ManualScoresheetEditor({
     if (!draft) return;
     if (
       !draft.data ||
+      !Number.isInteger(draft.data.gameId) ||
       !draft.data.registrationIds ||
       !draft.data.slots ||
       !Array.isArray(draft.data.slots.home) ||
@@ -175,7 +192,9 @@ export function ManualScoresheetEditor({
       return;
     }
     const availableRegistrations = new Set(registrations.map(({ id }) => id));
+    const restoredGame = games.find((game) => game.id === draft.data.gameId);
     if (
+      !restoredGame ||
       !availableRegistrations.has(draft.data.registrationIds.home) ||
       !availableRegistrations.has(draft.data.registrationIds.away)
     ) {
@@ -203,12 +222,16 @@ export function ManualScoresheetEditor({
       }),
     ) as Record<TeamSide, EditorSlot[]>;
     setPeriodCount(draft.data.periodCount);
-    setRegistrationIds(draft.data.registrationIds);
+    setGameId(restoredGame.id);
+    setRegistrationIds({
+      home: restoredGame.homeRegistrationId,
+      away: restoredGame.awayRegistrationId,
+    });
     setSlots(restoredSlots);
     setStats(draft.data.stats);
-    setGameNumber(draft.data.gameNumber);
-    setScheduledLocal(draft.data.scheduledLocal);
-    setVenue(draft.data.venue);
+    setGameNumber(restoredGame.gameNumber ?? "");
+    setScheduledLocal(restoredGame.scheduledLocal);
+    setVenue(restoredGame.venue);
     setStep(Math.min(4, Math.max(1, draft.data.step)));
     setViewMode(draft.data.viewMode);
     setActivePeriod(Math.min(draft.data.periodCount, Math.max(1, draft.data.activePeriod)));
@@ -234,6 +257,19 @@ export function ManualScoresheetEditor({
     setStats((current) =>
       Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`${side}-`))),
     );
+  };
+
+  const selectGame = (selectedId: number) => {
+    const game = games.find((candidate) => candidate.id === selectedId);
+    if (!game) return;
+    markChanged();
+    setGameId(game.id);
+    setGameNumber(game.gameNumber ?? "");
+    setScheduledLocal(game.scheduledLocal);
+    setVenue(game.venue);
+    setRegistration("home", game.homeRegistrationId);
+    setRegistration("away", game.awayRegistrationId);
+    setStats({});
   };
 
   const setSlot = (side: TeamSide, slotNumber: number, rosterEntryId: number | null) => {
@@ -356,21 +392,24 @@ export function ManualScoresheetEditor({
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
           <input type="hidden" name="periodCount" value={periodCount} />
+          <input type="hidden" name="gameId" value={gameId} />
 
           <div hidden={step !== 1}>
             <fieldset className="scoresheet-header-grid">
               <legend>Cabeçalho do jogo</legend>
               <label>
-                Número do jogo (opcional)
-                <input
-                  name="gameNumber"
-                  maxLength={40}
-                  value={gameNumber}
-                  onChange={(event) => {
-                    setGameNumber(event.currentTarget.value);
-                    markChanged();
-                  }}
-                />
+                Jogo estrutural
+                <select value={gameId} onChange={(event) => selectGame(Number(event.target.value))}>
+                  {games.map((game) => (
+                    <option key={game.id} value={game.id}>
+                      {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Número do jogo
+                <input name="gameNumber" maxLength={40} value={gameNumber} readOnly />
               </label>
               <label>
                 Data e hora
@@ -379,24 +418,12 @@ export function ManualScoresheetEditor({
                   type="datetime-local"
                   required
                   value={scheduledLocal}
-                  onChange={(event) => {
-                    setScheduledLocal(event.currentTarget.value);
-                    markChanged();
-                  }}
+                  readOnly
                 />
               </label>
               <label>
                 Local
-                <input
-                  name="venue"
-                  required
-                  maxLength={160}
-                  value={venue}
-                  onChange={(event) => {
-                    setVenue(event.currentTarget.value);
-                    markChanged();
-                  }}
-                />
+                <input name="venue" required maxLength={160} value={venue} readOnly />
               </label>
             </fieldset>
             <div className="wizard-actions">
@@ -430,11 +457,7 @@ export function ManualScoresheetEditor({
                     <legend>{side === "home" ? "Mandante" : "Visitante"}</legend>
                     <label>
                       Equipe inscrita
-                      <select
-                        name={`${side}RegistrationId`}
-                        value={registrationIds[side]}
-                        onChange={(event) => setRegistration(side, Number(event.target.value))}
-                      >
+                      <select value={registrationIds[side]} disabled>
                         {registrations.map((option) => (
                           <option
                             key={option.id}
@@ -445,6 +468,11 @@ export function ManualScoresheetEditor({
                           </option>
                         ))}
                       </select>
+                      <input
+                        type="hidden"
+                        name={`${side}RegistrationId`}
+                        value={registrationIds[side]}
+                      />
                     </label>
                     <div className="slot-grid">
                       {slots[side].map((slot) => (

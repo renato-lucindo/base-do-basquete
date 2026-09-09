@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(19);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
@@ -37,6 +38,60 @@ overriding system value values
   (9302, 9301, 9301, 9302, '0', 'active'),
   (9303, 9301, 9302, 9303, '00', 'active');
 
+insert into public.competition_ruleset_revisions
+  (id, competition_id, revision_number, structure_kind, status)
+overriding system value values
+  (9301, 9301, 1, 'regulated', 'active');
+insert into public.competition_stages
+  (id, competition_id, ruleset_revision_id, code, name, stage_order, structure_kind)
+overriding system value values
+  (9301, 9301, 9301, 'regular', 'Fase regular', 1, 'regulated');
+insert into public.competition_rounds
+  (id, competition_id, stage_id, code, name, round_order, structure_kind)
+overriding system value values
+  (9301, 9301, 9301, 'rodada_1', 'Rodada 1', 1, 'regulated');
+insert into public.matchups
+  (id, competition_id, round_id, home_registration_id, away_registration_id,
+   matchup_order, structure_kind)
+overriding system value values
+  (93001, 9301, 9301, 9301, 9302, 1, 'regulated'),
+  (93002, 9301, 9301, 9301, 9302, 2, 'regulated'),
+  (93003, 9301, 9301, 9301, 9302, 3, 'regulated'),
+  (93004, 9301, 9301, 9301, 9302, 4, 'regulated'),
+  (93005, 9301, 9301, 9301, 9302, 5, 'regulated'),
+  (93006, 9301, 9301, 9301, 9302, 6, 'regulated'),
+  (93007, 9301, 9301, 9301, 9302, 7, 'regulated');
+insert into public.games
+  (id, competition_id, game_number, scheduled_at, venue, status, source,
+   matchup_id, matchup_game_number)
+overriding system value values
+  (93001, 9301, 'MAN-BASE', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93001, 1),
+  (93002, 9301, 'MAN-TIE', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93002, 1),
+  (93003, 9301, 'MAN-JERSEY', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93003, 1),
+  (93004, 9301, 'MAN-GD', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93004, 1),
+  (93005, 9301, 'MAN-AFTER-GD', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93005, 1),
+  (93006, 9301, 'MAN-MISSING', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93006, 1),
+  (93007, 9301, 'MAN-OT', '2026-08-20 18:00:00-03', 'Ginasio de teste',
+   'scheduled', 'seed', 93007, 1);
+insert into public.game_participants
+  (game_id, competition_id, registration_id, side)
+select game_id, 9301, registration_id, side
+from (values
+  (93001::bigint, 9301::bigint, 'home'::text), (93001, 9302, 'away'),
+  (93002, 9301, 'home'), (93002, 9302, 'away'),
+  (93003, 9301, 'home'), (93003, 9302, 'away'),
+  (93004, 9301, 'home'), (93004, 9302, 'away'),
+  (93005, 9301, 'home'), (93005, 9302, 'away'),
+  (93006, 9301, 'home'), (93006, 9302, 'away'),
+  (93007, 9301, 'home'), (93007, 9302, 'away')
+) as participant(game_id, registration_id, side);
+
 create temp table scoresheet_payloads (name text primary key, payload jsonb);
 grant select on scoresheet_payloads to authenticated;
 
@@ -45,6 +100,7 @@ values (
   'base',
   '{
     "idempotencyKey":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    "gameId":93001,
     "competitionId":9301,
     "gameNumber":null,
     "scheduledLocal":"2026-08-20T18:00",
@@ -123,28 +179,28 @@ select lives_ok(
 );
 select is(
   (select count(*) from public.games where competition_id = 9301),
-  1::bigint,
-  'one game is committed'
+  7::bigint,
+  'confirmation reuses the seven pre-created structural games'
 );
 select is(
   (select public.admin_create_manual_scoresheet((select payload from scoresheet_payloads where name = 'base'))),
-  (select id from public.games where competition_id = 9301),
+  93001::bigint,
   'the same submission is idempotent and returns its game id'
 );
 select is(
-  (select status from public.games where competition_id = 9301),
+  (select status from public.games where id = 93001),
   'final'::text,
   'the manual game is final only after the transaction succeeds'
 );
 select results_eq(
   $$select side, score from public.game_scores where game_id =
-      (select id from public.games where competition_id = 9301) order by side$$,
+      93001 order by side$$,
   $$values ('away'::text, 1::integer), ('home'::text, 2::integer)$$,
   'team scores are derived from player conversions'
 );
 select results_eq(
   $$select jersey_number from public.game_roster_slots where game_id =
-      (select id from public.games where competition_id = 9301) and registration_id = 9301
+      93001 and registration_id = 9301
       order by jersey_number$$,
   $$values ('0'::text), ('00'::text)$$,
   'jerseys 0 and 00 stay distinct in one lineup'
@@ -167,8 +223,10 @@ select throws_ok(
 select throws_ok(
   $$select public.admin_create_manual_scoresheet(
       jsonb_set(
-        jsonb_set((select payload from scoresheet_payloads where name = 'base'),
-          '{idempotencyKey}', '"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"'::jsonb),
+        jsonb_set(
+          jsonb_set((select payload from scoresheet_payloads where name = 'base'),
+            '{idempotencyKey}', '"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"'::jsonb),
+          '{gameId}', '93002'::jsonb),
         '{periods,0,stats,2,freeThrowMade}', '2'::jsonb
       )
     )$$,
@@ -177,15 +235,17 @@ select throws_ok(
 );
 select is(
   (select count(*) from public.games where competition_id = 9301),
-  1::bigint,
+  7::bigint,
   'a rejected tie leaves no partial game'
 );
 
 select throws_ok(
   $$select public.admin_create_manual_scoresheet(
       jsonb_set(
-        jsonb_set((select payload from scoresheet_payloads where name = 'base'),
-          '{idempotencyKey}', '"cccccccc-cccc-4ccc-8ccc-cccccccccccc"'::jsonb),
+        jsonb_set(
+          jsonb_set((select payload from scoresheet_payloads where name = 'base'),
+            '{idempotencyKey}', '"cccccccc-cccc-4ccc-8ccc-cccccccccccc"'::jsonb),
+          '{gameId}', '93003'::jsonb),
         '{teams,0,slots,1,jerseyNumber}', '"00"'::jsonb
       )
     )$$,
@@ -196,8 +256,10 @@ select throws_ok(
 select lives_ok(
   $$select public.admin_create_manual_scoresheet(
       jsonb_set(
-        jsonb_set((select payload from scoresheet_payloads where name = 'base'),
-          '{idempotencyKey}', '"dddddddd-dddd-4ddd-8ddd-dddddddddddd"'::jsonb),
+        jsonb_set(
+          jsonb_set((select payload from scoresheet_payloads where name = 'base'),
+            '{idempotencyKey}', '"dddddddd-dddd-4ddd-8ddd-dddddddddddd"'::jsonb),
+          '{gameId}', '93004'::jsonb),
         '{periods,0,stats,0,fouls}', '["T","T"]'::jsonb
       )
     )$$,
@@ -205,7 +267,7 @@ select lives_ok(
 );
 select is(
   (select disqualification_reason from public.game_roster_slots
-    where roster_entry_id = 9301 order by game_id desc limit 1),
+    where game_id = 93004 and roster_entry_id = 9301),
   '2T'::text,
   'the GD reason is auditable'
 );
@@ -214,8 +276,10 @@ select throws_ok(
   $$select public.admin_create_manual_scoresheet(
       jsonb_set(
         jsonb_set(
-          jsonb_set((select payload from scoresheet_payloads where name = 'base'),
-            '{idempotencyKey}', '"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"'::jsonb),
+          jsonb_set(
+            jsonb_set((select payload from scoresheet_payloads where name = 'base'),
+              '{idempotencyKey}', '"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"'::jsonb),
+            '{gameId}', '93005'::jsonb),
           '{periods,0,stats,0,fouls}', '["T","T"]'::jsonb),
         '{periods,1,stats,0,twoPointMade}', '1'::jsonb
       )
@@ -227,8 +291,10 @@ select throws_ok(
 select throws_ok(
   $$select public.admin_create_manual_scoresheet(
       jsonb_set(
-        jsonb_set((select payload from scoresheet_payloads where name = 'base'),
-          '{idempotencyKey}', '"ffffffff-ffff-4fff-8fff-ffffffffffff"'::jsonb),
+        jsonb_set(
+          jsonb_set((select payload from scoresheet_payloads where name = 'base'),
+            '{idempotencyKey}', '"ffffffff-ffff-4fff-8fff-ffffffffffff"'::jsonb),
+          '{gameId}', '93006'::jsonb),
         '{periods,0,stats}',
         ((select payload from scoresheet_payloads where name = 'base') #> '{periods,0,stats}') - 2
       )
@@ -243,7 +309,7 @@ select lives_ok(
         jsonb_set(
           jsonb_set((select payload from scoresheet_payloads where name = 'base'),
             '{idempotencyKey}', '"12345678-1234-4234-8234-123456789abc"'::jsonb),
-          '{gameNumber}', '"MAN-OT"'::jsonb),
+          '{gameId}', '93007'::jsonb),
         '{periods}',
         '[
           {"periodNumber":1,"stats":[
