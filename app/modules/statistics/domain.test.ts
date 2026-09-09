@@ -7,10 +7,16 @@ import {
   efficiency,
   percentage,
   perGame,
+  statisticValue,
   type PlayerStatistics,
+  type StatisticTotals,
 } from "./domain";
 
-const player = (playerId: number, points: number, gamesPlayed = 2): PlayerStatistics => ({
+const player = (
+  playerId: number,
+  points: number,
+  gamesPlayed = 2,
+): PlayerStatistics & { advancedTotals: StatisticTotals } => ({
   competitionId: 10,
   playerId,
   playerName: `Atleta ${playerId}`,
@@ -19,7 +25,10 @@ const player = (playerId: number, points: number, gamesPlayed = 2): PlayerStatis
   teamSlug: "equipe-teste",
   teamAbbreviation: "ET",
   gamesPlayed,
-  totals: {
+  advancedGamesPlayed: gamesPlayed,
+  officialPoints: points,
+  fouls: 2,
+  advancedTotals: {
     secondsPlayed: 1200,
     points,
     twoPointMade: 2,
@@ -61,7 +70,7 @@ describe("statistics domain", () => {
   });
 
   it("uses the documented efficiency formula", () => {
-    expect(efficiency(player(1, 8).totals)).toBe(13);
+    expect(efficiency(player(1, 8).advancedTotals)).toBe(13);
   });
 
   it("combines validated filters using AND in the selected scale", () => {
@@ -95,8 +104,8 @@ describe("statistics domain", () => {
     ).toEqual([1]);
     const left = player(1, 8);
     const right = player(2, 3);
-    left.totals.turnovers = 1;
-    right.totals.turnovers = 3;
+    left.advancedTotals.turnovers = 1;
+    right.advancedTotals.turnovers = 3;
     expect(compareStatistic(left, right, "turnovers", "totals")).toEqual({
       left: "better",
       right: "worse",
@@ -112,5 +121,21 @@ describe("statistics domain", () => {
       left: "unavailable",
       right: "unavailable",
     });
+  });
+
+  it("uses total games for points and advanced games for advanced averages", () => {
+    const mixed = player(1, 12, 3);
+    mixed.advancedGamesPlayed = 2;
+    mixed.advancedTotals.assists = 6;
+    expect(statisticValue(mixed, "points", "averages")).toBe(4);
+    expect(statisticValue(mixed, "assists", "averages")).toBe(3);
+  });
+
+  it("keeps unavailable advanced metrics null for fallback-only players", () => {
+    const fallbackOnly: PlayerStatistics = player(1, 7, 1);
+    fallbackOnly.advancedGamesPlayed = 0;
+    fallbackOnly.advancedTotals = null;
+    expect(statisticValue(fallbackOnly, "points", "totals")).toBe(7);
+    expect(statisticValue(fallbackOnly, "assists", "totals")).toBeNull();
   });
 });

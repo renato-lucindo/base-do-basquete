@@ -4,9 +4,9 @@ import { data } from "react-router";
 import type { Database } from "../../types/database.generated";
 import { type CompetitionContext, isGenderDivision } from "../competition/context";
 import type { PublicAchievement } from "../competition/public-data.server";
-import { addPlayerTotals, type PlayerTotals } from "./player-profile-domain";
+import type { PlayerTotals } from "./player-profile-domain";
 
-export interface PlayerCompetitionSummary extends PlayerTotals {
+interface PlayerCompetitionBase {
   context: CompetitionContext;
   teamName: string | null;
   teamSlug: string | null;
@@ -15,6 +15,64 @@ export interface PlayerCompetitionSummary extends PlayerTotals {
   position: string | null;
   starterAppearances: number;
 }
+
+export interface ScoresheetPlayerCompetitionSummary extends PlayerCompetitionBase {
+  kind: "scoresheet";
+  games: number;
+  dnpCount: number;
+  points: number | null;
+  twoPointMade: number | null;
+  threePointMade: number | null;
+  freeThrowMade: number | null;
+  fouls: number | null;
+  disqualifications: number | null;
+}
+
+export interface BoxscorePlayerCompetitionSummary extends PlayerCompetitionBase {
+  kind: "boxscore";
+  games: number;
+  advancedGames: number;
+  officialPoints: number;
+  fouls: number | null;
+  advancedTotals: PlayerTotals | null;
+}
+
+export type PlayerCompetitionSummary =
+  | ScoresheetPlayerCompetitionSummary
+  | BoxscorePlayerCompetitionSummary;
+
+interface PlayerGameBase {
+  id: number;
+  label: string;
+  status: string;
+  scheduledAt: string | null;
+  context: CompetitionContext;
+  teamName: string | null;
+  jerseyNumber: string | null;
+  opponentName: string | null;
+  result: string | null;
+  score: string | null;
+  didNotPlay: boolean;
+}
+
+export interface ScoresheetPlayerGame extends PlayerGameBase {
+  kind: "scoresheet";
+  points: number | null;
+  twoPointMade: number | null;
+  threePointMade: number | null;
+  freeThrowMade: number | null;
+  fouls: number | null;
+  disqualifications: number | null;
+}
+
+export interface BoxscorePlayerGame extends PlayerGameBase {
+  kind: "boxscore";
+  officialPoints: number | null;
+  fouls: number | null;
+  advancedTotals: PlayerTotals | null;
+}
+
+export type PublicPlayerGame = ScoresheetPlayerGame | BoxscorePlayerGame;
 
 export interface PublicPlayerProfileDto {
   id: number;
@@ -30,7 +88,6 @@ export interface PublicPlayerProfileDto {
   homeCity: string | null;
   homeState: string | null;
   current: PlayerCompetitionSummary | null;
-  career: PlayerTotals;
   competitions: PlayerCompetitionSummary[];
   achievements: PublicAchievement[];
   honors: Array<{
@@ -40,19 +97,7 @@ export interface PublicPlayerProfileDto {
     year: number | null;
     competitionName: string | null;
   }>;
-  games: Array<{
-    id: number;
-    label: string;
-    status: string;
-    scheduledAt: string | null;
-    context: CompetitionContext;
-    teamName: string | null;
-    jerseyNumber: string | null;
-    opponentName: string | null;
-    result: string | null;
-    score: string | null;
-    totals: PlayerTotals;
-  }>;
+  games: PublicPlayerGame[];
 }
 
 function ensure(error: unknown, statusText: string): asserts error is null {
@@ -61,6 +106,10 @@ function ensure(error: unknown, statusText: string): asserts error is null {
 
 function numberValue(value: number | null): number {
   return value ?? 0;
+}
+
+function nullableNumber(value: number | null): number | null {
+  return value;
 }
 
 function totalsFromRow(row: {
@@ -154,19 +203,27 @@ export async function loadPublicPlayerProfile(
   ensure(rosterResult.error, "Inscrição pública temporariamente indisponível");
   if (rosterResult.data.length !== 1) return null;
 
-  const statisticsResult = await client
-    .from("competition_player_statistics")
-    .select("*")
-    .eq("player_id", profile.id);
-  ensure(statisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
-
   const contextById = new Map(contexts.map((item) => [item.competitionId, item]));
-  const competitions = statisticsResult.data
-    .flatMap((row): PlayerCompetitionSummary[] => {
+  const [scoresheetStatisticsResult, boxscoreStatisticsResult, legacyStatisticsResult] =
+    await Promise.all([
+      client
+        .from("competition_scoresheet_player_statistics")
+        .select("*")
+        .eq("player_id", profile.id),
+      client.from("competition_boxscore_player_statistics").select("*").eq("player_id", profile.id),
+      client.from("competition_player_statistics").select("*").eq("player_id", profile.id),
+    ]);
+  ensure(scoresheetStatisticsResult.error, "Estatísticas de súmula temporariamente indisponíveis");
+  ensure(boxscoreStatisticsResult.error, "Estatísticas de boxscore temporariamente indisponíveis");
+  ensure(legacyStatisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
+
+  const scoresheetCompetitions = scoresheetStatisticsResult.data.flatMap(
+    (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
-      if (!rowContext) return [];
+      if (!rowContext || rowContext.statisticsMode !== "scoresheet") return [];
       return [
         {
+          kind: "scoresheet",
           context: rowContext,
           teamName: row.team_name,
           teamSlug: row.team_slug,
@@ -175,32 +232,90 @@ export async function loadPublicPlayerProfile(
           position: row.roster_position,
           starterAppearances: numberValue(row.starter_appearances),
           games: numberValue(row.games_played),
-          secondsPlayed: numberValue(row.seconds_played),
-          points: numberValue(row.points),
-          twoPointMade: numberValue(row.two_point_made),
-          twoPointAttempted: numberValue(row.two_point_attempted),
-          threePointMade: numberValue(row.three_point_made),
-          threePointAttempted: numberValue(row.three_point_attempted),
-          freeThrowMade: numberValue(row.free_throw_made),
-          freeThrowAttempted: numberValue(row.free_throw_attempted),
-          offensiveRebounds: numberValue(row.offensive_rebounds),
-          defensiveRebounds: numberValue(row.defensive_rebounds),
-          assists: numberValue(row.assists),
-          turnovers: numberValue(row.turnovers),
-          steals: numberValue(row.steals),
-          blocks: numberValue(row.blocks),
-          fouls: numberValue(row.fouls),
-          plusMinus: numberValue(row.plus_minus),
+          dnpCount: numberValue(row.dnp_count),
+          points: nullableNumber(row.points),
+          twoPointMade: nullableNumber(row.two_point_made),
+          threePointMade: nullableNumber(row.three_point_made),
+          freeThrowMade: nullableNumber(row.free_throw_made),
+          fouls: nullableNumber(row.fouls),
+          disqualifications: nullableNumber(row.disqualifications),
         },
       ];
-    })
-    .sort(
-      (left, right) =>
-        right.context.year - left.context.year ||
-        right.context.competitionId - left.context.competitionId,
-    );
+    },
+  );
+  const boxscoreCompetitions = boxscoreStatisticsResult.data.flatMap(
+    (row): PlayerCompetitionSummary[] => {
+      const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
+      if (!rowContext || rowContext.statisticsMode !== "boxscore") return [];
+      const advancedGames = numberValue(row.advanced_games_played);
+      return [
+        {
+          kind: "boxscore",
+          context: rowContext,
+          teamName: row.team_name,
+          teamSlug: row.team_slug,
+          teamAbbreviation: row.team_abbreviation,
+          jerseyNumber: row.jersey_number,
+          position: row.roster_position,
+          starterAppearances: numberValue(row.starter_appearances),
+          games: numberValue(row.games_played),
+          advancedGames,
+          officialPoints: numberValue(row.official_points),
+          fouls: nullableNumber(row.fouls),
+          advancedTotals:
+            advancedGames === 0
+              ? null
+              : {
+                  ...totalsFromRow({ ...row, points: row.advanced_points }),
+                  games: advancedGames,
+                },
+        },
+      ];
+    },
+  );
+  const legacyCompetitions = legacyStatisticsResult.data.flatMap(
+    (row): PlayerCompetitionSummary[] => {
+      const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
+      if (!rowContext || rowContext.statisticsMode !== "legacy") return [];
+      return [
+        {
+          kind: "scoresheet",
+          context: rowContext,
+          teamName: row.team_name,
+          teamSlug: row.team_slug,
+          teamAbbreviation: row.team_abbreviation,
+          jerseyNumber: row.jersey_number,
+          position: row.roster_position,
+          starterAppearances: numberValue(row.starter_appearances),
+          games: numberValue(row.games_played),
+          dnpCount: 0,
+          points: nullableNumber(row.points),
+          twoPointMade: nullableNumber(row.two_point_made),
+          threePointMade: nullableNumber(row.three_point_made),
+          freeThrowMade: nullableNumber(row.free_throw_made),
+          fouls: nullableNumber(row.fouls),
+          disqualifications: null,
+        },
+      ];
+    },
+  );
+  const competitions = [
+    ...scoresheetCompetitions,
+    ...boxscoreCompetitions,
+    ...legacyCompetitions,
+  ].sort(
+    (left, right) =>
+      right.context.year - left.context.year ||
+      right.context.competitionId - left.context.competitionId,
+  );
 
-  const [honorsResult, gameStatisticsResult, achievementsResult] = await Promise.all([
+  const [
+    honorsResult,
+    scoresheetGameStatisticsResult,
+    boxscoreGameStatisticsResult,
+    legacyGameStatisticsResult,
+    achievementsResult,
+  ] = await Promise.all([
     client
       .from("player_honors")
       .select("id,title,description,year,competition_id,status,confirmed_at")
@@ -208,6 +323,8 @@ export async function loadPublicPlayerProfile(
       .eq("status", "confirmed")
       .not("confirmed_at", "is", null)
       .order("year", { ascending: false, nullsFirst: false }),
+    client.from("game_scoresheet_player_statistics").select("*").eq("player_id", profile.id),
+    client.from("game_boxscore_player_statistics").select("*").eq("player_id", profile.id),
     client.from("game_player_statistics").select("*").eq("player_id", profile.id),
     client
       .from("player_achievements")
@@ -217,11 +334,21 @@ export async function loadPublicPlayerProfile(
       .eq("player_id", profile.id)
       .order("year", { ascending: false }),
   ]);
-  ensure(gameStatisticsResult.error, "Participações públicas temporariamente indisponíveis");
-
-  const gameIds = gameStatisticsResult.data.flatMap((row) =>
-    row.game_id === null ? [] : [row.game_id],
+  ensure(
+    scoresheetGameStatisticsResult.error,
+    "Participações de súmula temporariamente indisponíveis",
   );
+  ensure(
+    boxscoreGameStatisticsResult.error,
+    "Participações de boxscore temporariamente indisponíveis",
+  );
+  ensure(legacyGameStatisticsResult.error, "Participações públicas temporariamente indisponíveis");
+
+  const gameIds = [
+    ...scoresheetGameStatisticsResult.data,
+    ...boxscoreGameStatisticsResult.data,
+    ...legacyGameStatisticsResult.data,
+  ].flatMap((row) => (row.game_id === null ? [] : [row.game_id]));
   const gameResult = gameIds.length
     ? await client
         .from("games")
@@ -257,8 +384,18 @@ export async function loadPublicPlayerProfile(
     : { data: [], error: null };
   ensure(scoresResult.error, "Resultados temporariamente indisponíveis");
 
-  const statByGame = new Map(
-    gameStatisticsResult.data.flatMap((row) =>
+  const scoresheetStatByGame = new Map(
+    scoresheetGameStatisticsResult.data.flatMap((row) =>
+      row.game_id === null ? [] : ([[row.game_id, row]] as const),
+    ),
+  );
+  const boxscoreStatByGame = new Map(
+    boxscoreGameStatisticsResult.data.flatMap((row) =>
+      row.game_id === null ? [] : ([[row.game_id, row]] as const),
+    ),
+  );
+  const legacyStatByGame = new Map(
+    legacyGameStatisticsResult.data.flatMap((row) =>
       row.game_id === null ? [] : ([[row.game_id, row]] as const),
     ),
   );
@@ -280,7 +417,6 @@ export async function loadPublicPlayerProfile(
     homeState: profile.home_state,
     current:
       competitions.find((item) => item.context.competitionId === context.competitionId) ?? null,
-    career: addPlayerTotals(competitions),
     competitions,
     achievements: achievementsResult.error
       ? []
@@ -328,9 +464,17 @@ export async function loadPublicPlayerProfile(
           ? null
           : (contextById.get(honor.competition_id)?.displayName ?? null),
     })),
-    games: gameResult.data.flatMap((game) => {
+    games: gameResult.data.flatMap((game): PublicPlayerGame[] => {
       const rowContext = contextById.get(game.competition_id);
-      const stats = statByGame.get(game.id);
+      const scoresheetStats = scoresheetStatByGame.get(game.id);
+      const boxscoreStats = boxscoreStatByGame.get(game.id);
+      const legacyStats = legacyStatByGame.get(game.id);
+      const stats =
+        rowContext?.statisticsMode === "boxscore"
+          ? boxscoreStats
+          : rowContext?.statisticsMode === "scoresheet"
+            ? scoresheetStats
+            : legacyStats;
       if (!rowContext || !stats) return [];
       const participants = participantsResult.data.filter((item) => item.game_id === game.id);
       const ownParticipant = participants.find(
@@ -359,20 +503,57 @@ export async function loadPublicPlayerProfile(
             : ownScore < opponentScore
               ? "Derrota"
               : "Empate";
+      const base = {
+        id: game.id,
+        label: game.game_number ? `Jogo ${game.game_number}` : `Jogo ${game.id}`,
+        status: game.status,
+        scheduledAt: game.scheduled_at,
+        context: rowContext,
+        teamName: stats.team_name,
+        jerseyNumber: stats.jersey_number,
+        opponentName: opponent?.name ?? null,
+        result,
+        score: ownScore == null || opponentScore == null ? null : `${ownScore} × ${opponentScore}`,
+        didNotPlay: Boolean(stats.did_not_play),
+      };
+      if (rowContext.statisticsMode === "boxscore" && boxscoreStats) {
+        return [
+          {
+            ...base,
+            kind: "boxscore" as const,
+            officialPoints: nullableNumber(boxscoreStats.official_points),
+            fouls: nullableNumber(boxscoreStats.fouls),
+            advancedTotals: boxscoreStats.has_advanced_coverage
+              ? totalsFromRow({ ...boxscoreStats, points: boxscoreStats.advanced_points })
+              : null,
+          },
+        ];
+      }
+      if (rowContext.statisticsMode === "scoresheet" && scoresheetStats) {
+        return [
+          {
+            ...base,
+            kind: "scoresheet" as const,
+            points: nullableNumber(scoresheetStats.points),
+            twoPointMade: nullableNumber(scoresheetStats.two_point_made),
+            threePointMade: nullableNumber(scoresheetStats.three_point_made),
+            freeThrowMade: nullableNumber(scoresheetStats.free_throw_made),
+            fouls: nullableNumber(scoresheetStats.fouls),
+            disqualifications: nullableNumber(scoresheetStats.disqualifications),
+          },
+        ];
+      }
+      if (!legacyStats) return [];
       return [
         {
-          id: game.id,
-          label: game.game_number ? `Jogo ${game.game_number}` : `Jogo ${game.id}`,
-          status: game.status,
-          scheduledAt: game.scheduled_at,
-          context: rowContext,
-          teamName: stats.team_name,
-          jerseyNumber: stats.jersey_number,
-          opponentName: opponent?.name ?? null,
-          result,
-          score:
-            ownScore == null || opponentScore == null ? null : `${ownScore} × ${opponentScore}`,
-          totals: totalsFromRow(stats),
+          ...base,
+          kind: "scoresheet" as const,
+          points: nullableNumber(legacyStats.points),
+          twoPointMade: nullableNumber(legacyStats.two_point_made),
+          threePointMade: nullableNumber(legacyStats.three_point_made),
+          freeThrowMade: nullableNumber(legacyStats.free_throw_made),
+          fouls: nullableNumber(legacyStats.fouls),
+          disqualifications: null,
         },
       ];
     }),

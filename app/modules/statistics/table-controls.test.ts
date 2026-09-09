@@ -24,6 +24,8 @@ describe("statistics table controls", () => {
 
   it("parses only allowlisted sorting and column preferences", () => {
     expect(parseSortKey("assists", "points")).toBe("assists");
+    expect(parseSortKey("twoPointMade", "points")).toBe("twoPointMade");
+    expect(parseSortKey("disqualifications", "points")).toBe("disqualifications");
     expect(parseSortKey("drop table", "points")).toBe("points");
     expect(parseSortDirection("asc")).toBe("asc");
     expect(parseSortDirection("sideways")).toBe("desc");

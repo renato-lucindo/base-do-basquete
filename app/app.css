@@ -3578,6 +3578,74 @@ a {
   border-top: 1px solid var(--line);
 }
 
+.scoresheet-players-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0 8px;
+}
+
+.scoresheet-players-header h1,
+.scoresheet-players-header p {
+  margin: 0;
+}
+
+.scoresheet-players-header h1 {
+  margin-block: 3px;
+}
+
+.scoresheet-players-header > strong {
+  padding: 7px 10px;
+  border: 1px solid #b8d8ff;
+  border-radius: 999px;
+  color: #084f98;
+  background: #eaf4ff;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.scoresheet-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding-bottom: 6px;
+}
+
+.scoresheet-controls label {
+  display: grid;
+  gap: 6px;
+  color: #445064;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.scoresheet-controls select {
+  min-width: 220px;
+  min-height: 42px;
+  padding: 7px 34px 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.scoresheet-controls select:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.statistics-coverage-notice {
+  display: block;
+  margin: 0;
+  padding: 11px 13px;
+  border: 1px solid #b8d8ff;
+  border-radius: 8px;
+  color: #084f98;
+  background: #f2f8ff;
+  font-size: 0.82rem;
+}
+
 .statistics-toolbar {
   flex-wrap: nowrap;
   justify-content: flex-start;
@@ -3707,6 +3775,42 @@ a {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 0.8125rem;
+}
+
+.statistics-table .column-position {
+  width: 58px;
+}
+
+.statistics-table-scoresheet .column-player {
+  width: 220px;
+}
+
+.statistics-table-scoresheet th:first-child,
+.statistics-table-scoresheet td:first-child {
+  position: static;
+  text-align: right;
+}
+
+.statistics-table-scoresheet th:nth-child(2),
+.statistics-table-scoresheet td:nth-child(2) {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--paper);
+  text-align: left;
+}
+
+.statistics-table-scoresheet thead th:nth-child(2) {
+  z-index: 3;
+  background: var(--surface-muted);
+}
+
+.statistics-table-scoresheet tbody tr:nth-child(even) > :nth-child(2) {
+  background: var(--paper);
+}
+
+.statistics-table-scoresheet tbody tr:hover > :nth-child(2) {
+  background: #f8fbff;
 }
 
 .statistics-table caption {
@@ -3858,6 +3962,18 @@ a {
   .statistics-toolbar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .scoresheet-players-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .scoresheet-controls,
+  .scoresheet-controls label,
+  .scoresheet-controls select {
+    width: 100%;
   }
 
   .statistics-toolbar > .toolbar-button {

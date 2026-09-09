@@ -61,7 +61,8 @@ function TeamScore({
 }
 
 function AdvancedPlayerCells({ player }: { player: PublicGamePlayer }) {
-  if (player.didNotPlay) {
+  const totals = player.advancedTotals;
+  if (player.didNotPlay || !totals) {
     return (
       <>
         {advancedColumns.map((column) => (
@@ -72,26 +73,26 @@ function AdvancedPlayerCells({ player }: { player: PublicGamePlayer }) {
   }
   return (
     <>
-      <td>{Math.round((player.totals.secondsPlayed / 60) * 10) / 10}</td>
-      <td>{player.totals.points}</td>
+      <td>{Math.round((totals.secondsPlayed / 60) * 10) / 10}</td>
+      <td>{available(player.officialPoints)}</td>
       <td>
-        {player.totals.twoPointMade}/{player.totals.twoPointAttempted}
+        {totals.twoPointMade}/{totals.twoPointAttempted}
       </td>
       <td>
-        {player.totals.threePointMade}/{player.totals.threePointAttempted}
+        {totals.threePointMade}/{totals.threePointAttempted}
       </td>
       <td>
-        {player.totals.freeThrowMade}/{player.totals.freeThrowAttempted}
+        {totals.freeThrowMade}/{totals.freeThrowAttempted}
       </td>
-      <td>{rebounds(player.totals)}</td>
-      <td>{player.totals.offensiveRebounds}</td>
-      <td>{player.totals.defensiveRebounds}</td>
-      <td>{player.totals.assists}</td>
-      <td>{player.totals.turnovers}</td>
-      <td>{player.totals.steals}</td>
-      <td>{player.totals.blocks}</td>
-      <td>{efficiency(player.totals)}</td>
-      <td>{player.totals.plusMinus}</td>
+      <td>{rebounds(totals)}</td>
+      <td>{totals.offensiveRebounds}</td>
+      <td>{totals.defensiveRebounds}</td>
+      <td>{totals.assists}</td>
+      <td>{totals.turnovers}</td>
+      <td>{totals.steals}</td>
+      <td>{totals.blocks}</td>
+      <td>{efficiency(totals)}</td>
+      <td>{totals.plusMinus}</td>
     </>
   );
 }
@@ -155,9 +156,9 @@ function TeamBoxscore({
                 {game.advanced ? (
                   <AdvancedPlayerCells player={player} />
                 ) : (
-                  <td>{player.didNotPlay ? "—" : player.totals.points}</td>
+                  <td>{player.didNotPlay ? "—" : available(player.officialPoints)}</td>
                 )}
-                <td>{player.didNotPlay ? "—" : player.fouls}</td>
+                <td>{player.didNotPlay ? "—" : available(player.fouls)}</td>
               </tr>
             ))}
           </tbody>
@@ -193,7 +194,11 @@ function TeamBoxscore({
                 ) : (
                   <td>{team.totals.points}</td>
                 )}
-                <td>{players.reduce((total, player) => total + player.fouls, 0)}</td>
+                <td>
+                  {players.some((player) => !player.didNotPlay && player.fouls === null)
+                    ? "—"
+                    : players.reduce((total, player) => total + (player.fouls ?? 0), 0)}
+                </td>
               </tr>
             </tfoot>
           ) : null}

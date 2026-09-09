@@ -36,7 +36,10 @@ export interface PlayerStatistics {
   teamSlug: string | null;
   teamAbbreviation: string | null;
   gamesPlayed: number;
-  totals: StatisticTotals;
+  advancedGamesPlayed: number;
+  officialPoints: number;
+  fouls: number | null;
+  advancedTotals: StatisticTotals | null;
 }
 
 export type FilterMetric =
@@ -112,43 +115,50 @@ export function statisticValue(
   metric: FilterMetric,
   mode: StatisticsMode,
 ): number | null {
+  const advanced = player.advancedTotals;
   const total = (() => {
     switch (metric) {
       case "games":
         return player.gamesPlayed;
       case "minutes":
-        return player.totals.secondsPlayed / 60;
+        return advanced === null ? null : advanced.secondsPlayed / 60;
       case "points":
-        return player.totals.points;
+        return player.officialPoints;
       case "rebounds":
-        return rebounds(player.totals);
+        return advanced === null ? null : rebounds(advanced);
       case "offensiveRebounds":
-        return player.totals.offensiveRebounds;
+        return advanced?.offensiveRebounds ?? null;
       case "defensiveRebounds":
-        return player.totals.defensiveRebounds;
+        return advanced?.defensiveRebounds ?? null;
       case "assists":
-        return player.totals.assists;
+        return advanced?.assists ?? null;
       case "steals":
-        return player.totals.steals;
+        return advanced?.steals ?? null;
       case "blocks":
-        return player.totals.blocks;
+        return advanced?.blocks ?? null;
       case "turnovers":
-        return player.totals.turnovers;
+        return advanced?.turnovers ?? null;
       case "fouls":
-        return player.totals.fouls;
+        return player.fouls;
       case "fieldGoalPercentage":
-        return percentage(
-          player.totals.twoPointMade + player.totals.threePointMade,
-          player.totals.twoPointAttempted + player.totals.threePointAttempted,
-        );
+        return advanced === null
+          ? null
+          : percentage(
+              advanced.twoPointMade + advanced.threePointMade,
+              advanced.twoPointAttempted + advanced.threePointAttempted,
+            );
       case "threePointPercentage":
-        return percentage(player.totals.threePointMade, player.totals.threePointAttempted);
+        return advanced === null
+          ? null
+          : percentage(advanced.threePointMade, advanced.threePointAttempted);
       case "freeThrowPercentage":
-        return percentage(player.totals.freeThrowMade, player.totals.freeThrowAttempted);
+        return advanced === null
+          ? null
+          : percentage(advanced.freeThrowMade, advanced.freeThrowAttempted);
       case "efficiency":
-        return efficiency(player.totals);
+        return advanced === null ? null : efficiency(advanced);
       case "plusMinus":
-        return player.totals.plusMinus;
+        return advanced?.plusMinus ?? null;
     }
   })();
   if (total === null) return null;
@@ -160,7 +170,9 @@ export function statisticValue(
   ) {
     return total;
   }
-  return mode === "totals" ? total : perGame(total, player.gamesPlayed);
+  const denominator =
+    metric === "points" || metric === "fouls" ? player.gamesPlayed : player.advancedGamesPlayed;
+  return mode === "totals" ? total : perGame(total, denominator);
 }
 
 function matches(value: number, operator: FilterOperator, target: number): boolean {

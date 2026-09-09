@@ -9,10 +9,10 @@ import { PlayerProfile } from "./player-profile";
 
 const context: CompetitionContext = {
   competitionId: 1,
-  dataProfile: null,
+  dataProfile: { id: 1, primarySource: "fiba_boxscore", version: 1 },
   displayName: "Liga 2026 Sub-15",
   genderDivision: null,
-  statisticsMode: "legacy",
+  statisticsMode: "boxscore",
   year: 2026,
   series: { id: 1, name: "Liga", slug: "liga" },
   category: { id: 1, name: "Sub-15", slug: "sub-15", hasAdvancedStats: true },
@@ -32,7 +32,6 @@ const profile: PublicPlayerProfileDto = {
   homeCity: null,
   homeState: null,
   current: null,
-  career: { ...emptyPlayerTotals },
   competitions: [],
   achievements: [],
   honors: [],
@@ -78,7 +77,7 @@ describe("PlayerProfile", () => {
     const richProfile: PublicPlayerProfileDto = {
       ...profile,
       current: {
-        ...totals,
+        kind: "boxscore",
         context,
         teamName: "Dourada",
         teamSlug: "dourada",
@@ -86,11 +85,15 @@ describe("PlayerProfile", () => {
         jerseyNumber: "10",
         position: "Ala",
         starterAppearances: 2,
+        games: totals.games,
+        advancedGames: totals.games,
+        officialPoints: totals.points,
+        fouls: totals.fouls,
+        advancedTotals: totals,
       },
-      career: totals,
       competitions: [
         {
-          ...totals,
+          kind: "boxscore",
           context,
           teamName: "Dourada",
           teamSlug: "dourada",
@@ -98,6 +101,11 @@ describe("PlayerProfile", () => {
           jerseyNumber: "10",
           position: "Ala",
           starterAppearances: 2,
+          games: totals.games,
+          advancedGames: totals.games,
+          officialPoints: totals.points,
+          fouls: totals.fouls,
+          advancedTotals: totals,
         },
       ],
       honors: [
@@ -121,7 +129,11 @@ describe("PlayerProfile", () => {
           opponentName: "Azul",
           result: "Vitória",
           score: "70 × 62",
-          totals,
+          didNotPlay: false,
+          kind: "boxscore",
+          officialPoints: totals.points,
+          fouls: totals.fouls,
+          advancedTotals: totals,
         },
       ],
     };
@@ -154,5 +166,71 @@ describe("PlayerProfile", () => {
     expect(html).toContain("Destaque");
     expect(html).toContain("Azul");
     expect(html).toContain("4,3");
+  });
+
+  it("keeps a scoresheet profile limited to confirmed scoresheet fields", () => {
+    const scoresheetContext: CompetitionContext = {
+      ...context,
+      dataProfile: { id: 2, primarySource: "manual_scoresheet", version: 1 },
+      statisticsMode: "scoresheet",
+    };
+    const summary = {
+      kind: "scoresheet" as const,
+      context: scoresheetContext,
+      teamName: "Dourada",
+      teamSlug: "dourada",
+      teamAbbreviation: "DOU",
+      jerseyNumber: "10",
+      position: "Ala",
+      starterAppearances: 1,
+      games: 2,
+      dnpCount: 1,
+      points: 9,
+      twoPointMade: 3,
+      threePointMade: 1,
+      freeThrowMade: 0,
+      fouls: null,
+      disqualifications: null,
+    };
+    const scoresheetProfile: PublicPlayerProfileDto = {
+      ...profile,
+      current: summary,
+      competitions: [summary],
+      games: [
+        {
+          id: 11,
+          label: "Jogo 11",
+          status: "final",
+          scheduledAt: "2026-08-25T15:00:00Z",
+          context: scoresheetContext,
+          teamName: "Dourada",
+          jerseyNumber: "10",
+          opponentName: "Azul",
+          result: null,
+          score: null,
+          didNotPlay: true,
+          kind: "scoresheet",
+          points: null,
+          twoPointMade: null,
+          threePointMade: null,
+          freeThrowMade: null,
+          fouls: null,
+          disqualifications: null,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <PlayerProfile achievements={[]} context={scoresheetContext} profile={scoresheetProfile} />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("Dados registrados por súmula");
+    expect(html).toContain("PTS/J");
+    expect(html).toContain("DNP");
+    expect(html).not.toContain("Comparar jogador");
+    expect(html).not.toContain("Detalhamento avançado");
+    expect(html).not.toContain("AP%");
   });
 });

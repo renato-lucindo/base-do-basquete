@@ -19,7 +19,7 @@ import {
 } from "../modules/statistics/domain";
 import type {
   CompetitionStatisticsDto,
-  SimplePlayerStatistics,
+  ScoresheetPlayerStatistics,
 } from "../modules/statistics/public-statistics.server";
 import {
   advancedColumnPresets,
@@ -252,41 +252,45 @@ function advancedCell(
   column: AdvancedColumn,
   mode: StatisticsMode,
 ): ReactNode {
-  const { totals } = player;
+  const totals = player.advancedTotals;
+  if (column === "games") return player.gamesPlayed;
+  if (column === "points") {
+    return displayNumber(modeValue(player.officialPoints, player.gamesPlayed, mode));
+  }
+  if (column === "fouls") {
+    return displayNumber(
+      player.fouls === null ? null : modeValue(player.fouls, player.gamesPlayed, mode),
+    );
+  }
+  if (totals === null) return "—";
   const fieldMade = totals.twoPointMade + totals.threePointMade;
   const fieldAttempted = totals.twoPointAttempted + totals.threePointAttempted;
   switch (column) {
-    case "games":
-      return player.gamesPlayed;
     case "minutes":
-      return displayNumber(modeValue(totals.secondsPlayed / 60, player.gamesPlayed, mode));
-    case "points":
-      return displayNumber(modeValue(totals.points, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.secondsPlayed / 60, player.advancedGamesPlayed, mode));
     case "rebounds":
-      return displayNumber(modeValue(rebounds(totals), player.gamesPlayed, mode));
+      return displayNumber(modeValue(rebounds(totals), player.advancedGamesPlayed, mode));
     case "offensiveRebounds":
-      return displayNumber(modeValue(totals.offensiveRebounds, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.offensiveRebounds, player.advancedGamesPlayed, mode));
     case "defensiveRebounds":
-      return displayNumber(modeValue(totals.defensiveRebounds, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.defensiveRebounds, player.advancedGamesPlayed, mode));
     case "assists":
-      return displayNumber(modeValue(totals.assists, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.assists, player.advancedGamesPlayed, mode));
     case "steals":
-      return displayNumber(modeValue(totals.steals, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.steals, player.advancedGamesPlayed, mode));
     case "blocks":
-      return displayNumber(modeValue(totals.blocks, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.blocks, player.advancedGamesPlayed, mode));
     case "turnovers":
-      return displayNumber(modeValue(totals.turnovers, player.gamesPlayed, mode));
-    case "fouls":
-      return displayNumber(modeValue(totals.fouls, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.turnovers, player.advancedGamesPlayed, mode));
     case "fieldGoals":
-      return madeAttempted(fieldMade, fieldAttempted, player.gamesPlayed, mode);
+      return madeAttempted(fieldMade, fieldAttempted, player.advancedGamesPlayed, mode);
     case "fieldGoalPercentage":
       return displayPercent(fieldMade, fieldAttempted);
     case "threePointers":
       return madeAttempted(
         totals.threePointMade,
         totals.threePointAttempted,
-        player.gamesPlayed,
+        player.advancedGamesPlayed,
         mode,
       );
     case "threePointPercentage":
@@ -295,15 +299,15 @@ function advancedCell(
       return madeAttempted(
         totals.freeThrowMade,
         totals.freeThrowAttempted,
-        player.gamesPlayed,
+        player.advancedGamesPlayed,
         mode,
       );
     case "freeThrowPercentage":
       return displayPercent(totals.freeThrowMade, totals.freeThrowAttempted);
     case "efficiency":
-      return displayNumber(modeValue(efficiency(totals), player.gamesPlayed, mode));
+      return displayNumber(modeValue(efficiency(totals), player.advancedGamesPlayed, mode));
     case "plusMinus":
-      return displayNumber(modeValue(totals.plusMinus, player.gamesPlayed, mode));
+      return displayNumber(modeValue(totals.plusMinus, player.advancedGamesPlayed, mode));
   }
 }
 
@@ -314,24 +318,25 @@ function advancedSortValue(
 ): number | string | null {
   if (key === "player") return player.playerName;
   if (key === "team") return player.teamName;
-  if (key === "pointsPerGame") return perGame(player.totals.points, player.gamesPlayed);
+  if (key === "pointsPerGame") return perGame(player.officialPoints, player.gamesPlayed);
+  if (player.advancedTotals === null) return statisticValue(player, key as FilterMetric, mode);
   if (key === "fieldGoals") {
     return modeValue(
-      player.totals.twoPointMade + player.totals.threePointMade,
-      player.gamesPlayed,
+      player.advancedTotals.twoPointMade + player.advancedTotals.threePointMade,
+      player.advancedGamesPlayed,
       mode,
     );
   }
   if (key === "threePointers") {
-    return modeValue(player.totals.threePointMade, player.gamesPlayed, mode);
+    return modeValue(player.advancedTotals.threePointMade, player.advancedGamesPlayed, mode);
   }
   if (key === "freeThrows") {
-    return modeValue(player.totals.freeThrowMade, player.gamesPlayed, mode);
+    return modeValue(player.advancedTotals.freeThrowMade, player.advancedGamesPlayed, mode);
   }
   return statisticValue(player, key as FilterMetric, mode);
 }
 
-function TeamCell({ player }: { player: PlayerStatistics | SimplePlayerStatistics }) {
+function TeamCell({ player }: { player: PlayerStatistics | ScoresheetPlayerStatistics }) {
   if (!player.teamName) return <>—</>;
   return (
     <abbr aria-label={player.teamName} title={player.teamName}>
@@ -425,32 +430,39 @@ function AdvancedStatisticsTable({
   );
 }
 
-function SimpleStatisticsTable({
+function ScoresheetStatisticsTable({
   context,
   direction,
   onSort,
   players,
+  positionOffset,
   searchParams,
+  showDisqualifications,
   sortKey,
 }: {
   context: CompetitionContext;
   direction: SortDirection;
   onSort: (key: StatisticsSortKey) => void;
-  players: SimplePlayerStatistics[];
+  players: ScoresheetPlayerStatistics[];
+  positionOffset: number;
   searchParams: URLSearchParams;
+  showDisqualifications: boolean;
   sortKey: StatisticsSortKey;
 }) {
   return (
-    <ScrollableTable label="Estatísticas simplificadas da edição">
-      <table className="statistics-table statistics-table-simple">
-        <caption>Estatísticas simplificadas</caption>
+    <ScrollableTable label="Estatísticas de súmula dos jogadores">
+      <table className="statistics-table statistics-table-scoresheet">
+        <caption>Dados registrados por súmula</caption>
         <colgroup>
+          <col className="column-position" />
           <col className="column-player" />
           <col className="column-team" />
-          <col span={3} className="column-metric" />
+          <col span={7} className="column-metric" />
+          {showDisqualifications ? <col className="column-metric" /> : null}
         </colgroup>
         <thead>
           <tr>
+            <th scope="col">Pos.</th>
             <SortHeader
               activeKey={sortKey}
               direction={direction}
@@ -475,6 +487,13 @@ function SimpleStatisticsTable({
             <SortHeader
               activeKey={sortKey}
               direction={direction}
+              label="PTS"
+              onSort={onSort}
+              sortKey="points"
+            />
+            <SortHeader
+              activeKey={sortKey}
+              direction={direction}
               label="PTS/J"
               onSort={onSort}
               sortKey="pointsPerGame"
@@ -482,15 +501,46 @@ function SimpleStatisticsTable({
             <SortHeader
               activeKey={sortKey}
               direction={direction}
-              label="PTS"
+              label="2PC"
               onSort={onSort}
-              sortKey="points"
+              sortKey="twoPointMade"
             />
+            <SortHeader
+              activeKey={sortKey}
+              direction={direction}
+              label="3PC"
+              onSort={onSort}
+              sortKey="threePointMade"
+            />
+            <SortHeader
+              activeKey={sortKey}
+              direction={direction}
+              label="LLC"
+              onSort={onSort}
+              sortKey="freeThrowMade"
+            />
+            <SortHeader
+              activeKey={sortKey}
+              direction={direction}
+              label="F"
+              onSort={onSort}
+              sortKey="fouls"
+            />
+            {showDisqualifications ? (
+              <SortHeader
+                activeKey={sortKey}
+                direction={direction}
+                label="GD"
+                onSort={onSort}
+                sortKey="disqualifications"
+              />
+            ) : null}
           </tr>
         </thead>
         <tbody>
-          {players.map((player) => (
+          {players.map((player, index) => (
             <tr key={player.playerId}>
+              <td>{positionOffset + index + 1}</td>
               <th scope="row">
                 <Link to={playerPath(context, player, searchParams)}>{player.playerName}</Link>
               </th>
@@ -498,8 +548,17 @@ function SimpleStatisticsTable({
                 <TeamCell player={player} />
               </td>
               <td>{player.gamesPlayed}</td>
+              <td>{displayNumber(player.points)}</td>
               <td>{displayNumber(player.pointsPerGame)}</td>
-              <td>{player.points}</td>
+              <td className="scoresheet-extra-metric">{displayNumber(player.twoPointMade)}</td>
+              <td className="scoresheet-extra-metric">{displayNumber(player.threePointMade)}</td>
+              <td className="scoresheet-extra-metric">{displayNumber(player.freeThrowMade)}</td>
+              <td className="scoresheet-extra-metric">{displayNumber(player.fouls)}</td>
+              {showDisqualifications ? (
+                <td className="scoresheet-extra-metric">
+                  {displayNumber(player.disqualifications)}
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>
@@ -774,17 +833,15 @@ export function StatisticsExplorer({
       ? "totals"
       : "averages";
   const query = searchParams.get("q") ?? "";
-  const parsedSort = parseSortKey(
-    searchParams.get("sort"),
-    statistics.kind === "simple" ? "pointsPerGame" : "points",
-  );
+  const selectedTeam = searchParams.get("team") ?? "";
+  const parsedSort = parseSortKey(searchParams.get("sort"), "points");
   const visibleSorts = new Set<StatisticsSortKey>([
     "player",
     "team",
     ...columns.map((column) => columnSortKeys[column]),
   ]);
   const sortKey =
-    statistics.kind === "advanced" && !visibleSorts.has(parsedSort) ? "player" : parsedSort;
+    statistics.kind === "boxscore" && !visibleSorts.has(parsedSort) ? "player" : parsedSort;
   const direction = parseSortDirection(searchParams.get("dir"));
 
   useEffect(() => {
@@ -845,13 +902,31 @@ export function StatisticsExplorer({
     });
   };
 
-  const searchedPlayers = useMemo(
-    () => statistics.players.filter((player) => matchesStatisticsSearch(player, query)),
-    [query, statistics.players],
+  const teamOptions = useMemo(
+    () =>
+      [
+        ...new Map(
+          statistics.players.flatMap((player) =>
+            player.teamSlug && player.teamName ? [[player.teamSlug, player.teamName] as const] : [],
+          ),
+        ),
+      ]
+        .map(([slug, name]) => ({ slug, name }))
+        .sort((left, right) => left.name.localeCompare(right.name, "pt-BR")),
+    [statistics.players],
   );
-  const sortedSimplePlayers = useMemo(() => {
-    if (statistics.kind !== "simple") return [];
-    const value = (player: SimplePlayerStatistics): number | string | null =>
+  const searchedPlayers = useMemo(
+    () =>
+      statistics.players.filter(
+        (player) =>
+          matchesStatisticsSearch(player, query) &&
+          (!selectedTeam || player.teamSlug === selectedTeam),
+      ),
+    [query, selectedTeam, statistics.players],
+  );
+  const sortedScoresheetPlayers = useMemo(() => {
+    if (statistics.kind !== "scoresheet") return [];
+    const value = (player: ScoresheetPlayerStatistics): number | string | null =>
       sortKey === "player"
         ? player.playerName
         : sortKey === "team"
@@ -860,15 +935,34 @@ export function StatisticsExplorer({
             ? player.gamesPlayed
             : sortKey === "points"
               ? player.points
-              : player.pointsPerGame;
-    return [...(searchedPlayers as SimplePlayerStatistics[])].sort(
-      (left, right) =>
-        compareValues(value(left), value(right), direction) ||
-        left.playerName.localeCompare(right.playerName, "pt-BR"),
-    );
+              : sortKey === "pointsPerGame"
+                ? player.pointsPerGame
+                : sortKey === "twoPointMade"
+                  ? player.twoPointMade
+                  : sortKey === "threePointMade"
+                    ? player.threePointMade
+                    : sortKey === "freeThrowMade"
+                      ? player.freeThrowMade
+                      : sortKey === "fouls"
+                        ? player.fouls
+                        : sortKey === "disqualifications"
+                          ? player.disqualifications
+                          : null;
+    return [...(searchedPlayers as ScoresheetPlayerStatistics[])].sort((left, right) => {
+      const primary = compareValues(value(left), value(right), direction);
+      if (primary !== 0) return primary;
+      if (sortKey === "points") {
+        return (
+          compareValues(left.pointsPerGame, right.pointsPerGame, "desc") ||
+          compareValues(left.gamesPlayed, right.gamesPlayed, "desc") ||
+          left.playerName.localeCompare(right.playerName, "pt-BR")
+        );
+      }
+      return left.playerName.localeCompare(right.playerName, "pt-BR");
+    });
   }, [direction, searchedPlayers, sortKey, statistics.kind]);
   const advancedPlayers = useMemo(() => {
-    if (statistics.kind !== "advanced") return [];
+    if (statistics.kind !== "boxscore") return [];
     return [...applyStatisticFilters(searchedPlayers as PlayerStatistics[], filters, mode)].sort(
       (left, right) =>
         compareValues(
@@ -878,7 +972,7 @@ export function StatisticsExplorer({
         ) || left.playerName.localeCompare(right.playerName, "pt-BR"),
     );
   }, [direction, filters, mode, searchedPlayers, sortKey, statistics.kind]);
-  const allPlayers = statistics.kind === "simple" ? sortedSimplePlayers : advancedPlayers;
+  const allPlayers = statistics.kind === "scoresheet" ? sortedScoresheetPlayers : advancedPlayers;
   const totalPages = Math.max(1, Math.ceil(allPlayers.length / PAGE_SIZE));
   const page = Math.min(parsePage(searchParams.get("page")), totalPages);
   const paginatedPlayers = allPlayers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -907,7 +1001,42 @@ export function StatisticsExplorer({
 
   return (
     <section aria-label="Jogadores da edição" className="statistics-explorer">
-      {statistics.kind === "advanced" ? (
+      {statistics.kind === "scoresheet" ? (
+        <>
+          <header className="scoresheet-players-header">
+            <div>
+              <p className="eyebrow">{context.displayName}</p>
+              <h1>Jogadores</h1>
+              <p>Dados registrados por súmula</p>
+            </div>
+            <strong>{statistics.players.length} atletas com participação</strong>
+          </header>
+          <div className="scoresheet-controls">
+            <label>
+              Equipe
+              <select
+                value={selectedTeam}
+                onChange={(event) =>
+                  replaceParams((next) => {
+                    if (event.target.value) next.set("team", event.target.value);
+                    else next.delete("team");
+                    resetPage(next);
+                  })
+                }
+              >
+                <option value="">Todas as equipes</option>
+                {teamOptions.map((team) => (
+                  <option key={team.slug} value={team.slug}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </>
+      ) : null}
+
+      {statistics.kind === "boxscore" ? (
         <>
           <div className="statistics-toolbar">
             <button
@@ -1154,25 +1283,42 @@ export function StatisticsExplorer({
         </>
       ) : null}
 
+      {statistics.kind === "boxscore" &&
+      statistics.coverage.advancedGames < statistics.coverage.totalGames ? (
+        <output className="statistics-coverage-notice">
+          Estatísticas avançadas disponíveis em {statistics.coverage.advancedGames} de{" "}
+          {statistics.coverage.totalGames} jogos. Os demais jogos preservam somente os dados básicos
+          confirmados.
+        </output>
+      ) : null}
+
       <header className="statistics-table-heading">
         <div>
           <h2 aria-live="polite">{allPlayers.length} atletas</h2>
           <p>
-            {statistics.kind === "advanced" && mode === "totals" ? "Total" : "Por jogo"} · somente
-            jogos finalizados
+            {statistics.kind === "scoresheet"
+              ? "Totais e média por participação"
+              : mode === "totals"
+                ? "Total"
+                : "Por jogo"}{" "}
+            · somente jogos finalizados
           </p>
         </div>
         <span className="statistics-scroll-hint">↔ Deslize para ver mais</span>
       </header>
 
       {allPlayers.length ? (
-        statistics.kind === "simple" ? (
-          <SimpleStatisticsTable
+        statistics.kind === "scoresheet" ? (
+          <ScoresheetStatisticsTable
             context={context}
             direction={direction}
             onSort={sort}
-            players={paginatedPlayers as SimplePlayerStatistics[]}
+            players={paginatedPlayers as ScoresheetPlayerStatistics[]}
+            positionOffset={(page - 1) * PAGE_SIZE}
             searchParams={searchParams}
+            showDisqualifications={statistics.players.some(
+              (player) => (player.disqualifications ?? 0) > 0,
+            )}
             sortKey={sortKey}
           />
         ) : (
@@ -1190,16 +1336,18 @@ export function StatisticsExplorer({
       ) : (
         <ResourceState
           detail={
-            query || filters.length
+            query || selectedTeam || filters.length
               ? "Remova ou ajuste a busca e os filtros para ver outros resultados."
               : "As estatísticas aparecerão após a publicação do primeiro jogo finalizado."
           }
           kind="empty"
-          title={query || filters.length ? "Nenhum resultado encontrado" : undefined}
+          title={
+            query || selectedTeam || filters.length ? "Nenhum resultado encontrado" : undefined
+          }
         />
       )}
       <Pagination current={page} onPage={setPage} total={allPlayers.length} />
-      {statistics.kind === "advanced" ? (
+      {statistics.kind === "boxscore" ? (
         <details className="statistics-legend">
           <summary>Legenda das métricas</summary>
           <dl>
@@ -1212,7 +1360,7 @@ export function StatisticsExplorer({
           </dl>
         </details>
       ) : null}
-      {statistics.kind === "advanced" ? (
+      {statistics.kind === "boxscore" ? (
         <ComparisonDialog
           context={context}
           mode={mode}

@@ -1,5 +1,5 @@
 import type { PlayerStatistics } from "./domain";
-import type { SimplePlayerStatistics } from "./public-statistics.server";
+import type { ScoresheetPlayerStatistics } from "./public-statistics.server";
 
 export type SortDirection = "asc" | "desc";
 export type StatisticsSortKey =
@@ -9,6 +9,10 @@ export type StatisticsSortKey =
   | "minutes"
   | "points"
   | "pointsPerGame"
+  | "twoPointMade"
+  | "threePointMade"
+  | "freeThrowMade"
+  | "disqualifications"
   | "rebounds"
   | "offensiveRebounds"
   | "defensiveRebounds"
@@ -94,6 +98,10 @@ const allowedSortKeys = new Set<StatisticsSortKey>([
   "minutes",
   "points",
   "pointsPerGame",
+  "twoPointMade",
+  "threePointMade",
+  "freeThrowMade",
+  "disqualifications",
   "rebounds",
   "offensiveRebounds",
   "defensiveRebounds",
@@ -121,7 +129,7 @@ export function normalizeSearch(value: string): string {
 }
 
 export function matchesStatisticsSearch(
-  player: Pick<PlayerStatistics | SimplePlayerStatistics, "playerName" | "teamName">,
+  player: Pick<PlayerStatistics | ScoresheetPlayerStatistics, "playerName" | "teamName">,
   query: string,
 ): boolean {
   const normalized = normalizeSearch(query);

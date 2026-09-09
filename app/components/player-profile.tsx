@@ -7,7 +7,12 @@ import {
   genderDivisionLabel,
 } from "../modules/competition/context";
 import type { PublicAchievement } from "../modules/competition/public-data.server";
-import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
+import type {
+  BoxscorePlayerCompetitionSummary,
+  PublicPlayerGame,
+  PublicPlayerProfileDto,
+  ScoresheetPlayerCompetitionSummary,
+} from "../modules/statistics/player-profile.server";
 import {
   efficiency,
   type PlayerTotals,
@@ -30,8 +35,9 @@ function number(value: number | null, suffix = ""): string {
   return `${Number.isInteger(value) ? value : value.toFixed(1).replace(".", ",")}${suffix}`;
 }
 
-function modeValue(value: number, totals: PlayerTotals, mode: ProfileMode): number | null {
-  return mode === "total" ? value : perGame(value, totals.games);
+function modeValue(value: number | null, games: number, mode: ProfileMode): number | null {
+  if (value === null) return null;
+  return mode === "total" ? value : perGame(value, games);
 }
 
 function fieldPercentage(totals: PlayerTotals): number | null {
@@ -54,14 +60,20 @@ function placementLabel(placement: number, resultLabel: string | null): string {
   return placement === 1 ? "Campeão" : `${placement}º lugar`;
 }
 
-function Metrics({ mode, totals }: { mode: ProfileMode; totals: PlayerTotals }) {
+function BoxscoreMetrics({ summary }: { summary: BoxscorePlayerCompetitionSummary }) {
+  const totals = summary.advancedTotals;
   const metrics = [
-    ["PTS", modeValue(totals.points, totals, mode)],
-    ["REB", modeValue(totals.offensiveRebounds + totals.defensiveRebounds, totals, mode)],
-    ["AST", modeValue(totals.assists, totals, mode)],
-    ["AP%", fieldPercentage(totals)],
-    ["EF", modeValue(efficiency(totals), totals, mode)],
-    ["+/-", modeValue(totals.plusMinus, totals, mode)],
+    ["PTS", perGame(summary.officialPoints, summary.games)],
+    [
+      "REB",
+      totals
+        ? perGame(totals.offensiveRebounds + totals.defensiveRebounds, summary.advancedGames)
+        : null,
+    ],
+    ["AST", totals ? perGame(totals.assists, summary.advancedGames) : null],
+    ["AP%", totals ? fieldPercentage(totals) : null],
+    ["EF", totals ? perGame(efficiency(totals), summary.advancedGames) : null],
+    ["+/-", totals ? perGame(totals.plusMinus, summary.advancedGames) : null],
   ] as const;
   return (
     <dl className="player-key-metrics">
@@ -75,11 +87,39 @@ function Metrics({ mode, totals }: { mode: ProfileMode; totals: PlayerTotals }) 
   );
 }
 
+function ScoresheetMetrics({ summary }: { summary: ScoresheetPlayerCompetitionSummary }) {
+  const metrics = [
+    ["J", summary.games],
+    ["PTS", summary.points],
+    ["PTS/J", summary.points === null ? null : perGame(summary.points, summary.games)],
+    ["2PC", summary.twoPointMade],
+    ["3PC", summary.threePointMade],
+    ["LLC", summary.freeThrowMade],
+    ["F", summary.fouls],
+    ["GD", summary.disqualifications],
+  ] as const;
+  return (
+    <dl className="player-key-metrics">
+      {metrics.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{number(value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function gamePoints(game: PublicPlayerGame): number {
+  if (game.didNotPlay) return 0;
+  return (game.kind === "scoresheet" ? game.points : game.officialPoints) ?? 0;
+}
+
 function RecentProduction({ games }: { games: PublicPlayerProfileDto["games"] }) {
   const recent = games.slice(0, 5).reverse();
   if (recent.length < 3) return null;
-  const maximum = Math.max(...recent.map((game) => game.totals.points), 1);
-  const text = recent.map((game) => `${game.label}: ${game.totals.points} pontos`).join("; ");
+  const maximum = Math.max(...recent.map(gamePoints), 1);
+  const text = recent.map((game) => `${game.label}: ${gamePoints(game)} pontos`).join("; ");
   return (
     <section aria-labelledby="recent-production-title" className="recent-production">
       <header>
@@ -92,8 +132,8 @@ function RecentProduction({ games }: { games: PublicPlayerProfileDto["games"] })
       <ol aria-label={text} className="recent-production-chart">
         {recent.map((game) => (
           <li key={game.id}>
-            <span style={{ height: `${Math.max(8, (game.totals.points / maximum) * 100)}%` }} />
-            <strong>{game.totals.points}</strong>
+            <span style={{ height: `${Math.max(8, (gamePoints(game) / maximum) * 100)}%` }} />
+            <strong>{gamePoints(game)}</strong>
             <small>{game.label}</small>
           </li>
         ))}
@@ -164,6 +204,211 @@ function AwardsAndHistory({
   );
 }
 
+function ScoresheetCompetitionTable({
+  items,
+  playerSlug,
+}: {
+  items: ScoresheetPlayerCompetitionSummary[];
+  playerSlug: string;
+}) {
+  if (!items.length) return null;
+  return (
+    <ScrollableTable label="Estatísticas de súmula do atleta por edição">
+      <table className="statistics-table player-statistics-table">
+        <caption>Dados registrados por súmula</caption>
+        <thead>
+          <tr>
+            {["Edição", "Equipe", "J", "PTS", "PTS/J", "2PC", "3PC", "LLC", "F", "GD"].map(
+              (label) => (
+                <th key={label} scope="col">
+                  {label}
+                </th>
+              ),
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.context.competitionId}>
+              <th scope="row">
+                <Link to={contextPath(item.context, "jogadores", playerSlug)}>
+                  {item.context.year} · {item.context.category.name}
+                </Link>
+              </th>
+              <td>{item.teamAbbreviation ?? item.teamName ?? "—"}</td>
+              <td>{item.games}</td>
+              <td>{number(item.points)}</td>
+              <td>{number(item.points === null ? null : perGame(item.points, item.games))}</td>
+              <td>{number(item.twoPointMade)}</td>
+              <td>{number(item.threePointMade)}</td>
+              <td>{number(item.freeThrowMade)}</td>
+              <td>{number(item.fouls)}</td>
+              <td>{number(item.disqualifications)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </ScrollableTable>
+  );
+}
+
+function BoxscoreCompetitionTable({
+  items,
+  mode,
+  playerSlug,
+}: {
+  items: BoxscorePlayerCompetitionSummary[];
+  mode: ProfileMode;
+  playerSlug: string;
+}) {
+  if (!items.length) return null;
+  return (
+    <ScrollableTable label="Estatísticas de boxscore do atleta por edição">
+      <table className="statistics-table player-statistics-table">
+        <caption>Estatísticas de boxscore por edição</caption>
+        <thead>
+          <tr>
+            {[
+              "Edição",
+              "Equipe",
+              "J",
+              "MIN",
+              "PTS",
+              "REB",
+              "AST",
+              "AP%",
+              "3P%",
+              "LL%",
+              "EF",
+              "+/-",
+            ].map((label) => (
+              <th key={label} scope="col">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const totals = item.advancedTotals;
+            return (
+              <tr key={item.context.competitionId}>
+                <th scope="row">
+                  <Link to={contextPath(item.context, "jogadores", playerSlug)}>
+                    {item.context.year} · {item.context.category.name}
+                  </Link>
+                </th>
+                <td>{item.teamAbbreviation ?? item.teamName ?? "—"}</td>
+                <td>{item.games}</td>
+                <td>
+                  {number(
+                    totals ? modeValue(totals.secondsPlayed / 60, item.advancedGames, mode) : null,
+                  )}
+                </td>
+                <td>{number(modeValue(item.officialPoints, item.games, mode))}</td>
+                <td>
+                  {number(
+                    totals
+                      ? modeValue(
+                          totals.offensiveRebounds + totals.defensiveRebounds,
+                          item.advancedGames,
+                          mode,
+                        )
+                      : null,
+                  )}
+                </td>
+                <td>
+                  {number(totals ? modeValue(totals.assists, item.advancedGames, mode) : null)}
+                </td>
+                <td>{number(totals ? fieldPercentage(totals) : null, "%")}</td>
+                <td>
+                  {number(
+                    totals ? percentage(totals.threePointMade, totals.threePointAttempted) : null,
+                    "%",
+                  )}
+                </td>
+                <td>
+                  {number(
+                    totals ? percentage(totals.freeThrowMade, totals.freeThrowAttempted) : null,
+                    "%",
+                  )}
+                </td>
+                <td>
+                  {number(totals ? modeValue(efficiency(totals), item.advancedGames, mode) : null)}
+                </td>
+                <td>
+                  {number(totals ? modeValue(totals.plusMinus, item.advancedGames, mode) : null)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </ScrollableTable>
+  );
+}
+
+function PlayerGamesTable({ games }: { games: PublicPlayerGame[] }) {
+  if (!games.length) return null;
+  return (
+    <ScrollableTable label="Jogos do atleta">
+      <table className="statistics-table player-games-table">
+        <caption>Jogos mais recentes</caption>
+        <thead>
+          <tr>
+            {["Data", "Adversário", "Resultado", "PTS", "2PC", "3PC", "LLC", "F", "GD"].map(
+              (label) => (
+                <th key={label} scope="col">
+                  {label}
+                </th>
+              ),
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {games.map((game) => {
+            const scoresheet = game.kind === "scoresheet" ? game : null;
+            const boxscore = game.kind === "boxscore" ? game : null;
+            const advanced = boxscore?.advancedTotals;
+            return (
+              <tr key={game.id}>
+                <th scope="row">
+                  <Link to={contextPath(game.context, "jogos", game.id)}>
+                    {dateLabel(game.scheduledAt)}
+                  </Link>
+                </th>
+                <td>{game.opponentName ?? "—"}</td>
+                <td>
+                  {game.didNotPlay ? (
+                    <strong>DNP</strong>
+                  ) : (
+                    <span data-result={game.result}>
+                      {game.result}
+                      {game.score ? ` · ${game.score}` : ""}
+                    </span>
+                  )}
+                </td>
+                <td>
+                  {number(
+                    game.didNotPlay
+                      ? null
+                      : (scoresheet?.points ?? boxscore?.officialPoints ?? null),
+                  )}
+                </td>
+                <td>{number(scoresheet?.twoPointMade ?? advanced?.twoPointMade ?? null)}</td>
+                <td>{number(scoresheet?.threePointMade ?? advanced?.threePointMade ?? null)}</td>
+                <td>{number(scoresheet?.freeThrowMade ?? advanced?.freeThrowMade ?? null)}</td>
+                <td>{number(scoresheet?.fouls ?? boxscore?.fouls ?? null)}</td>
+                <td>{number(scoresheet?.disqualifications ?? null)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </ScrollableTable>
+  );
+}
+
 export function PlayerProfile({
   achievements,
   context,
@@ -180,6 +425,12 @@ export function PlayerProfile({
   compareParams.set("compare", `${profile.id},`);
   const comparePath = `${contextPath(context, "jogadores")}?${compareParams}`;
   const current = profile.current;
+  const scoresheetCompetitions = profile.competitions.filter(
+    (item): item is ScoresheetPlayerCompetitionSummary => item.kind === "scoresheet",
+  );
+  const boxscoreCompetitions = profile.competitions.filter(
+    (item): item is BoxscorePlayerCompetitionSummary => item.kind === "boxscore",
+  );
   const age = profile.birthYear ? new Date().getFullYear() - profile.birthYear : null;
   const headerFields = [
     current?.jerseyNumber ? ["Número", current.jerseyNumber] : null,
@@ -204,9 +455,11 @@ export function PlayerProfile({
           <h1>{profile.fullName}</h1>
           {profile.nickname ? <p className="player-nickname">“{profile.nickname}”</p> : null}
           {profile.bio ? <p>{profile.bio}</p> : null}
-          <Link className="button button-primary compare-profile-action" to={comparePath}>
-            Comparar jogador
-          </Link>
+          {context.statisticsMode === "boxscore" ? (
+            <Link className="button button-primary compare-profile-action" to={comparePath}>
+              Comparar jogador
+            </Link>
+          ) : null}
         </div>
         {headerFields.length ? (
           <dl className="player-public-fields">
@@ -235,41 +488,67 @@ export function PlayerProfile({
         <h2>Resumo</h2>
         {current?.games ? (
           <>
-            <Metrics mode="per-game" totals={current} />
+            {current.kind === "scoresheet" ? (
+              <ScoresheetMetrics summary={current} />
+            ) : (
+              <BoxscoreMetrics summary={current} />
+            )}
             <RecentProduction games={profile.games} />
-            <section aria-labelledby="profile-detail-title" className="player-detail-metrics">
-              <h3 id="profile-detail-title">Detalhamento</h3>
-              <dl>
-                {[
-                  ["MIN", number(perGame(current.secondsPlayed / 60, current.games))],
-                  [
-                    "RO/RD",
-                    `${number(perGame(current.offensiveRebounds, current.games))}/${number(perGame(current.defensiveRebounds, current.games))}`,
-                  ],
-                  [
-                    "BR/TO",
-                    `${number(perGame(current.steals, current.games))}/${number(perGame(current.blocks, current.games))}`,
-                  ],
-                  [
-                    "ER/FC",
-                    `${number(perGame(current.turnovers, current.games))}/${number(perGame(current.fouls, current.games))}`,
-                  ],
-                  [
-                    "3P%",
-                    number(percentage(current.threePointMade, current.threePointAttempted), "%"),
-                  ],
-                  [
-                    "LL%",
-                    number(percentage(current.freeThrowMade, current.freeThrowAttempted), "%"),
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label}>
-                    <dt>{label}</dt>
-                    <dd>{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </section>
+            {current.kind === "boxscore" && current.advancedTotals ? (
+              <section aria-labelledby="profile-detail-title" className="player-detail-metrics">
+                <h3 id="profile-detail-title">Detalhamento avançado</h3>
+                <p>
+                  Cobertura avançada em {current.advancedGames} de {current.games} jogos.
+                </p>
+                <dl>
+                  {[
+                    [
+                      "MIN",
+                      number(
+                        perGame(current.advancedTotals.secondsPlayed / 60, current.advancedGames),
+                      ),
+                    ],
+                    [
+                      "RO/RD",
+                      `${number(perGame(current.advancedTotals.offensiveRebounds, current.advancedGames))}/${number(perGame(current.advancedTotals.defensiveRebounds, current.advancedGames))}`,
+                    ],
+                    [
+                      "BR/TO",
+                      `${number(perGame(current.advancedTotals.steals, current.advancedGames))}/${number(perGame(current.advancedTotals.blocks, current.advancedGames))}`,
+                    ],
+                    [
+                      "ER/FC",
+                      `${number(perGame(current.advancedTotals.turnovers, current.advancedGames))}/${number(current.fouls === null ? null : perGame(current.fouls, current.games))}`,
+                    ],
+                    [
+                      "3P%",
+                      number(
+                        percentage(
+                          current.advancedTotals.threePointMade,
+                          current.advancedTotals.threePointAttempted,
+                        ),
+                        "%",
+                      ),
+                    ],
+                    [
+                      "LL%",
+                      number(
+                        percentage(
+                          current.advancedTotals.freeThrowMade,
+                          current.advancedTotals.freeThrowAttempted,
+                        ),
+                        "%",
+                      ),
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
           </>
         ) : (
           <ResourceState
@@ -287,77 +566,32 @@ export function PlayerProfile({
             <p className="eyebrow">Por edição</p>
             <h2>Estatísticas</h2>
           </div>
-          <fieldset className="segmented-control">
-            <legend className="sr-only">Modo</legend>
-            {(["per-game", "total"] as const).map((value) => (
-              <label key={value}>
-                <input
-                  checked={mode === value}
-                  name="profile-mode"
-                  onChange={() => setMode(value)}
-                  type="radio"
-                />
-                <span>{value === "per-game" ? "Por jogo" : "Total"}</span>
-              </label>
-            ))}
-          </fieldset>
+          {boxscoreCompetitions.length ? (
+            <fieldset className="segmented-control">
+              <legend className="sr-only">Modo</legend>
+              {(["per-game", "total"] as const).map((value) => (
+                <label key={value}>
+                  <input
+                    checked={mode === value}
+                    name="profile-mode"
+                    onChange={() => setMode(value)}
+                    type="radio"
+                  />
+                  <span>{value === "per-game" ? "Por jogo" : "Total"}</span>
+                </label>
+              ))}
+            </fieldset>
+          ) : null}
         </header>
         {profile.competitions.length ? (
-          <ScrollableTable label="Estatísticas do atleta por edição">
-            <table className="statistics-table player-statistics-table">
-              <caption>Estatísticas por edição</caption>
-              <thead>
-                <tr>
-                  {[
-                    "Edição",
-                    "Equipe",
-                    "J",
-                    "MIN",
-                    "PTS",
-                    "REB",
-                    "AST",
-                    "AP%",
-                    "3P%",
-                    "LL%",
-                    "EF",
-                    "+/-",
-                  ].map((label) => (
-                    <th key={label} scope="col">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {profile.competitions.map((item) => (
-                  <tr key={item.context.competitionId}>
-                    <th scope="row">
-                      <Link to={contextPath(item.context, "jogadores", profile.slug)}>
-                        {item.context.year} · {item.context.category.name}
-                      </Link>
-                    </th>
-                    <td>{item.teamAbbreviation ?? item.teamName ?? "—"}</td>
-                    <td>{item.games}</td>
-                    <td>{number(modeValue(item.secondsPlayed / 60, item, mode))}</td>
-                    <td>{number(modeValue(item.points, item, mode))}</td>
-                    <td>
-                      {number(
-                        modeValue(item.offensiveRebounds + item.defensiveRebounds, item, mode),
-                      )}
-                    </td>
-                    <td>{number(modeValue(item.assists, item, mode))}</td>
-                    <td>{number(fieldPercentage(item), "%")}</td>
-                    <td>
-                      {number(percentage(item.threePointMade, item.threePointAttempted), "%")}
-                    </td>
-                    <td>{number(percentage(item.freeThrowMade, item.freeThrowAttempted), "%")}</td>
-                    <td>{number(modeValue(efficiency(item), item, mode))}</td>
-                    <td>{number(modeValue(item.plusMinus, item, mode))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollableTable>
+          <>
+            <ScoresheetCompetitionTable items={scoresheetCompetitions} playerSlug={profile.slug} />
+            <BoxscoreCompetitionTable
+              items={boxscoreCompetitions}
+              mode={mode}
+              playerSlug={profile.slug}
+            />
+          </>
         ) : (
           <ResourceState
             kind="empty"
@@ -371,56 +605,7 @@ export function PlayerProfile({
         <p className="eyebrow">Participações publicadas</p>
         <h2>Jogos</h2>
         {profile.games.length ? (
-          <ScrollableTable label="Jogos do atleta">
-            <table className="statistics-table player-games-table">
-              <caption>Jogos mais recentes</caption>
-              <thead>
-                <tr>
-                  {[
-                    "Data",
-                    "Adversário",
-                    "Resultado",
-                    "MIN",
-                    "PTS",
-                    "REB",
-                    "AST",
-                    "AP%",
-                    "EF",
-                    "+/-",
-                  ].map((label) => (
-                    <th key={label} scope="col">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {profile.games.map((game) => (
-                  <tr key={game.id}>
-                    <th scope="row">
-                      <Link to={contextPath(game.context, "jogos", game.id)}>
-                        {dateLabel(game.scheduledAt)}
-                      </Link>
-                    </th>
-                    <td>{game.opponentName ?? "—"}</td>
-                    <td>
-                      <span data-result={game.result}>
-                        {game.result}
-                        {game.score ? ` · ${game.score}` : ""}
-                      </span>
-                    </td>
-                    <td>{number(game.totals.secondsPlayed / 60)}</td>
-                    <td>{game.totals.points}</td>
-                    <td>{game.totals.offensiveRebounds + game.totals.defensiveRebounds}</td>
-                    <td>{game.totals.assists}</td>
-                    <td>{number(fieldPercentage(game.totals), "%")}</td>
-                    <td>{efficiency(game.totals)}</td>
-                    <td>{game.totals.plusMinus}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollableTable>
+          <PlayerGamesTable games={profile.games} />
         ) : (
           <ResourceState
             kind="empty"
