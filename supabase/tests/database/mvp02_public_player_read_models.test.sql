@@ -25,6 +25,8 @@ where series.slug = 'liga-de-desenvolvimento'
   and category.slug = 'sub-15'
   and competition.year in (2025, 2026);
 
+grant select on mvp02_context to anon;
+
 insert into public.series_category_data_profiles (
   series_id,
   category_id,
