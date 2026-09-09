@@ -330,8 +330,6 @@ group by stats.game_id, slot.registration_id, stats.period_number
 on conflict (game_id, registration_id, period_number) do update
 set points = excluded.points;
 
-reset bdb.allow_internal_ingestion_game;
-
 -- Exact FIBA/Genius Sports fixtures used by the WP-09 preview smoke. The PDF remains the
 -- source of game facts; this seed supplies only the edition, registrations and review candidates.
 insert into public.competition_series (name, slug)
