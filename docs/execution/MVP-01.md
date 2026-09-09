@@ -39,3 +39,11 @@
 - Vitest: 24 arquivos e 92 testes aprovados, incluindo as duas fixtures PDF FIBA/Genius Sports.
 - TypeScript, Biome, runbooks, build Worker e varredura de segredos: aprovados.
 - pgTAP atualizado para jogo existente, rollback, elegibilidade, idempotência, estatísticas coletivas e bloqueio de jogo paralelo; execução PostgreSQL limpa fica a cargo do job `database`, pois este host não possui Docker/Podman.
+
+## Fechamento remoto
+
+- Commits funcionais: `e28ac3d`, `3055ec7` e correção de seed `d1fc5a9`.
+- PR #35 no head `d1fc5a9`: `gate`, `database`, `upload` e `analyze` aprovados; reset completo, seed e pgTAP passaram no run `34347376702`.
+- As três migrations foram aplicadas transacionalmente ao Supabase compartilhado. Reconciliação: 4 rulesets, 9 matchups, 0 jogos sem matchup, 9 submissões (4 ativas/5 em review) e 28 autoridades.
+- Preview PR 35 em AAL2: súmula manual carregou `DEMO-01` com cabeçalho/equipes estruturais travados; importador FIBA carregou e preservou as duas fixtures confirmadas.
+- Nenhum merge ou deploy de produção foi executado.

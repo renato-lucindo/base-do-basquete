@@ -1,6 +1,6 @@
 # MVP-01 — Jogo estrutural e ingestão principal
 
-- **Estado atual:** `DOING`
+- **Estado atual:** `DONE`
 - **Incorpora:** `02D`, `03A`, `03B`, `03C`, `02E`
 - **Meta:** 1–2 janelas.
 
