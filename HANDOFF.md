@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP em execução; `MVP-01 — Jogo estrutural e ingestão principal` concluído na PR draft #35 e `MVP-02 — Jogadores públicos e estabilidade boxscore` habilitado como próximo pacote.
-- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; não existe pacote em escrita e `MVP-02` está `READY`, sem merge nem deploy da aplicação em produção. O Supabase compartilhado contém 4 rulesets, 9 matchups e 0 jogos sem vínculo; preserva 9 submissões (4 ativas e 5 em revisão) e 28 autoridades. A súmula manual e o PDF FIBA agora confirmam exclusivamente um jogo estrutural existente.
+- Fase: plano acelerado orientado ao MVP em execução; `MVP-01 — Jogo estrutural e ingestão principal` e `MVP-02 — Jogadores públicos e estabilidade boxscore` concluídos na PR draft #35; `MVP-03 — Administração e criação por presets` é o próximo pacote.
+- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; não existe pacote em escrita e `MVP-03` está `READY`, sem merge nem deploy da aplicação em produção. O Supabase compartilhado contém os read models públicos aditivos do MVP-02; a autoridade ativa escolhe a fonte de cada domínio, ausência permanece nula e os denominadores total/avançado são separados.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Reconciliar branch/PR e executar `MVP-02 — Jogadores públicos e estabilidade boxscore`, usando `docs/plan/acelerado-mvp/README.md` como fila operacional. Os cartões `04A`, `04B`, `04C`, `04D`, `05A` e `05B` são checklists internos e não exigem ciclos remotos separados. Não antecipar suplemento/fallback raro de `POST-01`.
+Reconciliar branch/PR e executar `MVP-03 — Administração e criação por presets`, usando `docs/plan/acelerado-mvp/README.md` como fila operacional. Ler `pacotes/MVP-03-ADMIN-E-PRESETS.md` e os cartões `06A`, `06B`, `07A`, `07B`, `07C`, `07D`, `06E` e `06F` somente como requisitos detalhados. Entregar navegação administrativa, presets imutáveis, compilação/ativação atômica e criação privada transacional; não antecipar editor genérico, remoção ou clonagem de `POST-02`.
 
 Estado reconciliado em 01/09/2026: branch `feature/admin-workflow-improvements`, PR #35 aberta e draft no head funcional `e60216c`. `gate`, `database`, preview e CodeQL concluíram com sucesso. O Supabase compartilhado contém `roster_eligibility_enforcement` na versão remota `20260902013629`; `admin_replace_roster` exige singleton AAL2, nega `anon` e retorna somente decisões estáveis. As 44 linhas privadas seguem pendentes, sem inferência ou backfill; o banco mantém 48 inscrições de elenco, 48 ativas e 19 auditorias, exatamente como antes dos smokes. A coluna `public.players.birth_date` foi preservada por decisão do responsável, zerada e protegida por `CHECK (birth_date IS NULL)`; a data completa pertence exclusivamente a `private.player_private`.
 
@@ -117,8 +117,8 @@ Implementação concluída de `ADM-REF-02C`: o commit funcional `51729e6` introd
 Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `ruleset → stage → round → matchup` e o comparador puro; `3055ec7` adaptou súmula manual e FIBA para confirmar somente um jogo existente, ativar autoridades compatíveis, manter validação assistida de atletas/estatísticas coletivas e bloquear novos jogos sem confronto; `d1fc5a9` limitou a exceção de fixtures à sessão do seed. O run CI `34347376702` aprovou aplicação desde zero, seed, pgTAP e gate; upload e CodeQL também passaram. As três migrations foram aplicadas transacionalmente ao Supabase compartilhado. A reconciliação retornou 4 rulesets, 9 matchups, 0 jogos sem matchup, 9 submissões (4 ativas/5 em review) e 28 autoridades, preservando a baseline. O smoke AAL2 no preview confirmou a seleção estrutural de `DEMO-01` na súmula e o histórico das duas fixtures FIBA. Nenhum dado esportivo foi regravado, e não houve merge nem produção.
 
 1. Reconciliar novamente branch, PR #35, checks, preview e migrations antes de editar.
-2. Ler integralmente `docs/plan/acelerado-mvp/README.md`, os arquivos gerais na ordem indicada e `pacotes/MVP-02-JOGADORES-PUBLICOS.md`.
-3. Executar o pacote vertical completo com testes focais durante a implementação e um único gate consolidado ao final; manter os seis cartões originais como checklist e preservar o corte pós-MVP.
+2. Ler integralmente `docs/plan/acelerado-mvp/README.md`, os arquivos gerais na ordem indicada e `pacotes/MVP-03-ADMIN-E-PRESETS.md`.
+3. Executar o pacote vertical completo com testes focais durante a implementação e um único gate consolidado ao final; manter os oito cartões originais como checklist e preservar o corte pós-MVP.
 
 ### Primeiros arquivos a abrir
 
@@ -126,12 +126,12 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 - `HANDOFF.md`
 - `docs/plan/README.md`
 - `docs/plan/acelerado-mvp/README.md`
-- `docs/plan/acelerado-mvp/00-ESCOPO-E-CORTE.md`, `01-REGRAS-INVIOLAVEIS.md`, `REVISAO-DO-PLANO.md`, `02-FILA-ACELERADA.md` e `pacotes/MVP-02-JOGADORES-PUBLICOS.md`
-- cartões `04A`, `04B`, `04C`, `04D`, `05A` e `05B` em `docs/plan/tasks-pr35/`, somente como requisitos detalhados
+- `docs/plan/acelerado-mvp/00-ESCOPO-E-CORTE.md`, `01-REGRAS-INVIOLAVEIS.md`, `REVISAO-DO-PLANO.md`, `02-FILA-ACELERADA.md` e `pacotes/MVP-03-ADMIN-E-PRESETS.md`
+- cartões `06A`, `06B`, `07A`, `07B`, `07C`, `07D`, `06E` e `06F` em `docs/plan/tasks-pr35/`, somente como requisitos detalhados
 
 ### Resultado esperado do próximo passo
 
-`MVP-02` versionado e validado: listagem e perfil público de atletas reconciliados, DTOs orientados por perfil/autoridade, denominadores corretos e cenário FIBA sem regressão.
+`MVP-03` versionado e validado: edição privada criada transacionalmente por presets versionados de grupo único e eliminatória simples, administração navegável e estrutura compilada/ativada sem estado parcial.
 
 ## 7. Pacotes de trabalho
 
@@ -171,6 +171,9 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | ADM-REF-02A — Submissões versionadas | `DONE` | Contrato imutável e protegido por AAL2 aplicado; tipos, 40 pgTAP e histórico vazio reconciliados |
 | ADM-REF-02B — Autoridade por domínio | `DONE` | Matriz de 14 capacidades, autoridade única, concorrência, estado derivado, 64 pgTAP e índices de FKs aprovados |
 | ADM-REF-02C — Backfill de submissões e autoridades | `DONE` | 9 submissões, 28 autoridades, 5 seeds somente históricos, relatório AAL2, 43 pgTAP e checksums esportivos preservados |
+| MVP-01 — Jogo estrutural e ingestão principal | `DONE` | Estrutura versionada, ingestões no jogo existente, 92 Vitest, CI/database, preview AAL2 e Supabase compartilhado aprovados |
+| MVP-02 — Jogadores públicos e estabilidade boxscore | `DONE` | Read models orientados por autoridade, 102 Vitest, 35 pgTAP, CI/database, preview responsivo e CodeQL aprovados |
+| MVP-03 — Administração e criação por presets | `READY` | Desbloqueado pelo MVP-01; próximo pacote em escrita após o fechamento documental do MVP-02 |
 
 ## 8. Arquivos e referências importantes
 
@@ -221,6 +224,7 @@ CLOUDFLARE_ACCOUNT_ID
 
 ## 11. Testes e evidências
 
+- MVP-02 final em 09/09/2026: commits `b7c0030` e `603f725` implementaram read models públicos com `security_invoker`, RLS/grants mínimos, DTO discriminado por perfil/autoridade, ausência nula, DNP correto e denominadores total/avançado separados. O gate local aprovou 28 arquivos/102 Vitest e scan de 491 arquivos; CI/database `34386933182`, preview `34386933194` e CodeQL `34386933248` ficaram verdes, com 35 pgTAP focados. A migration foi aplicada aditivamente ao Supabase compartilhado. QA público em 390/768/1280 px confirmou súmula vazia honesta, 35 atletas FIBA, busca/ordenação restauráveis, perfil e jogo 63 em 93 × 39, foco visível e console sem erros. Nenhum merge ou deploy de produção foi executado.
 - ADM-REF-01F final em 02/09/2026: a confirmação FIBA passou a validar somente novas associações e reativações, exigir escolha privada transitória para criação automática revisada e manter importações pendentes/incompatíveis em `review`. O payload persistido é sanitizado e não contém o valor privado; erros `BD601`/`BD602` identificam apenas atleta/equipe de origem; o corpo legado ficou sem execução para `authenticated`. O gate local aprovou Biome em 116 arquivos, TypeScript, 23 arquivos/88 Vitest, quatro runbooks, builds cliente/SSR e scan de 447 arquivos. Os 32 pgTAP focados e as suítes FIBA (23) e WP14 (31) passaram em rollback; CI `33600273383`, preview `33600273368` e CodeQL `33600273484` ficaram verdes no commit funcional `9f10393`. A migration remota `20260902064839_boxscore_import_eligibility_enforcement` foi aplicada e retestada. O banco permaneceu com 44/44 perfis pendentes, 48/48 elencos ativos, 19 auditorias, 9 jogos, zero importações em review e zero valor privado persistido em resolução. A prévia autenticada exibiu AAL2 e a rota FIBA/Genius sem overflow na janela de 820 px nem logs de console; nenhum import artificial foi criado apenas para QA.
 - ADM-REF-01E final em 01/09/2026: `admin_replace_roster` passou a validar somente atletas que entram/reentram, na mesma transação da associação, com locks do elenco, edição e perfil privado; repetição exata é no-op e associações históricas incompatíveis permanecem preservadas. `BD601` identifica pendência e `BD602` incompatibilidade sem transportar o valor privado. O atalho de elenco deixou de rotular previamente atletas como elegíveis. O gate local aprovou Biome em 115 arquivos, TypeScript, 22 arquivos/85 Vitest, quatro runbooks, builds cliente/SSR e scan de 444 arquivos. O primeiro CI `33579634988` confirmou as 26 novas asserções e revelou somente a fixture legada sem classificação; após corrigi-la com valores explícitos sintéticos, CI `33579854976` aprovou `gate`, migrations/seed desde zero e 14 arquivos/324 pgTAP. Preview `33579855036` e CodeQL `33579855069` passaram. A migration remota `20260902013629_roster_eligibility_enforcement` foi aplicada; `anon` não executa a RPC. No preview AAL2, salvar o elenco histórico sem alterações foi idempotente e tentar associar o atleta 36 pendente retornou a decisão curta; a recarga e o banco confirmaram 48/48 elencos ativos, 19 auditorias e zero associação nova.
 - ADM-REF-01C local em 28/08/2026: nova rota AAL2 de revisão de naipe/perfil com fallback explícito para schema antigo, seleção sem valor padrão, prévia de impacto e mutações somente pelas RPCs auditadas de `01A`. `npm.cmd run check` aprovou formatação e lint de 111 arquivos, TypeScript estrito, 21 arquivos/81 testes Vitest, quatro runbooks, builds cliente/SSR e scan de 435 arquivos. O teste focado de domínio aprovou 7 cenários; `git diff --check` também passou.
@@ -322,13 +326,13 @@ CLOUDFLARE_ACCOUNT_ID
 ## 12. Git
 
 - Repositório: `https://github.com/renato-lucindo/base-do-basquete` (privado).
-- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto funcional `d1fc5a9` do `MVP-01` com gate local, CI/database, preview e CodeQL aprovados.
+- Branch de trabalho: `feature/admin-workflow-improvements`, head remoto funcional `603f725` do `MVP-02` com gate local, CI/database, preview e CodeQL aprovados.
 - Evidência funcional integrada em `main`: PR #24 no commit `3b7929d` e hotfix da PR #25 no commit `8544734`.
 - Checks das PRs #24/#25 e da `main`: `gate`, `database`, `upload` e `analyze` aprovados.
 - Produção confirmada após o merge com `/health` retornando `environment=production` e `status=ok`.
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
-- Consolidação atual: PR #35 draft contra `main`, head funcional `d1fc5a9`, aberta; nenhum merge ou deploy de produção executado.
-- Execução atual: commits `e28ac3d`, `3055ec7` e `d1fc5a9` concluíram `MVP-01`; CI/database `34347376702`, preview `34347376824` e CodeQL `34347377058` estão verdes.
+- Consolidação atual: PR #35 draft contra `main`, head funcional `603f725`, aberta; nenhum merge ou deploy de produção executado.
+- Execução atual: commits `b7c0030` e `603f725` concluíram `MVP-02`; CI/database `34386933182`, preview `34386933194` e CodeQL `34386933248` estão verdes.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -437,3 +441,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-03 | Codex | `ADM-REF-02C` concluída: migration de backfill, 43 pgTAP, 546 testes desde zero, 9 submissões, 28 autoridades, relatório pronto e checksums esportivos preservados | Executar exclusivamente `ADM-REF-02D` |
 | 2026-09-03 | Codex | Plano operacional acelerado: 39 cartões restantes consolidados em 5 pacotes MVP e 4 pós-MVP, com cobertura 50/50, segurança preservada e `MVP-01` pronto | Executar `MVP-01` com um gate remoto consolidado |
 | 2026-09-09 | Codex | `MVP-01` concluído: jogo estrutural, ingestões no jogo existente, 92 Vitest, banco desde zero/pgTAP, preview AAL2 e Supabase compartilhado reconciliados no head `d1fc5a9` | Executar `MVP-02 — Jogadores públicos e estabilidade boxscore` |
+| 2026-09-09 | Codex | `MVP-02` concluído: read models por autoridade, ausência/DNP corretos, 102 Vitest, 35 pgTAP, todos os checks remotos e QA público responsivo aprovados no head `603f725` | Executar `MVP-03 — Administração e criação por presets` |

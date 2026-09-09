@@ -2,7 +2,7 @@
 
 ## Estado
 
-`DOING` na branch `feature/admin-workflow-improvements` da PR draft #35.
+`DONE` na branch `feature/admin-workflow-improvements` da PR draft #35.
 
 ## Baseline reconciliada
 
@@ -31,4 +31,11 @@
 
 ## Evidências
 
-A preencher durante o gate consolidado do pacote.
+- Commits funcionais `b7c0030` e `603f725`: migration aditiva, seis read models com `security_invoker`, grants/RLS mínimos, DTO discriminado por fonte, loaders server-side, listagem, perfil e detalhe de jogo coerentes.
+- Gate local completo aprovado: Biome, TypeScript estrito, 28 arquivos/102 testes Vitest, quatro runbooks, builds cliente/SSR, scan de 491 arquivos e `git diff --check`.
+- Banco desde zero e pgTAP aprovados na execução `34386933182`, incluindo 35 asserções focais de RLS, autoridade, ausência nula, DNP e denominadores total/avançado.
+- `gate`, `database`, preview e CodeQL aprovados nas execuções `34386933182`, `34386933194` e `34386933248`.
+- Migration `20260909153000_mvp02_public_player_read_models.sql` aplicada ao Supabase compartilhado pelo SQL Editor com resultado `Success. No rows returned`; aplicação foi aditiva e não regravou dados esportivos.
+- Preview público validado em 390, 768 e 1280 px. O cenário de súmula exibiu estado vazio honesto; o cenário FIBA listou 35 atletas, preservou busca/ordenação na URL, reconciliou perfil e jogo 63 em 93 × 39 e não apresentou overflow do documento.
+- Navegação por teclado mostrou foco visível de 3 px, tabelas usaram rolagem contida e o console do navegador permaneceu sem erros.
+- Nenhum merge ou deploy de produção foi executado.

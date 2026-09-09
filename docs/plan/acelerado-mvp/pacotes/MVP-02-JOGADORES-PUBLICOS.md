@@ -1,6 +1,6 @@
 # MVP-02 — Jogadores públicos e estabilidade boxscore
 
-- **Estado atual:** `DOING`
+- **Estado atual:** `DONE`
 - **Incorpora:** `04A`, `04B`, `04C`, `04D`, `05A`, `05B`
 - **Meta:** 1–2 janelas.
 
