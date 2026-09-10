@@ -56,4 +56,11 @@
 - 39 novos testes de domínio/rota (216 Vitest no total). Gate completo local aprovado. 35 pgTAP em rollback aprovados, incluindo 30 configurações persistidas/reconstruídas, privacidade, idempotência, AAL1/anon/não-admin, imutabilidade, terceiro confronto de semifinal e origens inválidas. Ensaio não deixou edições ou estruturas persistidas.
 - Allowlist ampliada: nova migration/pgTAP, domínio/testes de criação, rota/teste do wizard, roteamento, link na listagem, CSS do wizard e assinatura RPC nos tipos. Regenerar tipos integralmente após aplicar schema aprovado.
 
-Conferir CI/preview, aplicar as duas migrations somente após verde e reconciliar dados/advisors/tipos. Validar wizard no navegador e executar teste simultâneo de concorrência, além de 390/768/desktop. O pacote permanece em execução até seu gate completo.
+### Aplicação e QA integrado
+
+- `550ea9c` passou CI/database `34507772096`, preview `34507772091` e CodeQL `34507772119`. Migrations aplicadas como `20260910172559_mvp03_preset_compiler` e `20260910172608_mvp03_relational_presets`.
+- Wizard real AAL2 criou a edição 100: “Validação MVP-03 — não publicar”, categoria Fixture FIBA, masculino, 2027. Uma revisão ativa, cinco entradas, quatro confrontos, oito vagas, três folgas, zero jogos e uma auditoria de criação. Estado `draft`, sem publicação. RLS anônima não retorna a edição.
+- Inspeção visual e fluxo em 390/768 px, sem overflow global; revisão recebeu foco no heading e o submit terminou no hub. Desktop/teclado integral ainda pendentes: a revisão automática do navegador foi interrompida por limite de uso. Restaurar override temporário ao retomar.
+- Tipos do Supabase integralmente regenerados e `tsc -b` aprovado. Avisos de segurança deliberados: RPC definer autorizada exclusivamente pelo singleton AAL2; ledger privado com RLS e sem grants/policies. Proteção de senhas vazadas e seis FKs antigas de MVP-01 são residuais anteriores. Referências: [RPC definer](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [índices de FKs](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys).
+
+Concluir desktop/teclado e concorrência simultânea antes de fechar MVP-03. Não reaplicar migrations, apagar a fixture nem publicar produção. O pacote permanece em execução até seu gate completo.
