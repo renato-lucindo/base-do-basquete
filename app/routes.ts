@@ -3,6 +3,10 @@ import { index, type RouteConfig, route } from "@react-router/dev/routes";
 export default [
   index("routes/home.tsx"),
   route("admin", "routes/admin._index.tsx"),
+  route("admin/competitions", "routes/admin.competitions.tsx"),
+  route("admin/teams", "routes/admin.teams.tsx"),
+  route("admin/players", "routes/admin.players.tsx"),
+  route("admin/security", "routes/admin.security.tsx"),
   route("admin/login", "routes/admin.login.tsx"),
   route("admin/logout", "routes/admin.logout.tsx"),
   route("admin/mfa", "routes/admin.mfa.tsx"),

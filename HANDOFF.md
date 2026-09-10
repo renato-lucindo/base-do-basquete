@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-Retomada de 10/09/2026: partir da unidade WIP do accordion descrita em `docs/execution/MVP-03.md`. Separar `app/routes/admin._index.tsx` em áreas Competições/Equipes/Atletas/Segurança, mantendo autenticação AAL2 e actions específicas. Em seguida entregar presets/compilação/wizard do mesmo pacote. O head de partida `3658f59` tinha quatro checks verdes; o accordion passou 104 Vitest e build local, mas QA interativo e gate consolidado da MVP-03 continuam pendentes. Não repetir MVP-02.
+Retomada de 10/09/2026: accordion e áreas Competições/Equipes/Atletas/Segurança implementados, conforme `docs/execution/MVP-03.md`. A segunda unidade separou loaders/actions e passou gate local com 117 Vitest. O head inicial `7c7b121` estava limpo e com os quatro checks verdes. Próximo: validar áreas/accordion no preview e implementar presets/compilação/wizard sobre a estrutura do MVP-01. Reconciliar Supabase antes do schema. MVP-03 continua `DOING`; não repetir MVP-02.
 
 Reconciliar branch/PR e executar `MVP-03 — Administração e criação por presets`, usando `docs/plan/acelerado-mvp/README.md` como fila operacional. Ler `pacotes/MVP-03-ADMIN-E-PRESETS.md` e os cartões `06A`, `06B`, `07A`, `07B`, `07C`, `07D`, `06E` e `06F` somente como requisitos detalhados. Entregar navegação administrativa, presets imutáveis, compilação/ativação atômica e criação privada transacional; não antecipar editor genérico, remoção ou clonagem de `POST-02`.
 

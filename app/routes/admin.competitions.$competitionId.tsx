@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
-
+import { AdminNavigation } from "../components/admin/admin-area";
 import { RegistrationAccordion } from "../components/admin/registration-accordion";
 import { RosterEditor } from "../components/admin/roster-editor";
 import { cloudflareContext, correlationIdContext } from "../context";
@@ -395,6 +395,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           AAL2
         </span>
       </header>
+      <AdminNavigation />
       <section className="admin-welcome admin-hub">
         <p className="eyebrow">Hub da edição</p>
         <h1>{competition.display_name}</h1>
