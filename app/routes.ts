@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("admin", "routes/admin._index.tsx"),
   route("admin/competitions", "routes/admin.competitions.tsx"),
+  route("admin/competitions/new", "routes/admin.competitions.new.tsx"),
   route("admin/teams", "routes/admin.teams.tsx"),
   route("admin/players", "routes/admin.players.tsx"),
   route("admin/security", "routes/admin.security.tsx"),

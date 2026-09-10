@@ -73,6 +73,9 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
   return (
     <AdminArea title="Competições">
       <p>Selecione uma edição para organizar equipes, jogos e dados.</p>
+      <Link className="button" to="/admin/competitions/new">
+        Criar edição
+      </Link>
       <Form method="get" className="inline-admin-form">
         <label>
           Buscar por nome, série ou categoria

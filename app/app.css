@@ -4480,6 +4480,21 @@ body {
   display: none;
 }
 
+.edition-wizard-form > fieldset {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.edition-wizard-form[hidden],
+.edition-wizard-form > fieldset[hidden] {
+  display: none;
+}
+
 .roster-form {
   margin-top: 22px;
 }

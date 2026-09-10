@@ -1907,6 +1907,10 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_competition_from_preset: {
+        Args: { p_request_id: string; p_input: Json };
+        Returns: number;
+      };
       admin_activate_game_data_authorities: {
         Args: {
           p_domains: string[];

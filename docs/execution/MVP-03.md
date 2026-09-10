@@ -47,4 +47,13 @@
 
 ## Próximo passo
 
-Materializar os blueprints dos compiladores já testados em schema relacional com vagas/FKs; implementar criação privada idempotente AAL2 e ativação atômica com testes SQL/RLS/concorrência; integrar wizard e terminar QA responsivo. Não aplicar a migration isolada no compartilhado antes do ciclo integrado verde. O pacote permanece em execução até seu gate completo.
+### Unidade integrada — criação privada e wizard
+
+- Schema aditivo: trilhas, grupos, entradas, vagas por FKs exclusivas, folgas e contratos locais de rodadas/confrontos. As colunas legadas de participantes continuam existindo; só as estruturas novas podem reservar vagas ainda indefinidas.
+- A ativação reconstrói o blueprint a partir das FKs e exige igualdade com o compilador versionado. Revisão ativa e seus filhos são imutáveis, inclusive contra troca de contexto. Vagas só aceitam vencedores de rodadas anteriores. Semifinais são limitadas sob bloqueio da revisão/rodada. Jogos indefinidos ou excedentes são recusados.
+- RPC AAL2 cria perfil (se necessário), edição privada, revisão/estrutura e auditoria na mesma transação. Chave de idempotência + bloqueios de ano/perfil e comparação do perfil esperado protegem reenvio e alterações concorrentes. Novas edições não aceitam INSERT direto pelo papel autenticado.
+- Wizard com Identificação → Dados e formato → Revisão. Resumo calculado no servidor; a confirmação revalida os dados e chama apenas a RPC. CSRF, mesma origem e AAL2 obrigatórios. Nenhum grafo arbitrário é recebido do frontend. Criação termina no hub da edição.
+- 39 novos testes de domínio/rota (216 Vitest no total). Gate completo local aprovado. 35 pgTAP em rollback aprovados, incluindo 30 configurações persistidas/reconstruídas, privacidade, idempotência, AAL1/anon/não-admin, imutabilidade, terceiro confronto de semifinal e origens inválidas. Ensaio não deixou edições ou estruturas persistidas.
+- Allowlist ampliada: nova migration/pgTAP, domínio/testes de criação, rota/teste do wizard, roteamento, link na listagem, CSS do wizard e assinatura RPC nos tipos. Regenerar tipos integralmente após aplicar schema aprovado.
+
+Conferir CI/preview, aplicar as duas migrations somente após verde e reconciliar dados/advisors/tipos. Validar wizard no navegador e executar teste simultâneo de concorrência, além de 390/768/desktop. O pacote permanece em execução até seu gate completo.
