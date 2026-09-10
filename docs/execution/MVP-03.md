@@ -31,9 +31,20 @@
 
 ## Validação
 
+### Terceira unidade — compilação dos presets (10/09/2026)
+
+- Login renovado: as quatro áreas carregaram em AAL2. Busca de equipes por `Alcateia` retornou apenas a equipe correspondente. No hub da edição 20, abrir AVABES recolheu Alcateia; alternar Elenco/Situação manteve apenas a seção selecionada visível. Nenhum formulário foi submetido e a sessão não foi encerrada. Viewports 390/768/desktop e teclado integral ainda pendentes.
+- Compilador puro TypeScript e equivalente PostgreSQL interno, versionados em v1, com grupo único e eliminatória simples para 2..16 posições explicitamente atribuídas. Limite conservador desta versão; ampliar exige nova versão testada, não inferência ou truncamento. Não há atribuição automática de equipes a posições a partir de nomes/classificação.
+- Grupo único usa rotação determinística e cada par se enfrenta uma vez. Eliminatória reserva referências tipadas a vencedores anteriores; folgas das primeiras posições não criam confrontos ou jogos fictícios. Contratos reservados são tipados, não derivados de rótulos.
+- Validador de domínio recusa origens inexistentes/futuras/cíclicas, entradas/saídas repetidas, partidas excedentes, terceiro confronto de semifinal e segundo de final. O compilador SQL aceita apenas chave/capacidade e não recebe grafo livre do cliente.
+- SQL em schema privado, `SECURITY INVOKER`, `search_path` vazio e execução revogada para PUBLIC/anon/authenticated. Sem novo endpoint público ou alterações em registros históricos.
+- Allowlist ampliada: dois módulos de domínio/teste, migration gerada pelo CLI e pgTAP focal, além deste relatório e HANDOFF.
+- Gate local: 31 arquivos/177 Vitest, formatação/lint, TypeScript, quatro runbooks, build cliente/SSR e scan de 504 arquivos. Ensaio SQL em transação: 18/18 pgTAP. Comparação integral TypeScript/PostgreSQL: 30 configurações com paridade exata. Rollback confirmado; 9 jogos e 4 revisões preservados.
+- `20260910123720_mvp03_preset_compiler.sql` **não aplicada persistentemente**. A saída JSON é somente blueprint interno; a próxima unidade materializa referências por FKs e aplica a autoridade transacional. Presets ainda não estão disponíveis para criação de edições na UI.
+
 - Gate local completo aprovado em 10/09/2026: formatação/lint, TypeScript, 29 arquivos/104 Vitest, quatro runbooks, build cliente/SSR e varredura de 493 arquivos sem segredos.
-- QA interativo do accordion e gate consolidado do pacote ainda pendentes; esta unidade não conclui MVP-03.
+- QA focal autenticado do accordion concluído; responsividade integral e gate consolidado do pacote ainda pendentes. Esta unidade não conclui MVP-03.
 
 ## Próximo passo
 
-Validar as áreas e o accordion no preview. Implementar presets versionados, compilação/ativação atômica e wizard de criação privada, reutilizando a estrutura aditiva do MVP-01. Reconciliar Supabase antes de qualquer alteração de schema. O pacote permanece em execução até seu gate completo.
+Materializar os blueprints dos compiladores já testados em schema relacional com vagas/FKs; implementar criação privada idempotente AAL2 e ativação atômica com testes SQL/RLS/concorrência; integrar wizard e terminar QA responsivo. Não aplicar a migration isolada no compartilhado antes do ciclo integrado verde. O pacote permanece em execução até seu gate completo.
