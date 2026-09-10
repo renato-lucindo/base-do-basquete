@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: plano acelerado orientado ao MVP em execução; `MVP-01 — Jogo estrutural e ingestão principal` e `MVP-02 — Jogadores públicos e estabilidade boxscore` concluídos na PR draft #35; `MVP-03 — Administração e criação por presets` é o próximo pacote.
-- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; não existe pacote em escrita e `MVP-03` está `READY`, sem merge nem deploy da aplicação em produção. O Supabase compartilhado contém os read models públicos aditivos do MVP-02; a autoridade ativa escolhe a fonte de cada domínio, ausência permanece nula e os denominadores total/avançado são separados.
+- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; `MVP-03` está `DOING`, com a primeira unidade de accordion implementada e gate local aprovado. Navegação por áreas, presets e wizard ainda pendentes. O Supabase compartilhado contém os read models públicos aditivos do MVP-02; nenhuma migration ou escrita de dados ocorreu nesta unidade.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -79,6 +79,8 @@ A execução #32737628228 restaurou o preview e `/health` confirmou `environment
 O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. A rotação foi recomendada, mas o responsável recusou conscientemente a alteração e aceitou o risco residual. Essa decisão não reduz MFA, `aal2`, RLS, sessão segura ou autorização server-side.
 
 ## 6. Próximo passo exato
+
+Retomada de 10/09/2026: partir da unidade WIP do accordion descrita em `docs/execution/MVP-03.md`. Separar `app/routes/admin._index.tsx` em áreas Competições/Equipes/Atletas/Segurança, mantendo autenticação AAL2 e actions específicas. Em seguida entregar presets/compilação/wizard do mesmo pacote. O head de partida `3658f59` tinha quatro checks verdes; o accordion passou 104 Vitest e build local, mas QA interativo e gate consolidado da MVP-03 continuam pendentes. Não repetir MVP-02.
 
 Reconciliar branch/PR e executar `MVP-03 — Administração e criação por presets`, usando `docs/plan/acelerado-mvp/README.md` como fila operacional. Ler `pacotes/MVP-03-ADMIN-E-PRESETS.md` e os cartões `06A`, `06B`, `07A`, `07B`, `07C`, `07D`, `06E` e `06F` somente como requisitos detalhados. Entregar navegação administrativa, presets imutáveis, compilação/ativação atômica e criação privada transacional; não antecipar editor genérico, remoção ou clonagem de `POST-02`.
 
@@ -173,7 +175,7 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | ADM-REF-02C — Backfill de submissões e autoridades | `DONE` | 9 submissões, 28 autoridades, 5 seeds somente históricos, relatório AAL2, 43 pgTAP e checksums esportivos preservados |
 | MVP-01 — Jogo estrutural e ingestão principal | `DONE` | Estrutura versionada, ingestões no jogo existente, 92 Vitest, CI/database, preview AAL2 e Supabase compartilhado aprovados |
 | MVP-02 — Jogadores públicos e estabilidade boxscore | `DONE` | Read models orientados por autoridade, 102 Vitest, 35 pgTAP, CI/database, preview responsivo e CodeQL aprovados |
-| MVP-03 — Administração e criação por presets | `READY` | Desbloqueado pelo MVP-01; próximo pacote em escrita após o fechamento documental do MVP-02 |
+| MVP-03 — Administração e criação por presets | `DOING` | Accordion implementado; gate local com 104 Vitest aprovado. Navegação, presets, wizard e gate consolidado pendentes |
 
 ## 8. Arquivos e referências importantes
 

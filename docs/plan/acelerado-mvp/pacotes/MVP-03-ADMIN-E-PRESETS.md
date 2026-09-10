@@ -1,6 +1,6 @@
 # MVP-03 — Administração e criação por presets
 
-- **Estado inicial:** bloqueado por `MVP-01`
+- **Estado atual:** `DOING`
 - **Incorpora:** `06A`, `06B`, `07A`, `07B`, `07C`, `07D`, `06E`, `06F`
 - **Meta:** 2–3 janelas.
 

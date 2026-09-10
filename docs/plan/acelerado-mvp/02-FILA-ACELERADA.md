@@ -5,8 +5,8 @@
 | Ordem | Pacote | Conteúdo | Janelas alvo | Estado inicial |
 | ---: | --- | --- | ---: | --- |
 | 1 | `MVP-01` | Jogo estrutural e ingestão principal | 1–2 | `DONE` |
-| 2 | `MVP-02` | Jogadores públicos e estabilidade boxscore | 1 | `READY` |
-| 3 | `MVP-03` | Administração e criação por presets | 1–2 | bloqueado por `MVP-01` |
+| 2 | `MVP-02` | Jogadores públicos e estabilidade boxscore | 1 | `DONE` |
+| 3 | `MVP-03` | Administração e criação por presets | 1–2 | `DOING` |
 | 4 | `MVP-04` | Agendamento, progressão básica e publicação | 1–2 | bloqueado por `MVP-03` |
 | 5 | `MVP-05` | QA, release candidata e handoff | 1–2 | bloqueado por `MVP-02` e `MVP-04` |
 

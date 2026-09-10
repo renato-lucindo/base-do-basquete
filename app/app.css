@@ -4432,6 +4432,54 @@ body {
   overflow: hidden;
 }
 
+.registration-accordion {
+  display: block;
+}
+
+.registration-accordion > h2 {
+  margin: 0;
+}
+
+.registration-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  padding: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.registration-toggle strong,
+.registration-toggle small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.registration-toggle small {
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: normal;
+}
+
+.registration-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.registration-sections [aria-pressed="true"] {
+  background: var(--line);
+}
+
+.registration-accordion [hidden] {
+  display: none;
+}
+
 .roster-form {
   margin-top: 22px;
 }

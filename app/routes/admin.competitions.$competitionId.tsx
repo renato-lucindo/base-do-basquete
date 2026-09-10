@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 
+import { RegistrationAccordion } from "../components/admin/registration-accordion";
 import { RosterEditor } from "../components/admin/roster-editor";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
@@ -377,6 +379,10 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   const { competition } = loaderData;
   const navigation = useNavigation();
   const isSubmitting = navigation.state !== "idle";
+  const [openRegistration, setOpenRegistration] = useState<number | null>(loaderData.savedRosterId);
+  useEffect(() => {
+    if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
+  }, [loaderData.savedRosterId]);
   return (
     <main className="admin-shell">
       <header className="site-header admin-header">
@@ -439,104 +445,116 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
 
         <div className="registration-list">
           {loaderData.registrations.map((registration) => (
-            <article className="registration-card" key={registration.id}>
-              <div>
-                <span>{registration.status}</span>
-                <h2>{registration.teamName}</h2>
-                <p>{registration.roster.length} atletas ativos</p>
-              </div>
-              {registration.status === "draft" || registration.status === "confirmed" ? (
-                <Form method="post" className="inline-admin-form">
-                  <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-                  <input type="hidden" name="intent" value="transition-registration" />
-                  <input type="hidden" name="registrationId" value={registration.id} />
-                  <label>
-                    Estado
-                    <select name="status" defaultValue="">
-                      <option value="" disabled>
-                        Alterar para
-                      </option>
-                      {registration.status === "draft" ? (
-                        <option value="confirmed">Confirmada</option>
-                      ) : (
-                        <option value="completed">Concluída</option>
-                      )}
-                      <option value="withdrawn">Retirada</option>
-                    </select>
-                  </label>
-                  <button className="button button-ghost" type="submit">
-                    Atualizar
-                  </button>
-                </Form>
-              ) : null}
-              {registration.status !== "withdrawn" && registration.status !== "completed" ? (
-                <RosterEditor
-                  competitionId={competition.id}
-                  competitionGender={competition.gender_division}
-                  csrfToken={loaderData.csrfToken}
-                  registrationId={registration.id}
-                  teamName={registration.teamName}
-                  currentRoster={registration.roster}
-                  suggestedRoster={registration.suggestedRoster}
-                  suggestionLabel={registration.suggestionLabel}
-                  saved={loaderData.savedRosterId === registration.id}
-                />
-              ) : null}
-              {registration.status !== "draft" ? (
-                <Form method="post" className="inline-admin-form final-result-form">
-                  <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-                  <input type="hidden" name="intent" value="confirm-placement" />
-                  <input type="hidden" name="registrationId" value={registration.id} />
-                  <label>
-                    Resultado final
-                    <select
-                      name="resultStatus"
-                      required
-                      defaultValue={registration.finalPlacement?.result_status ?? ""}
-                    >
-                      <option value="" disabled>
-                        Selecione
-                      </option>
-                      <option value="placed">Classificada</option>
-                      <option value="withdrawn">Retirada</option>
-                      <option value="disqualified">Desclassificada</option>
-                    </select>
-                  </label>
-                  <label>
-                    Colocação
-                    <input
-                      name="placement"
-                      type="number"
-                      min="1"
-                      step="1"
-                      defaultValue={registration.finalPlacement?.placement ?? ""}
-                      placeholder="Somente classificada"
-                    />
-                  </label>
-                  <label>
-                    Rótulo editorial
-                    <input
-                      name="resultLabel"
-                      minLength={2}
-                      maxLength={80}
-                      defaultValue={registration.finalPlacement?.result_label ?? ""}
-                      placeholder="Ex.: Campeã estadual"
-                    />
-                  </label>
-                  <button className="button button-primary" type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Confirmando…" : "Confirmar resultado final"}
-                  </button>
-                  {registration.finalPlacement?.confirmed_at ? (
-                    <small>
-                      Confirmado: {registration.finalPlacement.result_status}
-                      {registration.finalPlacement.placement
-                        ? ` · ${registration.finalPlacement.placement}º lugar`
-                        : ""}
-                    </small>
-                  ) : null}
-                </Form>
-              ) : null}
-            </article>
+            <RegistrationAccordion
+              key={registration.id}
+              id={registration.id}
+              name={registration.teamName}
+              status={registration.status}
+              playerCount={registration.roster.length}
+              open={openRegistration === registration.id}
+              onToggle={() =>
+                setOpenRegistration((current) =>
+                  current === registration.id ? null : registration.id,
+                )
+              }
+              situation={
+                registration.status === "draft" || registration.status === "confirmed" ? (
+                  <Form method="post" className="inline-admin-form">
+                    <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                    <input type="hidden" name="intent" value="transition-registration" />
+                    <input type="hidden" name="registrationId" value={registration.id} />
+                    <label>
+                      Estado
+                      <select name="status" defaultValue="">
+                        <option value="" disabled>
+                          Alterar para
+                        </option>
+                        {registration.status === "draft" ? (
+                          <option value="confirmed">Confirmada</option>
+                        ) : (
+                          <option value="completed">Concluída</option>
+                        )}
+                        <option value="withdrawn">Retirada</option>
+                      </select>
+                    </label>
+                    <button className="button button-ghost" type="submit">
+                      Atualizar
+                    </button>
+                  </Form>
+                ) : null
+              }
+              roster={
+                registration.status !== "withdrawn" && registration.status !== "completed" ? (
+                  <RosterEditor
+                    competitionId={competition.id}
+                    competitionGender={competition.gender_division}
+                    csrfToken={loaderData.csrfToken}
+                    registrationId={registration.id}
+                    teamName={registration.teamName}
+                    currentRoster={registration.roster}
+                    suggestedRoster={registration.suggestedRoster}
+                    suggestionLabel={registration.suggestionLabel}
+                    saved={loaderData.savedRosterId === registration.id}
+                  />
+                ) : null
+              }
+              result={
+                registration.status !== "draft" ? (
+                  <Form method="post" className="inline-admin-form final-result-form">
+                    <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                    <input type="hidden" name="intent" value="confirm-placement" />
+                    <input type="hidden" name="registrationId" value={registration.id} />
+                    <label>
+                      Resultado final
+                      <select
+                        name="resultStatus"
+                        required
+                        defaultValue={registration.finalPlacement?.result_status ?? ""}
+                      >
+                        <option value="" disabled>
+                          Selecione
+                        </option>
+                        <option value="placed">Classificada</option>
+                        <option value="withdrawn">Retirada</option>
+                        <option value="disqualified">Desclassificada</option>
+                      </select>
+                    </label>
+                    <label>
+                      Colocação
+                      <input
+                        name="placement"
+                        type="number"
+                        min="1"
+                        step="1"
+                        defaultValue={registration.finalPlacement?.placement ?? ""}
+                        placeholder="Somente classificada"
+                      />
+                    </label>
+                    <label>
+                      Rótulo editorial
+                      <input
+                        name="resultLabel"
+                        minLength={2}
+                        maxLength={80}
+                        defaultValue={registration.finalPlacement?.result_label ?? ""}
+                        placeholder="Ex.: Campeã estadual"
+                      />
+                    </label>
+                    <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Confirmando…" : "Confirmar resultado final"}
+                    </button>
+                    {registration.finalPlacement?.confirmed_at ? (
+                      <small>
+                        Confirmado: {registration.finalPlacement.result_status}
+                        {registration.finalPlacement.placement
+                          ? ` · ${registration.finalPlacement.placement}º lugar`
+                          : ""}
+                      </small>
+                    ) : null}
+                  </Form>
+                ) : null
+              }
+            />
           ))}
         </div>
 
@@ -558,7 +576,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               className="button button-primary"
               to={`/admin/competitions/${competition.id}/scoresheets/new`}
             >
-              Criar jogo e preencher súmula
+              Selecionar jogo e preencher súmula
             </Link>
           </article>
           <article>
