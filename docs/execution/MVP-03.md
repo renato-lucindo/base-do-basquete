@@ -2,7 +2,16 @@
 
 ## Estado
 
-`DOING` na branch `feature/admin-workflow-improvements`, PR draft #35.
+`DONE` na branch `feature/admin-workflow-improvements`, PR draft #35. Concluído no preview; sem merge ou deploy de produção.
+
+### Gate final — 10/09/2026
+
+- Head funcional `4573827`: CI/database `34536801150`, preview `34536801097` e CodeQL `34536801112` aprovados.
+- Banco reconstruído desde zero e suite pgTAP: PASS. Duas conexões independentes na CI comprovaram primeira criação idempotente (exatamente uma edição/revisão/auditoria) e serialização da disputa pelo último confronto de semifinal, com terceiro confronto recusado.
+- Gate local: 216 Vitest, lint/formatação, tipos, builds, quatro runbooks e scan de 511 arquivos aprovados.
+- Preview atualizado: Enter no botão Continuar move o foco ao FIELDSET “Dados e formato”. QA em 390/768/1440 px sem overflow global; override restaurado. Criação real AAL2 e privacidade da edição 100 verificadas conforme evidências abaixo.
+- Preservação confirmada: nove jogos, quatro revisões legadas, dois perfis e quatro edições publicadas. Fixture 100 permanece privada, com zero jogos. Produção inalterada.
+- MVP-04 liberado para implementação. Histórico abaixo preserva as etapas intermediárias, não pendências atuais do MVP-03.
 
 ## Baseline
 
