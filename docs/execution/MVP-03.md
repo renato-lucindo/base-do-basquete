@@ -26,6 +26,8 @@
 - Segurança reúne estado da sessão e encerramento de sessões pelo endpoint existente.
 - Allowlist ampliada para as novas rotas, `app/routes.ts`, entrada administrativa, navegação compartilhada e testes de isolamento das áreas.
 - Gate local aprovado: 30 arquivos/117 Vitest, formatação/lint, tipos, runbooks, builds e scan de segredos. Os 13 testes novos cobrem negação antes de consultar/gravar, origem, CSRF, isolamento de intents e continuidade do cadastro privado.
+- Commit `bc60d76` enviado somente à branch da PR #35. CI/database `34473818965`, preview `34473818938` e CodeQL `34473818894` aprovados.
+- Reconciliação remota somente leitura: 4 revisões de regulamento, 9 jogos e `game_active_data_sources` disponível. O smoke administrativo foi redirecionado ao login: MFA renovado é necessário para QA interativo, mas não para desenvolver os presets localmente.
 
 ## Validação
 

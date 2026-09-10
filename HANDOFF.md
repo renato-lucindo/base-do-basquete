@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: plano acelerado orientado ao MVP em execução; `MVP-01 — Jogo estrutural e ingestão principal` e `MVP-02 — Jogadores públicos e estabilidade boxscore` concluídos na PR draft #35; `MVP-03 — Administração e criação por presets` é o próximo pacote.
-- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; `MVP-03` está `DOING`, com a primeira unidade de accordion implementada e gate local aprovado. Navegação por áreas, presets e wizard ainda pendentes. O Supabase compartilhado contém os read models públicos aditivos do MVP-02; nenhuma migration ou escrita de dados ocorreu nesta unidade.
+- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; `MVP-03` está `DOING`, com accordion e áreas administrativas implementados no head `bc60d76`. Gate local com 117 testes e quatro checks remotos aprovados. Presets e wizard ainda pendentes. QA autenticado aguarda renovação de login/MFA; isso não impede desenvolver o domínio dos presets. Nenhuma migration ou escrita de dados ocorreu nesta unidade.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -79,6 +79,8 @@ A execução #32737628228 restaurou o preview e `/health` confirmou `environment
 O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido, logout e redirecionamento anônimo. A auditoria registrou `mfa_verified`, `admin_access` e `logout`. Após o logout, o gerenciador do navegador preencheu automaticamente a senha e ela apareceu na saída técnica da inspeção; a sessão já estava encerrada e nenhum valor foi persistido no repositório ou nos serviços. A rotação foi recomendada, mas o responsável recusou conscientemente a alteração e aceitou o risco residual. Essa decisão não reduz MFA, `aal2`, RLS, sessão segura ou autorização server-side.
 
 ## 6. Próximo passo exato
+
+Gate remoto da segunda unidade em 10/09/2026: `bc60d76` passou CI/database `34473818965`, preview `34473818938` e CodeQL `34473818894`. Supabase consultado via conector: `game_active_data_sources` existe, 4 revisões e 9 jogos. Ao abrir `/admin/competitions` no preview, o navegador redirecionou para `/admin/login`; não inspecionar os campos preenchidos nem copiar credenciais. Com login/MFA renovado, validar áreas/accordion em 390/768/desktop. Enquanto isso, é possível implementar presets e testes sem depender dessa sessão. A estrutura atual exige inscrições concretas em `matchups`; expandir aditivamente com vagas tipadas antes de criar confrontos futuros, preservando as migrations existentes.
 
 Retomada de 10/09/2026: accordion e áreas Competições/Equipes/Atletas/Segurança implementados, conforme `docs/execution/MVP-03.md`. A segunda unidade separou loaders/actions e passou gate local com 117 Vitest. O head inicial `7c7b121` estava limpo e com os quatro checks verdes. Próximo: validar áreas/accordion no preview e implementar presets/compilação/wizard sobre a estrutura do MVP-01. Reconciliar Supabase antes do schema. MVP-03 continua `DOING`; não repetir MVP-02.
 
