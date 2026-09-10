@@ -108,6 +108,8 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
   const [gender, setGender] = useState("");
   const [sourceOverride, setSourceOverride] = useState("");
   const reviewHeading = useRef<HTMLHeadingElement>(null);
+  const identificationStep = useRef<HTMLFieldSetElement>(null);
+  const formatStep = useRef<HTMLFieldSetElement>(null);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const profile = loaderData.profiles.find(
@@ -122,7 +124,9 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
     else if (actionData?.error) setStep(1);
   }, [actionData]);
   useEffect(() => {
-    if (step === 3) reviewHeading.current?.focus();
+    if (step === 1) identificationStep.current?.focus();
+    else if (step === 2) formatStep.current?.focus();
+    else reviewHeading.current?.focus();
   }, [step]);
   return (
     <AdminArea title="Criar edição">
@@ -149,7 +153,7 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
         <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
         <input type="hidden" name="intent" value="review" />
         <input type="hidden" name="expectedProfileId" value={profile?.id ?? ""} />
-        <fieldset hidden={step !== 1}>
+        <fieldset ref={identificationStep} tabIndex={-1} hidden={step !== 1}>
           <legend>Identificação da edição</legend>
           <label>
             Série
@@ -232,7 +236,7 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
             Continuar
           </button>
         </fieldset>
-        <fieldset hidden={step !== 2}>
+        <fieldset ref={formatStep} tabIndex={-1} hidden={step !== 2}>
           <legend>Dados e formato</legend>
           <p>
             {profile

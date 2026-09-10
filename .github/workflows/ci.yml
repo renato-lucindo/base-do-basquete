@@ -39,3 +39,5 @@ jobs:
         run: npx --no-install supabase db start
       - name: Run pgTAP database tests
         run: npx --no-install supabase test db --local
+      - name: Verify preset concurrency on disposable database
+        run: node scripts/test-preset-concurrency.mjs
