@@ -51,6 +51,14 @@ export function validateSchedule(form: FormData) {
   };
 }
 
+export function validateResolution(form: FormData) {
+  const matchupId = scheduleId(form.get("matchupId"));
+  const submissionId = scheduleId(form.get("officialResultSubmissionId"));
+  if (!matchupId || !submissionId)
+    return { ok: false as const, error: "O resultado oficial ativo precisa ser recarregado." };
+  return { ok: true as const, input: { matchupId, submissionId } };
+}
+
 export function schedulingError(code: string | undefined): string {
   const messages: Record<string, string> = {
     BD401: "Confirme novamente o MFA para continuar.",
@@ -63,6 +71,12 @@ export function schedulingError(code: string | undefined): string {
     BR025: "Revise o horário, o local e o período da edição.",
     BR026: "O agendamento mudou. Recarregue e revise antes de salvar.",
     BR027: "Um jogo iniciado ou com dados registrados não pode ser reagendado aqui.",
+    BR030: "Este confronto já foi resolvido. Correções exigem o fluxo de emenda.",
+    BR031: "O resultado oficial ativo mudou ou ainda não está pronto. Recarregue a página.",
+    BR032: "Uma competição arquivada não pode progredir.",
+    BR033: "A progressão automática básica vale somente para confrontos eliminatórios.",
+    BR034: "O jogo precisa estar finalizado antes de resolver o confronto.",
+    BR035: "O resultado oficial está incompleto ou inconsistente.",
   };
   return messages[code ?? ""] ?? "Não foi possível salvar. Recarregue e tente novamente.";
 }

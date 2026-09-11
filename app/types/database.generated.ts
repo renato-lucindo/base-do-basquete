@@ -3470,6 +3470,10 @@ export type Database = {
         };
         Returns: number;
       };
+      admin_resolve_matchup: {
+        Args: { p_expected_submission_id: number; p_matchup_id: number };
+        Returns: number;
+      };
       admin_refresh_boxscore_team_statistics: {
         Args: {
           p_import_id: number;

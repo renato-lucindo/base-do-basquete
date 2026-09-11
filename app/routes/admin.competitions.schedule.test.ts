@@ -88,4 +88,24 @@ describe("private schedule boundary", () => {
     expect(JSON.stringify(result)).not.toContain("internal SQL");
     expect(JSON.stringify(result)).toContain("Recarregue");
   });
+  it("resolves only the official submission inside the current edition", async () => {
+    await expect(
+      action(
+        post({
+          intent: "resolve",
+          officialResultSubmissionId: "34",
+        }),
+      ),
+    ).resolves.toMatchObject({ status: 302 });
+    expect(query.eq).toHaveBeenCalledWith("competition_id", 100);
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_resolve_matchup", {
+      p_matchup_id: 12,
+      p_expected_submission_id: 34,
+    });
+  });
+  it("rejects a forged result id before querying", async () => {
+    await action(post({ intent: "resolve", officialResultSubmissionId: "0" }));
+    expect(client.from).not.toHaveBeenCalled();
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
 });

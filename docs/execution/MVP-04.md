@@ -14,6 +14,18 @@ Estado: DOING na branch feature/admin-workflow-improvements, PR draft #35.
 - Tipos TypeScript integrais regenerados a partir do banco aplicado. O limite do gerador para null em argumentos RPC fica isolado por cast no boundary; a validação autoritativa permanece no PostgreSQL.
 - Advisors confirmaram RLS nas tabelas novas. Os avisos SECURITY DEFINER das RPCs administrativas são intencionais, limitados ao singleton AAL2 e cobertos por negações. A auditoria de performance identificou nove FKs contextuais sem índice; a correção aditiva 20260911173639_mvp04_fk_covering_indexes.sql foi validada em rollback e aguarda o gate remoto antes da aplicação.
 
+## Fechamento da agenda privada
+
+A correção aditiva passou os quatro checks no commit 6d2738a e foi aplicada como 20260911174551_mvp04_fk_covering_indexes; o advisor não aponta mais FKs sem índice. Banco reconciliado com nove jogos, cinco revisões, fixture 100 privada, zero atribuições e zero preparações.
+
+## Unidade de progressão eliminatória — 11/09/2026
+
+- `admin_resolve_matchup` aceita apenas o confronto e a autoridade `official_result` esperada. Vencedor, perdedor e placares são calculados no PostgreSQL a partir do jogo final e da submissão principal ativa; o frontend nunca informa o classificado.
+- Resolução imutável e idempotente, locks em ordem, RLS AAL2, auditoria e propagação das vagas de vencedor. `draft`/`review`, jogo não final, empate, preset não eliminatório e autoridade trocada são recusados.
+- A progressão preenche o confronto dependente, mas não cria partida nem publica. A preparação final continua sendo ação administrativa explícita.
+- UI da agenda mostra o resultado ativo, pede confirmação explícita e exibe a resolução. Erros internos são reduzidos a mensagens seguras.
+- Migration `20260911174947_mvp04_knockout_progression.sql` e pgTAP focal `mvp04_matchup_progression.test.sql`: 28/28 em transação com rollback, incluindo duas semifinais até final pronta. Gate local: 245 Vitest, lint, tipos, build, runbooks e scan de 521 arquivos.
+
 ## Pendências do pacote
 
-Enviar a correção aditiva de índices, aguardar CI e aplicá-la. Validar a agenda no preview AAL2. Implementar progressão explícita por official_result principal ativo e publicação editorial versionada, com público lendo somente a última versão confirmada. Acrescentar teste concorrente da agenda e fluxo eliminatório ponta a ponta. Sem merge ou produção.
+Enviar a unidade de progressão, aguardar CI, aplicar a migration e regenerar tipos integrais. Validar agenda/progressão no preview AAL2. Implementar publicação editorial versionada, com público lendo somente a última versão confirmada. Acrescentar teste concorrente da agenda e smokes público/privado. Sem merge ou produção.

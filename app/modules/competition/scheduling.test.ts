@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scheduleId, schedulingError, validateSchedule } from "./scheduling";
+import { scheduleId, schedulingError, validateResolution, validateSchedule } from "./scheduling";
 
 function form(date = "2026-09-11T19:30-03:00") {
   const value = new FormData();
@@ -51,5 +51,16 @@ describe("private scheduling input", () => {
   it("does not expose database details", () => {
     expect(schedulingError("SQL secret detail")).not.toContain("SQL");
     expect(schedulingError("BR026")).toContain("Recarregue");
+  });
+  it("accepts only explicit safe ids for result resolution", () => {
+    const input = new FormData();
+    input.set("matchupId", "12");
+    input.set("officialResultSubmissionId", "34");
+    expect(validateResolution(input)).toEqual({
+      ok: true,
+      input: { matchupId: 12, submissionId: 34 },
+    });
+    input.set("officialResultSubmissionId", "1e2");
+    expect(validateResolution(input).ok).toBe(false);
   });
 });

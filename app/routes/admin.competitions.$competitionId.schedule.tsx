@@ -3,7 +3,12 @@ import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
-import { scheduleId, schedulingError, validateSchedule } from "../modules/competition/scheduling";
+import {
+  scheduleId,
+  schedulingError,
+  validateResolution,
+  validateSchedule,
+} from "../modules/competition/scheduling";
 import type { Route } from "./+types/admin.competitions.$competitionId.schedule";
 
 interface Schedule {
@@ -19,6 +24,16 @@ interface Schedule {
     scheduledAt: string | null;
     venue: string | null;
     gameId: number | null;
+    officialResultSubmissionId: number | null;
+    readyToSchedule: boolean;
+    readyToResolve: boolean;
+    resolution: {
+      winnerRegistrationId: number;
+      loserRegistrationId: number;
+      homeScore: number;
+      awayScore: number;
+      resolvedAt: string;
+    } | null;
   }[];
 }
 export async function loader({ request, params, context }: Route.LoaderArgs) {
@@ -97,6 +112,23 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_venue: parsed.input.venue as string,
       })
     ).error?.code;
+  } else if (form.get("intent") === "resolve") {
+    const parsed = validateResolution(form);
+    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    const matchup = await auth.client
+      .from("matchups")
+      .select("id")
+      .eq("id", parsed.input.matchupId)
+      .eq("competition_id", id)
+      .maybeSingle();
+    if (matchup.error || !matchup.data)
+      throw new Response("Confronto não encontrado", { status: 404 });
+    code = (
+      await auth.client.rpc("admin_resolve_matchup", {
+        p_matchup_id: parsed.input.matchupId,
+        p_expected_submission_id: parsed.input.submissionId,
+      })
+    ).error?.code;
   } else throw new Response("Ação inválida", { status: 400 });
   if (code) return data({ error: schedulingError(code) }, { status: 400, headers });
   return redirect(`/admin/competitions/${id}/schedule?saved=1`, { headers });
@@ -173,6 +205,32 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
               ? `Jogo #${m.gameId} preparado`
               : "Preparação privada; sem jogo até as duas vagas estarem resolvidas."}
           </p>
+          {m.resolution ? (
+            <p>
+              Resultado confirmado: {m.resolution.homeScore} × {m.resolution.awayScore}.
+              Classificado: {name(m.resolution.winnerRegistrationId)}.
+            </p>
+          ) : m.readyToResolve && m.officialResultSubmissionId ? (
+            <Form method="post" className="admin-form">
+              <input type="hidden" name="csrfToken" value={csrfToken} />
+              <input type="hidden" name="intent" value="resolve" />
+              <input type="hidden" name="matchupId" value={m.id} />
+              <input
+                type="hidden"
+                name="officialResultSubmissionId"
+                value={m.officialResultSubmissionId}
+              />
+              <p>
+                Há um resultado oficial principal ativo. A equipe classificada será calculada no
+                banco.
+              </p>
+              <button type="submit" className="button button-primary" disabled={busy}>
+                Confirmar progressão pelo resultado oficial
+              </button>
+            </Form>
+          ) : m.gameId ? (
+            <p>O confronto será liberado para progressão somente após o resultado oficial ativo.</p>
+          ) : null}
           <Form method="post" className="admin-form">
             <input type="hidden" name="csrfToken" value={csrfToken} />
             <input type="hidden" name="intent" value="prepare" />
