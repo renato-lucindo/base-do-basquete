@@ -68,6 +68,9 @@ select is(
   'higher distinct-game frequency wins deterministically'
 );
 
+do $$begin
+  perform private.backfill_legacy_competition_publication(9301,'published');
+end$$;
 set local role anon;
 select is(
   (select game_count from public.player_primary_jerseys where player_id = 9301),

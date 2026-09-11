@@ -94,7 +94,7 @@ select is((select status from public.competitions where id=(select future_compet
   'arrival of a future date is never simulated as automatic publication');
 
 reset role;
-update public.competitions set status='published'
+update public.competitions set status='published',published_at=now()
 where id=(select future_competition_id from publication_context);
 set local role anon;
 select is((select count(*) from public.competitions where id=(select competition_id from publication_context)),1::bigint,

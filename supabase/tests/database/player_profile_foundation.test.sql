@@ -161,6 +161,9 @@ select ok(
   'anonymous users have no direct access to private player data'
 );
 
+do $$begin
+  perform private.backfill_legacy_competition_publication(9801,'published');
+end$$;
 set local role anon;
 select is(
   (select count(*) from public.public_player_profiles where id in (9801, 9802)),

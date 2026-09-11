@@ -253,6 +253,9 @@ select is(
   'player achievements are derived from confirmed placements and rosters'
 );
 
+do $$begin
+  perform private.backfill_legacy_competition_publication(9101,'published');
+end$$;
 set local role anon;
 select is(
   (select count(*) from public.competitions where id in (9101, 9102)),

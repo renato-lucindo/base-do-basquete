@@ -487,6 +487,9 @@ select ok(
   'generic audit metadata never records the stored sex value'
 );
 
+do $$begin
+  perform private.backfill_legacy_competition_publication(9602,'published');
+end$$;
 set local role anon;
 select is(
   (
