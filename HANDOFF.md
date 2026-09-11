@@ -364,6 +364,8 @@ CLOUDFLARE_ACCOUNT_ID
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
 - Consolidação atual: PR #35 draft contra `main`, head funcional `603f725`, aberta; nenhum merge ou deploy de produção executado.
 - Execução atual: commits `b7c0030` e `603f725` concluíram `MVP-02`; CI/database `34386933182`, preview `34386933194` e CodeQL `34386933248` estão verdes.
+- Head atual da PR #35: `09a992d`. Publicação editorial versionada passou `gate`, banco desde zero com 743 pgTAP/prova de concorrência, preview/smoke e análise. Nenhum merge ou deploy de produção foi executado.
+- Supabase compartilhado antes da publicação: quatro competições `published`, uma `draft`, nove jogos e doze inscrições. A migration `mvp04_versioned_publication` não foi aplicada porque a proteção de risco exigiu autorização explícita para o backfill e as mudanças de RLS.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
 ## 13. Bugs, riscos e bloqueios conhecidos
@@ -473,3 +475,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-03 | Codex | Plano operacional acelerado: 39 cartões restantes consolidados em 5 pacotes MVP e 4 pós-MVP, com cobertura 50/50, segurança preservada e `MVP-01` pronto | Executar `MVP-01` com um gate remoto consolidado |
 | 2026-09-09 | Codex | `MVP-01` concluído: jogo estrutural, ingestões no jogo existente, 92 Vitest, banco desde zero/pgTAP, preview AAL2 e Supabase compartilhado reconciliados no head `d1fc5a9` | Executar `MVP-02 — Jogadores públicos e estabilidade boxscore` |
 | 2026-09-09 | Codex | `MVP-02` concluído: read models por autoridade, ausência/DNP corretos, 102 Vitest, 35 pgTAP, todos os checks remotos e QA público responsivo aprovados no head `603f725` | Executar `MVP-03 — Administração e criação por presets` |
+| 2026-09-11 | Codex | `MVP-04` com agenda, progressão e publicação versionada implementadas no head `09a992d`; gate local, 743 pgTAP desde zero, preview/smoke e análise verdes; migration de publicação ainda não aplicada | Obter autorização explícita para retropreencher as quatro competições publicadas e trocar as policies públicas; aplicar migration, tipos, pgTAP persistente, advisors e QA AAL2 |

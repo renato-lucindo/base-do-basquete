@@ -25,7 +25,18 @@ A correção aditiva passou os quatro checks no commit 6d2738a e foi aplicada co
 - A progressão preenche o confronto dependente, mas não cria partida nem publica. A preparação final continua sendo ação administrativa explícita.
 - UI da agenda mostra o resultado ativo, pede confirmação explícita e exibe a resolução. Erros internos são reduzidos a mensagens seguras.
 - Migration `20260911174947_mvp04_knockout_progression.sql` e pgTAP focal `mvp04_matchup_progression.test.sql`: 28/28 em transação com rollback, incluindo duas semifinais até final pronta. Gate local: 245 Vitest, lint, tipos, build, runbooks e scan de 521 arquivos.
+- O commit `40dd103` passou os quatro checks remotos; a migration foi aplicada como `20260911180212_mvp04_knockout_progression`, o pgTAP persistente passou 28/28 e os tipos integrais foram regenerados.
+
+## Unidade de publicação editorial versionada — 11/09/2026
+
+- Cada confirmação cria um snapshot imutável e numerado. A coluna legada `status` foi preservada, mas a leitura anônima exige o ponteiro `current_publication_id` e fingerprints coincidentes de inscrições, elencos e jogos.
+- Uma alteração esportiva posterior fica privada até nova confirmação. Jogos agendados preservam placares nulos; nenhuma publicação automática ocorre quando a data de início chega.
+- Revisão e publicação são RPCs server-side AAL2, com confirmação explícita, CAS de versão, idempotência, auditoria e bloqueios para edição incompleta. RLS e grants impedem mutação anônima e exposição de versões antigas.
+- A UI administrativa ganhou revisão/publicação no hub e o público consome somente o snapshot confirmado. O fallback de rollout aceita exclusivamente `PGRST202` enquanto a RPC ainda não existe; demais erros falham fechados.
+- Migration `20260911180356_mvp04_versioned_publication.sql` e pgTAP `mvp04_versioned_publication.test.sql`: 33/33 em rollback. Gate local: 38 arquivos/261 Vitest, tipos, lint, build, runbooks e varredura de 528 arquivos.
+- No head `09a992d`, `gate`, banco desde zero com 743 pgTAP e prova de concorrência, `upload`/smoke do preview e `analyze` passaram. As regressões encontradas pelo CI foram corrigidas sem afrouxar a autoridade do snapshot: seed pós-fatos, fixtures históricas versionadas e confronto de camisa com dois participantes.
+- A aplicação no Supabase compartilhado foi recusada pela proteção de risco antes de qualquer DDL. Estado reconciliado: quatro competições publicadas, uma draft, nove jogos, doze inscrições e migration ainda ausente. É necessária autorização explícita para criar as tabelas/policies e retropreencher uma versão imutável para as quatro competições publicadas.
 
 ## Pendências do pacote
 
-Enviar a unidade de progressão, aguardar CI, aplicar a migration e regenerar tipos integrais. Validar agenda/progressão no preview AAL2. Implementar publicação editorial versionada, com público lendo somente a última versão confirmada. Acrescentar teste concorrente da agenda e smokes público/privado. Sem merge ou produção.
+Após autorização explícita, aplicar somente a migration de publicação no Supabase compartilhado, regenerar tipos integrais, repetir 33 pgTAP persistentes, advisors e reconciliação. Depois validar publicação no preview AAL2, acrescentar o teste concorrente específico da agenda e os smokes público/privado. Sem merge ou produção.
