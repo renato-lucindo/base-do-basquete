@@ -41,6 +41,10 @@ function nullableNumberValue(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+function publicationRpcUnavailable(error: unknown): boolean {
+  return record(error)?.code === "PGRST202";
+}
+
 function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null {
   const snapshot = record(snapshotValue);
   if (!snapshot || !Array.isArray(snapshot.teams) || !Array.isArray(snapshot.games)) return null;
@@ -180,7 +184,9 @@ export async function loadPublicSportsCore(
   const publicationResult = await client.rpc("public_get_competition_publication", {
     p_competition_id: context.competitionId,
   });
-  ensure(publicationResult.error);
+  if (publicationResult.error && !publicationRpcUnavailable(publicationResult.error)) {
+    ensure(publicationResult.error);
+  }
   const published = publishedSportsCore(publicationResult.data);
   if (published) return published;
 

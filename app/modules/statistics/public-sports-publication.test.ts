@@ -69,4 +69,20 @@ describe("published sports snapshot", () => {
     const result = await loadPublicSportsCore(client as never, context);
     expect(result).toEqual({ games: [], standings: [], teamStatistics: [], teams: [] });
   });
+
+  it("uses the legacy read model while the publication RPC is not deployed", async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "PGRST202", message: "function is not in the schema cache" },
+      }),
+      from: vi.fn(() => ({
+        select: () => ({
+          eq: () => ({ in: vi.fn().mockResolvedValue({ data: [], error: null }) }),
+        }),
+      })),
+    };
+    const result = await loadPublicSportsCore(client as never, context);
+    expect(result).toEqual({ games: [], standings: [], teamStatistics: [], teams: [] });
+  });
 });
