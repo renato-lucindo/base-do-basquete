@@ -1,6 +1,6 @@
 # MVP-04 — Agendamento, progressão básica e publicação
 
-- **Estado atual:** `READY`; MVP-03 concluído, usa ingestão de `MVP-01`
+- **Estado atual:** `DOING`; MVP-03 concluído, usa ingestão de `MVP-01`
 - **Incorpora:** `07G`, parte básica de `07H`, `08A`, `08B`, `08C`, `08D`
 - **Meta:** 2–3 janelas.
 

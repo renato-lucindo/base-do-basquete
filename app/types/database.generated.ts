@@ -3058,6 +3058,23 @@ export type Database = {
       };
     };
     Functions: {
+      admin_get_competition_schedule: {
+        Args: { p_competition_id: number };
+        Returns: Json;
+      };
+      admin_assign_competition_entry: {
+        Args: { p_entry_id: number; p_registration_id: number };
+        Returns: number;
+      };
+      admin_prepare_matchup: {
+        Args: {
+          p_matchup_id: number;
+          p_expected_revision: number;
+          p_scheduled_at: string | null;
+          p_venue: string | null;
+        };
+        Returns: number | null;
+      };
       admin_activate_game_data_authorities: {
         Args: {
           p_domains: string[];

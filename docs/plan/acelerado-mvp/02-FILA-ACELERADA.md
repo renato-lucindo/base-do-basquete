@@ -7,7 +7,7 @@
 | 1 | `MVP-01` | Jogo estrutural e ingestão principal | 1–2 | `DONE` |
 | 2 | `MVP-02` | Jogadores públicos e estabilidade boxscore | 1 | `DONE` |
 | 3 | `MVP-03` | Administração e criação por presets | 1–2 | `DONE` |
-| 4 | `MVP-04` | Agendamento, progressão básica e publicação | 1–2 | `READY` |
+| 4 | `MVP-04` | Agendamento, progressão básica e publicação | 1–2 | `DOING` |
 | 5 | `MVP-05` | QA, release candidata e handoff | 1–2 | bloqueado por `MVP-02` e `MVP-04` |
 
 Depois de `MVP-01`, `MVP-02` e `MVP-03` são conceitualmente independentes, mas podem ser executados serialmente na mesma branch quando não houver execução paralela disponível.

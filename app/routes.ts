@@ -5,6 +5,10 @@ export default [
   route("admin", "routes/admin._index.tsx"),
   route("admin/competitions", "routes/admin.competitions.tsx"),
   route("admin/competitions/new", "routes/admin.competitions.new.tsx"),
+  route(
+    "admin/competitions/:competitionId/schedule",
+    "routes/admin.competitions.$competitionId.schedule.tsx",
+  ),
   route("admin/teams", "routes/admin.teams.tsx"),
   route("admin/players", "routes/admin.players.tsx"),
   route("admin/security", "routes/admin.security.tsx"),
