@@ -171,48 +171,73 @@ revoke all on function private.competition_publication_snapshot(bigint) from pub
 
 alter table public.competitions add column current_publication_id bigint;
 
-with snapshots as(
-  select competition.id as competition_id,
-    private.competition_publication_snapshot(competition.id) as snapshot
-  from public.competitions competition where competition.status in('published','archived')
-), inserted as(
+create function private.backfill_legacy_competition_publication(
+  p_competition_id bigint,p_target_status text default 'published'
+)
+returns bigint language plpgsql security definer set search_path='' as $$
+declare
+  competition public.competitions;
+  snapshot jsonb;
+  saved_publication_id bigint;
+begin
+  if p_target_status not in('published','archived') then
+    raise exception using errcode='BR044',message='BDB_INVALID_LEGACY_PUBLICATION_STATUS';
+  end if;
+  select * into competition from public.competitions
+    where id=p_competition_id for update;
+  if not found then
+    raise exception using errcode='BD404',message='BDB_COMPETITION_NOT_FOUND';
+  end if;
+  if competition.current_publication_id is not null then
+    return competition.current_publication_id;
+  end if;
+  snapshot:=private.competition_publication_snapshot(competition.id);
   insert into public.competition_publications(
     competition_id,version,snapshot,snapshot_hash,publication_kind,published_at
-  )
-  select competition_id,1,snapshot,md5(snapshot::text),'legacy_backfill',
-    coalesce((select published_at from public.competitions where id=competition_id),now())
-  from snapshots returning id,competition_id
-)
-update public.competitions competition set current_publication_id=inserted.id
-from inserted where competition.id=inserted.competition_id;
+  ) values(
+    competition.id,1,snapshot,md5(snapshot::text),'legacy_backfill',
+    coalesce(competition.published_at,now())
+  ) returning id into saved_publication_id;
+  insert into private.competition_publication_registrations(
+    publication_id,competition_id,registration_id,fingerprint
+  ) select saved_publication_id,competition.id,registration.id,
+      private.publication_registration_fingerprint(registration.id)
+    from public.team_registrations registration
+    where registration.competition_id=competition.id
+      and registration.status in('confirmed','completed');
+  insert into private.competition_publication_roster_entries(
+    publication_id,competition_id,roster_entry_id,fingerprint
+  ) select saved_publication_id,competition.id,entry.id,
+      private.publication_roster_fingerprint(entry.id)
+    from public.roster_entries entry
+    where entry.competition_id=competition.id and entry.status='active';
+  insert into private.competition_publication_games(
+    publication_id,competition_id,game_id,fingerprint
+  ) select saved_publication_id,competition.id,game.id,
+      private.publication_game_fingerprint(game.id)
+    from public.games game
+    where game.competition_id=competition.id and game.status in('scheduled','live','final')
+      and (select count(*) from public.game_participants participant where participant.game_id=game.id)=2;
+  update public.competitions set status=p_target_status,
+    published_at=coalesce(published_at,now()),current_publication_id=saved_publication_id
+    where id=competition.id;
+  return saved_publication_id;
+end;
+$$;
+revoke all on function private.backfill_legacy_competition_publication(bigint,text)
+  from public,anon,authenticated;
 
-insert into private.competition_publication_registrations(
-  publication_id,competition_id,registration_id,fingerprint
-)
-select publication.id,publication.competition_id,registration.id,
-  private.publication_registration_fingerprint(registration.id)
-from public.competition_publications publication
-join public.team_registrations registration on registration.competition_id=publication.competition_id
-where registration.status in('confirmed','completed');
-
-insert into private.competition_publication_roster_entries(
-  publication_id,competition_id,roster_entry_id,fingerprint
-)
-select publication.id,publication.competition_id,entry.id,
-  private.publication_roster_fingerprint(entry.id)
-from public.competition_publications publication
-join public.roster_entries entry on entry.competition_id=publication.competition_id
-where entry.status='active';
-
-insert into private.competition_publication_games(
-  publication_id,competition_id,game_id,fingerprint
-)
-select publication.id,publication.competition_id,game.id,
-  private.publication_game_fingerprint(game.id)
-from public.competition_publications publication
-join public.games game on game.competition_id=publication.competition_id
-where game.status in('scheduled','live','final')
-  and (select count(*) from public.game_participants participant where participant.game_id=game.id)=2;
+do $$
+declare
+  competition record;
+begin
+  for competition in select id,status from public.competitions
+    where status in('published','archived')
+  loop
+    perform private.backfill_legacy_competition_publication(competition.id,competition.status);
+  end loop;
+end;
+$$;
 
 alter table public.competitions
   add constraint competitions_current_publication_fkey

@@ -14,7 +14,7 @@ set name = excluded.name,
 
 insert into public.competitions
   (series_id, category_id, year, display_name, status, published_at)
-select s.id, c.id, fixture.year, fixture.display_name, 'published', now()
+select s.id, c.id, fixture.year, fixture.display_name, 'draft', null
 from public.competition_series s
 join (
   values
@@ -25,9 +25,7 @@ join (
 join public.categories c on c.slug = fixture.category_slug
 where s.slug = 'liga-de-desenvolvimento'
 on conflict (series_id, category_id, year) where gender_division is null do update
-set display_name = excluded.display_name,
-    status = 'published',
-    published_at = coalesce(public.competitions.published_at, excluded.published_at);
+set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
 values
@@ -343,14 +341,12 @@ set name = excluded.name, has_advanced_stats = true, is_active = true;
 
 insert into public.competitions
   (series_id, category_id, year, display_name, status, published_at)
-select series.id, category.id, 2026, 'Copa ES Ouro 2026 — Fixture FIBA', 'published', now()
+select series.id, category.id, 2026, 'Copa ES Ouro 2026 — Fixture FIBA', 'draft', null
 from public.competition_series series
 cross join public.categories category
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
 on conflict (series_id, category_id, year) where gender_division is null do update
-set display_name = excluded.display_name,
-    status = 'published',
-    published_at = coalesce(public.competitions.published_at, excluded.published_at);
+set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
 values
@@ -488,3 +484,10 @@ set jersey_number = excluded.jersey_number,
 -- seed facts only after every sports row exists; the function is private,
 -- idempotent and leaves legacy_seed submissions in review without authority.
 select private.backfill_game_data_submissions();
+
+-- Migrations are applied before this seed on disposable databases. Publish only
+-- after every deterministic sporting fact exists so the snapshot is complete.
+select private.backfill_legacy_competition_publication(competition.id,'published')
+from public.competitions competition
+join public.competition_series series on series.id=competition.series_id
+where series.slug in('liga-de-desenvolvimento','copa-es-ouro');
