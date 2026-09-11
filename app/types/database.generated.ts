@@ -323,6 +323,55 @@ export type Database = {
           },
         ];
       };
+      competition_entry_assignments: {
+        Row: {
+          assigned_at: string;
+          assigned_by: string;
+          competition_id: number;
+          entry_id: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+        };
+        Insert: {
+          assigned_at?: string;
+          assigned_by: string;
+          competition_id: number;
+          entry_id: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+        };
+        Update: {
+          assigned_at?: string;
+          assigned_by?: string;
+          competition_id?: number;
+          entry_id?: number;
+          registration_id?: number;
+          ruleset_revision_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_entry_assignments_entry_id_ruleset_revision_id_fkey";
+            columns: ["entry_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_entries";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_entry_assignments_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_entry_assignments_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
       competition_groups: {
         Row: {
           code: string;
@@ -1544,6 +1593,82 @@ export type Database = {
           },
           {
             foreignKeyName: "games_matchup_competition_fkey";
+            columns: ["matchup_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
+      matchup_preparations: {
+        Row: {
+          competition_id: number;
+          game_id: number | null;
+          matchup_id: number;
+          revision: number;
+          scheduled_at: string | null;
+          updated_at: string;
+          updated_by: string;
+          venue: string | null;
+        };
+        Insert: {
+          competition_id: number;
+          game_id?: number | null;
+          matchup_id: number;
+          revision?: number;
+          scheduled_at?: string | null;
+          updated_at?: string;
+          updated_by: string;
+          venue?: string | null;
+        };
+        Update: {
+          competition_id?: number;
+          game_id?: number | null;
+          matchup_id?: number;
+          revision?: number;
+          scheduled_at?: string | null;
+          updated_at?: string;
+          updated_by?: string;
+          venue?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "matchup_preparations_game_id_competition_id_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_boxscore_player_statistics";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_preparations_game_id_competition_id_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_preparations_game_id_competition_id_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_scoresheet_player_statistics";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_preparations_game_id_competition_id_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_preparations_game_id_competition_id_fkey";
+            columns: ["game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "legacy_unclassified_games";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_preparations_matchup_id_competition_id_fkey";
             columns: ["matchup_id", "competition_id"];
             isOneToOne: false;
             referencedRelation: "matchups";
@@ -3058,23 +3183,6 @@ export type Database = {
       };
     };
     Functions: {
-      admin_get_competition_schedule: {
-        Args: { p_competition_id: number };
-        Returns: Json;
-      };
-      admin_assign_competition_entry: {
-        Args: { p_entry_id: number; p_registration_id: number };
-        Returns: number;
-      };
-      admin_prepare_matchup: {
-        Args: {
-          p_matchup_id: number;
-          p_expected_revision: number;
-          p_scheduled_at: string | null;
-          p_venue: string | null;
-        };
-        Returns: number | null;
-      };
       admin_activate_game_data_authorities: {
         Args: {
           p_domains: string[];
@@ -3177,6 +3285,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      admin_assign_competition_entry: {
+        Args: { p_entry_id: number; p_registration_id: number };
+        Returns: number;
       };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
       admin_commit_boxscore_import: {
@@ -3332,6 +3444,10 @@ export type Database = {
         Returns: undefined;
       };
       admin_get_classification_backfill_report: { Args: never; Returns: Json };
+      admin_get_competition_schedule: {
+        Args: { p_competition_id: number };
+        Returns: Json;
+      };
       admin_get_game_data_backfill_report: { Args: never; Returns: Json };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
@@ -3344,6 +3460,15 @@ export type Database = {
           roster_entries: number;
           sex: string;
         }[];
+      };
+      admin_prepare_matchup: {
+        Args: {
+          p_expected_revision: number;
+          p_matchup_id: number;
+          p_scheduled_at: string;
+          p_venue: string;
+        };
+        Returns: number;
       };
       admin_refresh_boxscore_team_statistics: {
         Args: {

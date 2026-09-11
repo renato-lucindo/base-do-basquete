@@ -91,8 +91,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       await auth.client.rpc("admin_prepare_matchup", {
         p_matchup_id: parsed.input.matchupId,
         p_expected_revision: parsed.input.expectedRevision,
-        p_scheduled_at: parsed.input.scheduledAt,
-        p_venue: parsed.input.venue,
+        // Postgres accepts null for function parameters; Supabase typegen does not
+        // encode parameter nullability, so keep the cast at this RPC boundary.
+        p_scheduled_at: parsed.input.scheduledAt as string,
+        p_venue: parsed.input.venue as string,
       })
     ).error?.code;
   } else throw new Response("Ação inválida", { status: 400 });

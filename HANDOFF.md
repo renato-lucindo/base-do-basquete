@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP em execução; MVP-01, MVP-02 e MVP-03 concluídos na PR draft #35. MVP-04 é o próximo pacote; restam dois pacotes do MVP e quatro pós-MVP preservados.
-- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; MVP-03 `DONE` no head funcional `4573827`, com quatro checks verdes, concorrência real em duas conexões aprovada na CI e QA responsivo/teclado confirmado no preview. Ambas as migrations aplicadas e tipos integrais regenerados. Edição de QA 100 privada: cinco entradas, quatro confrontos, oito vagas, três folgas e zero jogos. Sem merge nem deploy de produção.
+- Fase: plano acelerado orientado ao MVP em execução; MVP-01, MVP-02 e MVP-03 concluídos na PR draft #35. MVP-04 está `DOING`; restam MVP-04, MVP-05 e quatro pacotes pós-MVP preservados.
+- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; a unidade de atribuição/agendamento do MVP-04 está aplicada no Supabase após quatro checks verdes no commit `48001d9`. Tipos integrais foram regenerados e 32 pgTAP passaram também pós-aplicação. Edição de QA 100 permanece privada; banco real preserva nove jogos, cinco revisões, zero atribuições e zero preparações. Correção aditiva dos nove índices contextuais apontados pelo advisor está validada localmente e em rollback, ainda não aplicada até o próximo CI. Sem merge nem deploy de produção.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
@@ -80,7 +80,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-**Estado vigente após reconexão (11/09):** Supabase e execução local restabelecidos. MVP-04 DOING com unidade integrada de agenda privada, rota /admin/competitions/:competitionId/schedule, atribuições explícitas, preparação sem participantes fictícios, geração de jogo estrutural e auditoria/CAS. Migration 20260911031428_mvp04_private_scheduling.sql ensaiada em rollback: 32 pgTAP focais e 35 regressões dos presets aprovados. Banco preservado com nove jogos, cinco revisões e fixture 100 privada. Ver docs/execution/MVP-04.md. Próximo: conferir gate remoto desta unidade; só após verde aplicar a migration, regenerar tipos e validar preview AAL2. Depois implementar progressão oficial e publicação versionada; pacote ainda não concluído. Bloqueios de conexão/subprocessos relatados abaixo foram resolvidos.
+**Estado vigente em 11/09:** Supabase e execução local restabelecidos. MVP-04 `DOING` com agenda privada em `48001d9`: rota `/admin/competitions/:competitionId/schedule`, atribuições explícitas, preparação sem participantes fictícios, geração de jogo estrutural e auditoria/CAS. Os quatro checks remotos passaram; `20260911031428_mvp04_private_scheduling.sql` foi aplicada como `20260911173435_mvp04_private_scheduling`, os 32 pgTAP focais passaram pós-aplicação e os tipos integrais foram regenerados. Banco preservado com nove jogos, cinco revisões, fixture 100 privada, zero atribuições e zero preparações. Advisor não apontou falha nova de RLS; a migration aditiva `20260911173639_mvp04_fk_covering_indexes.sql` cobre nove FKs contextuais e passou ensaio em rollback, mas só será aplicada após seu CI verde. Ver `docs/execution/MVP-04.md`. Próximo: integrar essa correção, validar preview AAL2 e implementar progressão oficial/publicação versionada. Sem merge ou produção.
 
 **Retomada 11/09 — MVP-04 em implementação local:** branch limpa de partida `0612276`, PR aberta/draft, quatro checks verdes e preview `ok`; Supabase reconciliado com nove jogos, cinco revisões e fixture 100 privada. Foram criados, ainda sem commit e sem aplicação, `20260911031428_mvp04_private_scheduling.sql`, `mvp04_private_scheduling.test.sql` (29 asserções previstas), `app/modules/competition/scheduling.ts` e seu teste. A unidade separa atribuições explícitas imutáveis do blueprint, deriva participantes, prepara vagas pendentes sem jogo fictício e agenda jogos privados com CAS/auditoria. Progressão e publicação ainda NÃO implementadas. Não tratar SQL como validado.
 
@@ -203,7 +203,8 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | ADM-REF-02C — Backfill de submissões e autoridades | `DONE` | 9 submissões, 28 autoridades, 5 seeds somente históricos, relatório AAL2, 43 pgTAP e checksums esportivos preservados |
 | MVP-01 — Jogo estrutural e ingestão principal | `DONE` | Estrutura versionada, ingestões no jogo existente, 92 Vitest, CI/database, preview AAL2 e Supabase compartilhado aprovados |
 | MVP-02 — Jogadores públicos e estabilidade boxscore | `DONE` | Read models orientados por autoridade, 102 Vitest, 35 pgTAP, CI/database, preview responsivo e CodeQL aprovados |
-| MVP-03 — Administração e criação por presets | `DOING` | Accordion implementado; gate local com 104 Vitest aprovado. Navegação, presets, wizard e gate consolidado pendentes |
+| MVP-03 — Administração e criação por presets | `DONE` | Navegação, presets imutáveis, criação privada transacional, CI/database, concorrência e QA responsivo/teclado aprovados |
+| MVP-04 — Agendamento, progressão básica e publicação | `DOING` | Atribuição/agendamento aplicados e testados; correção aditiva de índices aguarda CI; progressão e publicação ainda pendentes |
 
 ## 8. Arquivos e referências importantes
 
