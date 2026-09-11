@@ -9,6 +9,10 @@ export default [
     "admin/competitions/:competitionId/schedule",
     "routes/admin.competitions.$competitionId.schedule.tsx",
   ),
+  route(
+    "admin/competitions/:competitionId/publication",
+    "routes/admin.competitions.$competitionId.publication.tsx",
+  ),
   route("admin/teams", "routes/admin.teams.tsx"),
   route("admin/players", "routes/admin.players.tsx"),
   route("admin/security", "routes/admin.security.tsx"),

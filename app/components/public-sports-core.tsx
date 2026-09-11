@@ -51,6 +51,17 @@ function GamesSection({
       (status === "all" || game.status === status),
   );
   const groups = splitGames(filtered);
+  const structuralGroups = new Map<string, PublicGameSummary[]>();
+  if (filtered.some((game) => game.structure?.roundName)) {
+    for (const game of [...filtered].sort(
+      (left, right) =>
+        (left.structure?.roundOrder ?? 32767) - (right.structure?.roundOrder ?? 32767) ||
+        (left.structure?.matchupOrder ?? 32767) - (right.structure?.matchupOrder ?? 32767),
+    )) {
+      const label = `${game.structure?.stageName ?? "Estrutura"} — ${game.structure?.roundName ?? "Rodada"}`;
+      structuralGroups.set(label, [...(structuralGroups.get(label) ?? []), game]);
+    }
+  }
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(searchParams);
     if (value === "all" || value === "") next.delete(key);
@@ -59,7 +70,7 @@ function GamesSection({
   };
   const renderGroup = (title: string, items: PublicGameSummary[]) =>
     items.length > 0 ? (
-      <section className="games-group">
+      <section className="games-group" key={title}>
         <h2>{title}</h2>
         <ol className="public-game-list">
           {items.map((game) => (
@@ -109,10 +120,14 @@ function GamesSection({
         </label>
       </fieldset>
       {filtered.length > 0 ? (
-        <>
-          {renderGroup("Próximos jogos", groups.upcoming)}
-          {renderGroup("Jogos encerrados", groups.finished)}
-        </>
+        structuralGroups.size ? (
+          [...structuralGroups].map(([label, items]) => renderGroup(label, items))
+        ) : (
+          <>
+            {renderGroup("Próximos jogos", groups.upcoming)}
+            {renderGroup("Jogos encerrados", groups.finished)}
+          </>
+        )
       ) : (
         <ResourceState
           detail="Ajuste os filtros ou aguarde a publicação de novos jogos."

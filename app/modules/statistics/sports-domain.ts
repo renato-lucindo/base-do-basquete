@@ -17,6 +17,16 @@ export interface PublicGameSummary {
   away: PublicTeamSummary;
   homeScore: number | null;
   awayScore: number | null;
+  structure?: {
+    trackCode: string | null;
+    stageCode: string | null;
+    stageName: string | null;
+    roundCode: string | null;
+    roundName: string | null;
+    roundOrder: number | null;
+    matchupCode: string | null;
+    matchupOrder: number | null;
+  };
 }
 
 export interface StandingRow extends PublicTeamSummary {

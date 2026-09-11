@@ -27,6 +27,123 @@ function numberValue(value: number | null): number {
   return value ?? 0;
 }
 
+function record(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === "string" ? value : null;
+}
+
+function nullableNumberValue(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null {
+  const snapshot = record(snapshotValue);
+  if (!snapshot || !Array.isArray(snapshot.teams) || !Array.isArray(snapshot.games)) return null;
+  const teams = snapshot.teams.flatMap((value): PublicTeamSummary[] => {
+    const team = record(value);
+    if (
+      !team ||
+      typeof team.id !== "number" ||
+      typeof team.name !== "string" ||
+      typeof team.slug !== "string"
+    )
+      return [];
+    return [
+      {
+        id: team.id,
+        name: team.name,
+        slug: team.slug,
+        abbreviation: nullableString(team.abbreviation),
+      },
+    ];
+  });
+  const teamIds = new Set(teams.map((team) => team.id));
+  const games = snapshot.games.flatMap((value): PublicGameSummary[] => {
+    const game = record(value);
+    const home = record(game?.home);
+    const away = record(game?.away);
+    if (
+      !game ||
+      typeof game.id !== "number" ||
+      typeof game.label !== "string" ||
+      !["scheduled", "live", "final"].includes(String(game.status)) ||
+      !home ||
+      !away ||
+      typeof home.id !== "number" ||
+      typeof away.id !== "number" ||
+      typeof home.name !== "string" ||
+      typeof away.name !== "string" ||
+      typeof home.slug !== "string" ||
+      typeof away.slug !== "string" ||
+      !teamIds.has(home.id) ||
+      !teamIds.has(away.id)
+    )
+      return [];
+    return [
+      {
+        id: game.id,
+        label: game.label,
+        status: game.status as PublicGameStatus,
+        scheduledAt: nullableString(game.scheduledAt),
+        venue: nullableString(game.venue),
+        home: {
+          id: home.id,
+          name: home.name,
+          slug: home.slug,
+          abbreviation: nullableString(home.abbreviation),
+        },
+        away: {
+          id: away.id,
+          name: away.name,
+          slug: away.slug,
+          abbreviation: nullableString(away.abbreviation),
+        },
+        homeScore: nullableNumberValue(game.homeScore),
+        awayScore: nullableNumberValue(game.awayScore),
+        structure: {
+          trackCode: nullableString(game.trackCode),
+          stageCode: nullableString(game.stageCode),
+          stageName: nullableString(game.stageName),
+          roundCode: nullableString(game.roundCode),
+          roundName: nullableString(game.roundName),
+          roundOrder: nullableNumberValue(game.roundOrder),
+          matchupCode: nullableString(game.matchupCode),
+          matchupOrder: nullableNumberValue(game.matchupOrder),
+        },
+      },
+    ];
+  });
+  const finalGames = games.filter(
+    (game) => game.status === "final" && game.homeScore !== null && game.awayScore !== null,
+  );
+  const teamStatistics = teams.map((team): TeamStatisticsRow => {
+    const played = finalGames.filter(
+      (game) => game.home.id === team.id || game.away.id === team.id,
+    );
+    const points = played.reduce((total, game) => {
+      if (game.home.id === team.id) return total + (game.homeScore ?? 0);
+      return total + (game.awayScore ?? 0);
+    }, 0);
+    return {
+      ...team,
+      games: played.length,
+      pointsPerGame: played.length ? Math.round((points / played.length) * 10) / 10 : null,
+      reboundsPerGame: null,
+      assistsPerGame: null,
+      fieldGoalPercentage: null,
+      threePointPercentage: null,
+      freeThrowPercentage: null,
+      efficiencyPerGame: null,
+    };
+  });
+  return { games, standings: calculateStandings(teams, games), teamStatistics, teams };
+}
+
 function efficiency(row: {
   points: number | null;
   offensive_rebounds: number | null;
@@ -60,6 +177,13 @@ export async function loadPublicSportsCore(
   client: SupabaseClient<Database>,
   context: CompetitionContext,
 ): Promise<PublicSportsCoreDto> {
+  const publicationResult = await client.rpc("public_get_competition_publication", {
+    p_competition_id: context.competitionId,
+  });
+  ensure(publicationResult.error);
+  const published = publishedSportsCore(publicationResult.data);
+  if (published) return published;
+
   const registrationsResult = await client
     .from("team_registrations")
     .select("id,team_id")

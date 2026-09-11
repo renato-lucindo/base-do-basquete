@@ -581,6 +581,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </Link>
           </article>
           <article>
+            <h2>Revisão e publicação</h2>
+            <p>Revise o resumo e confirme manualmente cada versão pública.</p>
+            <Link
+              className="button button-primary"
+              to={`/admin/competitions/${competition.id}/publication`}
+            >
+              Revisar publicação
+            </Link>
+          </article>
+          <article>
             <h2>Súmula manual</h2>
             <p>Fluxo isolado da importação, usando esta edição.</p>
             <Link

@@ -258,9 +258,9 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
             <button
               type="submit"
               className="button button-primary"
-              disabled={busy || edition.status !== "draft"}
+              disabled={busy || edition.status === "archived"}
             >
-              Salvar preparação privada
+              Salvar preparação
             </button>
           </Form>
         </section>
