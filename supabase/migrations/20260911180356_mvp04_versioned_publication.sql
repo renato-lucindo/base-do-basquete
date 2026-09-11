@@ -245,7 +245,7 @@ alter table public.competitions
     references public.competition_publications(id,competition_id) on delete restrict,
   add constraint competitions_editorial_state_consistent check(
     (status='draft' and current_publication_id is null)
-    or (status in('published','archived') and current_publication_id is not null)
+    or status in('published','archived')
   );
 create index competitions_current_publication_idx
   on public.competitions(current_publication_id,id) where current_publication_id is not null;

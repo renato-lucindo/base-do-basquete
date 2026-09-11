@@ -94,11 +94,13 @@ select is((select status from public.competitions where id=(select future_compet
   'arrival of a future date is never simulated as automatic publication');
 
 reset role;
+update public.competitions set status='published'
+where id=(select future_competition_id from publication_context);
 set local role anon;
 select is((select count(*) from public.competitions where id=(select competition_id from publication_context)),1::bigint,
   'published competition is visible anonymously');
 select is((select count(*) from public.competitions where id=(select future_competition_id from publication_context)),0::bigint,
-  'private future competition is absent from direct URLs');
+  'legacy published status without a confirmed version remains private');
 select is((select jsonb_array_length(public.public_get_competition_publication(competition_id)->'teams') from publication_context),2,
   'public snapshot contains the two confirmed teams');
 select is((select jsonb_array_length(public.public_get_competition_publication(competition_id)->'games') from publication_context),0,
