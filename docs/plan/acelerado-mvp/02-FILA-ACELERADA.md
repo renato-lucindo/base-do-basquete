@@ -16,7 +16,7 @@ Depois de `MVP-01`, `MVP-02` e `MVP-03` são conceitualmente independentes, mas 
 
 | Ordem | Pacote | Conteúdo | Estado inicial |
 | ---: | --- | --- | --- |
-| 6 | `POST-01` | Fallback, suplemento, conflitos e projeção rara | após MVP |
+| 6 | `POST-01` | Fallback, suplemento, conflitos e projeção rara | `DOING` |
 | 7 | `POST-02` | Retirada, clonagem e editor estrutural completo | após MVP |
 | 8 | `POST-03` | Fechamento de grupos, W.O. e emendas | após `POST-02` |
 | 9 | `POST-04` | Enforcement e fechamento integral | após filas humanas e pacotes anteriores |
