@@ -1,0 +1,2 @@
+create index game_data_submission_snapshots_submission_context_idx
+  on public.game_data_submission_snapshots(submission_id, game_id);

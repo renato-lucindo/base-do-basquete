@@ -1086,6 +1086,117 @@ export type Database = {
           },
         ];
       };
+      game_data_domain_comparisons: {
+        Row: {
+          base_submission_id: number;
+          candidate_submission_id: number;
+          compared_at: string;
+          compared_by: string;
+          comparison_result: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          decision: string | null;
+          decision_reason: string | null;
+          domain: string;
+          expected_authority_revision: number | null;
+          expected_authority_submission_id: number | null;
+          game_id: number;
+          id: number;
+          resolution_status: string;
+        };
+        Insert: {
+          base_submission_id: number;
+          candidate_submission_id: number;
+          compared_at?: string;
+          compared_by: string;
+          comparison_result: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision?: string | null;
+          decision_reason?: string | null;
+          domain: string;
+          expected_authority_revision?: number | null;
+          expected_authority_submission_id?: number | null;
+          game_id: number;
+          id?: never;
+          resolution_status: string;
+        };
+        Update: {
+          base_submission_id?: number;
+          candidate_submission_id?: number;
+          compared_at?: string;
+          compared_by?: string;
+          comparison_result?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision?: string | null;
+          decision_reason?: string | null;
+          domain?: string;
+          expected_authority_revision?: number | null;
+          expected_authority_submission_id?: number | null;
+          game_id?: number;
+          id?: never;
+          resolution_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_data_domain_comparisons_base_fkey";
+            columns: ["base_submission_id", "game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_submissions";
+            referencedColumns: ["id", "game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_candidate_fkey";
+            columns: ["candidate_submission_id", "game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_submissions";
+            referencedColumns: ["id", "game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_expected_authority_fkey";
+            columns: ["expected_authority_submission_id", "game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_submissions";
+            referencedColumns: ["id", "game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_boxscore_player_statistics";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_scoresheet_player_statistics";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "game_data_domain_comparisons_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "legacy_unclassified_games";
+            referencedColumns: ["game_id"];
+          },
+        ];
+      };
       game_data_source_capabilities: {
         Row: {
           domain: string;
@@ -1106,6 +1217,76 @@ export type Database = {
           source_type?: string;
         };
         Relationships: [];
+      };
+      game_data_submission_snapshots: {
+        Row: {
+          captured_at: string;
+          domain: string;
+          game_id: number;
+          payload: Json;
+          payload_hash: string;
+          submission_id: number;
+        };
+        Insert: {
+          captured_at?: string;
+          domain: string;
+          game_id: number;
+          payload: Json;
+          payload_hash: string;
+          submission_id: number;
+        };
+        Update: {
+          captured_at?: string;
+          domain?: string;
+          game_id?: number;
+          payload?: Json;
+          payload_hash?: string;
+          submission_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_data_submission_snapshots_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_boxscore_player_statistics";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_submission_snapshots_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_submission_snapshots_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_scoresheet_player_statistics";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_submission_snapshots_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "game_data_submission_snapshots_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "legacy_unclassified_games";
+            referencedColumns: ["game_id"];
+          },
+          {
+            foreignKeyName: "game_data_submission_snapshots_submission_fkey";
+            columns: ["submission_id", "game_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_submissions";
+            referencedColumns: ["id", "game_id"];
+          },
+        ];
       };
       game_data_submissions: {
         Row: {
@@ -3537,23 +3718,6 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: number;
       };
-      admin_finalize_manual_fallback: {
-        Args: { p_game_id: number; p_reason: string; p_submission_id: number };
-        Returns: number;
-      };
-      admin_get_game_data_conflict: {
-        Args: { p_game_id: number };
-        Returns: Json;
-      };
-      admin_resolve_game_data_conflict: {
-        Args: {
-          p_candidate_submission_id: number;
-          p_decision: string;
-          p_game_id: number;
-          p_reason: string;
-        };
-        Returns: number;
-      };
       admin_create_player: {
         Args: {
           p_allow_similar?: boolean;
@@ -3654,12 +3818,20 @@ export type Database = {
         Args: { p_error_code: string; p_import_id: number };
         Returns: undefined;
       };
+      admin_finalize_manual_fallback: {
+        Args: { p_game_id: number; p_reason: string; p_submission_id: number };
+        Returns: number;
+      };
       admin_get_classification_backfill_report: { Args: never; Returns: Json };
       admin_get_competition_schedule: {
         Args: { p_competition_id: number };
         Returns: Json;
       };
       admin_get_game_data_backfill_report: { Args: never; Returns: Json };
+      admin_get_game_data_conflict: {
+        Args: { p_game_id: number };
+        Returns: Json;
+      };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
         Returns: {
@@ -3722,6 +3894,15 @@ export type Database = {
           isOneToOne: false;
           isSetofReturn: true;
         };
+      };
+      admin_resolve_game_data_conflict: {
+        Args: {
+          p_candidate_submission_id: number;
+          p_decision: string;
+          p_game_id: number;
+          p_reason: string;
+        };
+        Returns: number;
       };
       admin_resolve_matchup: {
         Args: { p_expected_submission_id: number; p_matchup_id: number };
