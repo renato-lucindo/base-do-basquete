@@ -32,22 +32,22 @@ select function_returns(
   'FIBA confirmation keeps its private RPC contract'
 );
 select ok(
-  pg_get_functiondef('public.admin_create_manual_scoresheet(jsonb)'::regprocedure)
+  pg_get_functiondef('private.admin_create_manual_scoresheet_post01_base(jsonb)'::regprocedure)
     like '%selected_game_id := (p_payload ->> ''gameId'')::bigint%',
   'manual confirmation requires an existing selected game'
 );
 select ok(
-  pg_get_functiondef('private.admin_commit_boxscore_import_impl(bigint,jsonb)'::regprocedure)
+  pg_get_functiondef('private.admin_commit_boxscore_import_post01_base(bigint,jsonb)'::regprocedure)
     like '%selected_game_id := (p_resolution ->> ''gameId'')::bigint%',
   'FIBA confirmation requires an existing selected game'
 );
 select ok(
-  pg_get_functiondef('public.admin_create_manual_scoresheet(jsonb)'::regprocedure)
+  pg_get_functiondef('private.admin_create_manual_scoresheet_post01_base(jsonb)'::regprocedure)
     not like '%insert into public.games%',
   'manual confirmation never inserts a parallel game'
 );
 select ok(
-  pg_get_functiondef('private.admin_commit_boxscore_import_impl(bigint,jsonb)'::regprocedure)
+  pg_get_functiondef('private.admin_commit_boxscore_import_post01_base(bigint,jsonb)'::regprocedure)
     like '%delete from public.games where id = temporary_game_id%',
   'the compatibility adapter cannot persist its internal temporary game'
 );

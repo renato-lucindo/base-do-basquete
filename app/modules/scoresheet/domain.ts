@@ -54,6 +54,7 @@ export interface ManualScoresheetPayload {
   idempotencyKey: string;
   competitionId: number;
   gameId: number;
+  fallbackReason?: string;
   gameNumber: string | null;
   scheduledLocal: string;
   venue: string;
