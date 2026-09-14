@@ -94,7 +94,7 @@ set search_path = ''
 as $$
 declare
   selected_game_id bigint;
-  competition_id bigint;
+  selected_competition_id bigint;
   expected_primary_source text;
   normalized_reason text := nullif(btrim(coalesce(p_payload ->> 'fallbackReason', '')), '');
   previous_role_setting text := coalesce(
@@ -114,7 +114,7 @@ begin
 
   begin
     selected_game_id := (p_payload ->> 'gameId')::bigint;
-    competition_id := (p_payload ->> 'competitionId')::bigint;
+    selected_competition_id := (p_payload ->> 'competitionId')::bigint;
   exception when invalid_text_representation or numeric_value_out_of_range then
     raise exception using errcode = 'BD203', message = 'BDB_INVALID_GAME_HEADER';
   end;
@@ -126,7 +126,7 @@ begin
   left join public.series_category_data_profiles profile
     on profile.id = competition.data_profile_id
   where game.id = selected_game_id
-    and game.competition_id = competition_id;
+    and game.competition_id = selected_competition_id;
 
   if expected_primary_source = 'fiba_boxscore' then
     if normalized_reason is null or char_length(normalized_reason) not between 10 and 500 then
@@ -163,7 +163,7 @@ begin
       'game',
       saved_game_id,
       jsonb_build_object(
-        'competitionId', competition_id,
+        'competitionId', selected_competition_id,
         'submissionId', saved_submission_id,
         'reasonProvided', true
       )

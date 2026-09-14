@@ -3,6 +3,13 @@ create extension if not exists pgtap with schema extensions;
 select plan(18);
 set constraints all deferred;
 
+insert into auth.users(id)
+values ('99140000-0000-4000-8000-000000000004')
+on conflict (id) do nothing;
+insert into private.admin_accounts(user_id)
+select '99140000-0000-4000-8000-000000000004'
+where not exists (select 1 from private.admin_accounts);
+
 select has_function(
   'public', 'admin_resolve_game_data_conflict',
   array['bigint', 'bigint', 'text', 'text'],

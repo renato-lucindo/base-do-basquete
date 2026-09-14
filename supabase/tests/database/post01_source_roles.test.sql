@@ -2,6 +2,13 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(17);
 
+insert into auth.users(id)
+values ('99140000-0000-4000-8000-000000000001')
+on conflict (id) do nothing;
+insert into private.admin_accounts(user_id)
+select '99140000-0000-4000-8000-000000000001'
+where not exists (select 1 from private.admin_accounts);
+
 select ok(
   pg_get_constraintdef(
     (
