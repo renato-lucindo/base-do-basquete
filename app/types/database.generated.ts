@@ -1110,6 +1110,9 @@ export type Database = {
       game_data_submissions: {
         Row: {
           created_at: string;
+          fallback_finalization_reason: string | null;
+          fallback_finalized_at: string | null;
+          fallback_finalized_by: string | null;
           game_id: number;
           id: number;
           idempotency_key: string;
@@ -1129,6 +1132,9 @@ export type Database = {
         };
         Insert: {
           created_at?: string;
+          fallback_finalization_reason?: string | null;
+          fallback_finalized_at?: string | null;
+          fallback_finalized_by?: string | null;
           game_id: number;
           id?: never;
           idempotency_key: string;
@@ -1148,6 +1154,9 @@ export type Database = {
         };
         Update: {
           created_at?: string;
+          fallback_finalization_reason?: string | null;
+          fallback_finalized_at?: string | null;
+          fallback_finalized_by?: string | null;
           game_id?: number;
           id?: never;
           idempotency_key?: string;

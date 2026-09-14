@@ -87,7 +87,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     auth.client.from("players").select("id", { count: "exact", head: true }).eq("is_active", true),
     auth.client
       .from("games")
-      .select("id", { count: "exact", head: true })
+      .select("id,game_number", { count: "exact" })
       .eq("competition_id", competitionId),
     auth.client
       .from("final_placements")
@@ -115,6 +115,24 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         .eq("status", "active")
     : { data: [], error: null };
   if (rosterResult.error) throw new Error("Competition roster query failed");
+
+  const competitionGameIds = gamesResult.data.map((game) => game.id);
+  const fallbackResult = competitionGameIds.length
+    ? await auth.client
+        .from("game_data_submissions")
+        .select("id,game_id,fallback_finalized_at")
+        .in("game_id", competitionGameIds)
+        .eq("source_type", "manual_scoresheet")
+        .eq("role", "fallback")
+        .eq("status", "active")
+        .order("submitted_at", { ascending: false })
+    : { data: [], error: null };
+  if (fallbackResult.error) throw new Error("Competition source fallback query failed");
+  const gameNumbers = new Map(gamesResult.data.map((game) => [game.id, game.game_number]));
+  const sourceFallbacks = fallbackResult.data.map((fallback) => ({
+    ...fallback,
+    gameNumber: gameNumbers.get(fallback.game_id) ?? null,
+  }));
 
   const teamIds = registrationsResult.data.map((registration) => registration.team_id);
   const previousRegistrationsResult = teamIds.length
@@ -270,6 +288,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       availableTeams: teamsResult.data.filter((team) => !registeredTeamIds.has(team.id)),
       playerCount: playerCountResult.count ?? 0,
       gameCount: gamesResult.count ?? 0,
+      sourceFallbacks,
       savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
@@ -419,6 +438,28 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             <strong>{loaderData.gameCount}</strong>
           </article>
         </div>
+
+        {loaderData.sourceFallbacks.length ? (
+          <section className="admin-panel">
+            <p className="eyebrow">Pendências de fonte</p>
+            <h2>Fallbacks manuais</h2>
+            <ul className="import-history">
+              {loaderData.sourceFallbacks.map((fallback) => (
+                <li key={fallback.id}>
+                  <span>
+                    {fallback.gameNumber
+                      ? `Jogo ${fallback.gameNumber}`
+                      : `Jogo #${fallback.game_id}`}
+                  </span>
+                  <strong>
+                    {fallback.fallback_finalized_at ? "fallback encerrado" : "aguardando FIBA"}
+                  </strong>
+                  <Link to={`/admin/games/${fallback.game_id}/data-conflict`}>Revisar fonte</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         <section className="admin-panel">
           <h2>Inscrever equipe</h2>

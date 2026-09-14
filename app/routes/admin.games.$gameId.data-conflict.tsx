@@ -55,6 +55,7 @@ function mapResolutionError(code: string | undefined): { message: string; status
     case "BD704":
       return { message: "A autoridade mudou. Recarregue antes de decidir.", status: 409 };
     case "BD705":
+    case "BD715":
       return { message: "Informe um motivo entre 10 e 500 caracteres.", status: 400 };
     case "BD719":
       return {
@@ -77,12 +78,23 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   if (!gameId) throw new Response("Jogo não encontrado", { status: 404 });
   const { env } = context.get(cloudflareContext);
   const auth = await requireAdminAal2(request, env);
-  const [gameResult, conflictResult] = await Promise.all([
+  const [gameResult, conflictResult, fallbackResult] = await Promise.all([
     auth.client.from("games").select("id,game_number,competition_id").eq("id", gameId).single(),
     auth.client.rpc("admin_get_game_data_conflict", { p_game_id: gameId }),
+    auth.client
+      .from("game_data_submissions")
+      .select("id,fallback_finalized_at")
+      .eq("game_id", gameId)
+      .eq("source_type", "manual_scoresheet")
+      .eq("role", "fallback")
+      .eq("status", "active")
+      .order("submission_version", { ascending: false })
+      .limit(1),
   ]);
   if (gameResult.error) throw new Response("Jogo não encontrado", { status: 404 });
-  if (conflictResult.error) throw new Error("Game data conflict query failed");
+  if (conflictResult.error || fallbackResult.error) {
+    throw new Error("Game data conflict query failed");
+  }
   const competition = await auth.client
     .from("competitions")
     .select("id,display_name")
@@ -96,6 +108,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       csrfToken: auth.payload.csrfToken,
       game: gameResult.data,
       conflict: parseConflictPayload(conflictResult.data),
+      fallback: fallbackResult.data[0] ?? null,
       resolved: new URL(request.url).searchParams.get("resolved"),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
@@ -110,9 +123,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const auth = await requireAdminAal2(request, env);
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
+  const intent = String(formData.get("intent") ?? "resolveConflict");
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (intent === "finalizeFallback") {
+    const submissionId = parseId(formData.get("submissionId"));
+    if (!submissionId || formData.get("confirmDecision") !== "yes") {
+      return data({ error: "Confirme explicitamente a decisão." }, { status: 400 });
+    }
+    const finalized = await auth.client.rpc("admin_finalize_manual_fallback", {
+      p_game_id: gameId,
+      p_submission_id: submissionId,
+      p_reason: reason,
+    });
+    if (finalized.error) {
+      const mapped = mapResolutionError(finalized.error.code);
+      return data({ error: mapped.message }, { status: mapped.status });
+    }
+    throw redirect(`/admin/games/${gameId}/data-conflict?resolved=finalized`, {
+      headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+    });
+  }
   const candidateSubmissionId = parseId(formData.get("candidateSubmissionId"));
   const decision = String(formData.get("decision") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
   if (!candidateSubmissionId || formData.get("confirmDecision") !== "yes") {
     return data({ error: "Confirme explicitamente a decisão." }, { status: 400 });
   }
@@ -177,6 +209,37 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
           </p>
         </section>
 
+        {!conflict.domains.length && loaderData.fallback ? (
+          <section className="admin-panel">
+            <p className="eyebrow">Fonte principal pendente</p>
+            <h2>Fallback manual ativo</h2>
+            {loaderData.fallback.fallback_finalized_at ? (
+              <p>O fallback já foi encerrado por decisão administrativa auditada.</p>
+            ) : (
+              <Form method="post" className="admin-form">
+                <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                <input type="hidden" name="intent" value="finalizeFallback" />
+                <input type="hidden" name="submissionId" value={loaderData.fallback.id} />
+                <p>
+                  Use somente quando o boxscore FIBA definitivo não chegar. A cobertura avançada
+                  continuará explicitamente indisponível.
+                </p>
+                <label>
+                  Motivo do encerramento
+                  <textarea name="reason" minLength={10} maxLength={500} required rows={4} />
+                </label>
+                <label>
+                  <input type="checkbox" name="confirmDecision" value="yes" required />
+                  Confirmo o encerramento definitivo deste fallback.
+                </label>
+                <button className="button button-primary" type="submit">
+                  Encerrar com fallback
+                </button>
+              </Form>
+            )}
+          </section>
+        ) : null}
+
         {conflict.domains.map((item) => (
           <section className="admin-panel" key={item.comparisonId}>
             <p className="eyebrow">{item.result === "matching" ? "Coincidente" : "Divergente"}</p>
@@ -207,6 +270,7 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
             <h2>Decisão administrativa</h2>
             <Form method="post" className="admin-form">
               <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+              <input type="hidden" name="intent" value="resolveConflict" />
               <input type="hidden" name="candidateSubmissionId" value={candidateSubmissionId} />
               <fieldset>
                 <legend>Fonte escolhida</legend>
