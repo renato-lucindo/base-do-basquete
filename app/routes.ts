@@ -36,6 +36,7 @@ export default [
     "admin/competitions/:competitionId/data-profile",
     "routes/admin.competitions.$competitionId.data-profile.tsx",
   ),
+  route("admin/games/:gameId/data-conflict", "routes/admin.games.$gameId.data-conflict.tsx"),
   route("admin/competitions/:competitionId", "routes/admin.competitions.$competitionId.tsx"),
   route("api/public-search", "routes/api.public-search.tsx"),
   route("api/admin/players", "routes/api.admin-players.tsx"),

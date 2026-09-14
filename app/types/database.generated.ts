@@ -3528,6 +3528,23 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: number;
       };
+      admin_finalize_manual_fallback: {
+        Args: { p_game_id: number; p_reason: string; p_submission_id: number };
+        Returns: number;
+      };
+      admin_get_game_data_conflict: {
+        Args: { p_game_id: number };
+        Returns: Json;
+      };
+      admin_resolve_game_data_conflict: {
+        Args: {
+          p_candidate_submission_id: number;
+          p_decision: string;
+          p_game_id: number;
+          p_reason: string;
+        };
+        Returns: number;
+      };
       admin_create_player: {
         Args: {
           p_allow_similar?: boolean;

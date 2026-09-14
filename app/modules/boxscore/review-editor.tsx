@@ -7,11 +7,11 @@ import { AdminWizardSteps } from "../../components/admin/admin-wizard-steps";
 import { InlineFieldError } from "../../components/admin/inline-field-error";
 import { StickyActionSummary } from "../../components/admin/sticky-action-summary";
 import { UnsavedChangesGuard } from "../../components/admin/unsaved-changes-guard";
-import type { AdminPlayerSearchResult } from "../players/admin-domain";
+import type { Json } from "../../types/database.generated";
 import { readAdminDraft, removeAdminDraft, saveAdminDraft } from "../admin-drafts/client";
 import type { AdminDraft } from "../admin-drafts/schema";
+import type { AdminPlayerSearchResult } from "../players/admin-domain";
 import type { ParsedBoxscore } from "./types";
-import type { Json } from "../../types/database.generated";
 
 const importSteps = ["Arquivo", "Revisão", "Associações", "Confirmação"] as const;
 
@@ -48,6 +48,7 @@ interface ReviewGame {
   awayRegistrationId: number;
   homeTeamName: string;
   awayTeamName: string;
+  isLateFallback: boolean;
 }
 
 interface BoxscoreReviewEditorProps {
@@ -311,6 +312,7 @@ export function BoxscoreReviewEditor({
                 <option key={game.id} value={game.id}>
                   {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`} ·{" "}
                   {game.homeTeamName} × {game.awayTeamName}
+                  {game.isLateFallback ? " · fallback aguardando PDF" : ""}
                 </option>
               ))}
             </select>
