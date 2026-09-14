@@ -8,6 +8,8 @@ export type OperationalName =
   | "boxscore.refresh_stats"
   | "boxscore.upload"
   | "health"
+  | "player.create"
+  | "player.private_profile"
   | "public"
   | "roster.replace"
   | "scoresheet"

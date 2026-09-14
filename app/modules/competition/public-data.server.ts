@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../types/database.generated";
-import type { CompetitionContext, DetailResource, PublicResource } from "./context";
+import {
+  type CompetitionContext,
+  type DetailResource,
+  type GenderDivision,
+  isGenderDivision,
+  type PublicResource,
+} from "./context";
 import { PublicContextQueryError } from "./context.server";
 
 export interface PublicResourceItem {
@@ -25,6 +31,7 @@ export interface PublicAchievement {
   year: number;
   categoryName: string;
   categorySlug: string;
+  genderDivision: GenderDivision | null;
   placement: number;
   resultLabel: string | null;
   teamName?: string;
@@ -42,6 +49,7 @@ function toPublicAchievement(achievement: {
   category_slug: string | null;
   competition_display_name: string | null;
   competition_id: number | null;
+  gender_division: string | null;
   placement: number | null;
   result_label: string | null;
   series_name: string | null;
@@ -58,6 +66,7 @@ function toPublicAchievement(achievement: {
     achievement.year === null ||
     achievement.category_name === null ||
     achievement.category_slug === null ||
+    (achievement.gender_division !== null && !isGenderDivision(achievement.gender_division)) ||
     achievement.placement === null
   ) {
     return null;
@@ -70,6 +79,9 @@ function toPublicAchievement(achievement: {
     year: achievement.year,
     categoryName: achievement.category_name,
     categorySlug: achievement.category_slug,
+    genderDivision: isGenderDivision(achievement.gender_division)
+      ? achievement.gender_division
+      : null,
     placement: achievement.placement,
     resultLabel: achievement.result_label,
     teamName: achievement.team_name ?? undefined,
@@ -126,7 +138,7 @@ async function playerItems(
   }
 
   const playerResult = await client
-    .from("players")
+    .from("public_player_profiles")
     .select("id,full_name,slug")
     .in(
       "id",
@@ -139,14 +151,21 @@ async function playerItems(
   const jerseyByPlayer = new Map(
     rosterResult.data.map((entry) => [entry.player_id, entry.jersey_number]),
   );
-  return playerResult.data.map((player) => ({
-    id: String(player.id),
-    label: player.full_name,
-    detail: jerseyByPlayer.get(player.id)
-      ? `Camisa ${jerseyByPlayer.get(player.id)}`
-      : "Atleta inscrito",
-    detailKey: player.slug,
-  }));
+  return playerResult.data.flatMap((player): PublicResourceItem[] => {
+    if (player.id === null || player.full_name === null || player.slug === null) {
+      return [];
+    }
+    return [
+      {
+        id: String(player.id),
+        label: player.full_name,
+        detail: jerseyByPlayer.get(player.id)
+          ? `Camisa ${jerseyByPlayer.get(player.id)}`
+          : "Atleta inscrito",
+        detailKey: player.slug,
+      },
+    ];
+  });
 }
 
 async function gameItems(
@@ -218,7 +237,7 @@ export async function loadPublicDetail(
     const achievementsResult = await client
       .from("team_achievements")
       .select(
-        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label",
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,gender_division,placement,result_label",
       )
       .eq("team_id", team.id)
       .order("year", { ascending: false })
@@ -235,7 +254,7 @@ export async function loadPublicDetail(
 
   if (resource === "jogadores") {
     const playerResult = await client
-      .from("players")
+      .from("public_player_profiles")
       .select("id,full_name,slug")
       .eq("slug", detailKey)
       .eq("is_public", true)
@@ -245,7 +264,7 @@ export async function loadPublicDetail(
       return null;
     }
     const player = playerResult.data[0];
-    if (!player) {
+    if (!player || player.id === null || player.full_name === null || player.slug === null) {
       return null;
     }
 
@@ -271,7 +290,7 @@ export async function loadPublicDetail(
     const achievementsResult = await client
       .from("player_achievements")
       .select(
-        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,placement,result_label,team_name,team_slug",
+        "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,gender_division,placement,result_label,team_name,team_slug",
       )
       .eq("player_id", player.id)
       .order("year", { ascending: false })

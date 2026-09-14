@@ -1,13 +1,9 @@
 import { redirect } from "react-router";
 
 import { cloudflareContext } from "../context";
-import { contextPath } from "../modules/competition/context";
-import {
-  latestPublicContext,
-  readContextPreference,
-  resolveCompetitionContext,
-} from "../modules/competition/context.server";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
+import { contextPath, matchingLegacyContexts } from "../modules/competition/context";
+import { listPublicContexts, readContextPreference } from "../modules/competition/context.server";
 import type { Route } from "./+types/home";
 
 export function meta() {
@@ -24,21 +20,32 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const { env } = context.get(cloudflareContext);
   const client = createAnonymousSupabaseClient(env);
   const preference = readContextPreference(request);
+  const contexts = await listPublicContexts(client);
 
   if (preference) {
-    const preferredContext = await resolveCompetitionContext(client, {
+    const matches = matchingLegacyContexts(contexts, {
       year: preference.year,
       seriesSlug: preference.seriesSlug,
       categorySlug: preference.categorySlug,
     });
+    const preferredContext = preference.genderDivision
+      ? matches.find((context) => context.genderDivision === preference.genderDivision)
+      : matches.length === 1
+        ? matches[0]
+        : undefined;
     if (preferredContext) {
-      throw redirect(contextPath(preferredContext, "classificacao"));
+      throw redirect(contextPath(preferredContext, "visao-geral"));
+    }
+    if (matches.length > 1) {
+      throw redirect(
+        `/${preference.year}/${preference.seriesSlug}/${preference.categorySlug}/visao-geral`,
+      );
     }
   }
 
-  const recentContext = await latestPublicContext(client);
+  const recentContext = contexts[0] ?? null;
   if (recentContext) {
-    throw redirect(contextPath(recentContext, "classificacao"));
+    throw redirect(contextPath(recentContext, "visao-geral"));
   }
 
   return { empty: true };

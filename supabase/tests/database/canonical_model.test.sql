@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(34);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
@@ -98,8 +99,8 @@ select throws_ok(
       (series_id, category_id, year, display_name, status, published_at)
     values (9101, 9101, 2026, 'Duplicada', 'published', now())$$,
   '23505',
-  'duplicate key value violates unique constraint "competitions_context_unique"',
-  'series/year/category context is unique'
+  'duplicate key value violates unique constraint "competitions_unclassified_context_uidx"',
+  'unclassified series/category/year context is unique'
 );
 select throws_ok(
   $$insert into public.teams (name, slug) values ('Slug Ruim', 'Slug Ruim')$$,
@@ -252,6 +253,9 @@ select is(
   'player achievements are derived from confirmed placements and rosters'
 );
 
+do $$begin
+  perform private.backfill_legacy_competition_publication(9101,'published');
+end$$;
 set local role anon;
 select is(
   (select count(*) from public.competitions where id in (9101, 9102)),

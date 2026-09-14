@@ -207,6 +207,9 @@ select is(
 );
 
 reset role;
+do $$begin
+  perform private.backfill_legacy_competition_publication(9500,'published');
+end$$;
 set local role anon;
 select is(
   (select count(*) from public.team_achievements where competition_id = 9500),

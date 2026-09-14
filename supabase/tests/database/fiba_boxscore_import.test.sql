@@ -3,6 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(23);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -30,9 +31,12 @@ overriding system value values (9401, 'Liga PDF', 'liga-pdf');
 insert into public.categories (id, name, slug)
 overriding system value values (9401, 'Categoria PDF', 'categoria-pdf');
 insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
+  (
+    id, series_id, category_id, year, display_name,
+    gender_division, gender_division_review_required, status, published_at
+  )
 overriding system value values
-  (9401, 9401, 9401, 2026, 'Liga PDF 2026', 'published', now());
+  (9401, 9401, 9401, 2026, 'Liga PDF 2026', 'male', false, 'published', now());
 insert into public.teams (id, name, slug, abbreviation)
 overriding system value values
   (9401, 'Equipe PDF Casa', 'equipe-pdf-casa', 'PDC'),
@@ -57,6 +61,39 @@ select
   case when number <= 5 then number::text else (number - 5)::text end,
   'active'
 from generate_series(1, 10) number;
+
+insert into public.competition_ruleset_revisions
+  (id, competition_id, revision_number, structure_kind, status)
+overriding system value values
+  (9401, 9401, 1, 'regulated', 'active');
+insert into public.competition_stages
+  (id, competition_id, ruleset_revision_id, code, name, stage_order, structure_kind)
+overriding system value values
+  (9401, 9401, 9401, 'regular', 'Fase regular', 1, 'regulated');
+insert into public.competition_rounds
+  (id, competition_id, stage_id, code, name, round_order, structure_kind)
+overriding system value values
+  (9401, 9401, 9401, 'rodada_1', 'Rodada 1', 1, 'regulated');
+insert into public.matchups
+  (id, competition_id, round_id, home_registration_id, away_registration_id,
+   matchup_order, structure_kind)
+overriding system value values
+  (94001, 9401, 9401, 9401, 9402, 1, 'regulated');
+insert into public.games
+  (id, competition_id, game_number, status, source, matchup_id, matchup_game_number)
+overriding system value values
+  (94001, 9401, 'PDF-ATOMIC-01', 'scheduled', 'seed', 94001, 1);
+insert into public.game_participants
+  (game_id, competition_id, registration_id, side)
+values
+  (94001, 9401, 9401, 'home'),
+  (94001, 9401, 9402, 'away');
+insert into storage.objects (id, bucket_id, name)
+values (
+  '94010000-0000-4000-8000-000000000001',
+  'boxscore-pdfs',
+  '9401/' || repeat('a', 64) || '.pdf'
+);
 
 create temp table boxscore_test_data (
   parsed jsonb,
@@ -121,6 +158,7 @@ with players as (
   from players
 ), resolution as (
   select jsonb_build_object(
+    'gameId', 94001,
     'teams', jsonb_build_array(
       jsonb_build_object('sourceTeamName', 'Equipe PDF Casa', 'registrationId', 9401),
       jsonb_build_object('sourceTeamName', 'Equipe PDF Fora', 'registrationId', 9402)
@@ -207,7 +245,7 @@ select lives_ok($$
   select public.admin_commit_boxscore_import(import_id, resolution) from boxscore_test_data
 $$, 'reviewed import commits atomically');
 select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'confirmed', 'import is confirmed');
-select is((select count(*)::integer from public.games where game_number = 'PDF-ATOMIC-01'), 1, 'exactly one game is created');
+select is((select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 94001::bigint, 'the pre-created structural game is reused');
 select is((select count(*)::integer from public.game_participants where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 2, 'both participants are committed');
 select is((select count(*)::integer from public.game_periods where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 4, 'four periods are committed');
 select is((select count(*)::integer from public.game_roster_slots where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 10, 'all roster slots are committed');

@@ -96,6 +96,7 @@ jobs:
         run: |
           node scripts/smoke-release.mjs "$PRODUCTION_URL"
           node scripts/smoke-public-context.mjs "$PRODUCTION_URL"
+          npm run smoke:mvp -- "$PRODUCTION_URL" production
           BENCHMARK_ALLOW_PRODUCTION=true node scripts/benchmark-public.mjs "$PRODUCTION_URL" 10
       - name: Remove ephemeral runtime secret file
         if: always()

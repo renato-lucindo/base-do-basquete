@@ -4,18 +4,132 @@ export type AdminDomainErrorCode =
   | "transition"
   | "invalid-roster"
   | "player-conflict"
+  | "eligibility-pending"
+  | "eligibility-incompatible"
   | "jersey-conflict"
   | "invalid-result"
   | "result-conflict"
+  | "invalid-profile"
+  | "profile-transition"
+  | "profile-context"
+  | "review-required"
+  | "context-conflict"
   | "unknown";
 
 export interface AdminDomainError {
   code: AdminDomainErrorCode;
-  field?: "competition" | "team" | "status" | "roster" | "player" | "jersey" | "placement";
+  field?:
+    | "competition"
+    | "team"
+    | "status"
+    | "roster"
+    | "player"
+    | "jersey"
+    | "placement"
+    | "genderDivision"
+    | "primarySource"
+    | "changeReason"
+    | "dataProfile";
   message: string;
 }
 
 const jerseyPattern = /^(?:0|00|[1-9][0-9]?)$/;
+
+export type GenderDivision = "male" | "female";
+export type PrimaryDataSource = "manual_scoresheet" | "fiba_boxscore";
+
+export interface DataProfileGameImpact {
+  totalGames: number;
+  manualGames: number;
+  boxscoreGames: number;
+  otherGames: number;
+  statuses: Array<{ status: string; count: number }>;
+}
+
+export function normalizeGenderDivision(
+  value: string,
+): { ok: true; value: GenderDivision } | { ok: false; error: AdminDomainError } {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "male" || normalized === "female") {
+    return { ok: true, value: normalized };
+  }
+  return {
+    ok: false,
+    error: {
+      code: "invalid-profile",
+      field: "genderDivision",
+      message: "Selecione explicitamente o naipe da edição.",
+    },
+  };
+}
+
+export function normalizePrimaryDataSource(
+  sourceValue: string,
+  reasonValue: string,
+  reasonRequired: boolean,
+):
+  | { ok: true; value: { source: PrimaryDataSource; changeReason: string | null } }
+  | { ok: false; error: AdminDomainError } {
+  const source = sourceValue.trim().toLowerCase();
+  if (source !== "manual_scoresheet" && source !== "fiba_boxscore") {
+    return {
+      ok: false,
+      error: {
+        code: "invalid-profile",
+        field: "primarySource",
+        message: "Selecione explicitamente a fonte primária.",
+      },
+    };
+  }
+  const changeReason = reasonValue.trim() || null;
+  if (reasonRequired && (!changeReason || changeReason.length < 10)) {
+    return {
+      ok: false,
+      error: {
+        code: "invalid-profile",
+        field: "changeReason",
+        message: "Explique a alteração em pelo menos 10 caracteres.",
+      },
+    };
+  }
+  if (changeReason && changeReason.length > 500) {
+    return {
+      ok: false,
+      error: {
+        code: "invalid-profile",
+        field: "changeReason",
+        message: "A justificativa deve ter no máximo 500 caracteres.",
+      },
+    };
+  }
+  return { ok: true, value: { source, changeReason } };
+}
+
+export function summarizeDataProfileGameImpact(
+  games: Array<{ source: string; status: string }>,
+): DataProfileGameImpact {
+  const statusCounts = new Map<string, number>();
+  let manualGames = 0;
+  let boxscoreGames = 0;
+  let otherGames = 0;
+
+  for (const game of games) {
+    if (game.source === "manual") manualGames += 1;
+    else if (game.source === "boxscore") boxscoreGames += 1;
+    else otherGames += 1;
+    statusCounts.set(game.status, (statusCounts.get(game.status) ?? 0) + 1);
+  }
+
+  return {
+    totalGames: games.length,
+    manualGames,
+    boxscoreGames,
+    otherGames,
+    statuses: [...statusCounts.entries()]
+      .map(([status, count]) => ({ status, count }))
+      .sort((left, right) => left.status.localeCompare(right.status)),
+  };
+}
 
 export type FinalResultStatus = "placed" | "withdrawn" | "disqualified";
 
@@ -121,6 +235,19 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
         field: "jersey",
         message: "Duas pessoas não podem usar a mesma camisa ativa na equipe.",
       };
+    case "BD601":
+      return {
+        code: "eligibility-pending",
+        field: "player",
+        message:
+          "Complete a elegibilidade do atleta no formulário privado antes de adicioná-lo ao elenco.",
+      };
+    case "BD602":
+      return {
+        code: "eligibility-incompatible",
+        field: "player",
+        message: "Atleta não elegível para o naipe desta edição.",
+      };
     case "BD201":
     case "BD202":
       return {
@@ -133,6 +260,36 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
         code: "result-conflict",
         field: "placement",
         message: "Essa colocação já pertence a outra equipe na edição.",
+      };
+    case "BD501":
+      return {
+        code: "invalid-profile",
+        field: "dataProfile",
+        message: "Revise o naipe, a fonte primária e a justificativa informados.",
+      };
+    case "BD503":
+      return {
+        code: "profile-transition",
+        field: "dataProfile",
+        message: "Esse perfil não pode ser ativado no estado atual.",
+      };
+    case "BD504":
+      return {
+        code: "profile-context",
+        field: "dataProfile",
+        message: "O perfil não pertence à mesma série, categoria e naipe desta edição.",
+      };
+    case "BD505":
+      return {
+        code: "review-required",
+        field: "genderDivision",
+        message: "Revise o naipe antes de configurar a fonte primária.",
+      };
+    case "BD506":
+      return {
+        code: "context-conflict",
+        field: "genderDivision",
+        message: "Já existe uma edição com a mesma série, categoria, naipe e ano.",
       };
     default:
       return {

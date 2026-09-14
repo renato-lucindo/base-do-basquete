@@ -17,6 +17,10 @@ const requirements = new Map([
     "docs/runbooks/rollback.md",
     ["wrangler rollback", "preview", "production", "/health", "migrations"],
   ],
+  [
+    "docs/runbooks/release-candidate.md",
+    ["upload-candidate", "main", "MFA", "advisors", "rollback", "smoke:mvp"],
+  ],
 ]);
 
 const problems = [];

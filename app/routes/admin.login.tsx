@@ -81,7 +81,7 @@ export default function AdminLogin({ actionData }: Route.ComponentProps) {
       <section className="auth-card" aria-labelledby="login-title">
         <a className="brand auth-brand" href="/" aria-label="Base do Basquete — página inicial">
           <span className="brand-mark" aria-hidden="true">
-            BB
+            B
           </span>
           <span>Base do Basquete</span>
         </a>

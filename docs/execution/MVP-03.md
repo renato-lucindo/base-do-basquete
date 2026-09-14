@@ -1,0 +1,75 @@
+# MVP-03 — Administração e criação por presets
+
+## Estado
+
+`DONE` na branch `feature/admin-workflow-improvements`, PR draft #35. Concluído no preview; sem merge ou deploy de produção.
+
+### Gate final — 10/09/2026
+
+- Head funcional `4573827`: CI/database `34536801150`, preview `34536801097` e CodeQL `34536801112` aprovados.
+- Banco reconstruído desde zero e suite pgTAP: PASS. Duas conexões independentes na CI comprovaram primeira criação idempotente (exatamente uma edição/revisão/auditoria) e serialização da disputa pelo último confronto de semifinal, com terceiro confronto recusado.
+- Gate local: 216 Vitest, lint/formatação, tipos, builds, quatro runbooks e scan de 511 arquivos aprovados.
+- Preview atualizado: Enter no botão Continuar move o foco ao FIELDSET “Dados e formato”. QA em 390/768/1440 px sem overflow global; override restaurado. Criação real AAL2 e privacidade da edição 100 verificadas conforme evidências abaixo.
+- Preservação confirmada: nove jogos, quatro revisões legadas, dois perfis e quatro edições publicadas. Fixture 100 permanece privada, com zero jogos. Produção inalterada.
+- MVP-04 liberado para implementação. Histórico abaixo preserva as etapas intermediárias, não pendências atuais do MVP-03.
+
+## Baseline
+
+- Head de partida `3658f59`, worktree limpo.
+- Checks `gate`, `database`, `analyze` e `upload` aprovados no fechamento documental do MVP-02.
+- Não houve nova migration nem escrita no Supabase nesta unidade.
+
+## Unidade implementada
+
+- Hub com accordion controlado: todas as equipes recolhidas inicialmente, apenas uma aberta e retorno ao elenco salvo pelo parâmetro existente `savedRoster`.
+- Seções Elenco/Situação/Resultado mostram um formulário por vez; componentes permanecem montados para preservar estado ao alternar.
+- Cabeçalho acionável por teclado, relações ARIA, situação em português e estilos móveis com quebra de texto.
+- A ação de súmula agora informa corretamente que seleciona um jogo existente.
+- Allowlist desta unidade: componente/teste do accordion, rota do hub, CSS, fila e documentação do pacote.
+
+## Segunda unidade — áreas administrativas
+
+- `/admin` redireciona após AAL2 para `/admin/competitions`; equipes, atletas e segurança possuem rotas próprias e navegação compartilhada com o hub.
+- Competições têm busca server-side, filtros por ano/situação e naipe explícito; formulários globais saíram desta página.
+- Equipes e atletas têm buscas limitadas a 50 resultados; cada action aceita somente sua própria operação e preserva AAL2, mesma origem, CSRF e as validações/RPCs existentes.
+- Segurança reúne estado da sessão e encerramento de sessões pelo endpoint existente.
+- Allowlist ampliada para as novas rotas, `app/routes.ts`, entrada administrativa, navegação compartilhada e testes de isolamento das áreas.
+- Gate local aprovado: 30 arquivos/117 Vitest, formatação/lint, tipos, runbooks, builds e scan de segredos. Os 13 testes novos cobrem negação antes de consultar/gravar, origem, CSRF, isolamento de intents e continuidade do cadastro privado.
+- Commit `bc60d76` enviado somente à branch da PR #35. CI/database `34473818965`, preview `34473818938` e CodeQL `34473818894` aprovados.
+- Reconciliação remota somente leitura: 4 revisões de regulamento, 9 jogos e `game_active_data_sources` disponível. O smoke administrativo foi redirecionado ao login: MFA renovado é necessário para QA interativo, mas não para desenvolver os presets localmente.
+
+## Validação
+
+### Terceira unidade — compilação dos presets (10/09/2026)
+
+- Login renovado: as quatro áreas carregaram em AAL2. Busca de equipes por `Alcateia` retornou apenas a equipe correspondente. No hub da edição 20, abrir AVABES recolheu Alcateia; alternar Elenco/Situação manteve apenas a seção selecionada visível. Nenhum formulário foi submetido e a sessão não foi encerrada. Viewports 390/768/desktop e teclado integral ainda pendentes.
+- Compilador puro TypeScript e equivalente PostgreSQL interno, versionados em v1, com grupo único e eliminatória simples para 2..16 posições explicitamente atribuídas. Limite conservador desta versão; ampliar exige nova versão testada, não inferência ou truncamento. Não há atribuição automática de equipes a posições a partir de nomes/classificação.
+- Grupo único usa rotação determinística e cada par se enfrenta uma vez. Eliminatória reserva referências tipadas a vencedores anteriores; folgas das primeiras posições não criam confrontos ou jogos fictícios. Contratos reservados são tipados, não derivados de rótulos.
+- Validador de domínio recusa origens inexistentes/futuras/cíclicas, entradas/saídas repetidas, partidas excedentes, terceiro confronto de semifinal e segundo de final. O compilador SQL aceita apenas chave/capacidade e não recebe grafo livre do cliente.
+- SQL em schema privado, `SECURITY INVOKER`, `search_path` vazio e execução revogada para PUBLIC/anon/authenticated. Sem novo endpoint público ou alterações em registros históricos.
+- Allowlist ampliada: dois módulos de domínio/teste, migration gerada pelo CLI e pgTAP focal, além deste relatório e HANDOFF.
+- Gate local: 31 arquivos/177 Vitest, formatação/lint, TypeScript, quatro runbooks, build cliente/SSR e scan de 504 arquivos. Ensaio SQL em transação: 18/18 pgTAP. Comparação integral TypeScript/PostgreSQL: 30 configurações com paridade exata. Rollback confirmado; 9 jogos e 4 revisões preservados.
+- `20260910123720_mvp03_preset_compiler.sql` **não aplicada persistentemente**. A saída JSON é somente blueprint interno; a próxima unidade materializa referências por FKs e aplica a autoridade transacional. Presets ainda não estão disponíveis para criação de edições na UI.
+
+- Gate local completo aprovado em 10/09/2026: formatação/lint, TypeScript, 29 arquivos/104 Vitest, quatro runbooks, build cliente/SSR e varredura de 493 arquivos sem segredos.
+- QA focal autenticado do accordion concluído; responsividade integral e gate consolidado do pacote ainda pendentes. Esta unidade não conclui MVP-03.
+
+## Próximo passo
+
+### Unidade integrada — criação privada e wizard
+
+- Schema aditivo: trilhas, grupos, entradas, vagas por FKs exclusivas, folgas e contratos locais de rodadas/confrontos. As colunas legadas de participantes continuam existindo; só as estruturas novas podem reservar vagas ainda indefinidas.
+- A ativação reconstrói o blueprint a partir das FKs e exige igualdade com o compilador versionado. Revisão ativa e seus filhos são imutáveis, inclusive contra troca de contexto. Vagas só aceitam vencedores de rodadas anteriores. Semifinais são limitadas sob bloqueio da revisão/rodada. Jogos indefinidos ou excedentes são recusados.
+- RPC AAL2 cria perfil (se necessário), edição privada, revisão/estrutura e auditoria na mesma transação. Chave de idempotência + bloqueios de ano/perfil e comparação do perfil esperado protegem reenvio e alterações concorrentes. Novas edições não aceitam INSERT direto pelo papel autenticado.
+- Wizard com Identificação → Dados e formato → Revisão. Resumo calculado no servidor; a confirmação revalida os dados e chama apenas a RPC. CSRF, mesma origem e AAL2 obrigatórios. Nenhum grafo arbitrário é recebido do frontend. Criação termina no hub da edição.
+- 39 novos testes de domínio/rota (216 Vitest no total). Gate completo local aprovado. 35 pgTAP em rollback aprovados, incluindo 30 configurações persistidas/reconstruídas, privacidade, idempotência, AAL1/anon/não-admin, imutabilidade, terceiro confronto de semifinal e origens inválidas. Ensaio não deixou edições ou estruturas persistidas.
+- Allowlist ampliada: nova migration/pgTAP, domínio/testes de criação, rota/teste do wizard, roteamento, link na listagem, CSS do wizard e assinatura RPC nos tipos. Regenerar tipos integralmente após aplicar schema aprovado.
+
+### Aplicação e QA integrado
+
+- `550ea9c` passou CI/database `34507772096`, preview `34507772091` e CodeQL `34507772119`. Migrations aplicadas como `20260910172559_mvp03_preset_compiler` e `20260910172608_mvp03_relational_presets`.
+- Wizard real AAL2 criou a edição 100: “Validação MVP-03 — não publicar”, categoria Fixture FIBA, masculino, 2027. Uma revisão ativa, cinco entradas, quatro confrontos, oito vagas, três folgas, zero jogos e uma auditoria de criação. Estado `draft`, sem publicação. RLS anônima não retorna a edição.
+- Inspeção visual e fluxo em 390/768 px, sem overflow global; revisão recebeu foco no heading e o submit terminou no hub. Desktop/teclado integral ainda pendentes: a revisão automática do navegador foi interrompida por limite de uso. Restaurar override temporário ao retomar.
+- Tipos do Supabase integralmente regenerados e `tsc -b` aprovado. Avisos de segurança deliberados: RPC definer autorizada exclusivamente pelo singleton AAL2; ledger privado com RLS e sem grants/policies. Proteção de senhas vazadas e seis FKs antigas de MVP-01 são residuais anteriores. Referências: [RPC definer](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable), [índices de FKs](https://supabase.com/docs/guides/database/database-linter?lint=0001_unindexed_foreign_keys).
+
+Desktop 1440 px verificado após a retomada, sem overflow global (client/scroll 1425 px), e viewport restaurado. Navegação por Enter verificada; foco das etapas 1/2 ajustado para acompanhar a transição. Adicionado `scripts/test-preset-concurrency.mjs` ao banco descartável Docker da CI: duas conexões ficam comprovadamente bloqueadas antes da liberação, exercitando criação inicial idempotente e disputa pelo último confronto de semifinal. O script recusa execução fora de CI e não aceita URL/credencial de banco remoto. Docker não está instalado neste host; execução integral aguarda a CI. Concluir esse gate e revisar o ajuste de foco antes de fechar MVP-03. Não reaplicar migrations, apagar a fixture nem publicar produção.

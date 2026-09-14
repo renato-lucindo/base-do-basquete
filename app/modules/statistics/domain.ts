@@ -1,5 +1,5 @@
 export type StatisticsMode = "totals" | "averages";
-export type FilterOperator = ">=" | "<=" | ">" | "<";
+export type FilterOperator = ">=" | ">" | "<=" | "<" | "=";
 export type ComparisonState = "better" | "worse" | "equal" | "unavailable";
 
 export interface CategoryCapabilities {
@@ -23,6 +23,7 @@ export interface StatisticTotals {
   turnovers: number;
   steals: number;
   blocks: number;
+  fouls: number;
   plusMinus: number;
 }
 
@@ -31,11 +32,33 @@ export interface PlayerStatistics {
   playerId: number;
   playerName: string;
   playerSlug: string;
+  teamName: string | null;
+  teamSlug: string | null;
+  teamAbbreviation: string | null;
   gamesPlayed: number;
-  totals: StatisticTotals;
+  advancedGamesPlayed: number;
+  officialPoints: number;
+  fouls: number | null;
+  advancedTotals: StatisticTotals | null;
 }
 
-export type FilterMetric = "points" | "rebounds" | "assists" | "steals" | "blocks" | "efficiency";
+export type FilterMetric =
+  | "games"
+  | "minutes"
+  | "points"
+  | "rebounds"
+  | "offensiveRebounds"
+  | "defensiveRebounds"
+  | "assists"
+  | "steals"
+  | "blocks"
+  | "turnovers"
+  | "fouls"
+  | "fieldGoalPercentage"
+  | "threePointPercentage"
+  | "freeThrowPercentage"
+  | "efficiency"
+  | "plusMinus";
 
 export interface StatisticFilter {
   id: string;
@@ -92,30 +115,72 @@ export function statisticValue(
   metric: FilterMetric,
   mode: StatisticsMode,
 ): number | null {
+  const advanced = player.advancedTotals;
   const total = (() => {
     switch (metric) {
+      case "games":
+        return player.gamesPlayed;
+      case "minutes":
+        return advanced === null ? null : advanced.secondsPlayed / 60;
       case "points":
-        return player.totals.points;
+        return player.officialPoints;
       case "rebounds":
-        return rebounds(player.totals);
+        return advanced === null ? null : rebounds(advanced);
+      case "offensiveRebounds":
+        return advanced?.offensiveRebounds ?? null;
+      case "defensiveRebounds":
+        return advanced?.defensiveRebounds ?? null;
       case "assists":
-        return player.totals.assists;
+        return advanced?.assists ?? null;
       case "steals":
-        return player.totals.steals;
+        return advanced?.steals ?? null;
       case "blocks":
-        return player.totals.blocks;
+        return advanced?.blocks ?? null;
+      case "turnovers":
+        return advanced?.turnovers ?? null;
+      case "fouls":
+        return player.fouls;
+      case "fieldGoalPercentage":
+        return advanced === null
+          ? null
+          : percentage(
+              advanced.twoPointMade + advanced.threePointMade,
+              advanced.twoPointAttempted + advanced.threePointAttempted,
+            );
+      case "threePointPercentage":
+        return advanced === null
+          ? null
+          : percentage(advanced.threePointMade, advanced.threePointAttempted);
+      case "freeThrowPercentage":
+        return advanced === null
+          ? null
+          : percentage(advanced.freeThrowMade, advanced.freeThrowAttempted);
       case "efficiency":
-        return efficiency(player.totals);
+        return advanced === null ? null : efficiency(advanced);
+      case "plusMinus":
+        return advanced?.plusMinus ?? null;
     }
   })();
-  return mode === "totals" ? total : perGame(total, player.gamesPlayed);
+  if (total === null) return null;
+  if (
+    metric === "games" ||
+    metric === "fieldGoalPercentage" ||
+    metric === "threePointPercentage" ||
+    metric === "freeThrowPercentage"
+  ) {
+    return total;
+  }
+  const denominator =
+    metric === "points" || metric === "fouls" ? player.gamesPlayed : player.advancedGamesPlayed;
+  return mode === "totals" ? total : perGame(total, denominator);
 }
 
 function matches(value: number, operator: FilterOperator, target: number): boolean {
   if (operator === ">=") return value >= target;
   if (operator === "<=") return value <= target;
   if (operator === ">") return value > target;
-  return value < target;
+  if (operator === "<") return value < target;
+  return value === target;
 }
 
 export function applyStatisticFilters(
@@ -146,7 +211,7 @@ export function compareStatistic(
     return { left: "unavailable", right: "unavailable" };
   }
   if (leftValue === rightValue) return { left: "equal", right: "equal" };
-  return leftValue > rightValue
-    ? { left: "better", right: "worse" }
-    : { left: "worse", right: "better" };
+  const lowerIsBetter = metric === "turnovers" || metric === "fouls";
+  const leftIsBetter = lowerIsBetter ? leftValue < rightValue : leftValue > rightValue;
+  return leftIsBetter ? { left: "better", right: "worse" } : { left: "worse", right: "better" };
 }

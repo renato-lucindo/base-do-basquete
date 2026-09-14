@@ -1,8 +1,9 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(31);
 set constraints all deferred;
+select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -30,9 +31,12 @@ overriding system value values (9414, 'Liga WP14', 'liga-wp14');
 insert into public.categories (id, name, slug)
 overriding system value values (9414, 'Categoria WP14', 'categoria-wp14');
 insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
+  (
+    id, series_id, category_id, year, display_name,
+    gender_division, gender_division_review_required, status, published_at
+  )
 overriding system value values
-  (9414, 9414, 9414, 2026, 'Liga WP14 2026', 'published', now());
+  (9414, 9414, 9414, 2026, 'Liga WP14 2026', 'male', false, 'published', now());
 insert into public.teams (id, name, slug, abbreviation)
 overriding system value values
   (9414, 'Equipe WP14 Casa', 'equipe-wp14-casa', 'WPC'),
@@ -41,6 +45,10 @@ insert into public.players (id, full_name, slug)
 overriding system value
 select 94140 + number, 'Atleta WP14 ' || number, 'atleta-wp14-' || number
 from generate_series(1, 9) number;
+
+update private.player_private
+set sex = 'male', sex_review_required = false
+where player_id = 94145;
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values
@@ -57,6 +65,39 @@ select
   case when number <= 5 then number::text else (number - 5)::text end,
   case when number = 5 then 'inactive' else 'active' end
 from generate_series(1, 9) number;
+
+insert into public.competition_ruleset_revisions
+  (id, competition_id, revision_number, structure_kind, status)
+overriding system value values
+  (9414, 9414, 1, 'regulated', 'active');
+insert into public.competition_stages
+  (id, competition_id, ruleset_revision_id, code, name, stage_order, structure_kind)
+overriding system value values
+  (9414, 9414, 9414, 'regular', 'Fase regular', 1, 'regulated');
+insert into public.competition_rounds
+  (id, competition_id, stage_id, code, name, round_order, structure_kind)
+overriding system value values
+  (9414, 9414, 9414, 'rodada_1', 'Rodada 1', 1, 'regulated');
+insert into public.matchups
+  (id, competition_id, round_id, home_registration_id, away_registration_id,
+   matchup_order, structure_kind)
+overriding system value values
+  (94141, 9414, 9414, 9414, 9415, 1, 'regulated');
+insert into public.games
+  (id, competition_id, game_number, status, source, matchup_id, matchup_game_number)
+overriding system value values
+  (94141, 9414, 'WP14-ATOMIC-01', 'scheduled', 'seed', 94141, 1);
+insert into public.game_participants
+  (game_id, competition_id, registration_id, side)
+values
+  (94141, 9414, 9414, 'home'),
+  (94141, 9414, 9415, 'away');
+insert into storage.objects (id, bucket_id, name)
+values (
+  '94140000-0000-4000-8000-000000000001',
+  'boxscore-pdfs',
+  '9414/' || repeat('b', 64) || '.pdf'
+);
 
 create temp table wp14_test_data (
   parsed jsonb,
@@ -169,6 +210,7 @@ with players as (
   from players
 ), resolution as (
   select jsonb_build_object(
+    'gameId', 94141,
     'teams', jsonb_build_array(
       jsonb_build_object('sourceTeamName', 'Equipe WP14 Casa', 'registrationId', 9414),
       jsonb_build_object('sourceTeamName', 'Equipe WP14 Fora', 'registrationId', 9415)
@@ -182,6 +224,7 @@ with players as (
           when number = 10 then 'create_new'
           else 'existing_roster'
         end,
+        'eligibilitySex', case when number = 10 then 'male' else null end,
         'playerId', case when number = 5 then 94145 else null end,
         'rosterEntryId', case when number <> 5 and number <= 9 then 94140 + number else null end
       ) order by number
@@ -264,14 +307,18 @@ select is(
 select throws_ok($$
   select public.admin_commit_boxscore_import(
     import_id,
-    jsonb_set(resolution, '{players,4,action}', '"create_new"'::jsonb)
+    jsonb_set(
+      jsonb_set(resolution, '{players,4,action}', '"create_new"'::jsonb),
+      '{players,4,eligibilitySex}',
+      '"male"'::jsonb
+    )
   )
   from wp14_test_data
 $$, 'BD308', 'BDB_PDF_PLAYER_ALREADY_EXISTS', 'exact normalized duplicates cannot be created');
 select is(
   (select count(*)::integer from public.games where game_number = 'WP14-ATOMIC-01'),
-  0,
-  'a rejected player resolution rolls back the entire game'
+  1,
+  'a rejected player resolution leaves only the empty structural game'
 );
 select lives_ok($$
   update wp14_test_data
@@ -344,6 +391,26 @@ select throws_ok($$
 $$, 'BD310', 'BDB_PDF_TEAM_STATS_INVALID', 'refresh rejects a mismatched game number');
 
 reset role;
+select is(
+  (select sex from private.player_private
+   where player_id = (select player.id from public.players player
+     where player.full_name = 'Atleta WP14 10')),
+  'male',
+  'the automatically created player receives the explicit private value'
+);
+select is(
+  (select sex_review_required from private.player_private
+   where player_id = (select player.id from public.players player
+     where player.full_name = 'Atleta WP14 10')),
+  false,
+  'the automatically created player leaves the eligibility queue'
+);
+select ok(
+  (select resolution_payload::text from public.boxscore_imports
+   where id = (select import_id from wp14_test_data))
+    !~ 'eligibilitySex|"sex"|male|female',
+  'the confirmed import persists no private value'
+);
 delete from public.game_team_statistics where game_id = (select game_id from wp14_test_data);
 delete from public.game_statistics where game_id = (select game_id from wp14_test_data);
 update public.boxscore_imports

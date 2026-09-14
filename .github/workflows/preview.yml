@@ -40,3 +40,5 @@ jobs:
           printf 'PREVIEW_URL=%s\n' "$preview_url" >> "$GITHUB_ENV"
       - name: Smoke contextual public navigation
         run: node scripts/smoke-public-context.mjs "$PREVIEW_URL"
+      - name: Smoke MVP security and privacy
+        run: npm run smoke:mvp -- "$PREVIEW_URL" preview
