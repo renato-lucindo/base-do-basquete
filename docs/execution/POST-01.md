@@ -1,6 +1,6 @@
 # POST-01 — Fontes excepcionais e conflitos
 
-Estado: `DOING`. Implementação, banco compartilhado e gate remoto concluídos; falta somente o smoke AAL2 do preview antes do fechamento.
+Estado: `READY`. Implementação, banco compartilhado, gate remoto e smoke AAL2 do preview concluídos; falta somente integrar a PR #42 com o head verde.
 
 ## Escopo entregue
 
@@ -32,9 +32,11 @@ Estado: `DOING`. Implementação, banco compartilhado e gate remoto concluídos;
 - O advisor de desempenho apontou inicialmente um FK composto sem cobertura. A migration aditiva final criou o índice e a nova execução deixou zero FKs sem índice; restaram apenas índices ainda não usados no volume atual.
 - A reconciliação antes/depois preservou 9 jogos, 18 participantes, 48 placares de períodos, 50 vínculos de elenco, 74 estatísticas por atleta/período, 81 faltas e 2 imports, com checksums idênticos. Permanecem 9 submissões legadas, zero fallback, zero snapshot e zero comparação, sem backfill inventado.
 - O preview da PR #42 confirmou `environment=preview`, classificação e jogo canônicos com HTTP 200 e redirecionamento anônimo da rota de conflito para `/admin/login`, com CSP e `nosniff`.
+- Em sessão real no mesmo host, o cabeçalho confirmou `Sessão AAL2` e `/admin/games/63/data-conflict` abriu com HTTP funcional, jogo `5205822`, competição `Copa ES Ouro 2026` e estado vazio seguro (`0` domínios coincidentes e `0` divergentes). Nenhum fallback, candidato ou decisão foi criado para o smoke.
+- O head documental `c68b0ff` manteve os quatro checks aprovados: `gate`, `database`, upload do preview e CodeQL.
 
-## Gate restante
+## Fechamento restante
 
-1. Fazer login e MFA no host da PR #42.
-2. Validar no preview AAL2 o estado sem conflito e a navegação da nova tela, sem criar fallback ou promover fonte em dados reais.
-3. Atualizar a evidência final e marcar a PR pronta. Integrar somente com o gate aprovado; produção continua dependente da `main` protegida.
+1. Commitar e enviar esta evidência final.
+2. Confirmar novamente os quatro checks no novo head, marcar a PR pronta e integrar.
+3. Manter produção em `v1.1.0` até uma publicação explícita pela `main` protegida ou por versão marcada.
