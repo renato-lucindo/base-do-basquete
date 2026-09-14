@@ -1,6 +1,6 @@
 # POST-01 — Fontes excepcionais e conflitos
 
-Estado: `DOING`. Implementação funcional concluída na branch; gate remoto, aplicação de schema e QA de preview ainda pendentes.
+Estado: `DOING`. Implementação, banco compartilhado e gate remoto concluídos; falta somente o smoke AAL2 do preview antes do fechamento.
 
 ## Escopo entregue
 
@@ -21,10 +21,20 @@ Estado: `DOING`. Implementação funcional concluída na branch; gate remoto, ap
 - Gate local: 38 arquivos e 262 Vitest; TypeScript estrito, Biome, build Workers, cinco runbooks e varredura de segredos aprovados.
 - Produção não foi alterada; permanece em `v1.1.0`.
 
+## Gate remoto e aplicação
+
+- PR #42 no head `76b87d2`: `gate`, banco desde zero, upload do preview e CodeQL aprovados. O banco desde zero executou também todas as regressões legadas e a concorrência dos presets.
+- O primeiro ciclo de CI encontrou uma variável PL/pgSQL ambígua e fixtures sem administrador em banco vazio; o segundo encontrou o nome legado incorreto `created_at` no ledger. As correções foram aditivas e o histórico de migrations enviadas não foi reescrito.
+- Nove migrations POST-01 foram aplicadas em ordem no Supabase compartilhado, de `20260914182126_post01_source_roles` a `20260914182942_post01_snapshot_fk_covering_index`.
+- Os seis pgTAP focados passaram novamente no schema persistido, somando 87/87 asserções.
+- Os tipos TypeScript integrais foram regenerados a partir do schema remoto e passaram no TypeScript estrito.
+- RLS está habilitado e forçado nas tabelas de snapshots e comparações. O advisor de segurança não apontou vulnerabilidade nova; as três RPCs novas aparecem como `SECURITY DEFINER` intencional, com singleton AAL2, `search_path` vazio e grants somente para `authenticated`.
+- O advisor de desempenho apontou inicialmente um FK composto sem cobertura. A migration aditiva final criou o índice e a nova execução deixou zero FKs sem índice; restaram apenas índices ainda não usados no volume atual.
+- A reconciliação antes/depois preservou 9 jogos, 18 participantes, 48 placares de períodos, 50 vínculos de elenco, 74 estatísticas por atleta/período, 81 faltas e 2 imports, com checksums idênticos. Permanecem 9 submissões legadas, zero fallback, zero snapshot e zero comparação, sem backfill inventado.
+- O preview da PR #42 confirmou `environment=preview`, classificação e jogo canônicos com HTTP 200 e redirecionamento anônimo da rota de conflito para `/admin/login`, com CSP e `nosniff`.
+
 ## Gate restante
 
-1. Abrir a PR consolidada e aguardar `gate`, `database`, preview e CodeQL no head exato.
-2. Aplicar as migrations em ordem no Supabase somente depois do banco desde zero ficar verde.
-3. Regenerar os tipos integrais, executar advisors e reconciliar contagens/hashes antes/depois.
-4. Validar no preview AAL2 os estados sem dados, fallback aguardando, comparação e confirmação; validar negação anônima e regressão pública.
-5. Atualizar este arquivo e `HANDOFF.md`; integrar somente com o gate aprovado. Produção continua dependente da `main` protegida.
+1. Fazer login e MFA no host da PR #42.
+2. Validar no preview AAL2 o estado sem conflito e a navegação da nova tela, sem criar fallback ou promover fonte em dados reais.
+3. Atualizar a evidência final e marcar a PR pronta. Integrar somente com o gate aprovado; produção continua dependente da `main` protegida.
