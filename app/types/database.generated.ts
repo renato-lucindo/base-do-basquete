@@ -404,6 +404,57 @@ export type Database = {
           },
         ];
       };
+      competition_publications: {
+        Row: {
+          competition_id: number;
+          id: number;
+          publication_kind: string;
+          published_at: string;
+          published_by: string | null;
+          snapshot: Json;
+          snapshot_hash: string;
+          snapshot_schema_version: number;
+          version: number;
+        };
+        Insert: {
+          competition_id: number;
+          id?: never;
+          publication_kind: string;
+          published_at?: string;
+          published_by?: string | null;
+          snapshot: Json;
+          snapshot_hash: string;
+          snapshot_schema_version?: number;
+          version: number;
+        };
+        Update: {
+          competition_id?: number;
+          id?: never;
+          publication_kind?: string;
+          published_at?: string;
+          published_by?: string | null;
+          snapshot?: Json;
+          snapshot_hash?: string;
+          snapshot_schema_version?: number;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_publications_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_data_coverage";
+            referencedColumns: ["competition_id"];
+          },
+          {
+            foreignKeyName: "competition_publications_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       competition_round_byes: {
         Row: {
           bye_order: number;
@@ -745,6 +796,7 @@ export type Database = {
         Row: {
           category_id: number;
           created_at: string;
+          current_publication_id: number | null;
           data_profile_id: number | null;
           data_profile_review_required: boolean;
           data_profile_validated_at: string | null;
@@ -764,6 +816,7 @@ export type Database = {
         Insert: {
           category_id: number;
           created_at?: string;
+          current_publication_id?: number | null;
           data_profile_id?: number | null;
           data_profile_review_required?: boolean;
           data_profile_validated_at?: string | null;
@@ -783,6 +836,7 @@ export type Database = {
         Update: {
           category_id?: number;
           created_at?: string;
+          current_publication_id?: number | null;
           data_profile_id?: number | null;
           data_profile_review_required?: boolean;
           data_profile_validated_at?: string | null;
@@ -806,6 +860,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "categories";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competitions_current_publication_fkey";
+            columns: ["current_publication_id", "id"];
+            isOneToOne: false;
+            referencedRelation: "competition_publications";
+            referencedColumns: ["id", "competition_id"];
           },
           {
             foreignKeyName: "competitions_data_profile_identity_fkey";
@@ -3386,6 +3447,7 @@ export type Database = {
         Returns: {
           category_id: number;
           created_at: string;
+          current_publication_id: number | null;
           data_profile_id: number | null;
           data_profile_review_required: boolean;
           data_profile_validated_at: string | null;
@@ -3571,10 +3633,6 @@ export type Database = {
         Args: { p_competition_id: number };
         Returns: Json;
       };
-      admin_get_publication_review: {
-        Args: { p_competition_id: number };
-        Returns: Json;
-      };
       admin_get_game_data_backfill_report: { Args: never; Returns: Json };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
@@ -3587,6 +3645,10 @@ export type Database = {
           roster_entries: number;
           sex: string;
         }[];
+      };
+      admin_get_publication_review: {
+        Args: { p_competition_id: number };
+        Returns: Json;
       };
       admin_prepare_matchup: {
         Args: {
@@ -3644,6 +3706,7 @@ export type Database = {
         Returns: {
           category_id: number;
           created_at: string;
+          current_publication_id: number | null;
           data_profile_id: number | null;
           data_profile_review_required: boolean;
           data_profile_validated_at: string | null;
