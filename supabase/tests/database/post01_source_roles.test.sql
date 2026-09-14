@@ -1,6 +1,26 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(17);
+
+select ok(
+  pg_get_constraintdef(
+    (
+      select constraint_item.oid
+      from pg_constraint constraint_item
+      where constraint_item.conname = 'admin_mutation_audit_action_check'
+        and constraint_item.conrelid = 'public.admin_mutation_audit'::regclass
+    )
+  ) like '%manual_fallback_confirmed%'
+    and pg_get_constraintdef(
+      (
+        select constraint_item.oid
+        from pg_constraint constraint_item
+        where constraint_item.conname = 'admin_mutation_audit_action_check'
+          and constraint_item.conrelid = 'public.admin_mutation_audit'::regclass
+      )
+    ) like '%manual_fallback_finalized%',
+  'fallback lifecycle audit actions are accepted by the closed audit vocabulary'
+);
 
 select has_column(
   'public', 'game_data_submissions', 'fallback_finalized_at',

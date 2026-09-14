@@ -1,3 +1,15 @@
+alter table public.admin_mutation_audit
+  drop constraint admin_mutation_audit_action_check,
+  add constraint admin_mutation_audit_action_check check(action in (
+    'registration_created','registration_transitioned','roster_replaced','manual_scoresheet_saved',
+    'boxscore_import_confirmed','boxscore_team_stats_refreshed','final_placement_confirmed','player_created',
+    'competition_gender_reviewed','data_profile_created','data_profile_activated',
+    'competition_data_profile_assigned','player_sex_reviewed','game_data_authority_activated',
+    'competition_created_from_preset','competition_entry_assigned','matchup_prepared','matchup_resolved',
+    'competition_published','manual_fallback_confirmed','boxscore_supplement_confirmed',
+    'manual_fallback_finalized'
+  ));
+
 alter table public.game_data_submissions
   add column fallback_finalized_at timestamptz,
   add column fallback_finalized_by uuid references auth.users(id) on delete restrict
