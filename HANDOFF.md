@@ -366,7 +366,7 @@ CLOUDFLARE_ACCOUNT_ID
 - PRs funcionais atuais: #27 a #32 em draft e empilhadas; nenhum merge ou deploy executado.
 - Consolidação atual: PR #35 draft contra `main`, head funcional `603f725`, aberta; nenhum merge ou deploy de produção executado.
 - Execução atual: commits `b7c0030` e `603f725` concluíram `MVP-02`; CI/database `34386933182`, preview `34386933194` e CodeQL `34386933248` estão verdes.
-- Head funcional enviado da PR #35: `dfd0813`. Publicação editorial versionada e hardening passaram `gate`, banco desde zero, preview/smoke e análise. O commit local `95e8ad0` sincroniza os tipos integrais com o schema aplicado e passou o gate completo antes do próximo push. Nenhum merge ou deploy de produção foi executado.
+- Head atual da PR #35: `fec70a5`. Publicação editorial versionada, hardening, tipos integrais e evidências passaram `gate`, banco desde zero, preview/smoke e análise. Nenhum merge ou deploy de produção foi executado.
 - Supabase compartilhado após publicação: quatro competições `published` com versão atual, uma `draft`, nove jogos e doze inscrições. Migrations `20260914113513_mvp04_versioned_publication` e `20260914114432_mvp04_publication_hardening` aplicadas; 37/37 pgTAP persistentes e hashes esportivos preservados.
 - Este documento é o follow-up final pós-merge; para o HEAD mais recente, consultar `git log --oneline -10`.
 
