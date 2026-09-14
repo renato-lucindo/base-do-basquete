@@ -8,14 +8,14 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP em execução; MVP-01 a MVP-04 concluídos na PR draft #35. MVP-05 está `DOING`; depois dele permanecem quatro pacotes pós-MVP preservados.
-- Status geral: `MVP_ACCELERATED_IN_PROGRESS`; PR #35 integrada em `main` no commit `37bf85c`. Candidata `release-37bf85c6dea0` carregada sem tráfego. Produção recebeu a versão `68445c64-df5c-42ff-870e-08c0fc0f432d` e está saudável em smokes manuais; o workflow falhou apenas porque a primeira navegação ainda recebeu a rota raiz da versão anterior durante propagação. A branch `fix/release-smoke-propagation` adiciona retry limitado antes de repetir o deploy automatizado.
+- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 estão `DONE`. Permanecem quatro pacotes pós-MVP preservados na fila.
+- Status geral: `MVP_ACCELERATED_DONE`; PR #35 integrada em `37bf85c`, correção de propagação pela PR #39 em `92ff57f` e benchmark canônico pela PR #40 em `f8dcb87`. Produção publicada pela `main` protegida e marcada como `v1.1.0`.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `feature/admin-workflow-improvements`, baseada em `feature/ui-ux-implementation` para manter a entrega administrativa isolada e revisável.
+- Branch atual: `docs/mvp05-release-evidence`, criada de `origin/main` somente para consolidar a evidência final da release.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
-- Aplicação publicada: commit `8544734` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `1f004752-dd64-4bc7-8406-917c0ba30248`.
-- Cloudflare: hotfix publicado pelo workflow `32764216293`; health, cabeçalhos, smoke contextual e benchmark aprovados. O bloqueio anterior `BDB_PDF_STORED_HASH` não produziu escrita parcial e foi resolvido pela recuperação segura dos objetos.
+- Aplicação publicada: commit `f8dcb87` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`; tag `v1.1.0`.
+- Cloudflare: workflow protegido `34845342461` integralmente verde; health, cabeçalhos, entrada administrativa anônima, smoke contextual, smoke de segurança/privacidade do MVP, benchmark e limpeza do arquivo efêmero aprovados.
 - Supabase: projeto `base-do-basquete` na organização `renato-lucindo`, região `sa-east-1`, custo informado de US$ 0/mês e estado saudável; migrations MVP-01 de estrutura, ingestão em jogo existente e enforcement aplicadas transacionalmente em 09/09/2026.
 - Domínio próprio: não definido e fora do escopo atual.
 - Administradores na primeira temporada: uma única conta.
@@ -80,7 +80,9 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 ## 6. Próximo passo exato
 
-**Estado vigente em 14/09:** MVP-04 `DONE`; MVP-05 em fechamento. A PR #35 passou todos os gates e foi integrada em `37bf85c`; a `main` repetiu CI/banco/CodeQL com sucesso. Candidata Cloudflare `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi criada sem tráfego. O deploy de produção `34842695879` aplicou a versão `68445c64-df5c-42ff-870e-08c0fc0f432d`; health, navegação e privacidade passaram após propagação. O único trabalho atual é integrar o retry limitado do smoke raiz e repetir o workflow para evidência verde. Não reverter banco ou dados; produção atual está saudável.
+**Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
+
+**Próximo passo atual:** iniciar `POST-01 — Fallback, suplemento, conflitos e projeção rara` em branch própria, mantendo estados indisponíveis explícitos e autoridade por domínio. Em paralelo, repetir o benchmark do detalhe do jogo em janelas distintas: houve p95 789,3 ms em dez amostras e 2.684,1 ms em trinta; se o excesso sobre 1.500 ms persistir, implementar e provar somente o cache público versionado previsto na ADR 0003, sem cachear autenticação, cookies ou dados privados.
 
 **Estado vigente em 11/09:** MVP-04 `DOING`. Agenda privada em `48001d9` e índices em `6d2738a` passaram os quatro checks; migrations remotas `20260911173435_mvp04_private_scheduling` e `20260911174551_mvp04_fk_covering_indexes`. O advisor não aponta FKs sem índice; avisos SECURITY DEFINER são os endpoints AAL2 intencionais. Banco preserva nove jogos, cinco revisões, fixture 100 privada, zero atribuições e zero preparações. Nova unidade local: `20260911174947_mvp04_knockout_progression.sql`, resolução imutável pelo resultado oficial principal ativo, propagação de vencedores e confirmação na rota de agenda. Ensaio remoto em rollback 28/28; gate local 245 Vitest, build e scan de 521 arquivos. Ainda sem commit/push/aplicação dessa migration. Próximo: enviar com staging exato, esperar CI, aplicar/regenerar tipos e validar preview; depois publicação versionada. Ver `docs/execution/MVP-04.md`. Sem merge ou produção.
 
@@ -482,3 +484,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-14 | Responsável/Codex | Backfill autorizado e aplicado; quatro versões atuais, 37 pgTAP, advisors, checksums esportivos e smoke público aprovados; hardening em `dfd0813` com checks verdes | Renovar login/TOTP da PR 35, executar o smoke AAL2 de revisão/publicação sem publicar a fixture 100 e então iniciar MVP-05 |
 | 2026-09-14 | Responsável/Codex | MVP-04 fechado após smoke AAL2 sem mutação; MVP-05 iniciou com QA 390/768/1440, teclado, privacidade, runbook e smoke automatizado de release | Passar gate/CI do MVP-05, atualizar PR e preparar integração/candidata somente pela main verde |
 | 2026-09-14 | Codex | PR #35 integrada em `37bf85c`; candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0`; produção `68445c64-df5c-42ff-870e-08c0fc0f432d` saudável após propagação; primeiro workflow falhou só no redirect raiz transitório | Integrar retry limitado em PR curta e repetir deploy da main para fechar o workflow verde |
+| 2026-09-14 | Codex | MVP-05 concluído: PRs #39/#40 verdes, `main` `f8dcb87`, tag `v1.1.0`, Worker `f3505b09-a831-4e0a-a2a7-5f0960b17d7b` e workflow de produção `34845342461` integralmente aprovados | Iniciar `POST-01` e acompanhar a cauda de latência do detalhe de jogo conforme ADR 0003 |
