@@ -12,11 +12,11 @@ import {
   buildPrefillSlots,
   calculatePoints,
   duplicateJerseys,
+  type EditorSlot,
   evaluateDisqualification,
+  type FoulInput,
   parseFoulCodes,
   periodLabel,
-  type FoulInput,
-  type EditorSlot,
   type RosterCandidate,
   type TeamSide,
 } from "./domain";
@@ -45,6 +45,7 @@ interface ManualScoresheetEditorProps {
   idempotencyKey: string;
   games: ScoresheetGame[];
   registrations: ScoresheetRegistration[];
+  requiresFallbackReason: boolean;
 }
 
 const sides: TeamSide[] = ["home", "away"];
@@ -81,6 +82,7 @@ export function ManualScoresheetEditor({
   idempotencyKey,
   games,
   registrations,
+  requiresFallbackReason,
 }: ManualScoresheetEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
@@ -366,12 +368,18 @@ export function ManualScoresheetEditor({
         </span>
       </header>
       <section className="admin-welcome scoresheet-editor">
-        <p className="eyebrow">Súmula manual</p>
+        <p className="eyebrow">{requiresFallbackReason ? "Súmula emergencial" : "Súmula manual"}</p>
         <h1>{competitionName}</h1>
         <p>
           Horário interpretado em America/Sao_Paulo. Pontos, placar, GD e encerramento são
           recalculados no banco.
         </p>
+        {requiresFallbackReason ? (
+          <p className="admin-note">
+            Esta edição usa boxscore FIBA como fonte principal. A súmula manterá o campeonato em
+            andamento como fallback auditado enquanto o PDF é aguardado.
+          </p>
+        ) : null}
         {actionError ? (
           <p className="form-error" role="alert">
             {actionError}
@@ -768,6 +776,18 @@ export function ManualScoresheetEditor({
 
           <div className="scoresheet-submit" hidden={step !== 4}>
             <p>O jogo será encerrado como final. Empate exige OT e é recusado pelo banco.</p>
+            {requiresFallbackReason ? (
+              <label>
+                Motivo do fallback emergencial
+                <textarea
+                  name="fallbackReason"
+                  required
+                  minLength={10}
+                  maxLength={500}
+                  placeholder="Explique por que o boxscore principal ainda não está disponível."
+                />
+              </label>
+            ) : null}
             <button className="button button-ghost" type="button" onClick={() => setStep(3)}>
               Voltar aos lançamentos
             </button>
@@ -811,7 +831,11 @@ export function ManualScoresheetEditor({
                 type="submit"
                 disabled={isSubmitting || invalidParticipants || hasDuplicateJersey}
               >
-                {isSubmitting ? "Salvando…" : "Salvar jogo"}
+                {isSubmitting
+                  ? "Salvando…"
+                  : requiresFallbackReason
+                    ? "Salvar fallback emergencial"
+                    : "Salvar jogo"}
               </button>
             )}
           </StickyActionSummary>

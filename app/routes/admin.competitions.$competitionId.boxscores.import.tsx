@@ -1,6 +1,4 @@
 import { data, Form, Link, redirect } from "react-router";
-
-import type { Route } from "./+types/admin.competitions.$competitionId.boxscores.import";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
@@ -18,6 +16,7 @@ import type { ParsedBoxscore } from "../modules/boxscore/types";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
+import type { Route } from "./+types/admin.competitions.$competitionId.boxscores.import";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
@@ -219,7 +218,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .from("games")
       .select("id,game_number,scheduled_at,venue,status,matchup_id")
       .eq("competition_id", competitionId)
-      .in("status", ["draft", "scheduled", "live"])
+      .in("status", ["draft", "scheduled", "live", "final"])
       .not("matchup_id", "is", null)
       .order("scheduled_at", { ascending: true, nullsFirst: false }),
   ]);
@@ -254,17 +253,33 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       })),
   }));
   const gameIds = gamesResult.data.map((game) => game.id);
-  const participantsResult = gameIds.length
-    ? await auth.client
-        .from("game_participants")
-        .select("game_id,registration_id,side")
-        .in("game_id", gameIds)
-    : { data: [], error: null };
-  if (participantsResult.error) throw new Error("Boxscore game participants query failed");
+  const [participantsResult, fallbackResult] = gameIds.length
+    ? await Promise.all([
+        auth.client
+          .from("game_participants")
+          .select("game_id,registration_id,side")
+          .in("game_id", gameIds),
+        auth.client
+          .from("game_data_submissions")
+          .select("game_id")
+          .in("game_id", gameIds)
+          .eq("source_type", "manual_scoresheet")
+          .eq("role", "fallback")
+          .eq("status", "active"),
+      ])
+    : [
+        { data: [], error: null },
+        { data: [], error: null },
+      ];
+  if (participantsResult.error || fallbackResult.error) {
+    throw new Error("Boxscore game participants query failed");
+  }
+  const fallbackGameIds = new Set(fallbackResult.data.map((submission) => submission.game_id));
   const registrationById = new Map(
     registrations.map((registration) => [registration.id, registration]),
   );
   const games = gamesResult.data
+    .filter((game) => game.status !== "final" || fallbackGameIds.has(game.id))
     .map((game) => {
       const participants = participantsResult.data.filter(
         (participant) => participant.game_id === game.id,
@@ -287,6 +302,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         awayRegistrationId: away.id,
         homeTeamName: home.teamName,
         awayTeamName: away.teamName,
+        isLateFallback: game.status === "final",
       };
     })
     .filter((game): game is NonNullable<typeof game> => game !== null);
@@ -646,6 +662,19 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       status: 303,
       context: { competitionId, entityId: commit.data },
     });
+    const comparison = await auth.client.rpc("admin_get_game_data_conflict", {
+      p_game_id: commit.data,
+    });
+    if (comparison.error) throw new Error("BDB_CONFLICT_QUERY_FAILED");
+    const comparisonPayload = comparison.data as {
+      domains?: unknown[];
+      pendingCount?: number;
+    } | null;
+    if (comparisonPayload?.domains?.length) {
+      throw redirect(`/admin/games/${commit.data}/data-conflict`, {
+        headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+      });
+    }
     const competition = await auth.client
       .from("competitions")
       .select("year,series_id,category_id")

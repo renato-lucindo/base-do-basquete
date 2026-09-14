@@ -1,25 +1,24 @@
 import { data, redirect } from "react-router";
-
-import type { Route } from "./+types/admin.competitions.$competitionId.scoresheets.new";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import { normalizeJersey } from "../modules/competition/admin-domain";
 import { logOperationalEvent } from "../modules/observability/operation.server";
-import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
 import {
   buildPublicGamePath,
   deriveTeamScore,
   evaluateDisqualification,
-  parseFoulCodes,
-  parseNonnegativeInteger,
   type FoulInput,
   type ManualScoresheetPayload,
   type PeriodPayload,
+  parseFoulCodes,
+  parseNonnegativeInteger,
   type TeamPayload,
   type TeamSide,
 } from "../modules/scoresheet/domain";
+import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
 import type { Json } from "../types/database.generated";
+import type { Route } from "./+types/admin.competitions.$competitionId.scoresheets.new";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
@@ -75,6 +74,8 @@ function mapScoresheetError(code: string | undefined): string {
       return "Os dados divergem do jogo selecionado e permaneceram sem confirmação.";
     case "BD714":
       return "Este jogo já possui uma confirmação principal.";
+    case "BD715":
+      return "Informe um motivo com 10 a 500 caracteres para a súmula emergencial.";
     default:
       return "Não foi possível salvar a súmula.";
   }
@@ -92,7 +93,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const competitionResult = await auth.client
     .from("competitions")
-    .select("id,display_name,status")
+    .select("id,display_name,status,data_profile_id")
     .eq("id", competitionId)
     .limit(1);
   if (competitionResult.error) throw new Error("Manual scoresheet context query failed");
@@ -100,6 +101,16 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   if (!competition || competition.status === "archived") {
     throw new Response("Edição indisponível", { status: 404 });
   }
+
+  const profileResult = competition.data_profile_id
+    ? await auth.client
+        .from("series_category_data_profiles")
+        .select("primary_source")
+        .eq("id", competition.data_profile_id)
+        .single()
+    : { data: null, error: null };
+  if (profileResult.error) throw new Error("Manual scoresheet profile query failed");
+  const requiresFallbackReason = profileResult.data?.primary_source === "fiba_boxscore";
 
   const [registrationsResult, teamsResult, rosterResult, prefillResult, gamesResult] =
     await Promise.all([
@@ -234,6 +245,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       idempotencyKey: crypto.randomUUID(),
       games,
       registrations,
+      requiresFallbackReason,
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -255,6 +267,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const scheduledLocal = String(formData.get("scheduledLocal") ?? "");
   const venue = String(formData.get("venue") ?? "").trim();
   const rawGameNumber = String(formData.get("gameNumber") ?? "").trim();
+  const fallbackReason = String(formData.get("fallbackReason") ?? "").trim();
   const periodCount = parseId(formData.get("periodCount"));
   if (!gameId) return badRequest("Selecione um jogo estrutural válido.");
   if (
@@ -382,6 +395,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     idempotencyKey,
     competitionId,
     gameId,
+    ...(fallbackReason ? { fallbackReason } : {}),
     gameNumber: rawGameNumber || null,
     scheduledLocal,
     venue,
@@ -462,6 +476,7 @@ export default function NewManualScoresheet({ loaderData, actionData }: Route.Co
       idempotencyKey={loaderData.idempotencyKey}
       games={loaderData.games}
       registrations={loaderData.registrations}
+      requiresFallbackReason={loaderData.requiresFallbackReason}
     />
   );
 }
