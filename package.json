@@ -21,6 +21,7 @@
     "preview": "npm run build && vite preview",
     "preview:upload": "npm run build && wrangler versions upload --env preview",
     "scan:secrets": "node scripts/scan-secrets.mjs",
+    "smoke:mvp": "node scripts/smoke-mvp-release.mjs",
     "test": "vitest run",
     "typecheck": "npm run typegen && tsc -b",
     "typegen": "wrangler types worker-configuration.d.ts --env preview && react-router typegen",

@@ -1,6 +1,6 @@
 # MVP-04 — Operação e publicação
 
-Estado: DOING na branch feature/admin-workflow-improvements, PR draft #35.
+Estado: DONE na branch feature/admin-workflow-improvements, PR draft #35.
 
 ## Unidade de agenda privada — 11/09/2026
 
@@ -41,6 +41,6 @@ A correção aditiva passou os quatro checks no commit 6d2738a e foi aplicada co
 - Depois do hardening, o pgTAP persistente passou 37/37, o advisor deixou de apontar FKs sem índice e `public_get_competition_publication` passou a `SECURITY INVOKER`, mantendo grants mínimos e RLS como autoridades. Os avisos restantes são RPCs administrativas AAL2 e tabelas privadas intencionalmente sem policy pública.
 - Os tipos TypeScript completos foram regenerados a partir do schema aplicado. O gate local aprovou 38 arquivos/262 Vitest, lint, TypeScript, build, runbooks e scan de 529 arquivos.
 
-## Pendências do pacote
+## Fechamento do pacote
 
-O smoke público no preview confirmou a versão publicada, classificação e placares reais. Falta somente renovar login/TOTP na PR 35 e validar em AAL2 a revisão/publicação administrativa, sem publicar a fixture privada 100. Depois registrar o fechamento e avançar ao MVP-05. Sem merge ou produção.
+O smoke público no preview confirmou a versão publicada, classificação e placares reais. A sessão AAL2 exibiu versão atual 1 e resumo server-side nas edições legadas; a fixture 100 permaneceu “Ainda não publicada”, com bloqueios explícitos e botão desabilitado. Nenhuma mutação foi executada. MVP-04 concluído; MVP-05 iniciado sem merge ou produção.
