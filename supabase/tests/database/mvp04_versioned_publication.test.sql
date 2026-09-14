@@ -1,7 +1,32 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(37);
 set constraints all deferred;
+
+select is(
+  (select prosecdef from pg_proc
+    where oid='public.public_get_competition_publication(bigint)'::regprocedure),
+  false,
+  'public publication reader executes with invoker privileges'
+);
+select has_index(
+  'private','competition_publication_games',
+  'competition_publication_games_publication_context_idx',
+  array['publication_id','competition_id'],
+  'publication games contextual foreign key is indexed'
+);
+select has_index(
+  'private','competition_publication_registrations',
+  'competition_publication_registrations_publication_context_idx',
+  array['publication_id','competition_id'],
+  'publication registrations contextual foreign key is indexed'
+);
+select has_index(
+  'private','competition_publication_roster_entries',
+  'competition_publication_roster_entries_publication_context_idx',
+  array['publication_id','competition_id'],
+  'publication roster contextual foreign key is indexed'
+);
 
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id)
