@@ -91,7 +91,7 @@ const routes = [
   },
   {
     name: "detalhe de jogo FIBA",
-    path: "/2026/copa-es-ouro/fixture-fiba/jogos/63",
+    path: "/2026/copa-es-ouro/fixture-fiba/masculino/jogos/63",
   },
 ];
 
