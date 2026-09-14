@@ -34,4 +34,8 @@ Esses itens não bloqueiam a candidata porque possuem estado explícito de indis
 
 ## Próximo gate
 
-Executar o gate completo e o novo smoke no preview pelo CI, atualizar a descrição da PR e retirar o estado draft somente com todos os checks verdes. A candidata Cloudflare `upload-candidate` só pode ser criada depois da integração pela `main`; nenhum WIP será enviado à produção.
+O commit `b16a1e5` passou os quatro checks; a PR #35 recebeu descrição consolidada, saiu de draft e foi integrada por squash em `37bf85c`. A `main` repetiu gate/banco desde zero no workflow `34841934565` e CodeQL no `34841934543`.
+
+A candidata `release-37bf85c6dea0`, versão Cloudflare `cc9cece2-e4e9-49c2-a444-c04cfb154ca0`, foi carregada sem tráfego pelo workflow `34842422384`. O primeiro deploy da `main` criou a versão `68445c64-df5c-42ff-870e-08c0fc0f432d`; health passou, mas a navegação executada imediatamente depois recebeu por propagação a rota raiz da versão anterior. A repetição após a propagação aprovou navegação e `smoke:mvp`, confirmando produção saudável.
+
+Correção em branch própria: `smoke-public-context.mjs` passa a repetir somente a resolução da raiz durante a janela de propagação de produção. Próximo: passar CI/preview da correção, integrar pela `main` e repetir o workflow de deploy para produzir evidência automatizada integralmente verde.

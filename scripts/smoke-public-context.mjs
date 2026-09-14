@@ -5,6 +5,24 @@ if (!baseUrl || !baseUrl.startsWith("https://")) {
   throw new Error("Usage: node scripts/smoke-public-context.mjs https://preview.example");
 }
 
+const isProductionWorker = new URL(baseUrl).hostname.startsWith("base-do-basquete-prod.");
+const propagationAttempts = Number.parseInt(
+  process.env.RELEASE_SMOKE_PROPAGATION_ATTEMPTS ?? (isProductionWorker ? "12" : "1"),
+  10,
+);
+const propagationDelayMs = Number.parseInt(
+  process.env.RELEASE_SMOKE_PROPAGATION_DELAY_MS ?? "5000",
+  10,
+);
+assert.ok(
+  Number.isSafeInteger(propagationAttempts) && propagationAttempts >= 1,
+  "propagation attempts must be a positive integer",
+);
+assert.ok(
+  Number.isSafeInteger(propagationDelayMs) && propagationDelayMs >= 0,
+  "propagation delay must be a non-negative integer",
+);
+
 async function request(path, init = {}) {
   return fetch(new URL(path, baseUrl), {
     redirect: "manual",
@@ -33,12 +51,29 @@ async function resolveContext(path) {
 const older = "/2025/liga-de-desenvolvimento/sub-15/equipes";
 const secondCategory = "/2026/liga-de-desenvolvimento/sub-17/jogadores";
 
-const rootResponse = await request("/");
+const expectedRoot = /^\/2026\/copa-es-ouro\/fixture-fiba\/(?:masculino\/|feminino\/)?visao-geral$/;
+let rootResponse;
+let rootLocation;
+for (let attempt = 1; attempt <= propagationAttempts; attempt += 1) {
+  rootResponse = await request("/");
+  if ([302, 303, 307, 308].includes(rootResponse.status)) {
+    rootLocation = locationPath(rootResponse);
+    if (expectedRoot.test(rootLocation)) break;
+  }
+  if (attempt < propagationAttempts) {
+    await rootResponse.arrayBuffer();
+    console.log(
+      `Public root not propagated yet (attempt ${attempt}/${propagationAttempts}); retrying.`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, propagationDelayMs));
+  }
+}
+assert.ok(rootResponse, "root request must run");
 assert.equal(rootResponse.status, 302, "root must redirect to a valid context");
-const rootLocation = locationPath(rootResponse);
+assert.ok(rootLocation, "root redirect must include a location");
 assert.match(
   rootLocation,
-  /^\/2026\/copa-es-ouro\/fixture-fiba\/(?:masculino\/|feminino\/)?visao-geral$/,
+  expectedRoot,
   "root must select the latest compatible canonical context",
 );
 
