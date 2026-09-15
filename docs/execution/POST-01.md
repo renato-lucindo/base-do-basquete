@@ -1,6 +1,6 @@
 # POST-01 — Fontes excepcionais e conflitos
 
-Estado: `READY`. Implementação, banco compartilhado, gate remoto e smoke AAL2 do preview concluídos; falta somente integrar a PR #42 com o head verde.
+Estado: `DONE`. Implementação, banco compartilhado, gate remoto e smoke AAL2 do preview concluídos; PR #42 integrada por squash na `main` em `abb2111`.
 
 ## Escopo entregue
 
@@ -35,8 +35,8 @@ Estado: `READY`. Implementação, banco compartilhado, gate remoto e smoke AAL2 
 - Em sessão real no mesmo host, o cabeçalho confirmou `Sessão AAL2` e `/admin/games/63/data-conflict` abriu com HTTP funcional, jogo `5205822`, competição `Copa ES Ouro 2026` e estado vazio seguro (`0` domínios coincidentes e `0` divergentes). Nenhum fallback, candidato ou decisão foi criado para o smoke.
 - O head documental `c68b0ff` manteve os quatro checks aprovados: `gate`, `database`, upload do preview e CodeQL.
 
-## Fechamento restante
+## Fechamento
 
-1. Commitar e enviar esta evidência final.
-2. Confirmar novamente os quatro checks no novo head, marcar a PR pronta e integrar.
-3. Manter produção em `v1.1.0` até uma publicação explícita pela `main` protegida ou por versão marcada.
+- O head final `40b8c4c` passou novamente `gate`, banco desde zero, upload do preview e análise.
+- A PR #42 saiu de rascunho e foi integrada por squash na `main` em `abb2111`.
+- Produção permaneceu em `v1.1.0`; nenhum deploy foi disparado pela integração.

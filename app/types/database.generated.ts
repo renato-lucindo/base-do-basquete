@@ -573,7 +573,11 @@ export type Database = {
           competition_id: number;
           created_at: string;
           created_by: string | null;
+          cloned_from_gender_division: string | null;
+          cloned_from_revision_id: number | null;
+          editor_revision: number;
           entry_count: number | null;
+          gender_recompiled: boolean;
           id: number;
           preset_key: string | null;
           preset_version: number | null;
@@ -587,7 +591,11 @@ export type Database = {
           competition_id: number;
           created_at?: string;
           created_by?: string | null;
+          cloned_from_gender_division?: string | null;
+          cloned_from_revision_id?: number | null;
+          editor_revision?: number;
           entry_count?: number | null;
+          gender_recompiled?: boolean;
           id?: never;
           preset_key?: string | null;
           preset_version?: number | null;
@@ -601,7 +609,11 @@ export type Database = {
           competition_id?: number;
           created_at?: string;
           created_by?: string | null;
+          cloned_from_gender_division?: string | null;
+          cloned_from_revision_id?: number | null;
+          editor_revision?: number;
           entry_count?: number | null;
+          gender_recompiled?: boolean;
           id?: never;
           preset_key?: string | null;
           preset_version?: number | null;
@@ -3583,6 +3595,20 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      admin_apply_registration_removal: {
+        Args: { p_expected_decision: string; p_reason: string; p_registration_id: number };
+        Returns: Json;
+      };
+      admin_apply_ruleset_draft_edit: {
+        Args: {
+          p_expected_editor_revision: number;
+          p_input: Json;
+          p_operation: string;
+          p_request_id: string;
+          p_ruleset_revision_id: number;
+        };
+        Returns: Json;
+      };
       admin_activate_game_data_authority: {
         Args: {
           p_domain: string;
@@ -3666,6 +3692,15 @@ export type Database = {
         Returns: number;
       };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
+      admin_clone_competition_ruleset: {
+        Args: {
+          p_allow_gender_recompile?: boolean;
+          p_request_id: string;
+          p_source_revision_id: number;
+          p_target_competition_id: number;
+        };
+        Returns: Json;
+      };
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };
         Returns: number;
@@ -3847,6 +3882,30 @@ export type Database = {
       admin_get_publication_review: {
         Args: { p_competition_id: number };
         Returns: Json;
+      };
+      admin_get_registration_removal_decision: {
+        Args: { p_registration_id: number };
+        Returns: Json;
+      };
+      admin_get_ruleset_draft_editor: {
+        Args: { p_competition_id: number };
+        Returns: Json;
+      };
+      admin_list_ruleset_clone_sources: {
+        Args: { p_include_other_gender?: boolean; p_target_competition_id: number };
+        Returns: {
+          display_name: string;
+          edition_year: number;
+          entry_count: number;
+          gender_division: string;
+          gender_mismatch: boolean;
+          preset_key: string | null;
+          revision_number: number;
+          source_competition_id: number;
+          source_kind: string;
+          source_revision_id: number;
+          structure_summary: Json;
+        }[];
       };
       admin_prepare_matchup: {
         Args: {
