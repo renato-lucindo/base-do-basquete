@@ -793,6 +793,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
 
         <section className="admin-action-grid">
           <article>
+            <h2>Regulamento e revisões</h2>
+            <p>Clone e edite somente uma revisão privada, preservando a estrutura ativa.</p>
+            <Link
+              className="button button-primary"
+              to={`/admin/competitions/${competition.id}/structure`}
+            >
+              Abrir estrutura
+            </Link>
+          </article>
+          <article>
             <h2>Estrutura e agenda</h2>
             <p>Atribua equipes às vagas e prepare os jogos sem publicar.</p>
             <Link

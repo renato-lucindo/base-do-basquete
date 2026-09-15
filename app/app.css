@@ -4513,6 +4513,35 @@ body {
   min-height: auto;
 }
 
+.ruleset-clone-form {
+  display: grid;
+  gap: 16px;
+  max-width: 780px;
+  margin-top: 20px;
+}
+
+.ruleset-clone-form > label:not(.checkbox-label) {
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.ruleset-clone-form .checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ruleset-clone-form .checkbox-label input {
+  flex: 0 0 auto;
+  margin-top: 3px;
+}
+
+.ruleset-clone-form .button {
+  justify-self: start;
+}
+
 .registration-accordion [hidden] {
   display: none;
 }

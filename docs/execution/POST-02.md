@@ -38,6 +38,19 @@ Implementação local concluída para a primeira unidade:
 
 O ensaio pgTAP em rollback foi ampliado para 28 asserções. A repetição remota e o Vitest focal permanecem no gate antes do primeiro push porque o ambiente automático recusou temporariamente os subprocessos de teste; nenhuma migration POST-02 foi persistida.
 
+## Clonagem profunda
+
+A segunda unidade está implementada localmente:
+
+- a migration `20260915091314_post02_ruleset_clone.sql` cria uma única revisão draft por edição, com proveniência e idempotência;
+- a RPC AAL2 filtra origens ativas por série, categoria e, por padrão, naipe; outro naipe exige recompilação explicitamente confirmada;
+- trilha, etapas, grupos, rodadas, entradas, vagas, confrontos e byes recebem identidades novas e referências internas recompostas;
+- inscrições, atribuições de equipes, jogos, resultados e publicações não são clonados;
+- a nova tela `/admin/competitions/:id/structure` explica a independência do snapshot, mostra o histórico e mantém revisões ativas somente leitura;
+- 29 asserções pgTAP cobrem filtros, incompatibilidades, idempotência, isolamento de IDs, referências internas, outro naipe, auditoria e privilégios.
+
+Biome e compilação TypeScript direta passaram. A migration continua somente local; o ensaio SQL descartável e o Vitest focal entram no gate consolidado antes do push.
+
 ## Próximo passo
 
-Concluir o gate da unidade de remoção/retirada e então implementar a clonagem profunda e independente de template ou edição anterior.
+Implementar o editor estrutural sobre a revisão draft clonada, com resumo de capacidade, origens tipadas/indefinidas, erros localizados e negações server-side. Depois executar o gate consolidado das três unidades.
