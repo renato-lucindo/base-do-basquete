@@ -53,8 +53,11 @@ begin
   if not private.is_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
   end if;
-  if p_status not in ('confirmed', 'completed') then
+  if p_status = 'withdrawn' then
     raise exception using errcode = 'BR053', message = 'BDB_REGISTRATION_WITHDRAWAL_POLICY_REQUIRED';
+  end if;
+  if p_status not in ('confirmed', 'completed') then
+    raise exception using errcode = 'BD102', message = 'BDB_INVALID_REGISTRATION_TRANSITION';
   end if;
   select * into current_row from public.team_registrations
   where id = p_registration_id for update;

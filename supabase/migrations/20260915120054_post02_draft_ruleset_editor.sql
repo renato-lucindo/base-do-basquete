@@ -57,6 +57,13 @@ declare
   round_row public.competition_rounds;
   origin_order integer;
 begin
+  -- Participant resolution is operational state, not a structural edit.
+  if tg_op = 'UPDATE' and tg_table_name = 'matchups'
+    and (to_jsonb(new) - array['home_registration_id','away_registration_id','updated_at'])
+      = (to_jsonb(old) - array['home_registration_id','away_registration_id','updated_at'])
+  then
+    return new;
+  end if;
   for revision_id in select distinct id from unnest(array[
     case when tg_op <> 'INSERT' then (to_jsonb(old)->>'ruleset_revision_id')::bigint end,
     case when tg_op <> 'DELETE' then (to_jsonb(new)->>'ruleset_revision_id')::bigint end
@@ -64,7 +71,10 @@ begin
     select * into strict revision_row
     from public.competition_ruleset_revisions
     where id=revision_id for update;
-    if revision_row.status <> 'draft' then
+    if revision_row.status <> 'draft'
+      and (revision_row.preset_key is not null
+        or revision_row.cloned_from_revision_id is not null)
+    then
       raise exception using errcode='BR004', message='BDB_ACTIVE_RULESET_IMMUTABLE';
     end if;
   end loop;
