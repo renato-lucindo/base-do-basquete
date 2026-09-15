@@ -9,7 +9,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 2. Estado atual
 
 - Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 estão `DONE`. `POST-02` está em `DOING`; POST-03 e POST-04 permanecem preservados na fila.
-- Status geral: `POST_02_ADMIN_CYCLE`; produção continua na release estável `v1.1.0` (`f8dcb87`) enquanto remoção/retirada, clonagem e editor estrutural são implementados somente na branch do pacote.
+- Status geral: `POST_02_ADMIN_CYCLE`; as três unidades locais de remoção/retirada, clonagem e editor draft estão implementadas e ensaiadas. Produção continua na release estável `v1.1.0` (`f8dcb87`); nenhuma migration POST-02 foi persistida.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `feature/post-02-admin-cycle`, criada de `origin/main` no commit `abb2111` para o pacote consolidado POST-02.
@@ -83,7 +83,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** implementar o editor estrutural do POST-02 sobre a revisão draft. A política de remoção/retirada está no commit local `ebcb316`; a clonagem profunda também está implementada localmente com filtro série/categoria/naipe, recompilação explícita para outro naipe, identidades independentes, 29 pgTAP e tela AAL2. Biome e compilação TypeScript direta passaram; os ensaios SQL descartáveis, Vitest, build e secret scan permanecem no gate consolidado antes de qualquer push. Nenhuma migration POST-02 foi persistida e produção segue intocada em `v1.1.0`.
+**Próximo passo atual:** completar o gate remoto da branch POST-02. Remoção/retirada, clonagem e editor draft estão locais; ensaios pgTAP em rollback passaram 28/28, 29/29 e 36/36. O gate local completo passou com 290 Vitest, build e scan de 563 arquivos. Antes do push, conferir o escopo residual do editor, commitar unidades coerentes e repetir o gate se houver mudança. Depois, PR/CI/banco desde zero/preview/CodeQL; aplicar migrations persistentes somente com checks verdes, regenerar tipos e validar advisors/QA AAL2. Nenhuma migration POST-02 foi persistida e produção segue intocada em `v1.1.0`.
 
 **Estado vigente em 11/09:** MVP-04 `DOING`. Agenda privada em `48001d9` e índices em `6d2738a` passaram os quatro checks; migrations remotas `20260911173435_mvp04_private_scheduling` e `20260911174551_mvp04_fk_covering_indexes`. O advisor não aponta FKs sem índice; avisos SECURITY DEFINER são os endpoints AAL2 intencionais. Banco preserva nove jogos, cinco revisões, fixture 100 privada, zero atribuições e zero preparações. Nova unidade local: `20260911174947_mvp04_knockout_progression.sql`, resolução imutável pelo resultado oficial principal ativo, propagação de vencedores e confirmação na rota de agenda. Ensaio remoto em rollback 28/28; gate local 245 Vitest, build e scan de 521 arquivos. Ainda sem commit/push/aplicação dessa migration. Próximo: enviar com staging exato, esperar CI, aplicar/regenerar tipos e validar preview; depois publicação versionada. Ver `docs/execution/MVP-04.md`. Sem merge ou produção.
 
@@ -212,7 +212,7 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | MVP-04 — Agendamento, progressão básica e publicação | `DONE` | Agenda, progressão e publicação aplicadas; 37 pgTAP, advisors, checksums e smokes público/AAL2 aprovados sem mutação de QA |
 | MVP-05 — QA, release candidata e handoff | `DONE` | Release `v1.1.0`, workflow protegido, smokes e produção aprovados |
 | POST-01 — Fontes excepcionais e conflitos | `DONE` | PR #42 integrada em `abb2111`; schema, tipos, 87 pgTAP, advisors e smokes público/anônimo/AAL2 aprovados sem mutação |
-| POST-02 — Ciclo administrativo e editor completo | `DOING` | Remoção/retirada em `ebcb316`; clonagem profunda implementada localmente; editor estrutural e gate consolidado seguem na fila |
+| POST-02 — Ciclo administrativo e editor completo | `DOING` | Três unidades locais ensaiadas: 28+29+36 pgTAP em rollback; gate local com 290 Vitest, build e scan verde; CI/preview/schema persistente/QA ainda pendentes |
 
 ## 8. Arquivos e referências importantes
 
@@ -494,3 +494,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-14 | Codex | PR #42 integrada por squash em `abb2111`; POST-01 `DONE`; branch `feature/post-02-admin-cycle` criada da `main`; produção intocada | Implementar migration e pgTAP da política transacional de remoção/retirada do POST-02 |
 | 2026-09-15 | Codex | Política `remove`/`withdraw`/`blocked`, proteção contra bypass, auditoria, 28 pgTAP e UI AAL2 implementadas localmente; Biome e TypeScript direto verdes; schema remoto e produção intocados | Repetir pgTAP em rollback e Vitest focal quando o executor liberar subprocessos; então iniciar clonagem profunda |
 | 2026-09-15 | Codex | Clonagem profunda AAL2 implementada localmente: filtros de origem, recompilação explícita entre naipes, grafo com IDs independentes, UI e 29 pgTAP; nenhuma migration persistida | Implementar editor apenas em draft e executar gate consolidado antes do push |
+| 2026-09-15 | Codex | Editor draft AAL2/CAS/idempotência/auditoria implementado com UI de etapas, rodadas, confrontos e origens; 36 pgTAP em rollback; remoção 28/28 e clone 29/29; gate local completo com 290 Vitest, build e scan de 563 arquivos | Revisar escopo residual do editor, commitar, enviar somente para a branch POST-02 e executar CI/banco/preview antes de aplicar schema persistente; produção intocada |

@@ -575,6 +575,7 @@ export type Database = {
           created_by: string | null;
           cloned_from_gender_division: string | null;
           cloned_from_revision_id: number | null;
+          editor_revision: number;
           entry_count: number | null;
           gender_recompiled: boolean;
           id: number;
@@ -592,6 +593,7 @@ export type Database = {
           created_by?: string | null;
           cloned_from_gender_division?: string | null;
           cloned_from_revision_id?: number | null;
+          editor_revision?: number;
           entry_count?: number | null;
           gender_recompiled?: boolean;
           id?: never;
@@ -609,6 +611,7 @@ export type Database = {
           created_by?: string | null;
           cloned_from_gender_division?: string | null;
           cloned_from_revision_id?: number | null;
+          editor_revision?: number;
           entry_count?: number | null;
           gender_recompiled?: boolean;
           id?: never;
@@ -3596,6 +3599,16 @@ export type Database = {
         Args: { p_expected_decision: string; p_reason: string; p_registration_id: number };
         Returns: Json;
       };
+      admin_apply_ruleset_draft_edit: {
+        Args: {
+          p_expected_editor_revision: number;
+          p_input: Json;
+          p_operation: string;
+          p_request_id: string;
+          p_ruleset_revision_id: number;
+        };
+        Returns: Json;
+      };
       admin_activate_game_data_authority: {
         Args: {
           p_domain: string;
@@ -3872,6 +3885,10 @@ export type Database = {
       };
       admin_get_registration_removal_decision: {
         Args: { p_registration_id: number };
+        Returns: Json;
+      };
+      admin_get_ruleset_draft_editor: {
+        Args: { p_competition_id: number };
         Returns: Json;
       };
       admin_list_ruleset_clone_sources: {

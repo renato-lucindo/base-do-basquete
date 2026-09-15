@@ -4542,6 +4542,139 @@ body {
   justify-self: start;
 }
 
+.ruleset-editor {
+  display: grid;
+  gap: 20px;
+}
+
+.ruleset-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.ruleset-summary > div {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--blue) 12%);
+}
+
+.ruleset-summary dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ruleset-summary dd {
+  margin: 4px 0 0;
+  font-size: 1.35rem;
+  font-weight: 850;
+}
+
+.ruleset-track,
+.ruleset-stage,
+.ruleset-round,
+.ruleset-matchup {
+  display: grid;
+  gap: 16px;
+}
+
+.ruleset-track,
+.ruleset-stage,
+.ruleset-round {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.ruleset-stage,
+.ruleset-round {
+  background: color-mix(in srgb, var(--surface) 95%, var(--blue) 5%);
+}
+
+.ruleset-name-form,
+.ruleset-add-form {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.ruleset-name-form label,
+.ruleset-add-form label,
+.ruleset-origin-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.ruleset-round-heading,
+.ruleset-matchup > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ruleset-round-heading .ruleset-name-form {
+  flex: 1;
+}
+
+.ruleset-capacity {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.ruleset-matchups {
+  display: grid;
+  gap: 12px;
+}
+
+.ruleset-matchup {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.ruleset-matchup h4,
+.ruleset-track h3 {
+  margin: 2px 0 0;
+}
+
+.ruleset-origins {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ruleset-origin-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.ruleset-remove > summary {
+  color: var(--orange);
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.ruleset-remove form {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+  margin-top: 10px;
+}
+
 .registration-accordion [hidden] {
   display: none;
 }
@@ -4687,13 +4820,23 @@ body {
   .admin-action-grid,
   .participant-grid,
   .boxscore-team-resolution,
-  .boxscore-team-metrics {
+  .boxscore-team-metrics,
+  .ruleset-summary,
+  .ruleset-origins {
     grid-template-columns: 1fr;
   }
 
   .inline-admin-form,
-  .final-result-form {
+  .final-result-form,
+  .ruleset-name-form,
+  .ruleset-add-form {
     grid-template-columns: 1fr;
+  }
+
+  .ruleset-round-heading,
+  .ruleset-matchup > header {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .inline-admin-form .button,

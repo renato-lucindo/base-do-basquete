@@ -86,3 +86,71 @@ describe("ruleset clone action", () => {
     expect(JSON.stringify(response)).not.toContain("internal SQL details");
   });
 });
+
+describe("draft ruleset editor action", () => {
+  const editorFields = {
+    intent: "edit-ruleset",
+    requestId: "624f1220-f0b0-44a7-9aa0-fcca0f2d0a01",
+    rulesetRevisionId: "42",
+    expectedEditorRevision: "3",
+    operation: "set_origin",
+    slotId: "55",
+    kind: "entry",
+    entrySeed: "4",
+    sourceMatchupId: "999",
+  };
+
+  it("builds the mutation payload from operation-specific fields", async () => {
+    client.rpc.mockResolvedValue({
+      data: {
+        rulesetRevisionId: 42,
+        editorRevision: 4,
+        operation: "set_origin",
+        entityId: 55,
+        outcome: "updated",
+      },
+      error: null,
+    });
+    await expect(action(args(editorFields))).rejects.toMatchObject({ status: 302 });
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_apply_ruleset_draft_edit", {
+      p_request_id: "624f1220-f0b0-44a7-9aa0-fcca0f2d0a01",
+      p_ruleset_revision_id: 42,
+      p_expected_editor_revision: 3,
+      p_operation: "set_origin",
+      p_input: { slotId: 55, kind: "entry", entrySeed: 4 },
+    });
+  });
+
+  it("rejects malformed identifiers and operations before the RPC", async () => {
+    expect(await action(args({ ...editorFields, rulesetRevisionId: "0" }))).toMatchObject({
+      init: { status: 400 },
+    });
+    expect(await action(args({ ...editorFields, operation: "publish" }))).toMatchObject({
+      init: { status: 400 },
+    });
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
+
+  it("requires an explicit confirmation before matchup removal", async () => {
+    const response = await action(
+      args({
+        ...editorFields,
+        operation: "remove_matchup",
+        matchupId: "91",
+        confirmRemove: "",
+      }),
+    );
+    expect(response).toMatchObject({ init: { status: 400 } });
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
+
+  it("maps editor errors without exposing database detail", async () => {
+    client.rpc.mockResolvedValue({
+      data: null,
+      error: { code: "BR060", message: "sensitive SQL detail" },
+    });
+    const response = await action(args(editorFields));
+    expect(JSON.stringify(response)).toContain("mudou");
+    expect(JSON.stringify(response)).not.toContain("sensitive SQL detail");
+  });
+});

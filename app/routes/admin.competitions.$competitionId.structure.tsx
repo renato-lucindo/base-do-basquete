@@ -18,6 +18,15 @@ import {
   type RulesetCloneSource,
   rulesetCloneError,
 } from "../modules/competition/ruleset-clone";
+import {
+  isRulesetEditRequestId,
+  parseRulesetEditorDocument,
+  parseRulesetEditResult,
+  type RulesetEditOperation,
+  type RulesetEditorDocument,
+  type RulesetEditorOrigin,
+  rulesetEditError,
+} from "../modules/competition/ruleset-editor";
 
 interface RevisionSummary {
   id: number;
@@ -39,17 +48,71 @@ interface StructureLoaderData {
   };
   revisions: RevisionSummary[];
   draft: RevisionSummary | null;
+  editor: RulesetEditorDocument | null;
   sources: RulesetCloneSource[];
   includeOtherGender: boolean;
   requestId: string;
   csrfToken: string;
   clonedRevisionId: number | null;
+  savedEdit: RulesetEditOperation | null;
 }
 
 function id(value: unknown) {
   const text = typeof value === "string" ? value : "";
   const parsed = /^[1-9][0-9]*$/.test(text) ? Number(text) : 0;
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function boundedName(value: FormDataEntryValue | null) {
+  const name = typeof value === "string" ? value.trim() : "";
+  return name.length >= 2 && name.length <= 120 ? name : null;
+}
+
+function editOperation(value: FormDataEntryValue | null): RulesetEditOperation | null {
+  return value === "rename_stage" ||
+    value === "rename_round" ||
+    value === "add_matchup" ||
+    value === "remove_matchup" ||
+    value === "set_origin"
+    ? value
+    : null;
+}
+
+function editInput(operation: RulesetEditOperation, form: FormData) {
+  if (operation === "rename_stage") {
+    const stageId = id(form.get("stageId"));
+    const name = boundedName(form.get("name"));
+    return stageId && name ? { stageId, name } : null;
+  }
+  if (operation === "rename_round") {
+    const roundId = id(form.get("roundId"));
+    const name = boundedName(form.get("name"));
+    return roundId && name ? { roundId, name } : null;
+  }
+  if (operation === "add_matchup") {
+    const roundId = id(form.get("roundId"));
+    const code = String(form.get("code") ?? "")
+      .trim()
+      .toLowerCase();
+    return roundId && /^[a-z][a-z0-9_]{1,39}$/.test(code) ? { roundId, code } : null;
+  }
+  if (operation === "remove_matchup") {
+    const matchupId = id(form.get("matchupId"));
+    return matchupId && form.get("confirmRemove") === "on" ? { matchupId } : null;
+  }
+  const slotId = id(form.get("slotId"));
+  const kind = form.get("kind");
+  if (!slotId) return null;
+  if (kind === "undefined") return { slotId, kind };
+  if (kind === "entry") {
+    const entrySeed = id(form.get("entrySeed"));
+    return entrySeed ? { slotId, kind, entrySeed } : null;
+  }
+  if (kind === "winner") {
+    const sourceMatchupId = id(form.get("sourceMatchupId"));
+    return sourceMatchupId ? { slotId, kind, sourceMatchupId } : null;
+  }
+  return null;
 }
 
 export function meta() {
@@ -82,6 +145,7 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
   const includeOtherGender = url.searchParams.get("includeOtherGender") === "1";
   const draft = revisions.data.find((revision) => revision.status === "draft") ?? null;
   let sources: Array<RulesetCloneSource | null> = [];
+  let editor: RulesetEditorDocument | null = null;
   if (competition.data.status === "draft" && !draft) {
     const result = await auth.client.rpc("admin_list_ruleset_clone_sources", {
       p_target_competition_id: competitionId,
@@ -91,18 +155,29 @@ export async function loader({ request, params, context }: LoaderFunctionArgs) {
     sources = result.data.map(parseRulesetCloneSource);
     if (sources.some((source) => source === null))
       throw new Response("Contrato de origens inválido", { status: 503 });
+  } else if (competition.data.status === "draft" && draft) {
+    const result = await auth.client.rpc("admin_get_ruleset_draft_editor", {
+      p_competition_id: competitionId,
+    });
+    editor = parseRulesetEditorDocument(result.data);
+    if (result.error || !editor)
+      throw new Response("Contrato do editor indisponível", { status: 503 });
   }
+
+  const savedEdit = editOperation(url.searchParams.get("savedEdit"));
 
   return data(
     {
       competition: competition.data,
       revisions: revisions.data,
       draft,
+      editor,
       sources: sources.filter((source) => source !== null),
       includeOtherGender,
       requestId: crypto.randomUUID(),
       csrfToken: auth.payload.csrfToken,
       clonedRevisionId: id(url.searchParams.get("clonedRevision")),
+      savedEdit,
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -116,7 +191,39 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
   const form = await request.formData();
   assertCsrfToken(form, auth.payload.csrfToken);
   const headers = auth.cookie ? { "Set-Cookie": auth.cookie } : undefined;
-  if (form.get("intent") !== "clone-ruleset") throw new Response("Ação inválida", { status: 400 });
+  const intent = form.get("intent");
+  if (intent === "edit-ruleset") {
+    const requestId = String(form.get("requestId") ?? "");
+    const rulesetRevisionId = id(form.get("rulesetRevisionId"));
+    const expectedEditorRevision = id(form.get("expectedEditorRevision"));
+    const operation = editOperation(form.get("operation"));
+    const input = operation ? editInput(operation, form) : null;
+    if (
+      !isRulesetEditRequestId(requestId) ||
+      !rulesetRevisionId ||
+      !expectedEditorRevision ||
+      !operation ||
+      !input
+    ) {
+      return data({ error: "Revise os campos da alteração estrutural." }, { status: 400, headers });
+    }
+    const result = await auth.client.rpc("admin_apply_ruleset_draft_edit", {
+      p_request_id: requestId,
+      p_ruleset_revision_id: rulesetRevisionId,
+      p_expected_editor_revision: expectedEditorRevision,
+      p_operation: operation,
+      p_input: input,
+    });
+    const parsed = parseRulesetEditResult(result.data);
+    if (result.error || !parsed) {
+      return data({ error: rulesetEditError(result.error?.code) }, { status: 400, headers });
+    }
+    throw redirect(
+      `/admin/competitions/${competitionId}/structure?savedEdit=${parsed.operation}#draft-editor`,
+      { headers },
+    );
+  }
+  if (intent !== "clone-ruleset") throw new Response("Ação inválida", { status: 400 });
 
   const sourceRevisionId = id(form.get("sourceRevisionId"));
   const requestId = String(form.get("requestId") ?? "");
@@ -143,6 +250,270 @@ export async function action({ request, params, context }: ActionFunctionArgs) {
   throw redirect(`/admin/competitions/${competitionId}/structure?clonedRevision=${revisionId}`, {
     headers,
   });
+}
+
+function EditHiddenFields({
+  loaderData,
+  operation,
+}: {
+  loaderData: StructureLoaderData;
+  operation: RulesetEditOperation;
+}) {
+  if (!loaderData.editor) return null;
+  return (
+    <>
+      <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+      <input type="hidden" name="intent" value="edit-ruleset" />
+      <input type="hidden" name="requestId" value={loaderData.requestId} />
+      <input type="hidden" name="rulesetRevisionId" value={loaderData.editor.revision.id} />
+      <input
+        type="hidden"
+        name="expectedEditorRevision"
+        value={loaderData.editor.revision.editorRevision}
+      />
+      <input type="hidden" name="operation" value={operation} />
+    </>
+  );
+}
+
+function OriginEditor({
+  loaderData,
+  origin,
+  side,
+  roundOrder,
+  busy,
+}: {
+  loaderData: StructureLoaderData;
+  origin: RulesetEditorOrigin;
+  side: "Mandante" | "Visitante";
+  roundOrder: number;
+  busy: boolean;
+}) {
+  const editor = loaderData.editor;
+  if (!editor) return null;
+  const priorMatchups = editor.matchups.filter((candidate) => {
+    const sourceRound = editor.rounds.find((round) => round.id === candidate.roundId);
+    return sourceRound && sourceRound.order < roundOrder;
+  });
+  return (
+    <Form method="post" className="ruleset-origin-form">
+      <EditHiddenFields loaderData={loaderData} operation="set_origin" />
+      <input type="hidden" name="slotId" value={origin.slotId} />
+      <strong>{side}</strong>
+      <label>
+        Origem
+        <select name="kind" defaultValue={origin.kind}>
+          <option value="undefined">A definir</option>
+          <option value="entry">Vaga da edição</option>
+          <option value="winner">Vencedor de confronto anterior</option>
+        </select>
+      </label>
+      <label>
+        Vaga
+        <select name="entrySeed" defaultValue={origin.entrySeed ?? ""}>
+          <option value="">Selecione se aplicável</option>
+          {editor.entries.map((entry) => (
+            <option key={entry.id} value={entry.seed}>
+              Cabeça {entry.seed}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Confronto anterior
+        <select name="sourceMatchupId" defaultValue={origin.sourceMatchupId ?? ""}>
+          <option value="">Selecione se aplicável</option>
+          {priorMatchups.map((matchup) => (
+            <option key={matchup.id} value={matchup.id}>
+              {matchup.code}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button className="button button-secondary" type="submit" disabled={busy}>
+        Salvar origem
+      </button>
+    </Form>
+  );
+}
+
+function DraftRulesetEditor({
+  loaderData,
+  busy,
+}: {
+  loaderData: StructureLoaderData;
+  busy: boolean;
+}) {
+  const editor = loaderData.editor;
+  if (!editor) return null;
+  return (
+    <section className="admin-panel ruleset-editor" id="draft-editor">
+      <p className="eyebrow">Rascunho atual</p>
+      <h2>Revisão {editor.revision.number}</h2>
+      <p>
+        A cópia é privada e independente. Cada gravação é validada no servidor e no banco; nada
+        desta revisão comanda a edição até uma ativação posterior.
+      </p>
+      {loaderData.savedEdit ? (
+        <p className="form-success">Alteração estrutural salva no rascunho.</p>
+      ) : null}
+      <dl className="ruleset-summary">
+        <div>
+          <dt>Vagas</dt>
+          <dd>{editor.summary.entries}</dd>
+        </div>
+        <div>
+          <dt>Confrontos</dt>
+          <dd>
+            {editor.summary.matchups}/{editor.summary.matchupCapacity}
+          </dd>
+        </div>
+        <div>
+          <dt>Origens a definir</dt>
+          <dd>{editor.summary.undefinedOrigins}</dd>
+        </div>
+        <div>
+          <dt>Versão do editor</dt>
+          <dd>{editor.revision.editorRevision}</dd>
+        </div>
+      </dl>
+
+      {editor.tracks.map((track) => {
+        const stages = editor.stages.filter((stage) => stage.trackId === track.id);
+        return (
+          <section className="ruleset-track" key={track.id}>
+            <header>
+              <p className="eyebrow">Trilha</p>
+              <h3>{track.code}</h3>
+            </header>
+            {stages.map((stage) => (
+              <article className="ruleset-stage" key={stage.id}>
+                <Form method="post" className="ruleset-name-form">
+                  <EditHiddenFields loaderData={loaderData} operation="rename_stage" />
+                  <input type="hidden" name="stageId" value={stage.id} />
+                  <label>
+                    Nome da etapa
+                    <input name="name" defaultValue={stage.name} minLength={2} maxLength={120} />
+                  </label>
+                  <button className="button button-secondary" type="submit" disabled={busy}>
+                    Renomear etapa
+                  </button>
+                </Form>
+
+                {editor.rounds
+                  .filter((round) => round.stageId === stage.id)
+                  .map((round) => {
+                    const matchups = editor.matchups.filter(
+                      (matchup) => matchup.roundId === round.id,
+                    );
+                    return (
+                      <section className="ruleset-round" key={round.id}>
+                        <div className="ruleset-round-heading">
+                          <Form method="post" className="ruleset-name-form">
+                            <EditHiddenFields loaderData={loaderData} operation="rename_round" />
+                            <input type="hidden" name="roundId" value={round.id} />
+                            <label>
+                              Nome da rodada
+                              <input
+                                name="name"
+                                defaultValue={round.name}
+                                minLength={2}
+                                maxLength={120}
+                              />
+                            </label>
+                            <button
+                              className="button button-secondary"
+                              type="submit"
+                              disabled={busy}
+                            >
+                              Renomear rodada
+                            </button>
+                          </Form>
+                          <span className="ruleset-capacity">
+                            {round.usedMatchups}/{round.maxMatchups} confrontos
+                          </span>
+                        </div>
+
+                        <div className="ruleset-matchups">
+                          {matchups.map((matchup) => (
+                            <article className="ruleset-matchup" key={matchup.id}>
+                              <header>
+                                <div>
+                                  <p className="eyebrow">Confronto</p>
+                                  <h4>{matchup.code}</h4>
+                                </div>
+                                <details className="ruleset-remove">
+                                  <summary>Remover</summary>
+                                  <Form method="post">
+                                    <EditHiddenFields
+                                      loaderData={loaderData}
+                                      operation="remove_matchup"
+                                    />
+                                    <input type="hidden" name="matchupId" value={matchup.id} />
+                                    <label className="checkbox-label">
+                                      <input name="confirmRemove" type="checkbox" required />
+                                      Confirmo a remoção deste confronto sem dependências.
+                                    </label>
+                                    <button
+                                      className="button button-secondary"
+                                      type="submit"
+                                      disabled={busy}
+                                    >
+                                      Remover do rascunho
+                                    </button>
+                                  </Form>
+                                </details>
+                              </header>
+                              <div className="ruleset-origins">
+                                <OriginEditor
+                                  loaderData={loaderData}
+                                  origin={matchup.home}
+                                  side="Mandante"
+                                  roundOrder={round.order}
+                                  busy={busy}
+                                />
+                                <OriginEditor
+                                  loaderData={loaderData}
+                                  origin={matchup.away}
+                                  side="Visitante"
+                                  roundOrder={round.order}
+                                  busy={busy}
+                                />
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+
+                        {round.usedMatchups < round.maxMatchups ? (
+                          <Form method="post" className="ruleset-add-form">
+                            <EditHiddenFields loaderData={loaderData} operation="add_matchup" />
+                            <input type="hidden" name="roundId" value={round.id} />
+                            <label>
+                              Código do novo confronto
+                              <input
+                                name="code"
+                                required
+                                minLength={2}
+                                maxLength={40}
+                                pattern="[a-z][a-z0-9_]+"
+                                placeholder="ex.: semifinal_3"
+                              />
+                            </label>
+                            <button className="button button-primary" type="submit" disabled={busy}>
+                              Adicionar confronto
+                            </button>
+                          </Form>
+                        ) : null}
+                      </section>
+                    );
+                  })}
+              </article>
+            ))}
+          </section>
+        );
+      })}
+    </section>
+  );
 }
 
 export default function CompetitionStructure({
@@ -192,14 +563,7 @@ export default function CompetitionStructure({
           <p>Esta edição não está em rascunho. O histórico permanece disponível sem edição.</p>
         </section>
       ) : draft ? (
-        <section className="admin-panel" id="draft-editor">
-          <p className="eyebrow">Rascunho atual</p>
-          <h2>Revisão {draft.revision_number}</h2>
-          <p>
-            A cópia é independente e ainda não comanda a edição. O editor estrutural será exibido
-            nesta área.
-          </p>
-        </section>
+        <DraftRulesetEditor loaderData={loaderData} busy={busy} />
       ) : (
         <section className="admin-panel">
           <p className="eyebrow">Nova revisão privada</p>

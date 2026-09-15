@@ -49,8 +49,19 @@ A segunda unidade está implementada localmente:
 - a nova tela `/admin/competitions/:id/structure` explica a independência do snapshot, mostra o histórico e mantém revisões ativas somente leitura;
 - 29 asserções pgTAP cobrem filtros, incompatibilidades, idempotência, isolamento de IDs, referências internas, outro naipe, auditoria e privilégios.
 
-Biome e compilação TypeScript direta passaram. A migration continua somente local; o ensaio SQL descartável e o Vitest focal entram no gate consolidado antes do push.
+O ensaio SQL descartável passou 29/29 pgTAP em rollback após correção do tipo do ano e da constraint de auditoria. A migration continua somente local.
 
-## Próximo passo
+## Editor de revisão draft
 
-Implementar o editor estrutural sobre a revisão draft clonada, com resumo de capacidade, origens tipadas/indefinidas, erros localizados e negações server-side. Depois executar o gate consolidado das três unidades.
+- a migration `20260915120054_post02_draft_ruleset_editor.sql` adiciona revisão otimista (`editor_revision`), registro privado de idempotência e RPCs AAL2 de leitura/escrita;
+- a leitura devolve trilha, etapas, rodadas, vagas, confrontos, origens e resumo normalizados, reconstruídos pelas FKs; não aceita grafo arbitrário do frontend;
+- operações autorizadas no draft: renomear etapa/rodada, adicionar/remover confronto dentro da capacidade e redefinir a origem de cada lado como indefinida, vaga da revisão ou vencedor de rodada anterior;
+- o banco rejeita alteração em revisão ativa ou em draft de edição publicada, origem inválida, remoção com dependências, excesso de capacidade, versão concorrente e idempotência divergente; cada sucesso gera auditoria mínima;
+- a tela `/admin/competitions/:id/structure` fornece formulários progressivos por etapa/rodada/confronto, com CSRF, retorno ao rascunho e erros localizados; a action constrói inputs por operação, nunca encaminha JSON bruto do formulário;
+- o ensaio transacional das três migrations com o pgTAP do editor passou 36/36, sem persistir schema ou dados.
+
+## Gate local e próximo passo
+
+`npm.cmd run check` passou: Biome, tipagem e typegen, 42 arquivos/290 Vitest, runbooks, build cliente/servidor e varredura de 563 arquivos rastreados. Os testes SQL das unidades anteriores passaram 28/28 e 29/29 em transações descartáveis. Nenhuma migration POST-02 foi aplicada, nenhuma branch foi enviada e produção continua em `v1.1.0`.
+
+Próximo: revisar a cobertura restante do “editor completo” frente ao contrato esportivo e executar QA do fluxo no preview após CI. Persistir as migrations somente depois de checks remotos verdes, regenerar tipos, rodar pgTAP, advisors e reconciliação; não fazer merge ou deploy de produção sem gate.
