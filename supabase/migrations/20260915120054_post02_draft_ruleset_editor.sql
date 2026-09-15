@@ -58,11 +58,16 @@ declare
   origin_order integer;
 begin
   -- Participant resolution is operational state, not a structural edit.
-  if tg_op = 'UPDATE' and tg_table_name = 'matchups'
-    and (to_jsonb(new) - array['home_registration_id','away_registration_id','updated_at'])
-      = (to_jsonb(old) - array['home_registration_id','away_registration_id','updated_at'])
-  then
-    return new;
+  if tg_op = 'UPDATE' and tg_table_name = 'matchups' then
+    if (to_jsonb(new) - array['home_registration_id','away_registration_id','updated_at'])
+        = (to_jsonb(old) - array['home_registration_id','away_registration_id','updated_at'])
+      and new.home_registration_id is not distinct from
+        private.resolved_slot_registration(new.home_slot_id)
+      and new.away_registration_id is not distinct from
+        private.resolved_slot_registration(new.away_slot_id)
+    then
+      return new;
+    end if;
   end if;
   for revision_id in select distinct id from unnest(array[
     case when tg_op <> 'INSERT' then (to_jsonb(old)->>'ruleset_revision_id')::bigint end,
