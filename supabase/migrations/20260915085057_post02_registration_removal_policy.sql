@@ -21,7 +21,7 @@ as $$
 begin
   if new.status = 'withdrawn'
     and old.status is distinct from new.status
-    and coalesce(current_setting('bdb.registration_removal_policy', true), '') <> 'apply'
+    and current_user <> 'postgres'
   then
     raise exception using errcode = 'BR053', message = 'BDB_REGISTRATION_WITHDRAWAL_POLICY_REQUIRED';
   end if;
@@ -33,6 +33,55 @@ revoke all on function private.guard_registration_withdrawal() from public, anon
 create trigger team_registrations_withdrawal_policy
 before update of status on public.team_registrations
 for each row execute function private.guard_registration_withdrawal();
+
+-- Direct status writes cannot depend on a caller-settable custom GUC.
+revoke update on public.team_registrations from authenticated;
+
+create or replace function public.admin_transition_team_registration(
+  p_registration_id bigint,
+  p_status text
+)
+returns public.team_registrations
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_row public.team_registrations;
+  result public.team_registrations;
+begin
+  if not private.is_admin_aal2() then
+    raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
+  end if;
+  if p_status not in ('confirmed', 'completed') then
+    raise exception using errcode = 'BR053', message = 'BDB_REGISTRATION_WITHDRAWAL_POLICY_REQUIRED';
+  end if;
+  select * into current_row from public.team_registrations
+  where id = p_registration_id for update;
+  if not found then
+    raise exception using errcode = 'BD404', message = 'BDB_REGISTRATION_NOT_FOUND';
+  end if;
+  if not (
+    current_row.status = p_status
+    or (current_row.status = 'draft' and p_status = 'confirmed')
+    or (current_row.status = 'confirmed' and p_status = 'completed')
+  ) then
+    raise exception using errcode = 'BD102', message = 'BDB_INVALID_REGISTRATION_TRANSITION';
+  end if;
+  if current_row.status = p_status then return current_row; end if;
+  update public.team_registrations
+  set status = p_status, confirmed_at = coalesce(confirmed_at, now())
+  where id = p_registration_id returning * into strict result;
+  insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
+  values ('registration_transitioned','team_registration',result.id,
+    jsonb_build_object('from',current_row.status,'to',result.status));
+  return result;
+end;
+$$;
+revoke all on function public.admin_transition_team_registration(bigint, text)
+  from public, anon, authenticated;
+grant execute on function public.admin_transition_team_registration(bigint, text)
+  to authenticated;
 
 create function public.admin_get_registration_removal_decision(p_registration_id bigint)
 returns jsonb
@@ -243,13 +292,11 @@ begin
       raise exception using errcode = 'BR051', message = 'BDB_REGISTRATION_REMOVAL_BLOCKED';
     end if;
 
-    perform set_config('bdb.registration_removal_policy', 'apply', true);
     update public.team_registrations
     set status = 'withdrawn',
         confirmed_at = coalesce(confirmed_at, clock_timestamp()),
         updated_at = clock_timestamp()
     where id = registration.id;
-    perform set_config('bdb.registration_removal_policy', '', true);
 
     update public.roster_entries
     set status = 'inactive',

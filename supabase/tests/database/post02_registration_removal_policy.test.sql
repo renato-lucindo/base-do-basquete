@@ -102,7 +102,7 @@ select throws_ok(
 select throws_ok(
   $$update public.team_registrations set status='withdrawn',confirmed_at=clock_timestamp()
     where id=(select roster_registration from removal_context)$$,
-  'BR053','BDB_REGISTRATION_WITHDRAWAL_POLICY_REQUIRED','direct update cannot bypass the policy'
+  '42501',null,'direct update cannot bypass the policy'
 );
 select is(
   (select public.admin_apply_registration_removal(roster_registration,'withdraw','Preserve roster history')->>'outcome' from removal_context),

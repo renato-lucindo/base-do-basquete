@@ -11,6 +11,13 @@ alter table public.admin_mutation_audit
     'fiba_candidate_staged','registration_removed','registration_withdrawn','ruleset_cloned'
   ));
 
+alter table public.admin_mutation_audit
+  drop constraint admin_mutation_audit_entity_type_check,
+  add constraint admin_mutation_audit_entity_type_check check (entity_type in (
+    'team_registration','game','boxscore_import','final_placement','player','competition',
+    'data_profile','competition_entry','matchup','competition_ruleset_revision'
+  ));
+
 alter table public.competition_ruleset_revisions
   add column cloned_from_revision_id bigint,
   add column cloned_from_gender_division text,
@@ -97,7 +104,7 @@ begin
     revision.id,
     source.id,
     source.display_name,
-    source.year,
+    source.year::integer,
     source.gender_division,
     revision.revision_number,
     case when revision.preset_key is null then 'edition' else 'template_snapshot' end,

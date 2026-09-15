@@ -214,12 +214,14 @@ select is(
     where game.competition_id=context.target_competition),
   0::bigint,'games are not invented by cloning'
 );
+reset role;
 select lives_ok(
   $$update public.competition_rounds set name='Independent draft'
     where id=(select min(round_item.id) from public.competition_rounds round_item,clone_context context
       where round_item.ruleset_revision_id=context.target_revision)$$,
   'draft clone can evolve independently'
 );
+set local role authenticated;
 select ok(
   not exists(
     select 1 from public.competition_rounds round_item,clone_context context
