@@ -26,8 +26,30 @@ Estado: `DOING` na branch `feature/post-03-sports-exceptions`.
 4. UI AAL2 de ação secundária e impacto;
 5. gate consolidado, aplicação persistente, tipos, advisors, reconciliação e preview.
 
-## Estado inicial
+## Unidade 1 — encerramento autoritativo de grupo
 
-POST-02 foi integrado pela PR #43 no commit `48511d1`. A branch própria foi criada dessa `main`. A migration vazia `20260915205114_post03_group_closure.sql` foi criada pelo Supabase CLI; nenhum schema POST-03 foi aplicado.
+Implementada localmente na migration aditiva
+`20260915205114_post03_group_closure.sql`:
 
-Próximo: desenhar e testar em rollback o snapshot autoritativo de classificação e sua resolução idempotente de vagas. A UI e as demais exceções não devem ser antecipadas antes do gate focal da primeira unidade.
+- preview server-side com `sourceHash`, resultados oficiais e classificação;
+- fechamento AAL2 idempotente por UUID e CAS do hash;
+- exigência de jogo final, submissão primária ativa e autoridade `official_result`;
+- snapshot imutável das fontes e linhas de classificação;
+- ordem completa sem duplicidade e proibição de menos vitórias acima de mais vitórias;
+- justificativa obrigatória quando existe empate em vitórias;
+- resolução opcional de slots posteriores ainda indefinidos, sem criar jogo;
+- RLS, privilégio mínimo e auditoria essencial.
+
+O pgTAP focal `post03_group_closure.test.sql` possui 29 asserções. O ensaio no
+Supabase compartilhado ocorreu dentro de uma única transação e terminou em
+`ROLLBACK`: 29/29 passaram. A verificação posterior confirmou ausência da nova
+tabela e zero auditorias de fechamento; nenhum schema ou dado POST-03 foi
+persistido.
+
+O gate local completo passou fora da restrição de subprocessos do sandbox:
+formatação, lint, tipos, 290 testes Vitest, cinco runbooks, build e varredura de
+segredos em 566 arquivos. O CI ainda executará o banco do zero antes de qualquer
+aplicação compartilhada.
+
+Próximo: enviar a unidade ao CI, corrigir qualquer regressão do banco do zero e,
+somente após o gate verde, avançar para W.O./desistência/decisão administrativa.
