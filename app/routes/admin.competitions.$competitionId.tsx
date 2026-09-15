@@ -10,6 +10,7 @@ import {
   mapAdminDomainError,
   normalizeFinalResult,
   normalizeJersey,
+  normalizeRegistrationRemoval,
 } from "../modules/competition/admin-domain";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import type { Route } from "./+types/admin.competitions.$competitionId";
@@ -17,6 +18,48 @@ import type { Route } from "./+types/admin.competitions.$competitionId";
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+export function parseRegistrationRemovalDecision(value: unknown): {
+  decision: "remove" | "withdraw" | "blocked";
+  reasonCode: string;
+  dependencies: Record<string, number>;
+} | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  if (
+    (record.decision !== "remove" &&
+      record.decision !== "withdraw" &&
+      record.decision !== "blocked") ||
+    typeof record.reasonCode !== "string" ||
+    !record.dependencies ||
+    typeof record.dependencies !== "object" ||
+    Array.isArray(record.dependencies)
+  ) {
+    return null;
+  }
+  const rawDependencies = record.dependencies as Record<string, unknown>;
+  const requiredDependencies = [
+    "rosterEntries",
+    "structureAssignments",
+    "matchups",
+    "games",
+    "placements",
+    "resolutions",
+    "publicationSnapshots",
+  ] as const;
+  const dependencyEntries = requiredDependencies.map(
+    (dependency) => [dependency, rawDependencies[dependency]] as const,
+  );
+  if (
+    dependencyEntries.some(
+      ([, count]) => typeof count !== "number" || !Number.isSafeInteger(count) || count < 0,
+    )
+  ) {
+    return null;
+  }
+  const dependencies = Object.fromEntries(dependencyEntries) as Record<string, number>;
+  return { decision: record.decision, reasonCode: record.reasonCode, dependencies };
 }
 
 export function parseRosterActionEntries(
@@ -107,6 +150,22 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     throw new Error("Competition hub query failed");
 
   const registrationIds = registrationsResult.data.map((registration) => registration.id);
+  const removalDecisionResults = await Promise.all(
+    registrationIds.map((registrationId) =>
+      auth.client.rpc("admin_get_registration_removal_decision", {
+        p_registration_id: registrationId,
+      }),
+    ),
+  );
+  if (removalDecisionResults.some((result) => result.error)) {
+    throw new Error("Registration removal policy query failed");
+  }
+  const removalDecisions = new Map(
+    registrationIds.map((registrationId, index) => [
+      registrationId,
+      parseRegistrationRemovalDecision(removalDecisionResults[index]?.data),
+    ]),
+  );
   const rosterResult = registrationIds.length
     ? await auth.client
         .from("roster_entries")
@@ -273,6 +332,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     finalPlacement:
       placementsResult.data.find((placement) => placement.registration_id === registration.id) ??
       null,
+    removalDecision: removalDecisions.get(registration.id) ?? null,
   }));
   const registeredTeamIds = new Set(registrations.map((registration) => registration.team_id));
 
@@ -290,6 +350,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       gameCount: gamesResult.count ?? 0,
       sourceFallbacks,
       savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
+      changedRegistrationId: parseId(new URL(request.url).searchParams.get("changedRegistration")),
+      registrationOutcome: new URL(request.url).searchParams.get("registrationOutcome"),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -319,6 +381,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const registrationId = parseId(formData.get("registrationId"));
     const status = String(formData.get("status") ?? "");
     if (!registrationId) return data({ error: "Inscrição inválida." }, { status: 400 });
+    if (status !== "confirmed" && status !== "completed") {
+      return data(
+        { error: "Use a revisão de retirada para alterar a participação da equipe." },
+        { status: 400 },
+      );
+    }
     result = await auth.client.rpc("admin_transition_team_registration", {
       p_registration_id: registrationId,
       p_status: status,
@@ -347,6 +415,47 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       p_placement: normalized.value.placement ?? undefined,
       p_result_label: normalized.value.label ?? undefined,
     });
+  } else if (intent === "remove-registration") {
+    const registrationId = parseId(formData.get("registrationId"));
+    if (!registrationId) return data({ error: "Inscrição inválida." }, { status: 400 });
+    if (formData.get("confirmed") !== "on") {
+      return data(
+        { error: "Confirme que a ação afeta somente esta edição.", registrationId },
+        { status: 400 },
+      );
+    }
+    const normalized = normalizeRegistrationRemoval(
+      String(formData.get("expectedDecision") ?? ""),
+      String(formData.get("reason") ?? ""),
+    );
+    if (!normalized.ok) {
+      return data({ error: normalized.error.message, registrationId }, { status: 400 });
+    }
+    const removalResult = await auth.client.rpc("admin_apply_registration_removal", {
+      p_registration_id: registrationId,
+      p_expected_decision: normalized.value.decision,
+      p_reason: normalized.value.reason,
+    });
+    result = removalResult;
+    if (!removalResult.error) {
+      const rawOutcome =
+        removalResult.data !== null &&
+        typeof removalResult.data === "object" &&
+        "outcome" in removalResult.data &&
+        typeof removalResult.data.outcome === "string"
+          ? removalResult.data.outcome
+          : null;
+      const outcome =
+        rawOutcome === "removed" || rawOutcome === "withdrawn" || rawOutcome === "unchanged"
+          ? rawOutcome
+          : normalized.value.decision === "remove"
+            ? "removed"
+            : "withdrawn";
+      throw redirect(
+        `/admin/competitions/${competitionId}?changedRegistration=${registrationId}&registrationOutcome=${outcome}`,
+        { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+      );
+    }
   } else {
     throw new Response("Ação inválida", { status: 400 });
   }
@@ -367,7 +476,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       });
     }
     return data(
-      { error: rosterFailure?.message ?? mapped.message },
+      {
+        error: rosterFailure?.message ?? mapped.message,
+        registrationId:
+          intent === "remove-registration" ? parseId(formData.get("registrationId")) : null,
+      },
       {
         status,
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
@@ -398,7 +511,13 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   const { competition } = loaderData;
   const navigation = useNavigation();
   const isSubmitting = navigation.state !== "idle";
-  const [openRegistration, setOpenRegistration] = useState<number | null>(loaderData.savedRosterId);
+  const failedRegistrationId =
+    actionData && "registrationId" in actionData && typeof actionData.registrationId === "number"
+      ? actionData.registrationId
+      : null;
+  const [openRegistration, setOpenRegistration] = useState<number | null>(
+    failedRegistrationId ?? loaderData.savedRosterId ?? loaderData.changedRegistrationId,
+  );
   useEffect(() => {
     if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
   }, [loaderData.savedRosterId]);
@@ -423,6 +542,17 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           {competition.status}
         </p>
         {actionData?.error ? <p className="form-error">{actionData.error}</p> : null}
+        {loaderData.registrationOutcome === "removed" ? (
+          <p className="form-success">
+            A inscrição provisória foi removida. A equipe global foi preservada.
+          </p>
+        ) : loaderData.registrationOutcome === "withdrawn" ? (
+          <p className="form-success">
+            A equipe foi retirada da edição e o histórico foi preservado.
+          </p>
+        ) : loaderData.registrationOutcome === "unchanged" ? (
+          <p className="form-success">A inscrição já estava no estado solicitado.</p>
+        ) : null}
 
         <div className="admin-status-grid">
           <article>
@@ -501,28 +631,89 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               }
               situation={
                 registration.status === "draft" || registration.status === "confirmed" ? (
-                  <Form method="post" className="inline-admin-form">
-                    <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-                    <input type="hidden" name="intent" value="transition-registration" />
-                    <input type="hidden" name="registrationId" value={registration.id} />
-                    <label>
-                      Estado
-                      <select name="status" defaultValue="">
-                        <option value="" disabled>
-                          Alterar para
-                        </option>
-                        {registration.status === "draft" ? (
-                          <option value="confirmed">Confirmada</option>
+                  <div className="admin-registration-situation">
+                    <Form method="post" className="inline-admin-form">
+                      <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                      <input type="hidden" name="intent" value="transition-registration" />
+                      <input type="hidden" name="registrationId" value={registration.id} />
+                      <label>
+                        Estado
+                        <select name="status" defaultValue="">
+                          <option value="" disabled>
+                            Alterar para
+                          </option>
+                          {registration.status === "draft" ? (
+                            <option value="confirmed">Confirmada</option>
+                          ) : (
+                            <option value="completed">Concluída</option>
+                          )}
+                        </select>
+                      </label>
+                      <button className="button button-ghost" type="submit">
+                        Atualizar
+                      </button>
+                    </Form>
+                    {registration.removalDecision ? (
+                      <details className="admin-danger-zone">
+                        <summary>
+                          {registration.removalDecision.decision === "remove"
+                            ? "Remover inscrição provisória"
+                            : registration.removalDecision.decision === "withdraw"
+                              ? "Retirar equipe desta edição"
+                              : "Remoção indisponível"}
+                        </summary>
+                        {registration.removalDecision.decision === "remove" ? (
+                          <p>
+                            Esta inscrição ainda não possui elenco, vaga estrutural ou histórico
+                            competitivo. Somente a inscrição nesta edição será removida; a equipe
+                            continuará cadastrada.
+                          </p>
+                        ) : registration.removalDecision.decision === "withdraw" ? (
+                          <p>
+                            A inscrição e todo o histórico permanecerão registrados. Atletas ativos
+                            serão encerrados e a situação passará para retirada.
+                          </p>
                         ) : (
-                          <option value="completed">Concluída</option>
+                          <p>O estado atual precisa ser preservado e não admite esta operação.</p>
                         )}
-                        <option value="withdrawn">Retirada</option>
-                      </select>
-                    </label>
-                    <button className="button button-ghost" type="submit">
-                      Atualizar
-                    </button>
-                  </Form>
+                        {registration.removalDecision.decision !== "blocked" ? (
+                          <Form method="post" className="inline-admin-form">
+                            <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                            <input type="hidden" name="intent" value="remove-registration" />
+                            <input type="hidden" name="registrationId" value={registration.id} />
+                            <input
+                              type="hidden"
+                              name="expectedDecision"
+                              value={registration.removalDecision.decision}
+                            />
+                            <label>
+                              Justificativa
+                              <textarea
+                                name="reason"
+                                required
+                                minLength={10}
+                                maxLength={500}
+                                rows={3}
+                              />
+                            </label>
+                            <label className="checkbox-label">
+                              <input name="confirmed" type="checkbox" required />
+                              Confirmo que esta ação afeta somente a participação nesta edição.
+                            </label>
+                            <button
+                              className="button button-ghost"
+                              type="submit"
+                              disabled={isSubmitting}
+                            >
+                              {registration.removalDecision.decision === "remove"
+                                ? "Remover somente a inscrição"
+                                : "Retirar e preservar histórico"}
+                            </button>
+                          </Form>
+                        ) : null}
+                      </details>
+                    ) : null}
+                  </div>
                 ) : null
               }
               roster={

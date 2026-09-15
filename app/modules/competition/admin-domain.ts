@@ -14,6 +14,9 @@ export type AdminDomainErrorCode =
   | "profile-context"
   | "review-required"
   | "context-conflict"
+  | "registration-removal"
+  | "registration-removal-blocked"
+  | "registration-removal-changed"
   | "unknown";
 
 export interface AdminDomainError {
@@ -37,6 +40,41 @@ const jerseyPattern = /^(?:0|00|[1-9][0-9]?)$/;
 
 export type GenderDivision = "male" | "female";
 export type PrimaryDataSource = "manual_scoresheet" | "fiba_boxscore";
+export type RegistrationRemovalDecision = "remove" | "withdraw" | "blocked";
+
+export function normalizeRegistrationRemoval(
+  decisionValue: string,
+  reasonValue: string,
+):
+  | {
+      ok: true;
+      value: { decision: Exclude<RegistrationRemovalDecision, "blocked">; reason: string };
+    }
+  | { ok: false; error: AdminDomainError } {
+  const decision = decisionValue.trim().toLowerCase();
+  const reason = reasonValue.trim();
+  if (decision !== "remove" && decision !== "withdraw") {
+    return {
+      ok: false,
+      error: {
+        code: "registration-removal",
+        field: "status",
+        message: "Recarregue a página para revisar a decisão atual da inscrição.",
+      },
+    };
+  }
+  if (reason.length < 10 || reason.length > 500) {
+    return {
+      ok: false,
+      error: {
+        code: "registration-removal",
+        field: "status",
+        message: "Explique a remoção ou retirada em 10 a 500 caracteres.",
+      },
+    };
+  }
+  return { ok: true, value: { decision, reason } };
+}
 
 export interface DataProfileGameImpact {
   totalGames: number;
@@ -290,6 +328,30 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
         code: "context-conflict",
         field: "genderDivision",
         message: "Já existe uma edição com a mesma série, categoria, naipe e ano.",
+      };
+    case "BR050":
+      return {
+        code: "registration-removal",
+        field: "status",
+        message: "Revise a decisão e informe uma justificativa de 10 a 500 caracteres.",
+      };
+    case "BR051":
+      return {
+        code: "registration-removal-blocked",
+        field: "status",
+        message: "Esta inscrição possui um estado que não permite remoção nem retirada.",
+      };
+    case "BR052":
+      return {
+        code: "registration-removal-changed",
+        field: "status",
+        message: "As dependências da inscrição mudaram. Recarregue e revise as consequências.",
+      };
+    case "BR053":
+      return {
+        code: "registration-removal-changed",
+        field: "status",
+        message: "Use a revisão de retirada para preservar corretamente o histórico da inscrição.",
       };
     default:
       return {

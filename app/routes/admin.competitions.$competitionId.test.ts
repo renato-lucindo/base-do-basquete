@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-
+import { normalizeRegistrationRemoval } from "../modules/competition/admin-domain";
 import {
   mapRosterActionFailure,
+  parseRegistrationRemovalDecision,
   parseRosterActionEntries,
 } from "./admin.competitions.$competitionId";
 
@@ -47,5 +48,63 @@ describe("admin competition roster action", () => {
       status: 400,
     });
     expect(JSON.stringify([pending, incompatible])).not.toMatch(/\b(male|female)\b/);
+  });
+});
+
+describe("admin registration removal input", () => {
+  it("accepts only complete policy payloads from the database", () => {
+    expect(
+      parseRegistrationRemovalDecision({
+        decision: "withdraw",
+        reasonCode: "roster_history_preserved",
+        dependencies: {
+          rosterEntries: 2,
+          structureAssignments: 0,
+          matchups: 0,
+          games: 0,
+          placements: 0,
+          resolutions: 0,
+          publicationSnapshots: 0,
+        },
+      }),
+    ).toEqual({
+      decision: "withdraw",
+      reasonCode: "roster_history_preserved",
+      dependencies: {
+        rosterEntries: 2,
+        structureAssignments: 0,
+        matchups: 0,
+        games: 0,
+        placements: 0,
+        resolutions: 0,
+        publicationSnapshots: 0,
+      },
+    });
+    expect(parseRegistrationRemovalDecision({ decision: "remove" })).toBeNull();
+    expect(
+      parseRegistrationRemovalDecision({
+        decision: "remove",
+        reasonCode: "bad",
+        dependencies: { games: -1 },
+      }),
+    ).toBeNull();
+  });
+
+  it("accepts only the server decisions that can mutate", () => {
+    expect(normalizeRegistrationRemoval("remove", "Criada por engano")).toEqual({
+      ok: true,
+      value: { decision: "remove", reason: "Criada por engano" },
+    });
+    expect(normalizeRegistrationRemoval("withdraw", "Preservar todo o histórico")).toMatchObject({
+      ok: true,
+    });
+    expect(normalizeRegistrationRemoval("blocked", "Tentativa inválida")).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it("requires a bounded administrator reason", () => {
+    expect(normalizeRegistrationRemoval("remove", "curta")).toMatchObject({ ok: false });
+    expect(normalizeRegistrationRemoval("remove", "x".repeat(501))).toMatchObject({ ok: false });
   });
 });

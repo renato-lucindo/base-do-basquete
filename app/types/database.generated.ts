@@ -3583,6 +3583,10 @@ export type Database = {
           isSetofReturn: true;
         };
       };
+      admin_apply_registration_removal: {
+        Args: { p_expected_decision: string; p_reason: string; p_registration_id: number };
+        Returns: Json;
+      };
       admin_activate_game_data_authority: {
         Args: {
           p_domain: string;
@@ -3846,6 +3850,10 @@ export type Database = {
       };
       admin_get_publication_review: {
         Args: { p_competition_id: number };
+        Returns: Json;
+      };
+      admin_get_registration_removal_decision: {
+        Args: { p_registration_id: number };
         Returns: Json;
       };
       admin_prepare_matchup: {

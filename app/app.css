@@ -4476,6 +4476,43 @@ body {
   background: var(--line);
 }
 
+.admin-registration-situation {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-danger-zone {
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--orange) 55%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--orange) 7%, transparent);
+}
+
+.admin-danger-zone > summary {
+  color: var(--orange);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-danger-zone > p {
+  margin-bottom: 0;
+}
+
+.admin-danger-zone .inline-admin-form {
+  grid-template-columns: minmax(240px, 1fr) minmax(220px, 1fr) auto;
+}
+
+.admin-danger-zone .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-danger-zone .checkbox-label input {
+  width: auto;
+  min-height: auto;
+}
+
 .registration-accordion [hidden] {
   display: none;
 }

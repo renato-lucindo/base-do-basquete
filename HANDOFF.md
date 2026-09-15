@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 estão `DONE`. `POST-01` está em `READY`; POST-02 a POST-04 permanecem preservados na fila.
-- Status geral: `POST_01_READY_TO_MERGE`; produção continua na release estável `v1.1.0` (`f8dcb87`) enquanto o pacote de fontes e conflitos aguarda somente integração da PR #42 com o novo head verde.
+- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 estão `DONE`. `POST-02` está em `DOING`; POST-03 e POST-04 permanecem preservados na fila.
+- Status geral: `POST_02_ADMIN_CYCLE`; produção continua na release estável `v1.1.0` (`f8dcb87`) enquanto remoção/retirada, clonagem e editor estrutural são implementados somente na branch do pacote.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `feature/post-01-sources-conflicts`, criada de `origin/main` para o pacote consolidado POST-01.
+- Branch atual: `feature/post-02-admin-cycle`, criada de `origin/main` no commit `abb2111` para o pacote consolidado POST-02.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `f8dcb87` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`; tag `v1.1.0`.
 - Smoke AAL2 final da release: sessão real confirmou “Sessão AAL2” e acesso protegido a `/admin/competitions` em produção, sem mutação de domínio.
@@ -83,7 +83,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** commit e push da evidência final do smoke AAL2 da PR #42; aguardar `gate`, banco desde zero, preview e CodeQL no novo head, marcar a PR pronta e integrar. A sessão real exibiu `Sessão AAL2` e abriu `/admin/games/63/data-conflict` para o jogo 5205822 com estado vazio seguro (0 coincidentes/0 divergentes), sem mutação. As nove migrations POST-01 estão aplicadas, os tipos foram regenerados, 87/87 pgTAP persistidos passaram, advisors não têm vulnerabilidade ou FK novo pendente e os checksums esportivos foram preservados. Produção segue intocada em `v1.1.0`. Após a integração, criar branch própria de `origin/main` e executar `POST-02 — Ciclo administrativo completo` na ordem do plano acelerado.
+**Próximo passo atual:** fechar o gate da primeira unidade do POST-02, já implementada localmente: migration aditiva com decisão `remove`/`withdraw`/`blocked`, locks, idempotência, auditoria, trigger contra bypass, 28 pgTAP e UI AAL2 de confirmação na edição. Biome e compilação TypeScript direta passaram; a repetição remota em rollback e o Vitest focal não rodaram nesta retomada porque o ambiente automático recusou temporariamente os subprocessos, e nenhuma migration POST-02 foi persistida. Após o gate, implementar a clonagem profunda e independente de template ou edição anterior. POST-01 foi integrado pela PR #42 em `abb2111`; produção segue intocada em `v1.1.0`.
 
 **Estado vigente em 11/09:** MVP-04 `DOING`. Agenda privada em `48001d9` e índices em `6d2738a` passaram os quatro checks; migrations remotas `20260911173435_mvp04_private_scheduling` e `20260911174551_mvp04_fk_covering_indexes`. O advisor não aponta FKs sem índice; avisos SECURITY DEFINER são os endpoints AAL2 intencionais. Banco preserva nove jogos, cinco revisões, fixture 100 privada, zero atribuições e zero preparações. Nova unidade local: `20260911174947_mvp04_knockout_progression.sql`, resolução imutável pelo resultado oficial principal ativo, propagação de vencedores e confirmação na rota de agenda. Ensaio remoto em rollback 28/28; gate local 245 Vitest, build e scan de 521 arquivos. Ainda sem commit/push/aplicação dessa migration. Próximo: enviar com staging exato, esperar CI, aplicar/regenerar tipos e validar preview; depois publicação versionada. Ver `docs/execution/MVP-04.md`. Sem merge ou produção.
 
@@ -211,7 +211,8 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | MVP-03 — Administração e criação por presets | `DONE` | Navegação, presets imutáveis, criação privada transacional, CI/database, concorrência e QA responsivo/teclado aprovados |
 | MVP-04 — Agendamento, progressão básica e publicação | `DONE` | Agenda, progressão e publicação aplicadas; 37 pgTAP, advisors, checksums e smokes público/AAL2 aprovados sem mutação de QA |
 | MVP-05 — QA, release candidata e handoff | `DONE` | Release `v1.1.0`, workflow protegido, smokes e produção aprovados |
-| POST-01 — Fontes excepcionais e conflitos | `READY` | PR #42 verde; schema, tipos, pgTAP, advisors e smokes público/anônimo/AAL2 aprovados sem mutação; falta somente integração |
+| POST-01 — Fontes excepcionais e conflitos | `DONE` | PR #42 integrada em `abb2111`; schema, tipos, 87 pgTAP, advisors e smokes público/anônimo/AAL2 aprovados sem mutação |
+| POST-02 — Ciclo administrativo e editor completo | `DOING` | Política transacional e UI de remoção/retirada implementadas localmente; gate focal pendente antes do push; clonagem e editor seguem na fila |
 
 ## 8. Arquivos e referências importantes
 
@@ -490,3 +491,5 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-14 | Codex | POST-01 implementado na branch `feature/post-01-sources-conflicts`: fallback/suplemento, snapshots, staging do PDF posterior, comparação, decisão AAL2 e projeção rara passaram gates locais e ensaios SQL descartáveis | Abrir PR, aguardar CI/banco/preview/CodeQL; só então aplicar schema, regenerar tipos e executar QA AAL2 |
 | 2026-09-14 | Codex | PR #42 verde no head `76b87d2`; nove migrations aplicadas; 87 pgTAP persistidos, tipos, advisors, checksums e smoke público/anônimo aprovados; produção intocada | Responsável faz login/MFA no host da PR #42; validar a tela de conflito em AAL2 sem mutação e fechar POST-01 |
 | 2026-09-14 | Responsável/Codex | Smoke real da PR #42 confirmou sessão AAL2 e tela de conflito vazia segura do jogo 5205822, sem mutação; head `c68b0ff` com quatro checks verdes | Enviar a evidência, reconfirmar os checks, marcar a PR pronta e integrar; depois iniciar POST-02 em branch própria |
+| 2026-09-14 | Codex | PR #42 integrada por squash em `abb2111`; POST-01 `DONE`; branch `feature/post-02-admin-cycle` criada da `main`; produção intocada | Implementar migration e pgTAP da política transacional de remoção/retirada do POST-02 |
+| 2026-09-15 | Codex | Política `remove`/`withdraw`/`blocked`, proteção contra bypass, auditoria, 28 pgTAP e UI AAL2 implementadas localmente; Biome e TypeScript direto verdes; schema remoto e produção intocados | Repetir pgTAP em rollback e Vitest focal quando o executor liberar subprocessos; então iniciar clonagem profunda |
