@@ -1,6 +1,6 @@
 # POST-02 — Ciclo administrativo e editor completo
 
-Estado: `DOING` na branch `feature/post-02-admin-cycle`.
+Estado: `DONE` na branch `feature/post-02-admin-cycle`; integração pendente da PR #43.
 
 ## Escopo
 
@@ -68,4 +68,18 @@ PR draft [#43](https://github.com/renato-lucindo/base-do-basquete/pull/43) abert
 
 As três migrations foram aplicadas sequencialmente ao Supabase compartilhado. As suites persistentes passaram 28/28, 29/29 e 36/36. O contrato TypeScript gerado pelo conector confirmou as novas colunas/RPCs já registradas no arquivo local e `tsc -b` passou. Advisors: os novos ledgers privados sem policy são intencionais (RLS forçada e nenhum grant); as novas RPCs SECURITY DEFINER são endpoints AAL2 intencionais e testados; não apareceu vulnerabilidade de schema ou FK sem índice. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 5 revisões, zero drafts/requests residuais, zero vagas órfãs, 1 admin e 1 TOTP verificado.
 
-Próximo: o responsável entra e conclui MFA em `https://pr-43-base-do-basquete-preview.renato-lucindo-jr.workers.dev/admin/login`; então executar QA AAL2 responsivo da remoção/retirada, clonagem e editor sem mutação destrutiva. Após o smoke, atualizar evidências e decidir prontidão da PR. Não fazer merge ou deploy de produção sem gate final.
+## QA AAL2 final
+
+O responsável concluiu login e MFA no preview e a sessão exibiu `AAL2`. O smoke real confirmou:
+
+- a edição privada 100 clonou sua revisão ativa para o rascunho independente 187, sem copiar inscrições, jogos, resultados ou publicação;
+- o editor alterou o nome da etapa sob controle de versão e o restaurou ao valor original; `editor_revision` avançou de 1 para 3 e as duas escritas ficaram auditadas;
+- a inscrição 15, que já possui histórico competitivo, exibiu somente a retirada com preservação de histórico e encerramento dos atletas ativos; nenhuma retirada ou remoção foi executada;
+- a rota administrativa sem cookie respondeu `302 /admin/login` com cookie `HttpOnly`, `Secure`, `SameSite=Strict`, CSP, Permissions Policy e `X-Robots-Tag: noindex`;
+- `/health` respondeu `200` com `preview/ok`.
+
+A reconciliação posterior preservou 5 edições, 9 jogos e 12 inscrições. O banco passou a ter 6 revisões, exatamente 1 draft, 1 pedido de clone, 2 pedidos de edição, 1 auditoria de clone, 2 auditorias de edição, zero vagas órfãs e zero origens indefinidas. As migrations continuam registradas uma única vez. Os advisors não apontaram vulnerabilidade nova nem FK sem índice; os ledgers privados sem policy e os endpoints SECURITY DEFINER AAL2 permanecem intencionais.
+
+O inventário genérico sinalizou quatro tabelas auxiliares no schema `private` com RLS desabilitada. A verificação explícita confirmou ausência de `USAGE` para `anon` e ausência de qualquer privilégio `SELECT/INSERT/UPDATE/DELETE` para `anon` e `authenticated`; portanto não há exposição atual. O hardening de defesa em profundidade fica rastreado para o POST-04 e não foi aplicado fora do escopo desta PR.
+
+O gate local final passou após normalização mecânica dos finais de linha dos tipos gerados: 42 arquivos/290 Vitest, typegen, TypeScript, runbooks, build e varredura de 563 arquivos. O head remoto `e2174fa` permanece com gate, banco desde zero (927 asserções), preview e CodeQL verdes, e a PR está limpa para integração. Produção permanece em `v1.1.0`.
