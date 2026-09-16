@@ -286,24 +286,31 @@ export default function SportsExceptionsPage({ loaderData, actionData }: Route.C
         </p>
       ) : null}
 
-      {loaderData.dashboard.groups.map((group) => (
-        <section className="admin-panel" key={group.id}>
-          <p className="eyebrow">Encerramento de grupo</p>
-          <h2>{group.code}</h2>
-          {group.closed ? (
-            <p>Grupo encerrado. Snapshot #{group.closureId} preservado.</p>
-          ) : (
-            <Form method="post" className="admin-form">
-              <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-              <input type="hidden" name="intent" value="preview-group" />
-              <input type="hidden" name="groupId" value={group.id} />
-              <button className="button button-secondary" type="submit" disabled={busy}>
-                Gerar prévia da classificação final
-              </button>
-            </Form>
-          )}
-        </section>
-      ))}
+      <section className="admin-panel">
+        <p className="eyebrow">Encerramento de grupo</p>
+        <h2>Classificatória final</h2>
+        {loaderData.dashboard.groups.length ? (
+          loaderData.dashboard.groups.map((group) => (
+            <div className="admin-form" key={group.id}>
+              <h3>{group.code}</h3>
+              {group.closed ? (
+                <p>Grupo encerrado. Snapshot #{group.closureId} preservado.</p>
+              ) : (
+                <Form method="post">
+                  <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+                  <input type="hidden" name="intent" value="preview-group" />
+                  <input type="hidden" name="groupId" value={group.id} />
+                  <button className="button button-secondary" type="submit" disabled={busy}>
+                    Gerar prévia da classificação final
+                  </button>
+                </Form>
+              )}
+            </div>
+          ))
+        ) : (
+          <p>Esta revisão eliminatória não possui grupos para encerrar.</p>
+        )}
+      </section>
 
       <section className="admin-panel">
         <p className="eyebrow">Sem placar fictício</p>
