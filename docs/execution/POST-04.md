@@ -38,6 +38,22 @@ A consulta reproduzível está em
 somente contagens, dados públicos de classificação e hashes, sem valores
 privados de elegibilidade.
 
+### Rechecagem após a revisão das competições
+
+A leitura autoritativa posterior à autorização de enforcement confirmou que as
+duas competições foram concluídas corretamente: as filas de naipe e perfil
+caíram de 2 para 0, e a auditoria registrou duas ações
+`competition_gender_reviewed` e duas ações
+`competition_data_profile_assigned`. Entretanto, os 43 atletas continuam com
+elegibilidade privada pendente e não existe auditoria `player_sex_reviewed` no
+período. Não há perfil privado ausente.
+
+Por isso a migration final não foi aplicada. A decisão privada de cada atleta é
+entrada humana indispensável e não pode ser inferida de nome, equipe,
+competição ou estatística. O enforcement somente poderá prosseguir depois que
+os 43 formulários forem efetivamente salvos e uma nova leitura retornar
+`0/0/0/0`.
+
 ## Fila administrativa de fechamento
 
 A rota AAL2 `/admin/review-queues` consome exclusivamente o relatório
