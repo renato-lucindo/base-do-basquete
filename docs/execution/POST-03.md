@@ -82,3 +82,30 @@ CodeQL.
 
 Próximo: correções e emendas com ponto de corte, antes/depois, ativação atômica
 e supersessão sem apagar histórico.
+
+## Unidade 3 — correções e emendas versionadas
+
+Implementada localmente na migration aditiva
+`20260916095002_post03_ruleset_amendments.sql`:
+
+- preview AAL2 do impacto e do ponto de corte;
+- correção somente antes de qualquer jogo dependente iniciado ou com submissão;
+- clone do grafo ativo na mesma edição, sem editar o grafo consumido;
+- cópia explícita das atribuições por seed e dos resultados anteriores;
+- snapshots imutáveis `before`/`after` e motivo obrigatório;
+- cancelamento preservado de jogos dependentes ainda não iniciados;
+- troca atômica: revisão anterior `superseded`, clone corrigido `active`;
+- participantes futuros recalculados sem criar novos jogos;
+- bloqueio integral depois do ponto de corte, sem draft parcial;
+- RLS, idempotência e auditoria essencial.
+
+O pgTAP focal `post03_ruleset_amendments.test.sql` possui 34 asserções e
+passou 34/34 no Supabase após carregar as três migrations POST-03 na ordem real,
+dentro de uma única transação revertida. A reconciliação posterior confirmou
+ausência da tabela e zero auditorias de emenda no banco compartilhado.
+
+O gate local da unidade passou: formatação, lint, tipos, 290 testes Vitest,
+cinco runbooks, build e varredura de segredos em 570 arquivos.
+
+Próximo: gate completo/CI da unidade e implementação da UI AAL2 para preview e
+confirmação secundária das três operações.
