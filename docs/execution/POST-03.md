@@ -53,3 +53,28 @@ aplicação compartilhada.
 
 Próximo: enviar a unidade ao CI, corrigir qualquer regressão do banco do zero e,
 somente após o gate verde, avançar para W.O./desistência/decisão administrativa.
+
+## Unidade 2 — decisões esportivas sem placar fictício
+
+Implementada localmente na migration aditiva
+`20260915222213_post03_administrative_results.sql`:
+
+- tipos `walkover`, `withdrawal` e `administrative_decision`;
+- preview AAL2 de impacto e RPC transacional idempotente;
+- vencedor/perdedor derivados dos participantes bloqueados, com motivo obrigatório;
+- cancelamento preservado de jogo agendado ainda não iniciado, sem criar jogo ou placar;
+- progressão pelo vencedor e exclusão mútua com resolução por resultado oficial;
+- corte rígido quando o próprio jogo ou um dependente já começou;
+- integração ao fechamento de grupo: vitória/derrota contam, pontos permanecem zero;
+- snapshot imutável, RLS e auditoria essencial.
+
+O pgTAP focal `post03_administrative_results.test.sql` possui 33 asserções e
+passou 33/33 no Supabase dentro de uma transação revertida. A migration de grupo
+foi carregada antes dela na mesma transação para reproduzir a ordem real, sem
+persistir schema ou dados.
+
+O gate local da unidade também passou: formatação, lint, tipos, 290 testes
+Vitest, cinco runbooks, build e varredura de segredos em 568 arquivos.
+
+Próximo: gate completo/CI desta unidade e, depois, correções e emendas com ponto
+de corte, antes/depois, ativação atômica e supersessão sem apagar histórico.
