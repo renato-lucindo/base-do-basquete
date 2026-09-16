@@ -92,8 +92,16 @@ A PR draft #45 está no head funcional `468b1fa`. Os quatro checks estão verdes
 
 O preview da nova fila recusou acesso anônimo com `302` para `/admin/login` e
 manteve CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
-`Permissions-Policy`, `Referrer-Policy` e `X-Robots-Tag: noindex`. O smoke AAL2
-da lista e dos links aguarda login humano no host da PR #45.
+`Permissions-Policy`, `Referrer-Policy` e `X-Robots-Tag: noindex`.
+
+O smoke AAL2 real também foi aprovado no host da PR #45. A sessão exibiu
+`Sessão AAL2`, a rota carregou como `/admin/review-queues` e apresentou as
+contagens esperadas de 2 naipes, 2 perfis e 43 atletas pendentes. Os dois links
+de competição apontaram exclusivamente para as edições 1 e 9, e foram
+renderizados 43 links de formulário privado. A própria fila não continha
+formulário nem campo `sex`, portanto a validação foi somente leitura e não
+transportou ou alterou valor privado. As revisões explícitas continuam sob
+responsabilidade humana antes de qualquer enforcement.
 
 O ensaio no Supabase compartilhado continua sendo apenas transacional e
 auto-bloqueado por `BR100`; a consulta posterior confirmou que o schema não foi
