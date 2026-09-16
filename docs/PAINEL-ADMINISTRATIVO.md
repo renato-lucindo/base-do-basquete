@@ -51,13 +51,21 @@ Em `/admin/review-queues` é possível:
 - visualizar as quantidades de competições sem naipe ou perfil final;
 - visualizar a quantidade de atletas com elegibilidade pendente;
 - abrir diretamente a revisão de cada competição;
-- abrir diretamente o formulário privado de cada atleta;
+- buscar atletas pelo nome e filtrar a lista sem perder escolhas já realizadas;
+- escolher explicitamente feminino ou masculino para vários atletas, sem valor
+  padrão ou preenchimento automático;
+- enviar um lote parcial ou completo com progresso, justificativa comum e
+  confirmação explícita;
+- limpar escolhas ainda não enviadas ou abrir o formulário individual como
+  alternativa;
 - acompanhar contagens factuais de jogos, inscrições e competições afetadas;
 - verificar quando todas as filas estiverem zeradas.
 
 A tela é protegida por AAL2 e usa o relatório administrativo de reconciliação.
-Ela transporta somente IDs, nomes públicos, contagens e flags de pendência. O
-valor privado de elegibilidade não é recebido, mostrado ou sugerido.
+O backend não confia no navegador: valida origem, CSRF, sessão, formato,
+duplicidades e existência dos atletas. O lote é atômico, limitado a 100 itens e
+gera uma auditoria individual para cada revisão. Se qualquer item falhar, nenhum
+é gravado. A auditoria não guarda os valores privados escolhidos.
 
 ## Competições
 

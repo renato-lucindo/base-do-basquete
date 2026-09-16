@@ -5,7 +5,7 @@ Estado: `DOING` na branch `feature/post-04-enforcement-closure`.
 ## Entrada humana medida em 16/09/2026
 
 O Supabase compartilhado ainda não está pronto para enforcement. A fotografia
-somente leitura de `2026-09-16T15:34:34Z` registrou:
+inicial somente leitura de `2026-09-16T15:34:34Z` registrou:
 
 - 2 edições com naipe pendente;
 - 2 edições com perfil de dados pendente;
@@ -38,41 +38,48 @@ A consulta reproduzível está em
 somente contagens, dados públicos de classificação e hashes, sem valores
 privados de elegibilidade.
 
-### Rechecagem após a revisão das competições
+### Rechecagem após as primeiras revisões
 
 A leitura autoritativa posterior à autorização de enforcement confirmou que as
 duas competições foram concluídas corretamente: as filas de naipe e perfil
 caíram de 2 para 0, e a auditoria registrou duas ações
 `competition_gender_reviewed` e duas ações
-`competition_data_profile_assigned`. Entretanto, os 43 atletas continuam com
-elegibilidade privada pendente e não existe auditoria `player_sex_reviewed` no
-período. Não há perfil privado ausente.
+`competition_data_profile_assigned`. A revisão individual do atleta 1 também
+foi concluída pelo responsável. O estado autoritativo atual é `0/0/42/0`:
+42 atletas com elegibilidade privada pendente e nenhum perfil privado ausente.
 
 Por isso a migration final não foi aplicada. A decisão privada de cada atleta é
 entrada humana indispensável e não pode ser inferida de nome, equipe,
 competição ou estatística. O enforcement somente poderá prosseguir depois que
-os 43 formulários forem efetivamente salvos e uma nova leitura retornar
+as 42 decisões restantes forem efetivamente salvas e uma nova leitura retornar
 `0/0/0/0`.
 
 ## Fila administrativa de fechamento
 
-A rota AAL2 `/admin/review-queues` consome exclusivamente o relatório
+A rota AAL2 `/admin/review-queues` consome o relatório
 `admin_get_classification_backfill_report` já protegido pelo banco. Ela mostra:
 
 - contagens de naipe, perfil e elegibilidade pendentes;
 - links diretos para as revisões das competições;
-- links diretos para os formulários privados dos atletas;
+- revisão em lote ou link para o formulário individual de cada atleta;
 - somente nomes públicos, IDs, contagens, flags e evidências factuais.
 
-O parser server-side usa uma allowlist e descarta qualquer campo não previsto;
-nenhum valor privado de elegibilidade é transportado para a tela. Relatório
-inválido ou incompleto resulta em 503, sem apresentar um gate parcial como se
-fosse confiável. O gate local aprovou 44 arquivos/302 testes Vitest, TypeScript
-estrito, Biome, build cliente/SSR, runbooks e varredura de 586 arquivos.
+O lote inclui busca tolerante a acentos, progresso, escolhas explícitas sem
+valor padrão, justificativa comum, confirmação e envio parcial ou integral.
+`admin_bulk_set_player_sex` valida de 1 a 100 itens, rejeita duplicidades e
+executa todas as revisões em uma única transação. Cada atleta recebe sua própria
+auditoria pela função individual existente, sem incluir o valor privado no
+registro; qualquer falha desfaz o lote inteiro. A aplicação reforça AAL2,
+same-origin, CSRF e uma allowlist server-side, e nunca confia na contagem ou no
+estado enviado pelo navegador.
+
+Relatório inválido ou incompleto resulta em 503, sem apresentar um gate parcial
+como se fosse confiável. O preview confirmou busca, progresso, seleção e limpeza
+somente no estado do cliente; nenhuma decisão privada foi enviada durante o QA.
 
 ## Unidade preparatória — enforcement autocondicionado
 
-A migration `20260916123000_post04_final_profile_enforcement.sql` foi preparada,
+A migration `20260916183655_post04_final_profile_enforcement.sql` foi preparada,
 mas não será aplicada ao ambiente compartilhado enquanto qualquer fila estiver
 pendente. Ela:
 
@@ -98,10 +105,12 @@ explícita.
 
 ## Gate descartável
 
-A PR draft #45 está no head funcional `468b1fa`. Os quatro checks estão verdes:
+A PR draft #45 recebeu a unidade funcional de revisão em lote nos commits
+`f4ed5f2`, `fd85e97` e `eead842`. O gate da aplicação, o upload do preview, o
+banco desde zero e o CodeQL foram reexecutados após a alteração:
 
-- gate de aplicação aprovado com 44 arquivos/302 testes Vitest;
-- banco reconstruído desde zero com 37 arquivos e 910 asserções pgTAP;
+- gate de aplicação aprovado com 44 arquivos/309 testes Vitest;
+- banco reconstruído desde zero com 38 arquivos e 927 asserções pgTAP;
 - concorrência aprovada para primeira criação idempotente e disputa pela última
   vaga de semifinal;
 - preview/upload e CodeQL aprovados.
@@ -111,17 +120,16 @@ manteve CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
 `Permissions-Policy`, `Referrer-Policy` e `X-Robots-Tag: noindex`.
 
 O smoke AAL2 real também foi aprovado no host da PR #45. A sessão exibiu
-`Sessão AAL2`, a rota carregou como `/admin/review-queues` e apresentou as
-contagens esperadas de 2 naipes, 2 perfis e 43 atletas pendentes. Os dois links
-de competição apontaram exclusivamente para as edições 1 e 9, e foram
-renderizados 43 links de formulário privado. A própria fila não continha
-formulário nem campo `sex`, portanto a validação foi somente leitura e não
-transportou ou alterou valor privado. As revisões explícitas continuam sob
-responsabilidade humana antes de qualquer enforcement.
+`Sessão AAL2` e a rota apresentou o estado atual `0/0/42/0`. O QA final validou
+a ordem visual busca → lista rolável → confirmação, a seleção com progresso, o
+filtro sem resultados e a limpeza das escolhas. A seleção de ensaio foi limpa
+sem submissão, portanto nenhum valor privado foi alterado.
 
-O ensaio no Supabase compartilhado continua sendo apenas transacional e
-auto-bloqueado por `BR100`; a consulta posterior confirmou que o schema não foi
-alterado. Produção permanece em `v1.1.0`; nenhuma migration POST-04 foi aplicada.
+A migration aditiva `20260916183607_admin_bulk_player_private_review.sql` foi
+aplicada ao Supabase compartilhado e validada: `authenticated` pode executar a
+função sob a guarda AAL2, enquanto `anon` e `public` não podem. A migration final
+continua auto-bloqueada por `BR100`. Produção permanece em `v1.1.0`; nenhum
+enforcement POST-04 foi aplicado.
 
 ## Advisors pré-enforcement
 
@@ -130,7 +138,7 @@ conhecidos e não introduzidos pelo POST-04:
 
 - `INFO`: 8 tabelas do schema privado com RLS e nenhuma policy; o schema não é
   exposto ao cliente e o acesso autorizado ocorre por funções restritas;
-- `WARN`: 37 RPCs administrativas `SECURITY DEFINER` executáveis por
+- `WARN`: 38 RPCs administrativas `SECURITY DEFINER` executáveis por
   `authenticated`; cada fluxo permanece responsável por exigir o administrador
   singleton em AAL2 e fixar o `search_path`;
 - `WARN`: proteção contra senhas vazadas desabilitada, dependente do plano;
