@@ -35,7 +35,7 @@ pendente. Ela:
 O pgTAP focal cobre as invariantes, o fluxo AAL2 de criação e as negações de
 privacidade. As fixtures determinísticas e suítes funcionais foram migradas
 para perfis finais explícitos. Quatro suítes de rollout que criavam
-deliberadamente valores nulos foram preservadas em `supabase/tests/legacy-rollout/`;
+deliberadamente valores nulos foram preservadas em `supabase/legacy-rollout-tests/`;
 seus estados deixaram de ser representáveis, e a cobertura sucessora está
 documentada no README desse diretório. Antes de qualquer aplicação persistente
 ainda serão necessários: CI desde zero, relatório zerado e autorização humana

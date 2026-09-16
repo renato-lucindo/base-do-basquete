@@ -1,5 +1,5 @@
 begin;
-\ir ../helpers/final_profile_fixtures.sql
+\ir ../../test-support/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(24);
@@ -116,13 +116,13 @@ set local role authenticated;
 
 select is(
   (select eligibility_pending from public.admin_get_player_private_profile(9751)),
-  true,
-  'the dedicated form reports the historical review as pending'
+  false,
+  'the dedicated form reports the final profile as complete'
 );
 select is(
   (select sex from public.admin_get_player_private_profile(9751)),
-  null,
-  'the dedicated form alone may return the current null private value'
+  'female'::text,
+  'the dedicated form returns the current complete private value'
 );
 select is(
   (select roster_entries from public.admin_get_player_private_profile(9751)),
@@ -142,13 +142,13 @@ select is(
 
 select lives_ok(
   $$select * from public.admin_set_player_sex(
-      9751, 'female', 'Revisão documental realizada pelo administrador'
+      9751, 'male', 'Revisão documental realizada pelo administrador'
     )$$,
   'the aal2 administrator updates the private form'
 );
 select is(
   (select sex from public.admin_get_player_private_profile(9751)),
-  'female'::text,
+  'male'::text,
   'the protected form returns the explicitly stored value'
 );
 select is(
@@ -182,7 +182,7 @@ select ok(
 );
 select lives_ok(
   $$select * from public.admin_set_player_sex(
-      9751, 'female', 'Repetição idempotente da mesma revisão'
+      9751, 'male', 'Repetição idempotente da mesma revisão'
     )$$,
   'repeating the same update is safe'
 );

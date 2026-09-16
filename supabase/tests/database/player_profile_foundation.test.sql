@@ -1,5 +1,5 @@
 begin;
-\ir ../helpers/final_profile_fixtures.sql
+\ir ../../test-support/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(27);
@@ -114,8 +114,8 @@ select throws_ok(
   'legacy public birth date column cannot retain private data'
 );
 select throws_ok(
-  $$insert into private.player_private (player_id, birth_date)
-    values (9801, '2000-01-01')$$,
+  $$insert into private.player_private (player_id, birth_date, sex, sex_review_required)
+    values (9801, '2000-01-01', 'male', false)$$,
   '23505',
   'duplicate key value violates unique constraint "player_private_pkey"',
   'one private identity row exists per player'
