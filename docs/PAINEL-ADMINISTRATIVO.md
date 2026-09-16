@@ -51,23 +51,33 @@ Em `/admin/review-queues` é possível:
 - visualizar as quantidades de competições sem naipe ou perfil final;
 - visualizar a quantidade de atletas com elegibilidade pendente;
 - abrir diretamente a revisão de cada competição;
-- buscar atletas pelo nome e filtrar a lista sem perder escolhas já realizadas;
-- iniciar os atletas pendentes com a predefinição masculina e trocar
-  explicitamente as exceções para feminino antes do envio;
-- enviar um lote parcial ou completo com progresso, justificativa comum e
-  confirmação explícita;
-- limpar escolhas ainda não enviadas ou abrir o formulário individual como
-  alternativa;
+- selecionar atletas por checkbox, inclusive todos os resultados visíveis;
+- buscar pelo nome e filtrar por competição, time e situação, com os filtros
+  preservados na URL sem perder escolhas já realizadas;
+- ordenar por nome, time, competição ou maior impacto;
+- aplicar masculino ou feminino ao lote selecionado; masculino é a predefinição
+  somente de quem foi marcado e as exceções podem ser ajustadas por atleta;
+- usar uma justificativa predefinida e editável antes do envio;
+- revisar o resumo por competição e por time, além das contagens de selecionados
+  e resultados;
+- identificar atletas vinculados a múltiplos times ou competições;
+- usar tabela em telas amplas e cartões adaptados em telas menores;
+- enviar um lote parcial ou completo pela barra fixa de ações, com justificativa
+  comum e confirmação explícita;
+- limpar filtros ou escolhas ainda não enviadas e abrir o formulário individual
+  como alternativa;
 - acompanhar contagens factuais de jogos, inscrições e competições afetadas;
 - verificar quando todas as filas estiverem zeradas.
 
 A tela é protegida por AAL2 e usa o relatório administrativo de reconciliação.
 O backend não confia no navegador: valida origem, CSRF, sessão, formato,
-duplicidades e existência dos atletas. O lote é atômico, limitado a 100 itens e
-gera uma auditoria individual para cada revisão. Se qualquer item falhar, nenhum
-é gravado. A predefinição existe somente no estado local da interface, não lê o
-valor privado atual e não grava nada sem justificativa e confirmação. A
-auditoria não guarda os valores privados escolhidos.
+duplicidades, existência dos atletas e a revisão esperada de cada linha. O lote
+é atômico, limitado a 100 itens e gera uma auditoria individual para cada
+revisão. Se qualquer item falhar ou tiver sido alterado por outro organizador,
+nenhum é gravado e a fila precisa ser recarregada. A predefinição existe somente
+no estado local da interface, não lê o valor privado atual e não grava nada sem
+justificativa e confirmação. A auditoria não guarda os valores privados
+escolhidos.
 
 ## Competições
 

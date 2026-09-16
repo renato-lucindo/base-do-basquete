@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { data, Form, Link, redirect, useNavigation } from "react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { data, Form, Link, redirect, useNavigation, useSearchParams } from "react-router";
 
 import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext, correlationIdContext } from "../context";
@@ -20,13 +20,19 @@ type CompetitionReviewItem = {
   seedGameCount: number;
 };
 
-type PlayerReviewItem = {
+type TeamContext = { teamId: number; name: string };
+type CompetitionContext = { competitionId: number; displayName: string; year: number };
+
+export type PlayerReviewItem = {
   playerId: number;
   fullName: string;
   isActive: boolean;
+  reviewRevision: number;
   rosterEntryCount: number;
   activeRosterEntryCount: number;
   competitionCount: number;
+  teams: TeamContext[];
+  competitions: CompetitionContext[];
 };
 
 export type ReviewQueueReport = {
@@ -42,11 +48,25 @@ export type ReviewQueueReport = {
 };
 
 type PlayerEligibilitySex = "male" | "female";
+type ReviewStatus = "all" | "active" | "inactive" | "multiple";
+type ReviewSort = "name" | "team" | "competition" | "impact";
 
 type BulkReviewInput = {
   reason: string;
-  reviews: Array<{ playerId: number; sex: PlayerEligibilitySex }>;
+  reviews: Array<{
+    playerId: number;
+    sex: PlayerEligibilitySex;
+    expectedRevision: number;
+  }>;
 };
+
+const reasonPresets = [
+  "Revisão cadastral em lote pelo organizador responsável.",
+  "Validação do elenco da competição pelo organizador responsável.",
+  "Correção cadastral após conferência documental.",
+] as const;
+
+const filterKeys = ["q", "competition", "team", "status", "sort"] as const;
 
 function objectValue(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
@@ -104,22 +124,47 @@ function parseCompetition(value: unknown): CompetitionReviewItem | null {
   };
 }
 
+function parseTeamContext(value: unknown): TeamContext | null {
+  const item = objectValue(value);
+  const teamId = integerValue(item?.teamId);
+  const name = stringValue(item?.name);
+  return teamId && name ? { teamId, name } : null;
+}
+
+function parseCompetitionContext(value: unknown): CompetitionContext | null {
+  const item = objectValue(value);
+  const competitionId = integerValue(item?.competitionId);
+  const displayName = stringValue(item?.displayName);
+  const year = integerValue(item?.year);
+  return competitionId && displayName && year ? { competitionId, displayName, year } : null;
+}
+
 function parsePlayer(value: unknown): PlayerReviewItem | null {
   const item = objectValue(value);
   if (!item) return null;
   const playerId = integerValue(item.playerId);
   const fullName = stringValue(item.fullName);
   const isActive = booleanValue(item.isActive);
+  const reviewRevision = integerValue(item.reviewRevision);
   const rosterEntryCount = integerValue(item.rosterEntryCount);
   const activeRosterEntryCount = integerValue(item.activeRosterEntryCount);
   const competitionCount = integerValue(item.competitionCount);
+  const teamValues = Array.isArray(item.teams) ? item.teams.map(parseTeamContext) : null;
+  const competitionValues = Array.isArray(item.competitions)
+    ? item.competitions.map(parseCompetitionContext)
+    : null;
   if (
     !playerId ||
     !fullName ||
     isActive === null ||
+    !reviewRevision ||
     rosterEntryCount === null ||
     activeRosterEntryCount === null ||
-    competitionCount === null
+    competitionCount === null ||
+    !teamValues ||
+    teamValues.some((team) => team === null) ||
+    !competitionValues ||
+    competitionValues.some((competition) => competition === null)
   ) {
     return null;
   }
@@ -127,26 +172,34 @@ function parsePlayer(value: unknown): PlayerReviewItem | null {
     playerId,
     fullName,
     isActive,
+    reviewRevision,
     rosterEntryCount,
     activeRosterEntryCount,
     competitionCount,
+    teams: teamValues as TeamContext[],
+    competitions: competitionValues as CompetitionContext[],
   };
 }
 
-export function parseReviewQueueReport(value: unknown): ReviewQueueReport | null {
+export function parsePlayerReviewQueue(value: unknown): PlayerReviewItem[] | null {
+  const queue = objectValue(value);
+  const queueVersion = integerValue(queue?.queueVersion);
+  const playerValues = Array.isArray(queue?.players) ? queue.players : null;
+  if (!queueVersion || !playerValues) return null;
+  const players = playerValues.map(parsePlayer);
+  return players.some((player) => player === null) ? null : (players as PlayerReviewItem[]);
+}
+
+export function parseReviewQueueReport(value: unknown): Omit<ReviewQueueReport, "players"> | null {
   const report = objectValue(value);
   const counts = objectValue(report?.counts);
   const queues = objectValue(report?.queues);
   if (!report || !counts || !queues) return null;
 
   const competitionValues = Array.isArray(queues.competitions) ? queues.competitions : null;
-  const playerValues = Array.isArray(queues.players) ? queues.players : null;
-  if (!competitionValues || !playerValues) return null;
+  if (!competitionValues) return null;
   const competitions = competitionValues.map(parseCompetition);
-  const players = playerValues.map(parsePlayer);
-  if (competitions.some((item) => item === null) || players.some((item) => item === null)) {
-    return null;
-  }
+  if (competitions.some((item) => item === null)) return null;
 
   const reportVersion = integerValue(report.reportVersion);
   const enforcementReady = booleanValue(report.enforcementReady);
@@ -172,7 +225,6 @@ export function parseReviewQueueReport(value: unknown): ReviewQueueReport | null
       playerEligibilityPending,
     },
     competitions: competitions as CompetitionReviewItem[],
-    players: players as PlayerReviewItem[],
   };
 }
 
@@ -194,19 +246,27 @@ export function parseBulkReviewInput(form: FormData): BulkReviewInput | null {
   const reviews: BulkReviewInput["reviews"] = [];
   const seen = new Set<number>();
   for (const [name, rawValue] of form.entries()) {
-    const match = /^player:([1-9][0-9]{0,14})$/u.exec(name);
+    const match = /^selected:([1-9][0-9]{0,14})$/u.exec(name);
     if (!match) continue;
     const playerId = Number(match[1]);
-    const sex = String(rawValue);
+    const sexValues = form.getAll(`player:${playerId}`);
+    const revisionValues = form.getAll(`revision:${playerId}`);
+    const sex = String(sexValues[0] ?? "");
+    const expectedRevision = Number(revisionValues[0]);
     if (
+      rawValue !== "on" ||
       !Number.isSafeInteger(playerId) ||
       seen.has(playerId) ||
-      (sex !== "male" && sex !== "female")
+      sexValues.length !== 1 ||
+      revisionValues.length !== 1 ||
+      (sex !== "male" && sex !== "female") ||
+      !Number.isSafeInteger(expectedRevision) ||
+      expectedRevision < 1
     ) {
       return null;
     }
     seen.add(playerId);
-    reviews.push({ playerId, sex });
+    reviews.push({ playerId, sex, expectedRevision });
   }
   if (reviews.length < 1 || reviews.length > 100) return null;
   return { reason, reviews };
@@ -215,24 +275,36 @@ export function parseBulkReviewInput(form: FormData): BulkReviewInput | null {
 export async function loader({ request, context }: Route.LoaderArgs) {
   const { env } = context.get(cloudflareContext);
   const auth = await requireAdminAal2(request, env);
-  const result = await auth.client.rpc("admin_get_classification_backfill_report");
-  const report = result.error ? null : parseReviewQueueReport(result.data);
-  if (!report) {
+  const [reportResult, playerResult] = await Promise.all([
+    auth.client.rpc("admin_get_classification_backfill_report"),
+    auth.client.rpc("admin_get_player_review_queue"),
+  ]);
+  const reportBase = reportResult.error ? null : parseReviewQueueReport(reportResult.data);
+  const players = playerResult.error ? null : parsePlayerReviewQueue(playerResult.data);
+  if (!reportBase || !players || reportBase.counts.playerEligibilityPending !== players.length) {
     throw new Response("Relatório de pendências indisponível", { status: 503 });
   }
   return data(
     {
-      report,
+      report: { ...reportBase, players },
       csrfToken: auth.payload.csrfToken,
       savedCount: (() => {
         const value = new URL(request.url).searchParams.get("savedPlayers");
         return value && /^[1-9][0-9]{0,2}$/u.test(value) ? Number(value) : null;
       })(),
     },
-    {
-      headers: responseHeaders(auth.cookie),
-    },
+    { headers: responseHeaders(auth.cookie) },
   );
+}
+
+function reviewQueueRedirect(request: Request, savedCount: number) {
+  const current = new URL(request.url).searchParams;
+  const next = new URLSearchParams({ savedPlayers: String(savedCount) });
+  for (const key of filterKeys) {
+    const value = current.get(key);
+    if (value && value.length <= 160) next.set(key, value);
+  }
+  return `/admin/review-queues?${next.toString()}#player-review-title`;
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -267,7 +339,11 @@ export async function action({ request, context }: Route.ActionArgs) {
     !Number.isSafeInteger(summary.remaining_pending)
   ) {
     const status =
-      result.error?.code === "BD401" ? 403 : result.error?.code === "BD404" ? 409 : 400;
+      result.error?.code === "BD401"
+        ? 403
+        : result.error?.code === "BD404" || result.error?.code === "BD409"
+          ? 409
+          : 400;
     logOperationalEvent({
       correlationId,
       durationMs: Date.now() - startedAt,
@@ -280,7 +356,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       {
         error:
           status === 409
-            ? "A fila mudou enquanto você revisava. Recarregue antes de tentar novamente."
+            ? "A fila mudou enquanto você revisava. Nenhuma escolha foi aplicada; recarregue antes de tentar novamente."
             : "Não foi possível salvar o lote. Nenhuma escolha foi aplicada.",
       },
       { status, headers },
@@ -294,10 +370,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     outcome: "success",
     status: 303,
   });
-  throw redirect(
-    `/admin/review-queues?savedPlayers=${summary.reviewed_count}#player-review-title`,
-    { headers },
-  );
+  throw redirect(reviewQueueRedirect(request, summary.reviewed_count), { headers });
 }
 
 function normalizeSearch(value: string) {
@@ -315,37 +388,184 @@ export function createMalePreselection(playerIds: readonly number[]) {
   >;
 }
 
+export function filterAndSortPlayers(
+  players: readonly PlayerReviewItem[],
+  filters: {
+    query: string;
+    competitionId: string;
+    teamId: string;
+    status: ReviewStatus;
+    sort: ReviewSort;
+  },
+) {
+  const query = normalizeSearch(filters.query);
+  return players
+    .filter((player) => {
+      if (query && !normalizeSearch(player.fullName).includes(query)) return false;
+      if (
+        filters.competitionId &&
+        !player.competitions.some(
+          (competition) => String(competition.competitionId) === filters.competitionId,
+        )
+      ) {
+        return false;
+      }
+      if (filters.teamId && !player.teams.some((team) => String(team.teamId) === filters.teamId)) {
+        return false;
+      }
+      if (filters.status === "active" && player.activeRosterEntryCount === 0) return false;
+      if (filters.status === "inactive" && player.activeRosterEntryCount > 0) return false;
+      if (
+        filters.status === "multiple" &&
+        player.teams.length <= 1 &&
+        player.competitions.length <= 1
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .sort((left, right) => {
+      if (filters.sort === "impact") {
+        return (
+          right.activeRosterEntryCount +
+          right.competitionCount -
+          (left.activeRosterEntryCount + left.competitionCount)
+        );
+      }
+      if (filters.sort === "team") {
+        return (left.teams[0]?.name ?? "").localeCompare(right.teams[0]?.name ?? "", "pt-BR");
+      }
+      if (filters.sort === "competition") {
+        return (left.competitions[0]?.displayName ?? "").localeCompare(
+          right.competitions[0]?.displayName ?? "",
+          "pt-BR",
+        );
+      }
+      return left.fullName.localeCompare(right.fullName, "pt-BR");
+    });
+}
+
+function joinContext(values: readonly string[]) {
+  return values.length ? values.join(", ") : "Sem vínculo";
+}
+
 export default function ReviewQueues({ loaderData, actionData }: Route.ComponentProps) {
   const { report } = loaderData;
-  const [query, setQuery] = useState("");
-  const defaultChoices = useMemo(
-    () => createMalePreselection(report.players.map((player) => player.playerId)),
-    [report.players],
-  );
-  const [choices, setChoices] = useState<Record<number, PlayerEligibilitySex>>(defaultChoices);
-  useEffect(() => setChoices(defaultChoices), [defaultChoices]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [choices, setChoices] = useState<Record<number, PlayerEligibilitySex>>({});
+  const [reason, setReason] = useState<string>(reasonPresets[0]);
+  const selectAllRef = useRef<HTMLInputElement>(null);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
-  const selectedCount = Object.keys(choices).length;
-  const normalizedQuery = normalizeSearch(query);
-  const visiblePlayerIds = useMemo(
-    () =>
-      new Set(
-        report.players
-          .filter((player) => normalizeSearch(player.fullName).includes(normalizedQuery))
-          .map((player) => player.playerId),
-      ),
-    [normalizedQuery, report.players],
+
+  const query = searchParams.get("q") ?? "";
+  const competitionId = searchParams.get("competition") ?? "";
+  const teamId = searchParams.get("team") ?? "";
+  const statusValue = searchParams.get("status");
+  const status: ReviewStatus = ["active", "inactive", "multiple"].includes(statusValue ?? "")
+    ? (statusValue as ReviewStatus)
+    : "all";
+  const sortValue = searchParams.get("sort");
+  const sort: ReviewSort = ["team", "competition", "impact"].includes(sortValue ?? "")
+    ? (sortValue as ReviewSort)
+    : "name";
+
+  const teams = useMemo(() => {
+    const values = new Map<number, string>();
+    for (const player of report.players) {
+      for (const team of player.teams) values.set(team.teamId, team.name);
+    }
+    return [...values].sort((left, right) => left[1].localeCompare(right[1], "pt-BR"));
+  }, [report.players]);
+  const competitions = useMemo(() => {
+    const values = new Map<number, CompetitionContext>();
+    for (const player of report.players) {
+      for (const competition of player.competitions) {
+        values.set(competition.competitionId, competition);
+      }
+    }
+    return [...values.values()].sort(
+      (left, right) => right.year - left.year || left.displayName.localeCompare(right.displayName),
+    );
+  }, [report.players]);
+  const visiblePlayers = useMemo(
+    () => filterAndSortPlayers(report.players, { query, competitionId, teamId, status, sort }),
+    [competitionId, query, report.players, sort, status, teamId],
   );
-  const progress = report.players.length
-    ? Math.round((selectedCount / report.players.length) * 100)
-    : 100;
+  const selectedPlayers = useMemo(
+    () => report.players.filter((player) => choices[player.playerId]),
+    [choices, report.players],
+  );
+  const selectedCount = selectedPlayers.length;
+  const selectedVisibleCount = visiblePlayers.filter((player) => choices[player.playerId]).length;
+  const allVisibleSelected =
+    visiblePlayers.length > 0 && selectedVisibleCount === visiblePlayers.length;
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate =
+        selectedVisibleCount > 0 && selectedVisibleCount < visiblePlayers.length;
+    }
+  }, [selectedVisibleCount, visiblePlayers.length]);
+
+  const selectionSummary = useMemo(() => {
+    const teamCounts = new Map<string, number>();
+    const competitionCounts = new Map<string, number>();
+    for (const player of selectedPlayers) {
+      for (const team of player.teams)
+        teamCounts.set(team.name, (teamCounts.get(team.name) ?? 0) + 1);
+      for (const competition of player.competitions) {
+        const label = `${competition.displayName} · ${competition.year}`;
+        competitionCounts.set(label, (competitionCounts.get(label) ?? 0) + 1);
+      }
+    }
+    const order = (values: Map<string, number>) =>
+      [...values].sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]));
+    return { teams: order(teamCounts), competitions: order(competitionCounts) };
+  }, [selectedPlayers]);
+
+  const setFilter = (key: (typeof filterKeys)[number], value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("savedPlayers");
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setSearchParams(next, { replace: true });
+  };
+  const clearFilters = () => {
+    const next = new URLSearchParams(searchParams);
+    for (const key of filterKeys) next.delete(key);
+    next.delete("savedPlayers");
+    setSearchParams(next, { replace: true });
+  };
+  const setPlayerSelected = (playerId: number, selected: boolean) => {
+    setChoices((current) => {
+      const next = { ...current };
+      if (selected) next[playerId] = current[playerId] ?? "male";
+      else delete next[playerId];
+      return next;
+    });
+  };
+  const setVisibleSelected = (selected: boolean) => {
+    setChoices((current) => {
+      const next = { ...current };
+      for (const player of visiblePlayers) {
+        if (selected) next[player.playerId] = current[player.playerId] ?? "male";
+        else delete next[player.playerId];
+      }
+      return next;
+    });
+  };
+  const setSelectedSex = (sex: PlayerEligibilitySex) => {
+    setChoices((current) =>
+      Object.fromEntries(Object.keys(current).map((playerId) => [Number(playerId), sex])),
+    );
+  };
+
   return (
     <AdminArea title="Pendências de fechamento">
       <p>
-        Esta fila mostra somente contexto público e o estado pendente. Ela não lê o valor privado
-        existente; a predefinição masculina é apenas operacional e precisa ser revisada antes do
-        envio.
+        Esta fila mostra somente contexto público e o estado pendente. O valor privado atual nunca é
+        lido; masculino é aplicado apenas quando você marca um atleta.
       </p>
       <div className="admin-status-grid">
         <article>
@@ -410,8 +630,8 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
           <div>
             <h2 id="player-review-title">Atletas</h2>
             <p>
-              Masculino é a predefinição. Revise a lista e troque as exceções para feminino antes de
-              confirmar o lote.
+              Marque os atletas, filtre pelo contexto de trabalho e ajuste somente as exceções para
+              feminino.
             </p>
           </div>
           <strong>{report.players.length} pendente(s)</strong>
@@ -429,82 +649,243 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
         {report.players.length ? (
           <Form method="post" className="bulk-private-review-form">
             <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
-            <div className="bulk-review-tools">
+            <div className="bulk-review-filters">
               <label>
                 Buscar atleta
                 <input
                   type="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => setFilter("q", event.target.value)}
                   placeholder="Digite parte do nome"
                 />
               </label>
-              <fieldset className="bulk-review-progress">
-                <legend className="sr-only">Progresso das escolhas</legend>
-                <span>
-                  <strong>{selectedCount}</strong> de {report.players.length} selecionado(s)
-                </span>
-                <progress max={report.players.length} value={selectedCount}>
-                  {progress}%
-                </progress>
-              </fieldset>
+              <label>
+                Competição
+                <select
+                  value={competitionId}
+                  onChange={(event) => setFilter("competition", event.target.value)}
+                >
+                  <option value="">Todas</option>
+                  {competitions.map((competition) => (
+                    <option value={competition.competitionId} key={competition.competitionId}>
+                      {competition.displayName} · {competition.year}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Time
+                <select value={teamId} onChange={(event) => setFilter("team", event.target.value)}>
+                  <option value="">Todos</option>
+                  {teams.map(([id, name]) => (
+                    <option value={id} key={id}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Situação
+                <select
+                  value={status}
+                  onChange={(event) =>
+                    setFilter("status", event.target.value === "all" ? "" : event.target.value)
+                  }
+                >
+                  <option value="all">Todas</option>
+                  <option value="active">Com inscrição ativa</option>
+                  <option value="inactive">Sem inscrição ativa</option>
+                  <option value="multiple">Múltiplos contextos</option>
+                </select>
+              </label>
+              <label>
+                Ordenar
+                <select
+                  value={sort}
+                  onChange={(event) =>
+                    setFilter("sort", event.target.value === "name" ? "" : event.target.value)
+                  }
+                >
+                  <option value="name">Nome</option>
+                  <option value="team">Time</option>
+                  <option value="competition">Competição</option>
+                  <option value="impact">Maior impacto</option>
+                </select>
+              </label>
+              <button className="button button-ghost" type="button" onClick={clearFilters}>
+                Limpar filtros
+              </button>
             </div>
 
-            <div className="bulk-review-list">
-              {report.players.map((player) => (
-                <article
-                  className="bulk-review-row"
-                  key={player.playerId}
-                  hidden={!visiblePlayerIds.has(player.playerId)}
-                >
-                  <div className="bulk-review-player">
-                    <strong>{player.fullName}</strong>
-                    <span>{player.isActive ? "Ativo" : "Sem vínculo ativo"}</span>
-                    <small>
-                      {player.rosterEntryCount} inscrição(ões) · {player.activeRosterEntryCount}{" "}
-                      ativa(s) · {player.competitionCount} competição(ões)
-                    </small>
-                    <Link to={`/admin/players/${player.playerId}/private-profile`}>
-                      Revisar individualmente
-                    </Link>
-                  </div>
-                  <fieldset className="eligibility-choice">
-                    <legend className="sr-only">
-                      Sexo para elegibilidade de {player.fullName}
-                    </legend>
-                    <label>
-                      <input
-                        type="radio"
-                        name={`player:${player.playerId}`}
-                        value="female"
-                        checked={choices[player.playerId] === "female"}
-                        onChange={() =>
-                          setChoices((current) => ({ ...current, [player.playerId]: "female" }))
-                        }
-                      />
-                      Feminino
-                    </label>
-                    <label>
-                      <input
-                        type="radio"
-                        name={`player:${player.playerId}`}
-                        value="male"
-                        checked={choices[player.playerId] === "male"}
-                        onChange={() =>
-                          setChoices((current) => ({ ...current, [player.playerId]: "male" }))
-                        }
-                      />
-                      Masculino
-                    </label>
-                  </fieldset>
-                </article>
-              ))}
+            <div className="bulk-review-result-bar">
+              <label className="bulk-select-all">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  checked={allVisibleSelected}
+                  disabled={visiblePlayers.length === 0 || busy}
+                  onChange={(event) => setVisibleSelected(event.target.checked)}
+                />
+                Selecionar todos os {visiblePlayers.length} visíveis
+              </label>
+              <span>
+                <strong>{selectedCount}</strong> selecionado(s) no total ·{" "}
+                <strong>{visiblePlayers.length}</strong> resultado(s)
+              </span>
             </div>
-            {visiblePlayerIds.size === 0 ? (
-              <p className="admin-note">Nenhum atleta corresponde à busca.</p>
-            ) : null}
+
+            {visiblePlayers.length ? (
+              <div className="bulk-review-table-wrap">
+                <table className="bulk-review-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Selecionar</th>
+                      <th scope="col">Atleta</th>
+                      <th scope="col">Time</th>
+                      <th scope="col">Competição</th>
+                      <th scope="col">Impacto</th>
+                      <th scope="col">Classificação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visiblePlayers.map((player) => {
+                      const selected = Boolean(choices[player.playerId]);
+                      const multipleContexts =
+                        player.teams.length > 1 || player.competitions.length > 1;
+                      return (
+                        <tr key={player.playerId} className={selected ? "is-selected" : undefined}>
+                          <td data-label="Selecionar">
+                            <input
+                              type="checkbox"
+                              name={`selected:${player.playerId}`}
+                              checked={selected}
+                              value="on"
+                              aria-label={`Selecionar ${player.fullName}`}
+                              onChange={(event) =>
+                                setPlayerSelected(player.playerId, event.target.checked)
+                              }
+                            />
+                          </td>
+                          <td data-label="Atleta">
+                            <strong>{player.fullName}</strong>
+                            <small>{player.isActive ? "Cadastro ativo" : "Cadastro inativo"}</small>
+                            <Link to={`/admin/players/${player.playerId}/private-profile`}>
+                              Revisar individualmente
+                            </Link>
+                          </td>
+                          <td data-label="Time">
+                            <span>{joinContext(player.teams.map((team) => team.name))}</span>
+                            {multipleContexts ? (
+                              <small className="context-warning">
+                                Atenção: vínculos em múltiplos contextos
+                              </small>
+                            ) : null}
+                          </td>
+                          <td data-label="Competição">
+                            {joinContext(
+                              player.competitions.map(
+                                (competition) => `${competition.displayName} · ${competition.year}`,
+                              ),
+                            )}
+                          </td>
+                          <td data-label="Impacto">
+                            <strong>{player.activeRosterEntryCount} ativa(s)</strong>
+                            <small>
+                              {player.rosterEntryCount} inscrição(ões) · {player.competitionCount}{" "}
+                              competição(ões)
+                            </small>
+                          </td>
+                          <td data-label="Classificação">
+                            {selected ? (
+                              <>
+                                <input
+                                  type="hidden"
+                                  name={`revision:${player.playerId}`}
+                                  value={player.reviewRevision}
+                                />
+                                <select
+                                  name={`player:${player.playerId}`}
+                                  value={choices[player.playerId]}
+                                  aria-label={`Classificação de ${player.fullName}`}
+                                  onChange={(event) =>
+                                    setChoices((current) => ({
+                                      ...current,
+                                      [player.playerId]: event.target.value as PlayerEligibilitySex,
+                                    }))
+                                  }
+                                >
+                                  <option value="male">Masculino</option>
+                                  <option value="female">Feminino</option>
+                                </select>
+                              </>
+                            ) : (
+                              <span className="muted-choice">Não incluído</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="bulk-review-empty">
+                <strong>Nenhum atleta encontrado.</strong>
+                <p>Ajuste os filtros ou limpe todos para voltar à fila completa.</p>
+                <button className="button button-ghost" type="button" onClick={clearFilters}>
+                  Limpar filtros
+                </button>
+              </div>
+            )}
 
             <div className="bulk-review-submit">
+              <div className="bulk-review-summary" aria-live="polite">
+                <h3>Resumo antes do envio</h3>
+                {selectedCount ? (
+                  <div className="bulk-review-summary-grid">
+                    <div>
+                      <strong>Por competição</strong>
+                      <ul>
+                        {selectionSummary.competitions.map(([label, count]) => (
+                          <li key={label}>
+                            {label}: {count}
+                          </li>
+                        ))}
+                        {selectionSummary.competitions.length === 0 ? <li>Sem vínculo</li> : null}
+                      </ul>
+                    </div>
+                    <div>
+                      <strong>Por time</strong>
+                      <ul>
+                        {selectionSummary.teams.map(([label, count]) => (
+                          <li key={label}>
+                            {label}: {count}
+                          </li>
+                        ))}
+                        {selectionSummary.teams.length === 0 ? <li>Sem vínculo</li> : null}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Selecione ao menos um atleta para ver o impacto por competição e time.</p>
+                )}
+              </div>
+              <label>
+                Motivo predefinido
+                <select
+                  value={
+                    reasonPresets.includes(reason as (typeof reasonPresets)[number]) ? reason : ""
+                  }
+                  onChange={(event) => event.target.value && setReason(event.target.value)}
+                >
+                  <option value="">Personalizado</option>
+                  {reasonPresets.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {preset}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label>
                 Justificativa comum para este lote
                 <textarea
@@ -512,7 +893,8 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
                   minLength={10}
                   maxLength={500}
                   required
-                  placeholder="Ex.: revisão cadastral realizada pelo administrador responsável"
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
                 />
                 <small>
                   A justificativa e o impacto serão auditados individualmente; os valores escolhidos
@@ -521,25 +903,45 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
               </label>
               <label className="bulk-review-confirmation">
                 <input type="checkbox" name="confirmed" required /> Revisei as {selectedCount}{" "}
-                escolha(s) selecionada(s) e confirmo o envio transacional.
+                escolha(s) e confirmo o envio transacional.
               </label>
-              <div className="bulk-review-actions">
-                <button
-                  className="button button-ghost"
-                  type="button"
-                  disabled={selectedCount === 0 || busy}
-                  onClick={() => setChoices({})}
-                >
-                  Limpar escolhas
-                </button>
-                <button
-                  className="button button-primary"
-                  type="submit"
-                  disabled={selectedCount === 0 || busy}
-                >
-                  {busy ? "Salvando lote…" : `Salvar ${selectedCount} revisão(ões)`}
-                </button>
-              </div>
+            </div>
+
+            <div className="bulk-review-action-bar">
+              <span>
+                <strong>{selectedCount}</strong> selecionado(s)
+              </span>
+              <button
+                className="button button-ghost"
+                type="button"
+                disabled={selectedCount === 0 || busy}
+                onClick={() => setSelectedSex("male")}
+              >
+                Definir masculino
+              </button>
+              <button
+                className="button button-ghost"
+                type="button"
+                disabled={selectedCount === 0 || busy}
+                onClick={() => setSelectedSex("female")}
+              >
+                Definir feminino
+              </button>
+              <button
+                className="button button-ghost"
+                type="button"
+                disabled={selectedCount === 0 || busy}
+                onClick={() => setChoices({})}
+              >
+                Limpar seleção
+              </button>
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={selectedCount === 0 || busy}
+              >
+                {busy ? "Salvando lote…" : `Salvar ${selectedCount} revisão(ões)`}
+              </button>
             </div>
           </Form>
         ) : (

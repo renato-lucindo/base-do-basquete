@@ -4367,6 +4367,7 @@ export type Database = {
         Returns: number;
       };
       admin_get_classification_backfill_report: { Args: never; Returns: Json };
+      admin_get_player_review_queue: { Args: never; Returns: Json };
       admin_get_competition_schedule: {
         Args: { p_competition_id: number };
         Returns: Json;

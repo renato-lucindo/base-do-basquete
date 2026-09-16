@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(23);
 
 select has_function(
   'public',
@@ -23,6 +23,28 @@ select ok(
     'EXECUTE'
   ),
   'anon cannot execute the protected RPC'
+);
+select has_function(
+  'public',
+  'admin_get_player_review_queue',
+  array[]::text[],
+  'contextual value-free player queue RPC exists'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.admin_get_player_review_queue()',
+    'EXECUTE'
+  ),
+  'authenticated may execute the protected queue RPC'
+);
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.admin_get_player_review_queue()',
+    'EXECUTE'
+  ),
+  'anon cannot execute the protected queue RPC'
 );
 
 insert into auth.users(id)
@@ -53,19 +75,59 @@ select set_config('request.jwt.claims', jsonb_build_object(
   'aal', 'aal2'
 )::text, true);
 
+create temporary table bulk_private_review_baseline as
+select
+  count(*) filter (where sex is null or sex_review_required)::bigint as remaining_pending,
+  (private.build_classification_backfill_report() ->> 'enforcementReady')::boolean
+    as enforcement_ready
+from private.player_private;
+
 insert into public.players(id,full_name,slug)
 overriding system value values
   (99591,'Atleta Lote Um','atleta-lote-um'),
   (99592,'Atleta Lote Dois','atleta-lote-dois');
 insert into private.player_private(player_id,sex,sex_review_required)
 values
-  (99591,'male',false),
-  (99592,'male',false);
+  (99591,'male',true),
+  (99592,'male',true)
+on conflict (player_id) do update
+set sex=excluded.sex,
+    sex_review_required=excluded.sex_review_required;
+
+select is(
+  jsonb_array_length(public.admin_get_player_review_queue() -> 'players'),
+  (select remaining_pending::integer + 2 from bulk_private_review_baseline),
+  'the queue returns every pending player'
+);
+select ok(
+  public.admin_get_player_review_queue()::text !~ '"sex"|"male"|"female"'
+  and jsonb_typeof(
+    public.admin_get_player_review_queue() #> '{players,0,reviewRevision}'
+  ) = 'number',
+  'the queue exposes an opaque revision but no private eligibility value'
+);
 
 create temporary table bulk_private_review_result as
 select *
 from public.admin_bulk_set_player_sex(
-  '[{"playerId":99591,"sex":"female"},{"playerId":99592,"sex":"female"}]'::jsonb,
+  jsonb_build_array(
+    jsonb_build_object(
+      'playerId',99591,
+      'sex','female',
+      'expectedRevision',(
+        select floor(extract(epoch from updated_at)*1000000)::bigint
+        from private.player_private where player_id=99591
+      )
+    ),
+    jsonb_build_object(
+      'playerId',99592,
+      'sex','female',
+      'expectedRevision',(
+        select floor(extract(epoch from updated_at)*1000000)::bigint
+        from private.player_private where player_id=99592
+      )
+    )
+  ),
   'Revisão administrativa em lote'
 );
 
@@ -76,12 +138,12 @@ select is(
 );
 select is(
   (select remaining_pending from bulk_private_review_result),
-  0::bigint,
+  (select remaining_pending from bulk_private_review_baseline),
   'the RPC returns only aggregate remaining progress'
 );
 select is(
   (select enforcement_ready from bulk_private_review_result),
-  true,
+  (select enforcement_ready from bulk_private_review_baseline),
   'the RPC reports readiness without returning private values'
 );
 select is(
@@ -117,7 +179,7 @@ select ok(
 
 select throws_ok(
   $$select * from public.admin_bulk_set_player_sex(
-    '[{"playerId":99591,"sex":"male"},{"playerId":99591,"sex":"female"}]'::jsonb,
+    '[{"playerId":99591,"sex":"male","expectedRevision":1},{"playerId":99591,"sex":"female","expectedRevision":1}]'::jsonb,
     'Revisão administrativa em lote'
   )$$,
   'BD501',
@@ -126,7 +188,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select * from public.admin_bulk_set_player_sex(
-    '[{"playerId":99591,"sex":"unknown"}]'::jsonb,
+    '[{"playerId":99591,"sex":"unknown","expectedRevision":1}]'::jsonb,
     'Revisão administrativa em lote'
   )$$,
   'BD501',
@@ -135,7 +197,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select * from public.admin_bulk_set_player_sex(
-    '[{"playerId":99591,"sex":"male"}]'::jsonb,
+    '[{"playerId":99591,"sex":"male","expectedRevision":1}]'::jsonb,
     'curta'
   )$$,
   'BD501',
@@ -144,7 +206,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select * from public.admin_bulk_set_player_sex(
-    '[{"playerId":99591,"sex":"male"},{"playerId":999999999,"sex":"female"}]'::jsonb,
+    '[{"playerId":99591,"sex":"male","expectedRevision":1},{"playerId":999999999,"sex":"female","expectedRevision":1}]'::jsonb,
     'Revisão administrativa em lote'
   )$$,
   'BD404',
@@ -155,6 +217,16 @@ select is(
   (select sex from private.player_private where player_id=99591),
   'female',
   'prevalidation keeps the batch atomic when one player is unknown'
+);
+
+select throws_ok(
+  $$select * from public.admin_bulk_set_player_sex(
+    '[{"playerId":99591,"sex":"male","expectedRevision":1}]'::jsonb,
+    'Revisão administrativa em lote'
+  )$$,
+  'BD409',
+  'BDB_PLAYER_REVIEW_STALE',
+  'a completed or concurrently changed row rejects the stale batch'
 );
 
 select throws_ok(

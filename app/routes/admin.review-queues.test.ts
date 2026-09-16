@@ -5,8 +5,10 @@ import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import {
   action,
   createMalePreselection,
+  filterAndSortPlayers,
   loader,
   parseBulkReviewInput,
+  parsePlayerReviewQueue,
   parseReviewQueueReport,
 } from "./admin.review-queues";
 
@@ -51,6 +53,29 @@ const report = {
   enforcementReady: false,
 };
 
+const playerQueue = {
+  queueVersion: 1,
+  players: [
+    {
+      playerId: 12,
+      fullName: "Atleta em revisão",
+      isActive: true,
+      reviewRevision: 1_789_012_345_678_901,
+      rosterEntryCount: 3,
+      activeRosterEntryCount: 1,
+      competitionCount: 2,
+      teams: [
+        { teamId: 3, name: "Águias" },
+        { teamId: 8, name: "Basquete Clube" },
+      ],
+      competitions: [
+        { competitionId: 9, displayName: "Copa Ouro", year: 2026 },
+        { competitionId: 10, displayName: "Liga Estadual", year: 2025 },
+      ],
+    },
+  ],
+};
+
 function context() {
   return {
     get(key: unknown) {
@@ -78,8 +103,12 @@ function post(fields: Record<string, string> = {}, origin = "https://example.tes
         csrfToken: "test-csrf",
         reason: "Revisão cadastral conferida em lote",
         confirmed: "on",
+        "selected:12": "on",
         "player:12": "female",
+        "revision:12": "1789012345678901",
+        "selected:13": "on",
         "player:13": "male",
+        "revision:13": "1789012345678902",
         ...fields,
       }),
     }),
@@ -96,7 +125,7 @@ beforeEach(() => {
 });
 
 describe("administrative review queues", () => {
-  it("preselects every pending player as male without reading private data", () => {
+  it("uses male only as the default for explicitly selected players", () => {
     expect(createMalePreselection([2, 13, 54])).toEqual({
       2: "male",
       13: "male",
@@ -104,36 +133,49 @@ describe("administrative review queues", () => {
     });
   });
 
-  it("whitelists value-free queue fields and discards private eligibility values", () => {
-    const parsed = parseReviewQueueReport(report);
-    expect(parsed).toMatchObject({
+  it("whitelists public context and discards private eligibility values", () => {
+    const reportParsed = parseReviewQueueReport(report);
+    const playersParsed = parsePlayerReviewQueue(playerQueue);
+    expect(reportParsed).toMatchObject({
       enforcementReady: false,
       counts: { playerEligibilityPending: 1 },
       competitions: [{ competitionId: 9 }],
-      players: [{ playerId: 12, fullName: "Atleta em revisão" }],
     });
-    expect(JSON.stringify(parsed)).not.toContain("male");
-    expect(JSON.stringify(parsed)).not.toContain("sex");
+    expect(playersParsed?.[0]).toMatchObject({
+      playerId: 12,
+      fullName: "Atleta em revisão",
+      teams: expect.arrayContaining([{ teamId: 3, name: "Águias" }]),
+      competitions: expect.arrayContaining([
+        { competitionId: 9, displayName: "Copa Ouro", year: 2026 },
+      ]),
+    });
+    expect(JSON.stringify({ reportParsed, playersParsed })).not.toContain("male");
+    expect(JSON.stringify({ reportParsed, playersParsed })).not.toContain("sex");
   });
 
   it("rejects malformed reports instead of presenting an incomplete gate", () => {
-    expect(parseReviewQueueReport({ ...report, queues: { competitions: [], players: [{}] } })).toBe(
-      null,
-    );
+    expect(
+      parseReviewQueueReport({ ...report, queues: { competitions: [], players: [{}] } }),
+    ).not.toBeNull();
+    expect(parsePlayerReviewQueue({ queueVersion: 1, players: [{}] })).toBe(null);
   });
 
   it("accepts only explicit bounded batch choices", () => {
     const form = new FormData();
     form.set("reason", "Revisão cadastral conferida em lote");
     form.set("confirmed", "on");
+    form.set("selected:12", "on");
     form.set("player:12", "female");
+    form.set("revision:12", "1789012345678901");
+    form.set("selected:13", "on");
     form.set("player:13", "male");
+    form.set("revision:13", "1789012345678902");
     form.set("ignored", "female");
     expect(parseBulkReviewInput(form)).toEqual({
       reason: "Revisão cadastral conferida em lote",
       reviews: [
-        { playerId: 12, sex: "female" },
-        { playerId: 13, sex: "male" },
+        { playerId: 12, sex: "female", expectedRevision: 1_789_012_345_678_901 },
+        { playerId: 13, sex: "male", expectedRevision: 1_789_012_345_678_902 },
       ],
     });
   });
@@ -143,7 +185,9 @@ describe("administrative review queues", () => {
     form.set("reason", "Revisão cadastral conferida em lote");
     form.set("confirmed", "on");
     expect(parseBulkReviewInput(form)).toBe(null);
+    form.set("selected:12", "on");
     form.set("player:12", "unknown");
+    form.set("revision:12", "1789012345678901");
     expect(parseBulkReviewInput(form)).toBe(null);
     form.set("player:12", "female");
     form.delete("confirmed");
@@ -156,20 +200,23 @@ describe("administrative review queues", () => {
     expect(client.rpc).not.toHaveBeenCalled();
   });
 
-  it("loads only the protected value-free reconciliation report", async () => {
-    client.rpc.mockResolvedValue({ data: report, error: null });
+  it("loads the protected report and contextual value-free player queue", async () => {
+    client.rpc.mockImplementation((name) =>
+      Promise.resolve({
+        data: name === "admin_get_player_review_queue" ? playerQueue : report,
+        error: null,
+      }),
+    );
     const response = (await loader(args())) as unknown as {
       data: { report: { players: Array<Record<string, unknown>> } };
       init: { headers: Record<string, string> };
     };
-    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_get_classification_backfill_report");
-    expect(response.data.report.players[0]).toEqual({
+    expect(client.rpc).toHaveBeenCalledWith("admin_get_classification_backfill_report");
+    expect(client.rpc).toHaveBeenCalledWith("admin_get_player_review_queue");
+    expect(response.data.report.players[0]).toMatchObject({
       playerId: 12,
-      fullName: "Atleta em revisão",
-      isActive: true,
-      rosterEntryCount: 3,
-      activeRosterEntryCount: 1,
-      competitionCount: 2,
+      reviewRevision: 1_789_012_345_678_901,
+      teams: expect.arrayContaining([{ teamId: 3, name: "Águias" }]),
     });
     expect(response.data).toMatchObject({ csrfToken: "test-csrf", savedCount: null });
     expect(response.init.headers["Cache-Control"]).toBe("private, no-store");
@@ -200,10 +247,34 @@ describe("administrative review queues", () => {
     expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_bulk_set_player_sex", {
       p_reason: "Revisão cadastral conferida em lote",
       p_reviews: [
-        { playerId: 12, sex: "female" },
-        { playerId: 13, sex: "male" },
+        { playerId: 12, sex: "female", expectedRevision: 1_789_012_345_678_901 },
+        { playerId: 13, sex: "male", expectedRevision: 1_789_012_345_678_902 },
       ],
     });
+  });
+
+  it("maps a stale concurrent batch to conflict without exposing private data", async () => {
+    client.rpc.mockResolvedValue({
+      data: null,
+      error: { code: "BD409", message: "BDB_PLAYER_REVIEW_STALE" },
+    });
+    const response = await action(post());
+    expect(response).toMatchObject({ init: { status: 409 } });
+    expect(JSON.stringify(response)).toContain("Nenhuma escolha foi aplicada");
+  });
+
+  it("filters by competition, team and multiple contexts, then sorts by impact", () => {
+    const players = parsePlayerReviewQueue(playerQueue);
+    expect(players).not.toBe(null);
+    expect(
+      filterAndSortPlayers(players ?? [], {
+        query: "atleta",
+        competitionId: "9",
+        teamId: "3",
+        status: "multiple",
+        sort: "impact",
+      }).map((player) => player.playerId),
+    ).toEqual([12]);
   });
 
   it("does not expose raw database errors or private values", async () => {
