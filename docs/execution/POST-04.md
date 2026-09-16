@@ -82,14 +82,18 @@ explícita.
 
 ## Gate descartável
 
-A PR draft #45 está no head funcional `9d10913` e recebeu somente documentação
-de evidência depois dele. Os quatro checks estão verdes:
+A PR draft #45 está no head funcional `468b1fa`. Os quatro checks estão verdes:
 
-- gate de aplicação aprovado;
+- gate de aplicação aprovado com 44 arquivos/302 testes Vitest;
 - banco reconstruído desde zero com 37 arquivos e 910 asserções pgTAP;
 - concorrência aprovada para primeira criação idempotente e disputa pela última
   vaga de semifinal;
 - preview/upload e CodeQL aprovados.
+
+O preview da nova fila recusou acesso anônimo com `302` para `/admin/login` e
+manteve CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Permissions-Policy`, `Referrer-Policy` e `X-Robots-Tag: noindex`. O smoke AAL2
+da lista e dos links aguarda login humano no host da PR #45.
 
 O ensaio no Supabase compartilhado continua sendo apenas transacional e
 auto-bloqueado por `BR100`; a consulta posterior confirmou que o schema não foi
