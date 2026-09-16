@@ -38,6 +38,22 @@ A consulta reproduzível está em
 somente contagens, dados públicos de classificação e hashes, sem valores
 privados de elegibilidade.
 
+## Fila administrativa de fechamento
+
+A rota AAL2 `/admin/review-queues` consome exclusivamente o relatório
+`admin_get_classification_backfill_report` já protegido pelo banco. Ela mostra:
+
+- contagens de naipe, perfil e elegibilidade pendentes;
+- links diretos para as revisões das competições;
+- links diretos para os formulários privados dos atletas;
+- somente nomes públicos, IDs, contagens, flags e evidências factuais.
+
+O parser server-side usa uma allowlist e descarta qualquer campo não previsto;
+nenhum valor privado de elegibilidade é transportado para a tela. Relatório
+inválido ou incompleto resulta em 503, sem apresentar um gate parcial como se
+fosse confiável. O gate local aprovou 44 arquivos/302 testes Vitest, TypeScript
+estrito, Biome, build cliente/SSR, runbooks e varredura de 586 arquivos.
+
 ## Unidade preparatória — enforcement autocondicionado
 
 A migration `20260916123000_post04_final_profile_enforcement.sql` foi preparada,

@@ -34,14 +34,30 @@ preview e produção, mas os caminhos relativos permanecem os mesmos.
 
 ## Navegação principal
 
-O menu administrativo possui quatro áreas:
+O menu administrativo possui cinco áreas:
 
 | Área | Caminho | Finalidade |
 | --- | --- | --- |
 | Competições | `/admin/competitions` | Criar e operar edições, equipes inscritas, jogos, dados e publicação. |
 | Equipes | `/admin/teams` | Consultar e cadastrar equipes globais. |
 | Atletas | `/admin/players` | Consultar, cadastrar e revisar dados privados de elegibilidade. |
+| Pendências | `/admin/review-queues` | Acompanhar as revisões que bloqueiam o fechamento final. |
 | Segurança | `/admin/security` | Conferir a sessão protegida e encerrar sessões. |
+
+## Pendências de fechamento
+
+Em `/admin/review-queues` é possível:
+
+- visualizar as quantidades de competições sem naipe ou perfil final;
+- visualizar a quantidade de atletas com elegibilidade pendente;
+- abrir diretamente a revisão de cada competição;
+- abrir diretamente o formulário privado de cada atleta;
+- acompanhar contagens factuais de jogos, inscrições e competições afetadas;
+- verificar quando todas as filas estiverem zeradas.
+
+A tela é protegida por AAL2 e usa o relatório administrativo de reconciliação.
+Ela transporta somente IDs, nomes públicos, contagens e flags de pendência. O
+valor privado de elegibilidade não é recebido, mostrado ou sugerido.
 
 ## Competições
 
