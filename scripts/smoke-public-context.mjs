@@ -98,9 +98,16 @@ const gameMatch = gameListBody.match(
   /\/2026\/liga-de-desenvolvimento\/sub-15\/(?:masculino\/|feminino\/)?jogos\/(\d+)/,
 );
 assert.ok(gameMatch, "the seeded context must expose one contextual game link");
-const crossedGameResponse = await request(
-  `/2025/liga-de-desenvolvimento/sub-15/jogos/${gameMatch[1]}`,
+const crossedGamePath = `/2025/liga-de-desenvolvimento/sub-15/jogos/${gameMatch[1]}`;
+const crossedGameInitial = await request(crossedGamePath);
+assert.equal(crossedGameInitial.status, 308, "legacy game paths must canonicalize the gender");
+const crossedGameCanonicalPath = locationPath(crossedGameInitial);
+assert.match(
+  crossedGameCanonicalPath,
+  new RegExp(`^/2025/liga-de-desenvolvimento/sub-15/(?:masculino|feminino)/jogos/${gameMatch[1]}$`),
+  "the canonical redirect must preserve the requested competition and game",
 );
+const crossedGameResponse = await request(crossedGameCanonicalPath);
 assert.equal(crossedGameResponse.status, 404, "a game cannot cross competition contexts");
 
 const olderContext = await resolveContext(older);
