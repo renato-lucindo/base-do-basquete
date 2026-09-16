@@ -1,5 +1,5 @@
 begin;
-\ir ../../test-support/final_profile_fixtures.sql
+\ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
 select plan(29);
 set constraints all deferred;
