@@ -1,4 +1,8 @@
 -- Deterministic staging/local fixtures. Supabase does not run seeds on production db push.
+insert into auth.users(id)
+values ('11111111-1111-4111-8111-111111111111')
+on conflict (id) do nothing;
+
 insert into public.competition_series (name, slug)
 values ('Liga de Desenvolvimento', 'liga-de-desenvolvimento')
 on conflict (slug) do update set name = excluded.name, is_active = true;
@@ -12,9 +16,31 @@ set name = excluded.name,
     has_advanced_stats = excluded.has_advanced_stats,
     is_active = true;
 
+insert into public.series_category_data_profiles(
+  series_id,category_id,gender_division,version,primary_source,status,
+  created_by,activated_by,activated_at
+)
+select
+  series.id,category.id,'male',1,'manual_scoresheet','active',
+  '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',clock_timestamp()
+from public.competition_series series
+cross join public.categories category
+where series.slug='liga-de-desenvolvimento'
+  and category.slug in('sub-15','sub-17')
+on conflict (series_id,category_id,gender_division,version) do nothing;
+
 insert into public.competitions
-  (series_id, category_id, year, display_name, status, published_at)
-select s.id, c.id, fixture.year, fixture.display_name, 'draft', null
+  (
+    series_id,category_id,year,display_name,status,published_at,
+    gender_division,gender_division_review_required,
+    data_profile_id,data_profile_review_required,
+    data_profile_validated_at,data_profile_validated_by
+  )
+select
+  s.id,c.id,fixture.year,fixture.display_name,'draft',null,
+  'male',false,profile.id,false,clock_timestamp(),
+  '11111111-1111-4111-8111-111111111111'
 from public.competition_series s
 join (
   values
@@ -23,8 +49,13 @@ join (
     (2025::smallint, 'sub-15'::text, 'Liga de Desenvolvimento 2025 Sub-15'::text)
 ) as fixture(year, category_slug, display_name) on true
 join public.categories c on c.slug = fixture.category_slug
+join public.series_category_data_profiles profile
+  on profile.series_id=s.id
+ and profile.category_id=c.id
+ and profile.gender_division='male'
+ and profile.status='active'
 where s.slug = 'liga-de-desenvolvimento'
-on conflict (series_id, category_id, year) where gender_division is null do update
+on conflict (series_id,category_id,gender_division,year) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -45,6 +76,13 @@ on conflict (slug) do update
 set full_name = excluded.full_name,
     is_active = true,
     is_public = true;
+
+insert into private.player_private(player_id,sex,sex_review_required)
+select player.id,'male',false
+from public.players player
+where player.slug in('atleta-demonstracao-um','atleta-demonstracao-dois')
+on conflict (player_id) do update
+set sex=excluded.sex,sex_review_required=false;
 
 insert into public.team_registrations
   (competition_id, team_id, status, confirmed_at)
@@ -339,13 +377,39 @@ values ('Fixture FIBA', 'fixture-fiba', true)
 on conflict (slug) do update
 set name = excluded.name, has_advanced_stats = true, is_active = true;
 
-insert into public.competitions
-  (series_id, category_id, year, display_name, status, published_at)
-select series.id, category.id, 2026, 'Copa ES Ouro 2026 — Fixture FIBA', 'draft', null
+insert into public.series_category_data_profiles(
+  series_id,category_id,gender_division,version,primary_source,status,
+  created_by,activated_by,activated_at
+)
+select
+  series.id,category.id,'male',1,'fiba_boxscore','active',
+  '11111111-1111-4111-8111-111111111111',
+  '11111111-1111-4111-8111-111111111111',clock_timestamp()
 from public.competition_series series
 cross join public.categories category
+where series.slug='copa-es-ouro' and category.slug='fixture-fiba'
+on conflict (series_id,category_id,gender_division,version) do nothing;
+
+insert into public.competitions
+  (
+    series_id,category_id,year,display_name,status,published_at,
+    gender_division,gender_division_review_required,
+    data_profile_id,data_profile_review_required,
+    data_profile_validated_at,data_profile_validated_by
+  )
+select
+  series.id,category.id,2026,'Copa ES Ouro 2026 — Fixture FIBA','draft',null,
+  'male',false,profile.id,false,clock_timestamp(),
+  '11111111-1111-4111-8111-111111111111'
+from public.competition_series series
+cross join public.categories category
+join public.series_category_data_profiles profile
+  on profile.series_id=series.id
+ and profile.category_id=category.id
+ and profile.gender_division='male'
+ and profile.status='active'
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
-on conflict (series_id, category_id, year) where gender_division is null do update
+on conflict (series_id,category_id,gender_division,year) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -408,6 +472,35 @@ on conflict (slug) do update
 set full_name = excluded.full_name,
     is_active = true,
     is_public = true;
+
+insert into private.player_private(player_id,sex,sex_review_required)
+select player.id,'male',false
+from public.players player
+where player.slug in(
+  'marcos-gabriel-araujo-de-oliveira','lucas-pereira-gaspar',
+  'diego-dos-santos-boa','rian-dos-reis-salaroli-silva',
+  'joao-matheus-de-alves-de-oliveira','joao-pedro-de-almeida-neves',
+  'igor-antunes-de-almeida','marcos-vinicius-siravegna-de-morais',
+  'atos-lorenzo-rosa','kaua-ricardo-duarte',
+  'matheus-padovani-daltin','marcos-vinicius-da-silva',
+  'flavio-de-leon-santos-scherer','bruno-curto-santana',
+  'sanlley-borges-de-freitas','luis-gabriel-ribeiro-silva',
+  'carlos-henrique-giostri-ribeiro','alexsander-correa-covre',
+  'rahysner-will','lucas-gaspar-campagnaro',
+  'jose-abdo-chalub-neto','arquidally-souza-dos-santos',
+  'alisson-venancio-do-nascimento','alexandre-freitas-brochado',
+  'fernando-dos-santos','guilherme-cruz-santos',
+  'artur-louzada-machado','joao-vitor-martins',
+  'juan-gama-alves','enrico-de-paula-oliveira',
+  'lorenzo-gagno-gouvea','thiago-sbardelotti-almeida',
+  'vitor-gabriel-borges-santos','juan-peter-dos-santos-deolinda',
+  'carlos-olimpio-ramos-pinto','josue-soares-moreira-da-silva',
+  'marco-antonio-persio-cruz','franco-campos-junger',
+  'yuri-lemos-pereira','cauan-borges-pedral-sampaio',
+  'thierry-botelho-de-oliveira-claudino','cleiton-conceicao-ferreira'
+)
+on conflict (player_id) do update
+set sex=excluded.sex,sex_review_required=false;
 
 insert into public.team_registrations
   (competition_id, team_id, status, confirmed_at)
