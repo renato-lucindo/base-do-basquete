@@ -155,6 +155,17 @@ dados ou comportamento. O pgTAP focal passou 11/11 em transação revertida. O
 gate local posterior passou com 298 Vitest, tipos regenerados, cinco runbooks,
 build e scan de 577 arquivos.
 
-Próximo: commit/push do hardening e tipos, CI completo e aplicação exclusiva da
-migration de índices. Depois repetir advisors/reconciliação e executar QA AAL2
-no preview. Produção permanece intocada em `v1.1.0`.
+Commit `e98b495` passou gate, banco desde zero, preview e CodeQL. A migration
+de índices foi aplicada e o pgTAP persistente passou 11/11. O advisor de
+desempenho não aponta mais chaves estrangeiras sem índice; os avisos restantes
+são índices ainda sem uso, esperado imediatamente após a criação.
+
+O preview da PR #44 respondeu `preview/ok` em `/health` com cabeçalhos
+seguros. A rota de exceções respondeu 302 para `/admin/login` sob acesso
+anônimo, limpando o cookie seguro. A nova origem exige login/MFA humano antes
+do smoke AAL2; nenhuma credencial foi automatizada ou inspecionada.
+
+Próximo: concluir login/MFA na PR #44 e validar somente leitura da rota
+`/admin/competitions/100/sports-exceptions`, sem confirmar operação esportiva.
+Depois atualizar evidências, marcar a PR pronta e integrar apenas com todos os
+checks verdes. Produção permanece intocada em `v1.1.0`.
