@@ -41,4 +41,16 @@ documentada no README desse diretório. Antes de qualquer aplicação persistent
 ainda serão necessários: CI desde zero, relatório zerado e autorização humana
 explícita.
 
-Produção permanece em `v1.1.0`; nenhuma migration POST-04 foi aplicada.
+## Gate descartável
+
+A PR draft #45 está no head `9d10913` com os quatro checks verdes:
+
+- gate de aplicação aprovado;
+- banco reconstruído desde zero com 37 arquivos e 910 asserções pgTAP;
+- concorrência aprovada para primeira criação idempotente e disputa pela última
+  vaga de semifinal;
+- preview/upload e CodeQL aprovados.
+
+O ensaio no Supabase compartilhado continua sendo apenas transacional e
+auto-bloqueado por `BR100`; a consulta posterior confirmou que o schema não foi
+alterado. Produção permanece em `v1.1.0`; nenhuma migration POST-04 foi aplicada.
