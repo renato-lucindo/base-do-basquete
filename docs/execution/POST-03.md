@@ -76,5 +76,9 @@ persistir schema ou dados.
 O gate local da unidade também passou: formatação, lint, tipos, 290 testes
 Vitest, cinco runbooks, build e varredura de segredos em 568 arquivos.
 
-Próximo: gate completo/CI desta unidade e, depois, correções e emendas com ponto
-de corte, antes/depois, ativação atômica e supersessão sem apagar histórico.
+Commit `61911a9` enviado à PR draft #44. O ciclo remoto passou integralmente:
+gate, banco do zero (incluindo os dois pgTAPs POST-03), upload do preview e
+CodeQL.
+
+Próximo: correções e emendas com ponto de corte, antes/depois, ativação atômica
+e supersessão sem apagar histórico.
