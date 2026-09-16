@@ -1,6 +1,6 @@
 # POST-03 — Exceções esportivas
 
-Estado: `DOING` na branch `feature/post-03-sports-exceptions`.
+Estado: `DONE` na branch `feature/post-03-sports-exceptions`.
 
 ## Escopo
 
@@ -165,7 +165,14 @@ seguros. A rota de exceções respondeu 302 para `/admin/login` sob acesso
 anônimo, limpando o cookie seguro. A nova origem exige login/MFA humano antes
 do smoke AAL2; nenhuma credencial foi automatizada ou inspecionada.
 
-Próximo: concluir login/MFA na PR #44 e validar somente leitura da rota
-`/admin/competitions/100/sports-exceptions`, sem confirmar operação esportiva.
-Depois atualizar evidências, marcar a PR pronta e integrar apenas com todos os
-checks verdes. Produção permanece intocada em `v1.1.0`.
+O smoke real confirmou sessão AAL2, hub privado e leitura da rota
+`/admin/competitions/100/sports-exceptions`. Nenhum formulário de prévia ou
+confirmação foi submetido. A primeira inspeção encontrou a seção de grupos
+ausente em uma revisão eliminatória sem grupos; o commit `8e62abf` adicionou
+o estado vazio explícito. Gate, banco desde zero, preview e CodeQL passaram
+novamente, e a segunda inspeção AAL2 confirmou as três seções: encerramento de
+grupo, decisão sem placar e revisão versionada.
+
+POST-03 está concluído. Próximo: enviar esta evidência, integrar a PR #44 com os
+checks verdes e iniciar POST-04 em branch própria. Produção permanece intocada
+em `v1.1.0`.
