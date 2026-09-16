@@ -55,6 +55,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] ADRs iniciais, política de segurança, `.gitignore` e baseline de varredura de segredos criados.
 - [x] Aplicação implementada integralmente; WP-00 a WP-13 concluídos e produção validada.
 - [x] Serviços cloud básicos configurados.
+- [x] Manual funcional do painel administrativo documentado em `docs/PAINEL-ADMINISTRATIVO.md` e referenciado pelo README.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
 - [x] Fluxo server-side de login, matrícula/desafio TOTP e logout implementado.
@@ -504,3 +505,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-16 | Codex | PR #44 integrada por squash em `51e640a`; POST-04 iniciado em `feature/post-04-enforcement-closure`; migration final auto-bloqueante, 21 pgTAP e registro de execução preparados; gate local com 298 Vitest/build/scan verde; ensaio remoto recusou corretamente 2/2/43 pendências e deixou o schema intacto | Abrir PR draft, validar banco desde zero na CI e adaptar fixtures se necessário; não aplicar no Supabase compartilhado nem publicar produção antes de zerar as filas e receber autorização explícita |
 | 2026-09-16 | Codex | PR draft #45 no head `9d10913`; quatro checks verdes; seed e fixtures migrados para o contrato final; 37 arquivos/910 pgTAP e concorrência aprovados desde zero; quatro suítes de rollout nulo preservadas fora do gate; Supabase compartilhado e produção inalterados | Responsável classifica competições 1/9 e 43 atletas; depois autoriza explicitamente a aplicação, que deve ser seguida por tipos, pgTAP persistente, advisors, reconciliação e QA AAL2 antes de integrar |
 | 2026-09-16 | Codex | Baseline pré-enforcement somente leitura versionada: inventário e seis hashes esportivos preservados; advisors sem erro e somente avisos preexistentes documentados; PR #45 continua draft e Supabase/produção continuam sem alteração | Responsável classifica competições 1/9 e 43 atletas; depois autoriza explicitamente a aplicação, seguida por tipos, pgTAP persistente, advisors, reconciliação e QA AAL2 antes de integrar |
+| 2026-09-16 | Codex | Manual funcional do painel administrativo criado em `docs/PAINEL-ADMINISTRATIVO.md`, cobrindo recursos, segurança, sequência operacional, limites e estado do POST-04; README atualizado; nenhum serviço alterado | Manter a PR #45 draft; responsável classifica competições 1/9 e 43 atletas antes do enforcement final |

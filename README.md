@@ -6,7 +6,7 @@ O projeto está sendo construído como um monólito modular em TypeScript para C
 
 ## Estado
 
-Execução greenfield em andamento por pacotes verticais. Consulte [HANDOFF.md](HANDOFF.md) para o estado atual e [docs/plan/README.md](docs/plan/README.md) para o plano normativo.
+Execução greenfield em andamento por pacotes verticais. Consulte [HANDOFF.md](HANDOFF.md) para o estado atual, [docs/plan/README.md](docs/plan/README.md) para o plano normativo e [docs/PAINEL-ADMINISTRATIVO.md](docs/PAINEL-ADMINISTRATIVO.md) para a visão funcional do painel administrativo.
 
 ## Segurança
 
