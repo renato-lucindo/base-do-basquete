@@ -5432,17 +5432,12 @@ body {
 }
 
 .bulk-review-submit {
-  position: sticky;
-  bottom: 12px;
-  z-index: 2;
   display: grid;
   gap: 13px;
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 10px 32px rgba(23, 32, 51, 0.14);
-  backdrop-filter: blur(10px);
+  background: var(--surface-muted);
 }
 
 .bulk-review-submit textarea {
@@ -5493,10 +5488,6 @@ body {
 
   .bulk-review-list {
     max-height: none;
-  }
-
-  .bulk-review-submit {
-    bottom: 8px;
   }
 
   .bulk-review-actions .button {
