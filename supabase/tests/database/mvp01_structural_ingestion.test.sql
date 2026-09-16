@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(16);
@@ -64,9 +65,9 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (99101, 'Liga Matchup Gate', 'liga-matchup-gate');
 insert into public.categories (id, name, slug)
 overriding system value values (99101, 'Categoria Matchup Gate', 'categoria-matchup-gate');
-insert into public.competitions (id, series_id, category_id, year, display_name)
-overriding system value values
-  (99101, 99101, 99101, 2026, 'Liga Matchup Gate 2026');
+select pg_temp.create_final_competition(
+  99101,99101,99101,2026,'Liga Matchup Gate 2026','draft',null,'male','manual_scoresheet'
+);
 select throws_ok(
   $$insert into public.games (competition_id, game_number, source)
     values (99101, 'SEM-CONFRONTO', 'seed')$$,

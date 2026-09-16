@@ -33,8 +33,12 @@ pendente. Ela:
 - preserva colunas, histórico, IDs, jogos, submissões e publicações.
 
 O pgTAP focal cobre as invariantes, o fluxo AAL2 de criação e as negações de
-privacidade. Antes de qualquer aplicação persistente ainda serão necessários:
-CI desde zero, adaptação das fixtures históricas ao contrato final, relatório
-zerado e autorização humana explícita.
+privacidade. As fixtures determinísticas e suítes funcionais foram migradas
+para perfis finais explícitos. Quatro suítes de rollout que criavam
+deliberadamente valores nulos foram preservadas em `supabase/tests/legacy-rollout/`;
+seus estados deixaram de ser representáveis, e a cobertura sucessora está
+documentada no README desse diretório. Antes de qualquer aplicação persistente
+ainda serão necessários: CI desde zero, relatório zerado e autorização humana
+explícita.
 
 Produção permanece em `v1.1.0`; nenhuma migration POST-04 foi aplicada.

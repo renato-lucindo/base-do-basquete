@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(31);
@@ -30,13 +31,9 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9414, 'Liga WP14', 'liga-wp14');
 insert into public.categories (id, name, slug)
 overriding system value values (9414, 'Categoria WP14', 'categoria-wp14');
-insert into public.competitions
-  (
-    id, series_id, category_id, year, display_name,
-    gender_division, gender_division_review_required, status, published_at
-  )
-overriding system value values
-  (9414, 9414, 9414, 2026, 'Liga WP14 2026', 'male', false, 'published', now());
+select pg_temp.create_final_competition(
+  9414,9414,9414,2026,'Liga WP14 2026','published',now(),'male','fiba_boxscore'
+);
 insert into public.teams (id, name, slug, abbreviation)
 overriding system value values
   (9414, 'Equipe WP14 Casa', 'equipe-wp14-casa', 'WPC'),
@@ -45,10 +42,8 @@ insert into public.players (id, full_name, slug)
 overriding system value
 select 94140 + number, 'Atleta WP14 ' || number, 'atleta-wp14-' || number
 from generate_series(1, 9) number;
-
-update private.player_private
-set sex = 'male', sex_review_required = false
-where player_id = 94145;
+insert into private.player_private(player_id,sex,sex_review_required)
+select 94140+number,'male',false from generate_series(1,9) number;
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values

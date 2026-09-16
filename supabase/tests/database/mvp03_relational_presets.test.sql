@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 create extension if not exists pgtap with schema extensions;
 select plan(35);
 set constraints all deferred;
@@ -98,8 +99,9 @@ create temporary table draft_contract(competition_id bigint,revision_id bigint,r
 do $$
 declare c bigint; rev bigint; st bigint; rnd bigint; e bigint; sl bigint; all_slots bigint[] := '{}'; i integer;
 begin
-  insert into public.competitions(series_id,category_id,year,display_name)
-  select series_id,category_id,1950,'Contrato de teste' from preset_context returning id into c;
+  select pg_temp.create_final_competition(
+    null,series_id,category_id,1950,'Contrato de teste','draft',null,'male','manual_scoresheet'
+  ) into c from preset_context;
   insert into public.competition_ruleset_revisions(competition_id,revision_number,structure_kind,preset_key,preset_version,entry_count,created_by)
   values(c,1,'regulated','single_elimination',1,6,auth.uid()) returning id into rev;
   insert into public.competition_stages(competition_id,ruleset_revision_id,code,name,stage_order,structure_kind)

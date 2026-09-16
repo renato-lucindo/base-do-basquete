@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 create extension if not exists pgtap with schema extensions;
 select plan(28);
 set constraints all deferred;
@@ -21,8 +22,9 @@ with series as (
 ), category as (
   insert into public.categories(name,slug) values('POST02 removal','post02-removal') returning id
 ), competition as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series.id,category.id,2028,'POST02 removal QA','draft','male',false from series,category returning id
+  select pg_temp.create_final_competition(
+    null,series.id,category.id,2028,'POST02 removal QA','draft',null,'male','manual_scoresheet'
+  ) as id from series,category
 ), teams as (
   insert into public.teams(name,slug)
   select 'POST02 team '||number,'post02-team-'||number from generate_series(1,3) number returning id
@@ -43,10 +45,13 @@ update removal_context set
 
 with player as (
   insert into public.players(full_name,slug) values('POST02 player','post02-player') returning id
+), private_profile as (
+  insert into private.player_private(player_id,sex,sex_review_required)
+  select id,'male',false from player returning player_id
 )
 insert into public.roster_entries(competition_id,registration_id,player_id,status)
 select context.competition_id,context.roster_registration,player.id,'active'
-from removal_context context,player;
+from removal_context context,player,private_profile;
 
 grant select on removal_context to authenticated;
 

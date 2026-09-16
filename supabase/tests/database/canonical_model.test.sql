@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(34);
@@ -13,11 +14,12 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9101, 'Liga Teste', 'liga-teste');
 insert into public.categories (id, name, slug)
 overriding system value values (9101, 'Teste Sub-15', 'teste-sub-15');
-insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
-overriding system value values
-  (9101, 9101, 9101, 2026, 'Liga Teste 2026 Sub-15', 'published', now()),
-  (9102, 9101, 9101, 2027, 'Liga Teste 2027 Sub-15', 'draft', null);
+select pg_temp.create_final_competition(
+  9101,9101,9101,2026,'Liga Teste 2026 Sub-15','published',now(),'male','manual_scoresheet'
+);
+select pg_temp.create_final_competition(
+  9102,9101,9101,2027,'Liga Teste 2027 Sub-15','draft',null,'male','manual_scoresheet'
+);
 insert into public.teams (id, name, slug, abbreviation, is_public)
 overriding system value values
   (9101, 'Equipe Azul', 'equipe-azul', 'AZL', true),
@@ -28,6 +30,8 @@ overriding system value values
   (9101, 'Atleta Um', 'atleta-um', true),
   (9102, 'Atleta Dois', 'atleta-dois', true),
   (9103, 'Atleta Tres', 'atleta-tres', false);
+insert into private.player_private(player_id,sex,sex_review_required)
+values(9101,'male',false),(9102,'male',false),(9103,'male',false);
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values
@@ -95,11 +99,11 @@ from private.admin_accounts;
 select has_table('public', 'competitions', 'canonical competitions table exists');
 select has_view('public', 'game_scores', 'game scores are exposed as a derived view');
 select throws_ok(
-  $$insert into public.competitions
-      (series_id, category_id, year, display_name, status, published_at)
-    values (9101, 9101, 2026, 'Duplicada', 'published', now())$$,
+  $$select pg_temp.create_final_competition(
+      null,9101,9101,2026,'Duplicada','published',now(),'male','manual_scoresheet'
+    )$$,
   '23505',
-  'duplicate key value violates unique constraint "competitions_unclassified_context_uidx"',
+  'duplicate key value violates unique constraint "competitions_context_unique"',
   'unclassified series/category/year context is unique'
 );
 select throws_ok(
@@ -127,6 +131,8 @@ select throws_ok(
 select lives_ok(
   $$insert into public.players (id, full_name, slug)
       overriding system value values (9104, 'Atleta Quatro', 'atleta-quatro');
+    insert into private.player_private(player_id,sex,sex_review_required)
+      values(9104,'male',false);
     insert into public.roster_entries
       (competition_id, registration_id, player_id, jersey_number)
     values (9102, 9103, 9104, '8')$$,
@@ -140,6 +146,8 @@ select is(
 select throws_ok(
   $$insert into public.players (id, full_name, slug)
       overriding system value values (9105, 'Atleta Cinco', 'atleta-cinco');
+    insert into private.player_private(player_id,sex,sex_review_required)
+      values(9105,'male',false);
     insert into public.roster_entries
       (competition_id, registration_id, player_id, jersey_number)
     values (9101, 9101, 9105, '00')$$,

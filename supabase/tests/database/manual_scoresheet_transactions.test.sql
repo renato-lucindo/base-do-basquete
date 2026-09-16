@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 
 create extension if not exists pgtap with schema extensions;
 select plan(19);
@@ -13,10 +14,9 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9301, 'Liga Sumula', 'liga-sumula');
 insert into public.categories (id, name, slug)
 overriding system value values (9301, 'Categoria Sumula', 'categoria-sumula');
-insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
-overriding system value values
-  (9301, 9301, 9301, 2026, 'Liga Sumula 2026', 'published', now());
+select pg_temp.create_final_competition(
+  9301,9301,9301,2026,'Liga Sumula 2026','published',now(),'male','manual_scoresheet'
+);
 insert into public.teams (id, name, slug)
 overriding system value values
   (9301, 'Time Sumula Casa', 'time-sumula-casa'),
@@ -26,6 +26,8 @@ overriding system value values
   (9301, 'Atleta Sumula Um', 'atleta-sumula-um'),
   (9302, 'Atleta Sumula Dois', 'atleta-sumula-dois'),
   (9303, 'Atleta Sumula Tres', 'atleta-sumula-tres');
+insert into private.player_private(player_id,sex,sex_review_required)
+values(9301,'male',false),(9302,'male',false),(9303,'male',false);
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values

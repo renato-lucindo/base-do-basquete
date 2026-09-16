@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.sql
 create extension if not exists pgtap with schema extensions;
 select plan(29);
 set constraints all deferred;
@@ -43,43 +44,25 @@ insert into clone_context(series_id,category_id,other_category_id,request_id)
 select series.id,category.id,other_category.id,'40dde5c7-46b2-4241-995d-4e42223bbdf2'::uuid
 from series,category,other_category;
 
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series_id,category_id,1970,'POST02 male source','draft','male',false from clone_context
-  returning id
-)
-update clone_context set male_source_competition=(select id from inserted);
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series_id,category_id,1971,'POST02 female source','draft','female',false from clone_context
-  returning id
-)
-update clone_context set female_source_competition=(select id from inserted);
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series_id,category_id,1972,'POST02 target','draft','male',false from clone_context
-  returning id
-)
-update clone_context set target_competition=(select id from inserted);
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series_id,category_id,1973,'POST02 cross gender','draft','male',false from clone_context
-  returning id
-)
-update clone_context set cross_gender_target=(select id from inserted);
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required)
-  select series_id,other_category_id,1974,'POST02 incompatible','draft','male',false from clone_context
-  returning id
-)
-update clone_context set incompatible_source_competition=(select id from inserted);
-with inserted as (
-  insert into public.competitions(series_id,category_id,year,display_name,status,gender_division,gender_division_review_required,published_at)
-  select series_id,category_id,1975,'POST02 published target','published','male',false,clock_timestamp()
-  from clone_context
-  returning id
-)
-update clone_context set published_target=(select id from inserted);
+update clone_context set
+  male_source_competition=pg_temp.create_final_competition(
+    null,series_id,category_id,1970,'POST02 male source','draft',null,'male','manual_scoresheet'
+  ),
+  female_source_competition=pg_temp.create_final_competition(
+    null,series_id,category_id,1971,'POST02 female source','draft',null,'female','manual_scoresheet'
+  ),
+  target_competition=pg_temp.create_final_competition(
+    null,series_id,category_id,1972,'POST02 target','draft',null,'male','manual_scoresheet'
+  ),
+  cross_gender_target=pg_temp.create_final_competition(
+    null,series_id,category_id,1973,'POST02 cross gender','draft',null,'male','manual_scoresheet'
+  ),
+  incompatible_source_competition=pg_temp.create_final_competition(
+    null,series_id,other_category_id,1974,'POST02 incompatible','draft',null,'male','manual_scoresheet'
+  ),
+  published_target=pg_temp.create_final_competition(
+    null,series_id,category_id,1975,'POST02 published target','published',clock_timestamp(),'male','manual_scoresheet'
+  );
 
 update clone_context set
   male_source_revision=private.materialize_competition_preset(male_source_competition,'single_elimination',5),

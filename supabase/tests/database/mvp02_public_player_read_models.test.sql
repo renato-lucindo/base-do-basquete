@@ -27,6 +27,16 @@ where series.slug = 'liga-de-desenvolvimento'
 
 grant select on mvp02_context to anon;
 
+update public.series_category_data_profiles profile
+set status='superseded'
+where profile.status='active'
+  and exists(
+    select 1 from mvp02_context context
+    where context.series_id=profile.series_id
+      and context.category_id=profile.category_id
+      and profile.gender_division='male'
+  );
+
 insert into public.series_category_data_profiles (
   series_id,
   category_id,

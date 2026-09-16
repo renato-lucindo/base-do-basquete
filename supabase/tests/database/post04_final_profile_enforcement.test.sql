@@ -180,12 +180,14 @@ select throws_ok(
   'BDB_ADMIN_AAL2_REQUIRED',
   'anon cannot read the private eligibility profile'
 );
+set local role anon;
 select throws_ok(
   $$select sex from private.player_private limit 1$$,
   '42501',
   null,
   'anon cannot read private eligibility rows'
 );
+reset role;
 
 select * from finish();
 rollback;
