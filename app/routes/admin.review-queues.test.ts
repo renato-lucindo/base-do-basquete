@@ -4,6 +4,7 @@ import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import {
   action,
+  createMalePreselection,
   loader,
   parseBulkReviewInput,
   parseReviewQueueReport,
@@ -95,6 +96,14 @@ beforeEach(() => {
 });
 
 describe("administrative review queues", () => {
+  it("preselects every pending player as male without reading private data", () => {
+    expect(createMalePreselection([2, 13, 54])).toEqual({
+      2: "male",
+      13: "male",
+      54: "male",
+    });
+  });
+
   it("whitelists value-free queue fields and discards private eligibility values", () => {
     const parsed = parseReviewQueueReport(report);
     expect(parsed).toMatchObject({

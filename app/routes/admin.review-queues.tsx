@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 
 import { AdminArea } from "../components/admin/admin-area";
@@ -308,10 +308,22 @@ function normalizeSearch(value: string) {
     .trim();
 }
 
+export function createMalePreselection(playerIds: readonly number[]) {
+  return Object.fromEntries(playerIds.map((playerId) => [playerId, "male"])) as Record<
+    number,
+    PlayerEligibilitySex
+  >;
+}
+
 export default function ReviewQueues({ loaderData, actionData }: Route.ComponentProps) {
   const { report } = loaderData;
   const [query, setQuery] = useState("");
-  const [choices, setChoices] = useState<Record<number, PlayerEligibilitySex>>({});
+  const defaultChoices = useMemo(
+    () => createMalePreselection(report.players.map((player) => player.playerId)),
+    [report.players],
+  );
+  const [choices, setChoices] = useState<Record<number, PlayerEligibilitySex>>(defaultChoices);
+  useEffect(() => setChoices(defaultChoices), [defaultChoices]);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const selectedCount = Object.keys(choices).length;
@@ -331,8 +343,9 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
   return (
     <AdminArea title="Pendências de fechamento">
       <p>
-        Esta fila mostra somente contexto público e o estado pendente. O valor privado de
-        elegibilidade nunca é transportado para esta tela nem sugerido pelo sistema.
+        Esta fila mostra somente contexto público e o estado pendente. Ela não lê o valor privado
+        existente; a predefinição masculina é apenas operacional e precisa ser revisada antes do
+        envio.
       </p>
       <div className="admin-status-grid">
         <article>
@@ -396,7 +409,10 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
         <div className="review-section-heading">
           <div>
             <h2 id="player-review-title">Atletas</h2>
-            <p>Escolha cada valor explicitamente. Nenhuma opção é aplicada automaticamente.</p>
+            <p>
+              Masculino é a predefinição. Revise a lista e troque as exceções para feminino antes de
+              confirmar o lote.
+            </p>
           </div>
           <strong>{report.players.length} pendente(s)</strong>
         </div>

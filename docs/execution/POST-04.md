@@ -64,8 +64,10 @@ A rota AAL2 `/admin/review-queues` consome o relatório
 - revisão em lote ou link para o formulário individual de cada atleta;
 - somente nomes públicos, IDs, contagens, flags e evidências factuais.
 
-O lote inclui busca tolerante a acentos, progresso, escolhas explícitas sem
-valor padrão, justificativa comum, confirmação e envio parcial ou integral.
+O lote inclui busca tolerante a acentos, progresso, predefinição masculina
+autorizada pelo responsável, justificativa comum, confirmação e envio parcial
+ou integral. A predefinição é somente local: não consulta valor privado já
+gravado e pode ser trocada individualmente antes do envio.
 `admin_bulk_set_player_sex` valida de 1 a 100 itens, rejeita duplicidades e
 executa todas as revisões em uma única transação. Cada atleta recebe sua própria
 auditoria pela função individual existente, sem incluir o valor privado no
@@ -109,7 +111,7 @@ A PR draft #45 recebeu a unidade funcional de revisão em lote nos commits
 `f4ed5f2`, `fd85e97` e `eead842`. O gate da aplicação, o upload do preview, o
 banco desde zero e o CodeQL foram reexecutados após a alteração:
 
-- gate de aplicação aprovado com 44 arquivos/309 testes Vitest;
+- gate de aplicação aprovado com 44 arquivos/310 testes Vitest;
 - banco reconstruído desde zero com 38 arquivos e 927 asserções pgTAP;
 - concorrência aprovada para primeira criação idempotente e disputa pela última
   vaga de semifinal;
