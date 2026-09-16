@@ -159,10 +159,21 @@ console.log("PASS: concurrent first-write idempotency, exactly one edition/revis
 const draft = JSON.parse(
   await run(`begin; ${authContext}
 create temporary table race_context(value jsonb);
-do $$declare c bigint; rev bigint; st bigint; rnd bigint; e bigint; sl bigint; slots bigint[] := '{}'; i integer;
+do $$declare c bigint; rev bigint; st bigint; rnd bigint; e bigint; sl bigint; profile bigint; slots bigint[] := '{}'; i integer;
 begin
-  insert into public.competitions(series_id,category_id,year,display_name)
-  values(${fixture.series},${fixture.category},2000,'Concurrent semifinal fixture') returning id into c;
+  select id into strict profile
+  from public.series_category_data_profiles
+  where series_id=${fixture.series} and category_id=${fixture.category}
+    and gender_division='male' and status='active';
+  insert into public.competitions(
+    series_id,category_id,year,display_name,
+    gender_division,gender_division_review_required,
+    data_profile_id,data_profile_review_required,
+    data_profile_validated_at,data_profile_validated_by
+  ) values(
+    ${fixture.series},${fixture.category},2000,'Concurrent semifinal fixture',
+    'male',false,profile,false,clock_timestamp(),auth.uid()
+  ) returning id into c;
   insert into public.competition_ruleset_revisions(competition_id,revision_number,structure_kind,preset_key,preset_version,entry_count,created_by)
   values(c,1,'regulated','single_elimination',1,6,auth.uid()) returning id into rev;
   insert into public.competition_stages(competition_id,ruleset_revision_id,code,name,stage_order,structure_kind)
