@@ -327,6 +327,7 @@ export type Database = {
         Row: {
           assigned_at: string;
           assigned_by: string;
+          carried_from_entry_id: number | null;
           competition_id: number;
           entry_id: number;
           registration_id: number;
@@ -335,6 +336,7 @@ export type Database = {
         Insert: {
           assigned_at?: string;
           assigned_by: string;
+          carried_from_entry_id?: number | null;
           competition_id: number;
           entry_id: number;
           registration_id: number;
@@ -343,12 +345,20 @@ export type Database = {
         Update: {
           assigned_at?: string;
           assigned_by?: string;
+          carried_from_entry_id?: number | null;
           competition_id?: number;
           entry_id?: number;
           registration_id?: number;
           ruleset_revision_id?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "competition_entry_assignments_carried_from_entry_id_fkey";
+            columns: ["carried_from_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_entries";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "competition_entry_assignments_entry_id_ruleset_revision_id_fkey";
             columns: ["entry_id", "ruleset_revision_id", "competition_id"];
@@ -369,6 +379,183 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "team_registrations";
             referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
+      competition_group_advancements: {
+        Row: {
+          closure_id: number;
+          competition_id: number;
+          group_id: number;
+          position: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+          slot_id: number;
+        };
+        Insert: {
+          closure_id: number;
+          competition_id: number;
+          group_id: number;
+          position: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+          slot_id: number;
+        };
+        Update: {
+          closure_id?: number;
+          competition_id?: number;
+          group_id?: number;
+          position?: number;
+          registration_id?: number;
+          ruleset_revision_id?: number;
+          slot_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_group_advancement_closure_id_group_id_ruleset__fkey";
+            columns: ["closure_id", "group_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_group_closures";
+            referencedColumns: ["id", "group_id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_group_advancement_closure_id_position_registra_fkey";
+            columns: ["closure_id", "position", "registration_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_group_closure_rows";
+            referencedColumns: ["closure_id", "position", "registration_id"];
+          },
+          {
+            foreignKeyName: "competition_group_advancement_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_group_advancement_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_group_advancement_slot_id_ruleset_revision_id__fkey";
+            columns: ["slot_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_slots";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+        ];
+      };
+      competition_group_closure_rows: {
+        Row: {
+          closure_id: number;
+          competition_id: number;
+          games: number;
+          group_id: number;
+          losses: number;
+          point_difference: number | null;
+          points_against: number;
+          points_for: number;
+          position: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+          wins: number;
+        };
+        Insert: {
+          closure_id: number;
+          competition_id: number;
+          games: number;
+          group_id: number;
+          losses: number;
+          point_difference?: number | null;
+          points_against: number;
+          points_for: number;
+          position: number;
+          registration_id: number;
+          ruleset_revision_id: number;
+          wins: number;
+        };
+        Update: {
+          closure_id?: number;
+          competition_id?: number;
+          games?: number;
+          group_id?: number;
+          losses?: number;
+          point_difference?: number | null;
+          points_against?: number;
+          points_for?: number;
+          position?: number;
+          registration_id?: number;
+          ruleset_revision_id?: number;
+          wins?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_group_closure_row_closure_id_group_id_ruleset__fkey";
+            columns: ["closure_id", "group_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_group_closures";
+            referencedColumns: ["id", "group_id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_group_closure_row_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_group_closure_row_registration_id_competition__fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
+      competition_group_closures: {
+        Row: {
+          closed_at: string;
+          closed_by: string;
+          competition_id: number;
+          group_id: number;
+          id: number;
+          ruleset_revision_id: number;
+          source_hash: string;
+          source_results: Json;
+          tie_break_reason: string | null;
+        };
+        Insert: {
+          closed_at?: string;
+          closed_by: string;
+          competition_id: number;
+          group_id: number;
+          id?: never;
+          ruleset_revision_id: number;
+          source_hash: string;
+          source_results: Json;
+          tie_break_reason?: string | null;
+        };
+        Update: {
+          closed_at?: string;
+          closed_by?: string;
+          competition_id?: number;
+          group_id?: number;
+          id?: never;
+          ruleset_revision_id?: number;
+          source_hash?: string;
+          source_results?: Json;
+          tie_break_reason?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_group_closures_group_id_ruleset_revision_id_co_fkey";
+            columns: ["group_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_groups";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
           },
         ];
       };
@@ -567,14 +754,102 @@ export type Database = {
           },
         ];
       };
+      competition_ruleset_amendments: {
+        Row: {
+          after_snapshot: Json;
+          amended_at: string;
+          amended_by: string;
+          before_snapshot: Json;
+          competition_id: number;
+          cutoff: string;
+          id: number;
+          reason: string;
+          source_matchup_id: number;
+          source_revision_id: number;
+          target_matchup_id: number;
+          target_revision_id: number;
+        };
+        Insert: {
+          after_snapshot: Json;
+          amended_at?: string;
+          amended_by: string;
+          before_snapshot: Json;
+          competition_id: number;
+          cutoff: string;
+          id?: never;
+          reason: string;
+          source_matchup_id: number;
+          source_revision_id: number;
+          target_matchup_id: number;
+          target_revision_id: number;
+        };
+        Update: {
+          after_snapshot?: Json;
+          amended_at?: string;
+          amended_by?: string;
+          before_snapshot?: Json;
+          competition_id?: number;
+          cutoff?: string;
+          id?: never;
+          reason?: string;
+          source_matchup_id?: number;
+          source_revision_id?: number;
+          target_matchup_id?: number;
+          target_revision_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_ruleset_amendment_source_matchup_id_source_rev_fkey";
+            columns: ["source_matchup_id", "source_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_ruleset_amendment_source_revision_id_competiti_fkey";
+            columns: ["source_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_ruleset_revisions";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_ruleset_amendment_target_matchup_id_target_rev_fkey";
+            columns: ["target_matchup_id", "target_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_ruleset_amendment_target_revision_id_competiti_fkey";
+            columns: ["target_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_ruleset_revisions";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_ruleset_amendments_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_data_coverage";
+            referencedColumns: ["competition_id"];
+          },
+          {
+            foreignKeyName: "competition_ruleset_amendments_competition_id_fkey";
+            columns: ["competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       competition_ruleset_revisions: {
         Row: {
           activated_at: string | null;
+          cloned_from_gender_division: string | null;
+          cloned_from_revision_id: number | null;
           competition_id: number;
           created_at: string;
           created_by: string | null;
-          cloned_from_gender_division: string | null;
-          cloned_from_revision_id: number | null;
           editor_revision: number;
           entry_count: number | null;
           gender_recompiled: boolean;
@@ -588,11 +863,11 @@ export type Database = {
         };
         Insert: {
           activated_at?: string | null;
+          cloned_from_gender_division?: string | null;
+          cloned_from_revision_id?: number | null;
           competition_id: number;
           created_at?: string;
           created_by?: string | null;
-          cloned_from_gender_division?: string | null;
-          cloned_from_revision_id?: number | null;
           editor_revision?: number;
           entry_count?: number | null;
           gender_recompiled?: boolean;
@@ -606,11 +881,11 @@ export type Database = {
         };
         Update: {
           activated_at?: string | null;
+          cloned_from_gender_division?: string | null;
+          cloned_from_revision_id?: number | null;
           competition_id?: number;
           created_at?: string;
           created_by?: string | null;
-          cloned_from_gender_division?: string | null;
-          cloned_from_revision_id?: number | null;
           editor_revision?: number;
           entry_count?: number | null;
           gender_recompiled?: boolean;
@@ -635,6 +910,13 @@ export type Database = {
             columns: ["competition_id"];
             isOneToOne: false;
             referencedRelation: "competitions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ruleset_clone_source_fkey";
+            columns: ["cloned_from_revision_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_ruleset_revisions";
             referencedColumns: ["id"];
           },
         ];
@@ -1863,6 +2145,116 @@ export type Database = {
           },
         ];
       };
+      matchup_administrative_resolutions: {
+        Row: {
+          cancelled_game_id: number | null;
+          competition_id: number;
+          decision_type: string;
+          loser_registration_id: number;
+          matchup_id: number;
+          reason: string;
+          resolved_at: string;
+          resolved_by: string;
+          ruleset_revision_id: number;
+          winner_registration_id: number;
+        };
+        Insert: {
+          cancelled_game_id?: number | null;
+          competition_id: number;
+          decision_type: string;
+          loser_registration_id: number;
+          matchup_id: number;
+          reason: string;
+          resolved_at?: string;
+          resolved_by: string;
+          ruleset_revision_id: number;
+          winner_registration_id: number;
+        };
+        Update: {
+          cancelled_game_id?: number | null;
+          competition_id?: number;
+          decision_type?: string;
+          loser_registration_id?: number;
+          matchup_id?: number;
+          reason?: string;
+          resolved_at?: string;
+          resolved_by?: string;
+          ruleset_revision_id?: number;
+          winner_registration_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "matchup_administrative_resolu_cancelled_game_id_competitio_fkey";
+            columns: ["cancelled_game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_boxscore_player_statistics";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_cancelled_game_id_competitio_fkey";
+            columns: ["cancelled_game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_data_status";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_cancelled_game_id_competitio_fkey";
+            columns: ["cancelled_game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "game_scoresheet_player_statistics";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_cancelled_game_id_competitio_fkey";
+            columns: ["cancelled_game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_cancelled_game_id_competitio_fkey";
+            columns: ["cancelled_game_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "legacy_unclassified_games";
+            referencedColumns: ["game_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_loser_registration_id_compet_fkey";
+            columns: ["loser_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_loser_registration_id_compet_fkey";
+            columns: ["loser_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_matchup_id_ruleset_revision__fkey";
+            columns: ["matchup_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_winner_registration_id_compe_fkey";
+            columns: ["winner_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_administrative_resolu_winner_registration_id_compe_fkey";
+            columns: ["winner_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
       matchup_preparations: {
         Row: {
           competition_id: number;
@@ -2055,6 +2447,98 @@ export type Database = {
           },
           {
             foreignKeyName: "matchup_resolutions_winner_registration_id_competition_id_fkey";
+            columns: ["winner_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
+      matchup_revision_outcomes: {
+        Row: {
+          amendment_id: number | null;
+          carried_at: string;
+          carried_by: string;
+          competition_id: number;
+          loser_registration_id: number;
+          matchup_id: number;
+          reason: string | null;
+          ruleset_revision_id: number;
+          source_kind: string;
+          source_matchup_id: number;
+          winner_registration_id: number;
+        };
+        Insert: {
+          amendment_id?: number | null;
+          carried_at?: string;
+          carried_by: string;
+          competition_id: number;
+          loser_registration_id: number;
+          matchup_id: number;
+          reason?: string | null;
+          ruleset_revision_id: number;
+          source_kind: string;
+          source_matchup_id: number;
+          winner_registration_id: number;
+        };
+        Update: {
+          amendment_id?: number | null;
+          carried_at?: string;
+          carried_by?: string;
+          competition_id?: number;
+          loser_registration_id?: number;
+          matchup_id?: number;
+          reason?: string | null;
+          ruleset_revision_id?: number;
+          source_kind?: string;
+          source_matchup_id?: number;
+          winner_registration_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "matchup_revision_outcomes_amendment_id_fkey";
+            columns: ["amendment_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_ruleset_amendments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_loser_registration_id_competitio_fkey";
+            columns: ["loser_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_loser_registration_id_competitio_fkey";
+            columns: ["loser_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_matchup_id_ruleset_revision_id_c_fkey";
+            columns: ["matchup_id", "ruleset_revision_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id", "ruleset_revision_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_source_matchup_id_fkey";
+            columns: ["source_matchup_id"];
+            isOneToOne: false;
+            referencedRelation: "matchups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_winner_registration_id_competiti_fkey";
+            columns: ["winner_registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "matchup_revision_outcomes_winner_registration_id_competiti_fkey";
             columns: ["winner_registration_id", "competition_id"];
             isOneToOne: false;
             referencedRelation: "team_registrations";
@@ -3595,20 +4079,6 @@ export type Database = {
           isSetofReturn: true;
         };
       };
-      admin_apply_registration_removal: {
-        Args: { p_expected_decision: string; p_reason: string; p_registration_id: number };
-        Returns: Json;
-      };
-      admin_apply_ruleset_draft_edit: {
-        Args: {
-          p_expected_editor_revision: number;
-          p_input: Json;
-          p_operation: string;
-          p_request_id: string;
-          p_ruleset_revision_id: number;
-        };
-        Returns: Json;
-      };
       admin_activate_game_data_authority: {
         Args: {
           p_domain: string;
@@ -3658,6 +4128,34 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_amend_matchup_outcome: {
+        Args: {
+          p_corrected_winner_registration_id: number;
+          p_expected_winner_registration_id: number;
+          p_matchup_id: number;
+          p_reason: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
+      admin_apply_registration_removal: {
+        Args: {
+          p_expected_decision: string;
+          p_reason: string;
+          p_registration_id: number;
+        };
+        Returns: Json;
+      };
+      admin_apply_ruleset_draft_edit: {
+        Args: {
+          p_expected_editor_revision: number;
+          p_input: Json;
+          p_operation: string;
+          p_request_id: string;
+          p_ruleset_revision_id: number;
+        };
+        Returns: Json;
+      };
       admin_assign_competition_data_profile: {
         Args: { p_competition_id: number; p_profile_id: number };
         Returns: {
@@ -3698,6 +4196,17 @@ export type Database = {
           p_request_id: string;
           p_source_revision_id: number;
           p_target_competition_id: number;
+        };
+        Returns: Json;
+      };
+      admin_close_competition_group: {
+        Args: {
+          p_advancement_targets: Json;
+          p_expected_source_hash: string;
+          p_group_id: number;
+          p_ordered_registration_ids: number[];
+          p_request_id: string;
+          p_tie_break_reason: string;
         };
         Returns: Json;
       };
@@ -3867,6 +4376,14 @@ export type Database = {
         Args: { p_game_id: number };
         Returns: Json;
       };
+      admin_get_group_closure_preview: {
+        Args: { p_group_id: number };
+        Returns: Json;
+      };
+      admin_get_matchup_administrative_impact: {
+        Args: { p_matchup_id: number; p_winner_registration_id: number };
+        Returns: Json;
+      };
       admin_get_player_private_profile: {
         Args: { p_player_id: number };
         Returns: {
@@ -3887,19 +4404,33 @@ export type Database = {
         Args: { p_registration_id: number };
         Returns: Json;
       };
+      admin_get_ruleset_amendment_impact: {
+        Args: {
+          p_corrected_winner_registration_id: number;
+          p_matchup_id: number;
+        };
+        Returns: Json;
+      };
       admin_get_ruleset_draft_editor: {
         Args: { p_competition_id: number };
         Returns: Json;
       };
+      admin_get_sports_exceptions_dashboard: {
+        Args: { p_competition_id: number };
+        Returns: Json;
+      };
       admin_list_ruleset_clone_sources: {
-        Args: { p_include_other_gender?: boolean; p_target_competition_id: number };
+        Args: {
+          p_include_other_gender?: boolean;
+          p_target_competition_id: number;
+        };
         Returns: {
           display_name: string;
           edition_year: number;
           entry_count: number;
           gender_division: string;
           gender_mismatch: boolean;
-          preset_key: string | null;
+          preset_key: string;
           revision_number: number;
           source_competition_id: number;
           source_kind: string;
@@ -3966,6 +4497,18 @@ export type Database = {
       admin_resolve_matchup: {
         Args: { p_expected_submission_id: number; p_matchup_id: number };
         Returns: number;
+      };
+      admin_resolve_matchup_administratively: {
+        Args: {
+          p_decision_type: string;
+          p_expected_away_registration_id: number;
+          p_expected_home_registration_id: number;
+          p_matchup_id: number;
+          p_reason: string;
+          p_request_id: string;
+          p_winner_registration_id: number;
+        };
+        Returns: Json;
       };
       admin_review_competition_gender: {
         Args: { p_competition_id: number; p_gender_division: string };

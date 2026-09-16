@@ -134,7 +134,27 @@ O módulo de validação e parsing recebeu oito testes Vitest. O gate local
 consolidado passou com formatação, lint, tipos, 298 testes Vitest, cinco
 runbooks, build e varredura de segredos em 575 arquivos.
 
-Próximo: commit/push da unidade, CI/banco/preview/CodeQL e, somente após todos os
-checks verdes, aplicação ordenada das quatro migrations, regeneração dos tipos,
-advisors, reconciliação e QA autenticado no preview. Produção permanece
-intocada em `v1.1.0`.
+Commit `7bd33c2` passou gate, banco do zero, preview e CodeQL na PR #44. As
+quatro migrations foram aplicadas em ordem e os pgTAPs persistentes passaram
+29+33+34+8. A reconciliação confirmou RLS nas seis tabelas novas, execução dos
+sete RPCs negada a `anon`/`public`, 5 competições, 9 jogos, 6 revisões e
+zero fechamentos, decisões, emendas ou auditorias POST-03. Os tipos foram
+regenerados a partir do schema aplicado.
+
+## Unidade 5 — cobertura de chaves estrangeiras
+
+O advisor de segurança não encontrou nova exposição acionável. Os oito ledgers
+privados sem policy não têm grant direto e os RPCs SECURITY DEFINER expostos a
+`authenticated` são endpoints intencionais que exigem o singleton AAL2. A
+proteção contra senhas vazadas permanece uma configuração operacional conhecida.
+
+O advisor de desempenho encontrou 11 chaves estrangeiras POST-03 sem índice de
+cobertura. A migration aditiva
+`20260916102500_post03_fk_covering_indexes.sql` cria os 11 índices sem alterar
+dados ou comportamento. O pgTAP focal passou 11/11 em transação revertida. O
+gate local posterior passou com 298 Vitest, tipos regenerados, cinco runbooks,
+build e scan de 577 arquivos.
+
+Próximo: commit/push do hardening e tipos, CI completo e aplicação exclusiva da
+migration de índices. Depois repetir advisors/reconciliação e executar QA AAL2
+no preview. Produção permanece intocada em `v1.1.0`.

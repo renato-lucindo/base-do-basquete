@@ -19,11 +19,6 @@ import {
 } from "../modules/competition/sports-exceptions";
 import type { Route } from "./+types/admin.competitions.$competitionId.sports-exceptions";
 
-interface RpcResponse {
-  data: unknown;
-  error: { code?: string } | null;
-}
-
 type ActionData =
   | {
       error: string;
@@ -64,12 +59,6 @@ function positiveId(value: unknown): number | null {
   return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
-function rpcCaller(client: { rpc: unknown }) {
-  return (client.rpc as (name: string, args: Record<string, unknown>) => Promise<RpcResponse>).bind(
-    client,
-  );
-}
-
 export function meta() {
   return [{ title: "Exceções esportivas — Administração" }];
 }
@@ -78,14 +67,13 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const competitionId = positiveId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const auth = await requireAdminAal2(request, context.get(cloudflareContext).env);
-  const callRpc = rpcCaller(auth.client);
   const [competition, dashboardResult, registrations, teams] = await Promise.all([
     auth.client
       .from("competitions")
       .select("id,display_name,status")
       .eq("id", competitionId)
       .maybeSingle(),
-    callRpc("admin_get_sports_exceptions_dashboard", {
+    auth.client.rpc("admin_get_sports_exceptions_dashboard", {
       p_competition_id: competitionId,
     }),
     auth.client
@@ -126,7 +114,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const form = await request.formData();
   assertCsrfToken(form, auth.payload.csrfToken);
   const headers = auth.cookie ? { "Set-Cookie": auth.cookie } : undefined;
-  const callRpc = rpcCaller(auth.client);
   const intent = form.get("intent");
 
   if (intent === "preview-decision" || intent === "confirm-decision") {
@@ -137,7 +124,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400, headers },
       );
     if (intent === "preview-decision") {
-      const result = await callRpc("admin_get_matchup_administrative_impact", {
+      const result = await auth.client.rpc("admin_get_matchup_administrative_impact", {
         p_matchup_id: parsed.input.matchupId,
         p_winner_registration_id: parsed.input.winnerRegistrationId,
       });
@@ -160,7 +147,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { headers },
       );
     }
-    const result = await callRpc("admin_resolve_matchup_administratively", {
+    if (!parsed.input.requestId) throw new Response("Solicitação inválida", { status: 400 });
+    const result = await auth.client.rpc("admin_resolve_matchup_administratively", {
       p_request_id: parsed.input.requestId,
       p_matchup_id: parsed.input.matchupId,
       p_expected_home_registration_id: parsed.input.homeRegistrationId,
@@ -187,7 +175,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { status: 400, headers },
       );
     if (intent === "preview-amendment") {
-      const result = await callRpc("admin_get_ruleset_amendment_impact", {
+      const result = await auth.client.rpc("admin_get_ruleset_amendment_impact", {
         p_matchup_id: parsed.input.matchupId,
         p_corrected_winner_registration_id: parsed.input.correctedWinnerRegistrationId,
       });
@@ -209,7 +197,8 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { headers },
       );
     }
-    const result = await callRpc("admin_amend_matchup_outcome", {
+    if (!parsed.input.requestId) throw new Response("Solicitação inválida", { status: 400 });
+    const result = await auth.client.rpc("admin_amend_matchup_outcome", {
       p_request_id: parsed.input.requestId,
       p_matchup_id: parsed.input.matchupId,
       p_expected_winner_registration_id: parsed.input.expectedWinnerRegistrationId,
@@ -230,7 +219,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const groupId = positiveId(form.get("groupId"));
     if (!groupId)
       return data<ActionData>({ error: "Selecione novamente o grupo." }, { status: 400, headers });
-    const result = await callRpc("admin_get_group_closure_preview", { p_group_id: groupId });
+    const result = await auth.client.rpc("admin_get_group_closure_preview", {
+      p_group_id: groupId,
+    });
     const impact = parseGroupClosurePreview(result.data);
     if (result.error || !impact)
       return data<ActionData>(
@@ -252,12 +243,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         { error: "Revise a ordem final, o desempate e a confirmação." },
         { status: 400, headers },
       );
-    const result = await callRpc("admin_close_competition_group", {
+    const result = await auth.client.rpc("admin_close_competition_group", {
       p_request_id: parsed.input.requestId,
       p_group_id: parsed.input.groupId,
       p_expected_source_hash: parsed.input.sourceHash,
       p_ordered_registration_ids: parsed.input.orderedRegistrationIds,
-      p_tie_break_reason: parsed.input.tieBreakReason,
+      p_tie_break_reason: parsed.input.tieBreakReason ?? "",
       p_advancement_targets: [],
     });
     if (result.error)
