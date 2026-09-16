@@ -82,6 +82,13 @@ select
     as enforcement_ready
 from private.player_private;
 
+-- The repository also contains the final enforcement migration. The shared
+-- environment has not applied it yet, while CI rebuilds through that future
+-- state. Drop its rollout-complete constraint only inside this transaction so
+-- the queue and stale-write behavior can still be exercised in both states.
+alter table private.player_private
+  drop constraint if exists player_private_review_complete;
+
 insert into public.players(id,full_name,slug)
 overriding system value values
   (99591,'Atleta Lote Um','atleta-lote-um'),
