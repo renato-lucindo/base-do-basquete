@@ -107,5 +107,34 @@ ausência da tabela e zero auditorias de emenda no banco compartilhado.
 O gate local da unidade passou: formatação, lint, tipos, 290 testes Vitest,
 cinco runbooks, build e varredura de segredos em 570 arquivos.
 
-Próximo: gate completo/CI da unidade e implementação da UI AAL2 para preview e
-confirmação secundária das três operações.
+Commit `2a359e2` enviado à PR draft #44. Gate, banco do zero, preview e CodeQL
+passaram integralmente antes da unidade de interface.
+
+## Unidade 4 — dashboard AAL2 e confirmação secundária
+
+Implementada na migration aditiva
+`20260916100130_post03_sports_exceptions_dashboard.sql` e na rota
+`/admin/competitions/:competitionId/sports-exceptions`:
+
+- leitura consolidada do grafo ativo, grupos, participantes, jogos e decisões;
+- RPC de leitura protegida por administrador singleton AAL2 e privilégio mínimo;
+- preview server-side separado da confirmação para as três operações;
+- confirmação explícita por seção, com motivo, impacto e request ID idempotente;
+- fechamento de grupo com ordem final completa e posições editáveis;
+- decisão administrativa limitada a confronto ainda não resolvido;
+- emenda limitada a confronto já resolvido e preservação do passado;
+- CSRF/mesma origem e autorização server-side na rota.
+
+O pgTAP focal `post03_sports_exceptions_dashboard.test.sql` possui 8 asserções.
+As quatro migrations POST-03 foram carregadas na ordem real dentro de uma única
+transação no Supabase compartilhado: 8/8 passaram e o `ROLLBACK` posterior
+confirmou ausência da tabela de emendas e da RPC do dashboard.
+
+O módulo de validação e parsing recebeu oito testes Vitest. O gate local
+consolidado passou com formatação, lint, tipos, 298 testes Vitest, cinco
+runbooks, build e varredura de segredos em 575 arquivos.
+
+Próximo: commit/push da unidade, CI/banco/preview/CodeQL e, somente após todos os
+checks verdes, aplicação ordenada das quatro migrations, regeneração dos tipos,
+advisors, reconciliação e QA autenticado no preview. Produção permanece
+intocada em `v1.1.0`.

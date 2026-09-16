@@ -833,6 +833,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </Link>
           </article>
           <article>
+            <h2>Exceções esportivas</h2>
+            <p>Encerre grupos, registre W.O. e revise correções com impacto prévio.</p>
+            <Link
+              className="button button-primary"
+              to={`/admin/competitions/${competition.id}/sports-exceptions`}
+            >
+              Revisar exceções
+            </Link>
+          </article>
+          <article>
             <h2>Súmula manual</h2>
             <p>Fluxo isolado da importação, usando esta edição.</p>
             <Link
