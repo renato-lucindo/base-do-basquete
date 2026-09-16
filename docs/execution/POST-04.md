@@ -127,6 +127,11 @@ a ordem visual busca → lista rolável → confirmação, a seleção com progr
 filtro sem resultados e a limpeza das escolhas. A seleção de ensaio foi limpa
 sem submissão, portanto nenhum valor privado foi alterado.
 
+Após a autorização da predefinição masculina, o preview mostrou `42 de 42`
+selecionados e todos os radios masculinos marcados. Uma opção foi trocada para
+feminino e restaurada para masculino apenas no cliente. Justificativa e
+confirmação permaneceram vazias, e o lote não foi enviado.
+
 A migration aditiva `20260916183607_admin_bulk_player_private_review.sql` foi
 aplicada ao Supabase compartilhado e validada: `authenticated` pode executar a
 função sob a guarda AAL2, enquanto `anon` e `public` não podem. A migration final
