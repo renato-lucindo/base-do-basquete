@@ -1,8 +1,11 @@
-import { data, Link } from "react-router";
+import { useMemo, useState } from "react";
+import { data, Form, Link, redirect, useNavigation } from "react-router";
 
 import { AdminArea } from "../components/admin/admin-area";
-import { cloudflareContext } from "../context";
+import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
+import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
+import { logOperationalEvent } from "../modules/observability/operation.server";
 import type { Route } from "./+types/admin.review-queues";
 
 type CompetitionReviewItem = {
@@ -36,6 +39,13 @@ export type ReviewQueueReport = {
   };
   competitions: CompetitionReviewItem[];
   players: PlayerReviewItem[];
+};
+
+type PlayerEligibilitySex = "male" | "female";
+
+type BulkReviewInput = {
+  reason: string;
+  reviews: Array<{ playerId: number; sex: PlayerEligibilitySex }>;
 };
 
 function objectValue(value: unknown): Record<string, unknown> | null {
@@ -170,6 +180,38 @@ export function meta() {
   return [{ title: "Pendências — Administração" }];
 }
 
+function responseHeaders(cookie: string | null | undefined) {
+  return {
+    "Cache-Control": "private, no-store",
+    ...(cookie ? { "Set-Cookie": cookie } : {}),
+  };
+}
+
+export function parseBulkReviewInput(form: FormData): BulkReviewInput | null {
+  const reason = String(form.get("reason") ?? "").trim();
+  if (reason.length < 10 || reason.length > 500 || form.get("confirmed") !== "on") return null;
+
+  const reviews: BulkReviewInput["reviews"] = [];
+  const seen = new Set<number>();
+  for (const [name, rawValue] of form.entries()) {
+    const match = /^player:([1-9][0-9]{0,14})$/u.exec(name);
+    if (!match) continue;
+    const playerId = Number(match[1]);
+    const sex = String(rawValue);
+    if (
+      !Number.isSafeInteger(playerId) ||
+      seen.has(playerId) ||
+      (sex !== "male" && sex !== "female")
+    ) {
+      return null;
+    }
+    seen.add(playerId);
+    reviews.push({ playerId, sex });
+  }
+  if (reviews.length < 1 || reviews.length > 100) return null;
+  return { reason, reviews };
+}
+
 export async function loader({ request, context }: Route.LoaderArgs) {
   const { env } = context.get(cloudflareContext);
   const auth = await requireAdminAal2(request, env);
@@ -179,18 +221,113 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     throw new Response("Relatório de pendências indisponível", { status: 503 });
   }
   return data(
-    { report },
     {
-      headers: {
-        "Cache-Control": "private, no-store",
-        ...(auth.cookie ? { "Set-Cookie": auth.cookie } : {}),
-      },
+      report,
+      csrfToken: auth.payload.csrfToken,
+      savedCount: (() => {
+        const value = new URL(request.url).searchParams.get("savedPlayers");
+        return value && /^[1-9][0-9]{0,2}$/u.test(value) ? Number(value) : null;
+      })(),
+    },
+    {
+      headers: responseHeaders(auth.cookie),
     },
   );
 }
 
-export default function ReviewQueues({ loaderData }: Route.ComponentProps) {
+export async function action({ request, context }: Route.ActionArgs) {
+  assertSameOrigin(request);
+  const { env } = context.get(cloudflareContext);
+  const correlationId = context.get(correlationIdContext);
+  const startedAt = Date.now();
+  const auth = await requireAdminAal2(request, env);
+  const form = await request.formData();
+  assertCsrfToken(form, auth.payload.csrfToken);
+  const input = parseBulkReviewInput(form);
+  const headers = responseHeaders(auth.cookie);
+  if (!input) {
+    return data(
+      {
+        error:
+          "Selecione ao menos um atleta, confirme as escolhas e informe uma justificativa de 10 a 500 caracteres.",
+      },
+      { status: 400, headers },
+    );
+  }
+
+  const result = await auth.client.rpc("admin_bulk_set_player_sex", {
+    p_reviews: input.reviews,
+    p_reason: input.reason,
+  });
+  const summary = result.data?.[0];
+  if (
+    result.error ||
+    !summary ||
+    summary.reviewed_count !== input.reviews.length ||
+    !Number.isSafeInteger(summary.remaining_pending)
+  ) {
+    const status =
+      result.error?.code === "BD401" ? 403 : result.error?.code === "BD404" ? 409 : 400;
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "player.private_profile",
+      outcome: status === 403 ? "blocked" : "failure",
+      status,
+      context: { errorCode: result.error?.code },
+    });
+    return data(
+      {
+        error:
+          status === 409
+            ? "A fila mudou enquanto você revisava. Recarregue antes de tentar novamente."
+            : "Não foi possível salvar o lote. Nenhuma escolha foi aplicada.",
+      },
+      { status, headers },
+    );
+  }
+
+  logOperationalEvent({
+    correlationId,
+    durationMs: Date.now() - startedAt,
+    operation: "player.private_profile",
+    outcome: "success",
+    status: 303,
+  });
+  throw redirect(
+    `/admin/review-queues?savedPlayers=${summary.reviewed_count}#player-review-title`,
+    { headers },
+  );
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
+export default function ReviewQueues({ loaderData, actionData }: Route.ComponentProps) {
   const { report } = loaderData;
+  const [query, setQuery] = useState("");
+  const [choices, setChoices] = useState<Record<number, PlayerEligibilitySex>>({});
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
+  const selectedCount = Object.keys(choices).length;
+  const normalizedQuery = normalizeSearch(query);
+  const visiblePlayerIds = useMemo(
+    () =>
+      new Set(
+        report.players
+          .filter((player) => normalizeSearch(player.fullName).includes(normalizedQuery))
+          .map((player) => player.playerId),
+      ),
+    [normalizedQuery, report.players],
+  );
+  const progress = report.players.length
+    ? Math.round((selectedCount / report.players.length) * 100)
+    : 100;
   return (
     <AdminArea title="Pendências de fechamento">
       <p>
@@ -256,23 +393,139 @@ export default function ReviewQueues({ loaderData }: Route.ComponentProps) {
       </section>
 
       <section className="admin-panel" aria-labelledby="player-review-title">
-        <h2 id="player-review-title">Atletas</h2>
+        <div className="review-section-heading">
+          <div>
+            <h2 id="player-review-title">Atletas</h2>
+            <p>Escolha cada valor explicitamente. Nenhuma opção é aplicada automaticamente.</p>
+          </div>
+          <strong>{report.players.length} pendente(s)</strong>
+        </div>
+        {loaderData.savedCount ? (
+          <output className="form-success" aria-live="polite">
+            {loaderData.savedCount} revisão(ões) salva(s) e auditada(s) em uma única transação.
+          </output>
+        ) : null}
+        {actionData?.error ? (
+          <p className="form-error" role="alert">
+            {actionData.error}
+          </p>
+        ) : null}
         {report.players.length ? (
-          <ol className="import-history">
-            {report.players.map((player) => (
-              <li key={player.playerId}>
-                <span>{player.fullName}</span>
-                <strong>{player.isActive ? "ativo" : "sem vínculo ativo"}</strong>
+          <Form method="post" className="bulk-private-review-form">
+            <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+            <div className="bulk-review-tools">
+              <label>
+                Buscar atleta
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Digite parte do nome"
+                />
+              </label>
+              <fieldset className="bulk-review-progress">
+                <legend className="sr-only">Progresso das escolhas</legend>
+                <span>
+                  <strong>{selectedCount}</strong> de {report.players.length} selecionado(s)
+                </span>
+                <progress max={report.players.length} value={selectedCount}>
+                  {progress}%
+                </progress>
+              </fieldset>
+            </div>
+
+            <div className="bulk-review-list">
+              {report.players.map((player) => (
+                <article
+                  className="bulk-review-row"
+                  key={player.playerId}
+                  hidden={!visiblePlayerIds.has(player.playerId)}
+                >
+                  <div className="bulk-review-player">
+                    <strong>{player.fullName}</strong>
+                    <span>{player.isActive ? "Ativo" : "Sem vínculo ativo"}</span>
+                    <small>
+                      {player.rosterEntryCount} inscrição(ões) · {player.activeRosterEntryCount}{" "}
+                      ativa(s) · {player.competitionCount} competição(ões)
+                    </small>
+                    <Link to={`/admin/players/${player.playerId}/private-profile`}>
+                      Revisar individualmente
+                    </Link>
+                  </div>
+                  <fieldset className="eligibility-choice">
+                    <legend className="sr-only">
+                      Sexo para elegibilidade de {player.fullName}
+                    </legend>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`player:${player.playerId}`}
+                        value="female"
+                        checked={choices[player.playerId] === "female"}
+                        onChange={() =>
+                          setChoices((current) => ({ ...current, [player.playerId]: "female" }))
+                        }
+                      />
+                      Feminino
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`player:${player.playerId}`}
+                        value="male"
+                        checked={choices[player.playerId] === "male"}
+                        onChange={() =>
+                          setChoices((current) => ({ ...current, [player.playerId]: "male" }))
+                        }
+                      />
+                      Masculino
+                    </label>
+                  </fieldset>
+                </article>
+              ))}
+            </div>
+            {visiblePlayerIds.size === 0 ? (
+              <p className="admin-note">Nenhum atleta corresponde à busca.</p>
+            ) : null}
+
+            <div className="bulk-review-submit">
+              <label>
+                Justificativa comum para este lote
+                <textarea
+                  name="reason"
+                  minLength={10}
+                  maxLength={500}
+                  required
+                  placeholder="Ex.: revisão cadastral realizada pelo administrador responsável"
+                />
                 <small>
-                  {player.rosterEntryCount} inscrição(ões), {player.activeRosterEntryCount}{" "}
-                  ativa(s), {player.competitionCount} competição(ões)
+                  A justificativa e o impacto serão auditados individualmente; os valores escolhidos
+                  não serão gravados na auditoria.
                 </small>
-                <Link to={`/admin/players/${player.playerId}/private-profile`}>
-                  Abrir formulário protegido
-                </Link>
-              </li>
-            ))}
-          </ol>
+              </label>
+              <label className="bulk-review-confirmation">
+                <input type="checkbox" name="confirmed" required /> Revisei as {selectedCount}{" "}
+                escolha(s) selecionada(s) e confirmo o envio transacional.
+              </label>
+              <div className="bulk-review-actions">
+                <button
+                  className="button button-ghost"
+                  type="button"
+                  disabled={selectedCount === 0 || busy}
+                  onClick={() => setChoices({})}
+                >
+                  Limpar escolhas
+                </button>
+                <button
+                  className="button button-primary"
+                  type="submit"
+                  disabled={selectedCount === 0 || busy}
+                >
+                  {busy ? "Salvando lote…" : `Salvar ${selectedCount} revisão(ões)`}
+                </button>
+              </div>
+            </div>
+          </Form>
         ) : (
           <p>Nenhum atleta pendente.</p>
         )}

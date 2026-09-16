@@ -4556,6 +4556,14 @@ export type Database = {
           nickname: string;
         }[];
       };
+      admin_bulk_set_player_sex: {
+        Args: { p_reason: string; p_reviews: Json };
+        Returns: {
+          enforcement_ready: boolean;
+          remaining_pending: number;
+          reviewed_count: number;
+        }[];
+      };
       admin_set_player_sex: {
         Args: { p_player_id: number; p_reason: string; p_sex: string };
         Returns: {
