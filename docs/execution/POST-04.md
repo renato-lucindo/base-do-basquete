@@ -1,6 +1,6 @@
 # POST-04 — Enforcement e fechamento integral
 
-Estado: `DOING` na branch `feature/post-04-enforcement-closure`.
+Estado: `READY_FOR_INTEGRATION` na branch `feature/post-04-enforcement-closure`.
 
 ## Entrada humana medida em 16/09/2026
 
@@ -81,9 +81,10 @@ somente no estado do cliente; nenhuma decisão privada foi enviada durante o QA.
 
 ## Unidade preparatória — enforcement autocondicionado
 
-A migration `20260916183655_post04_final_profile_enforcement.sql` foi preparada,
-mas não será aplicada ao ambiente compartilhado enquanto qualquer fila estiver
-pendente. Ela:
+A migration `20260916183655_post04_final_profile_enforcement.sql` foi preparada
+com bloqueio automático enquanto qualquer fila estivesse pendente. Após a
+reconciliação `0/0/0/0` e a autorização já registrada, ela foi aplicada ao
+ambiente compartilhado em 17/09/2026. Ela:
 
 - aborta atomicamente com contagens sem valores privados quando a fila não está
   zerada;
@@ -101,9 +102,9 @@ privacidade. As fixtures determinísticas e suítes funcionais foram migradas
 para perfis finais explícitos. Quatro suítes de rollout que criavam
 deliberadamente valores nulos foram preservadas em `supabase/legacy-rollout-tests/`;
 seus estados deixaram de ser representáveis, e a cobertura sucessora está
-documentada no README desse diretório. Antes de qualquer aplicação persistente
-ainda serão necessários: CI desde zero, relatório zerado e autorização humana
-explícita.
+documentada no README desse diretório. Antes da aplicação persistente, a CI
+desde zero, o relatório zerado e a autorização humana explícita foram
+confirmados.
 
 ## Gate descartável
 
@@ -135,21 +136,44 @@ confirmação permaneceram vazias, e o lote não foi enviado.
 A migration aditiva `20260916183607_admin_bulk_player_private_review.sql` foi
 aplicada ao Supabase compartilhado e validada: `authenticated` pode executar a
 função sob a guarda AAL2, enquanto `anon` e `public` não podem. A migration final
-continua auto-bloqueada por `BR100`. Produção permanece em `v1.1.0`; nenhum
-enforcement POST-04 foi aplicado.
+permaneceu auto-bloqueada por `BR100` até a conclusão das revisões.
 
-## Advisors pré-enforcement
+## Enforcement aplicado e gate final
 
-A leitura de `2026-09-16T15:36:06Z` não encontrou erro. Permanecem avisos já
+O responsável enviou as 42 decisões restantes em uma única transação auditada.
+A leitura autoritativa retornou `0/0/0/0`, `enforcementReady=true`, 44 jogadores
+e 44 perfis privados completos. A migration final foi então aplicada sem
+remover as colunas legadas.
+
+A validação pós-migration confirmou:
+
+- 21/21 asserções do pgTAP focal, incluindo `NOT NULL`, unicidade final, FK
+  diferida, criação atômica e negações para `anon`;
+- inventário preservado com 5 competições, 44 jogadores, 44 perfis privados,
+  9 jogos, 18 participantes, 48 placares por período, 50 slots de elenco, 74
+  linhas de estatísticas, 81 faltas, 2 importações, 4 publicações e 6 revisões;
+- os seis hashes esportivos idênticos ao baseline pré-enforcement;
+- tipos TypeScript atualizados para o contrato final não nulo;
+- gate local verde com 44 arquivos/312 Vitest, TypeScript, Biome, 5 runbooks,
+  builds cliente/SSR e scan de 589 arquivos;
+- smoke real no preview com `Sessão AAL2`, três contadores em zero, mensagem de
+  filas zeradas e confirmação de 42 revisões salvas/auditadas.
+
+Produção web permanece em `v1.1.0`; a integração e qualquer publicação ainda
+dependem dos checks finais da PR #45 e do fluxo protegido da `main`.
+
+## Advisors pós-enforcement
+
+A leitura de 17/09/2026 não encontrou erro. Permanecem avisos já
 conhecidos e não introduzidos pelo POST-04:
 
 - `INFO`: 8 tabelas do schema privado com RLS e nenhuma policy; o schema não é
   exposto ao cliente e o acesso autorizado ocorre por funções restritas;
-- `WARN`: 38 RPCs administrativas `SECURITY DEFINER` executáveis por
+- `WARN`: 39 RPCs administrativas `SECURITY DEFINER` executáveis por
   `authenticated`; cada fluxo permanece responsável por exigir o administrador
   singleton em AAL2 e fixar o `search_path`;
 - `WARN`: proteção contra senhas vazadas desabilitada, dependente do plano;
-- `INFO`: 101 índices ainda sem uso observado no banco de baixo volume; não há
+- `INFO`: 100 índices ainda sem uso observado no banco de baixo volume; não há
   evidência para remoção antes de carga representativa.
 
 Referências de remediação: [RLS sem policy](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy),
