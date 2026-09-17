@@ -28,7 +28,10 @@ select ok(not has_function_privilege(
   'authenticated','private.admin_commit_boxscore_import_impl(bigint,jsonb)','execute'
 ), 'the legacy FIBA commit implementation cannot bypass the dispatcher');
 select ok(
-  (select procedure.proconfig @> array['search_path=']::text[]
+  (select exists(
+     select 1 from unnest(procedure.proconfig) config
+     where config ~ '^search_path=(|"")$'
+   )
    from pg_proc procedure
    where procedure.oid='private.admin_commit_supported_boxscore_import_impl(bigint,jsonb)'::regprocedure),
   'the privileged dispatcher has an empty search_path'
@@ -56,8 +59,8 @@ select pg_temp.create_final_competition(
 );
 insert into public.teams(id,name,slug,abbreviation)
 overriding system value values
-  (9411,'Instituto Viva Vida','instituto-viva-vida','IVV'),
-  (9412,'Saldanha da Gama','saldanha-da-gama','SDG');
+  (9411,'Instituto Site Fixture','instituto-site-fixture','ISF'),
+  (9412,'Saldanha Site Fixture','saldanha-site-fixture','SSF');
 insert into public.players(id,full_name,slug)
 overriding system value
 select 9410+number,'Atleta Site '||number,'atleta-site-'||number
@@ -112,7 +115,7 @@ grant select,update on site_boxscore_test_data to authenticated;
 
 with players as (
   select number,
-    case when number<=5 then 'Instituto Viva Vida' else 'Saldanha da Gama' end team_name,
+    case when number<=5 then 'Instituto Site Fixture' else 'Saldanha Site Fixture' end team_name,
     case when number<=5 then number else number-5 end jersey,
     jsonb_build_object(
       'jerseyNumber',(case when number<=5 then number else number-5 end)::text,
@@ -135,12 +138,12 @@ with players as (
 ), teams as (
   select jsonb_build_array(
     jsonb_build_object(
-      'name','Instituto Viva Vida','abbreviation',null,'score',1,
+      'name','Instituto Site Fixture','abbreviation',null,'score',1,
       'periodScores',null,
       'players',(select jsonb_agg(player order by number) from players where number<=5)
     ),
     jsonb_build_object(
-      'name','Saldanha da Gama','abbreviation',null,'score',0,
+      'name','Saldanha Site Fixture','abbreviation',null,'score',0,
       'periodScores',null,
       'players',(select jsonb_agg(player order by number) from players where number>5)
     )
@@ -155,8 +158,8 @@ with players as (
   select jsonb_build_object(
     'gameId',94101,
     'teams',jsonb_build_array(
-      jsonb_build_object('sourceTeamName','Instituto Viva Vida','registrationId',9411),
-      jsonb_build_object('sourceTeamName','Saldanha da Gama','registrationId',9412)
+      jsonb_build_object('sourceTeamName','Instituto Site Fixture','registrationId',9411),
+      jsonb_build_object('sourceTeamName','Saldanha Site Fixture','registrationId',9412)
     ),
     'players',jsonb_agg(jsonb_build_object(
       'sourceTeamName',team_name,'sourcePlayerName','A. Site '||number,
