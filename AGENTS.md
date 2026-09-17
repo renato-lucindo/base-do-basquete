@@ -37,6 +37,16 @@ A execução pode usar navegador autenticado no GitHub, Cloudflare e Supabase qu
 - Corrija automaticamente falhas reversíveis. Declare bloqueio somente após investigar e esgotar alternativas seguras.
 - Consulte documentação oficial atual antes de implementar integrações ou configurações que possam ter mudado.
 
+### Verificação eficiente
+
+- Durante a implementação, execute somente testes focais dos arquivos, módulos e migrations alterados.
+- Execute o gate local completo uma única vez quando a unidade estiver estável, imediatamente antes do push.
+- Não repita build, suíte completa ou varredura de segredos quando nenhum código, migration, dependência ou configuração relevante mudou desde a evidência verde.
+- Para banco, use pgTAP focal durante a iteração e a suíte integral apenas no gate de merge/release.
+- Consulte CI e deploy por resumos compactos de status. Leia logs completos somente quando houver falha ou divergência.
+- Restrinja QA de navegador aos fluxos e viewports afetados; reutilize evidência recente quando o artefato correspondente não mudou.
+- O fluxo econômico reduz repetição, não reduz os gates obrigatórios de merge e produção.
+
 ## Arquitetura e segurança obrigatórias
 
 - TypeScript estrito e monólito modular full-stack.
