@@ -87,7 +87,7 @@ const warmups = parsePositiveInteger(
 const routes = [
   {
     name: "estatísticas avançadas",
-    path: "/2026/liga-de-desenvolvimento/sub-15/jogadores",
+    path: "/2026/liga-de-desenvolvimento/sub-15/masculino/jogadores",
   },
   {
     name: "detalhe de jogo FIBA",
