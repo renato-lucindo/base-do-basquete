@@ -108,3 +108,9 @@ Somente uma task pode permanecer em `DOING`. Migrations já enviadas ou aplicada
 Por decisão do responsável, a fila operacional ativa da PR #35 passou a ser `acelerado-mvp/README.md`. Os 50 cartões permanecem rastreados em `tasks-pr35/`, mas agora funcionam como requisitos internos de 5 pacotes verticais de MVP e 4 pacotes pós-MVP, sem CI, preview e handoff separados por cartão.
 
 O pacote ativo é `MVP-01 — Jogo estrutural e ingestão principal`. O MVP prioriza o fluxo completo e seguro de criação, equipes/elencos, estrutura, agenda, súmula ou boxscore FIBA, publicação explícita e consulta pública. Funcionalidades adiadas continuam obrigatoriamente mapeadas em `POST-01` a `POST-04`.
+
+## Plano de UI/UX pública — 17/09/2026
+
+O plano posterior ao fechamento do MVP para navegação, classificação, lista de jogos, detalhe/boxscore, estatísticas de equipes, perfil da equipe, hub administrativo e busca está em `PLANO-UI-UX-PUBLICA-JOGOS-E-EQUIPES.md`.
+
+As decisões já fechadas incluem `AP`/`AP%` como nomenclatura padrão, `Classificação` como entrada pública da edição e estatísticas de equipes com os mesmos rótulos dos jogadores e alternância `Por jogo`/`Total`. A implementação fica dividida em quatro pacotes curtos e deve aguardar a integração da PR #49 antes de alterar projeções públicas afetadas pelo contrato Basketball Site.
