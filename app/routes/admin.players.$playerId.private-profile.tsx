@@ -146,6 +146,9 @@ export default function PlayerPrivateProfile({ loaderData, actionData }: Route.C
         </span>
       </header>
       <section className="admin-welcome admin-private-profile" aria-labelledby="private-title">
+        <Link className="admin-back-link" to="/admin/review-queues#player-review-title">
+          ← Voltar à fila de pendências
+        </Link>
         <p className="eyebrow">Formulário administrativo protegido</p>
         <h1 id="private-title">{profile.fullName}</h1>
         <p>

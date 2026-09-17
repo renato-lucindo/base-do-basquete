@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
 select plan(24);
@@ -12,23 +13,15 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9751, 'Liga Privada', 'liga-privada');
 insert into public.categories (id, name, slug)
 overriding system value values (9751, 'Categoria Privada', 'categoria-privada');
-insert into public.competitions (
-  id,
-  series_id,
-  category_id,
-  year,
-  display_name,
-  gender_division,
-  gender_division_review_required,
-  status,
-  published_at
-)
-overriding system value values
-  (9751, 9751, 9751, 2026, 'Liga Privada 2026', 'female', false, 'published', now());
+select pg_temp.create_final_competition(
+  9751,9751,9751,2026,'Liga Privada 2026','published',now(),'female','manual_scoresheet'
+);
 insert into public.teams (id, name, slug)
 overriding system value values (9751, 'Equipe Privada', 'equipe-privada');
 insert into public.players (id, full_name, slug)
 overriding system value values (9751, 'Atleta Privada', 'atleta-privada');
+insert into private.player_private(player_id,sex,sex_review_required)
+values(9751,'female',false);
 insert into public.team_registrations (id, competition_id, team_id, status, confirmed_at)
 overriding system value values (9751, 9751, 9751, 'confirmed', now());
 insert into public.roster_entries (
@@ -123,13 +116,13 @@ set local role authenticated;
 
 select is(
   (select eligibility_pending from public.admin_get_player_private_profile(9751)),
-  true,
-  'the dedicated form reports the historical review as pending'
+  false,
+  'the dedicated form reports the final profile as complete'
 );
 select is(
   (select sex from public.admin_get_player_private_profile(9751)),
-  null,
-  'the dedicated form alone may return the current null private value'
+  'female'::text,
+  'the dedicated form returns the current complete private value'
 );
 select is(
   (select roster_entries from public.admin_get_player_private_profile(9751)),
@@ -149,13 +142,13 @@ select is(
 
 select lives_ok(
   $$select * from public.admin_set_player_sex(
-      9751, 'female', 'Revisão documental realizada pelo administrador'
+      9751, 'male', 'Revisão documental realizada pelo administrador'
     )$$,
   'the aal2 administrator updates the private form'
 );
 select is(
   (select sex from public.admin_get_player_private_profile(9751)),
-  'female'::text,
+  'male'::text,
   'the protected form returns the explicitly stored value'
 );
 select is(
@@ -189,7 +182,7 @@ select ok(
 );
 select lives_ok(
   $$select * from public.admin_set_player_sex(
-      9751, 'female', 'Repetição idempotente da mesma revisão'
+      9751, 'male', 'Repetição idempotente da mesma revisão'
     )$$,
   'repeating the same update is safe'
 );

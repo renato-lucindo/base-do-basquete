@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
 select plan(27);
@@ -13,10 +14,9 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9801, 'Liga Perfil', 'liga-perfil');
 insert into public.categories (id, name, slug)
 overriding system value values (9801, 'Perfil Sub-17', 'perfil-sub-17');
-insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
-overriding system value values
-  (9801, 9801, 9801, 2026, 'Liga Perfil 2026 Sub-17', 'published', now());
+select pg_temp.create_final_competition(
+  9801,9801,9801,2026,'Liga Perfil 2026 Sub-17','published',now(),'male','manual_scoresheet'
+);
 insert into public.teams (id, name, slug, abbreviation, is_public)
 overriding system value values
   (9801, 'Equipe Perfil', 'equipe-perfil', 'PRF', true),
@@ -30,12 +30,12 @@ insert into public.player_profiles
 values
   (9801, 2008, 'Perfil público de teste.', 188, 82.50, 'Ala', 'Direita', 'São Paulo', 'SP'),
   (9802, 2007, 'Perfil privado de teste.', 180, 75.00, 'Armador', 'Esquerda', 'Santos', 'SP');
-insert into private.player_private (player_id, birth_date)
+insert into private.player_private (player_id, birth_date, sex, sex_review_required)
 values
-  (9801, '2008-04-12'),
-  (9802, '2007-05-13')
+  (9801, '2008-04-12', 'male', false),
+  (9802, '2007-05-13', 'male', false)
 on conflict (player_id) do update
-set birth_date = excluded.birth_date;
+set birth_date = excluded.birth_date, sex=excluded.sex, sex_review_required=false;
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values
@@ -114,8 +114,8 @@ select throws_ok(
   'legacy public birth date column cannot retain private data'
 );
 select throws_ok(
-  $$insert into private.player_private (player_id, birth_date)
-    values (9801, '2000-01-01')$$,
+  $$insert into private.player_private (player_id, birth_date, sex, sex_review_required)
+    values (9801, '2000-01-01', 'male', false)$$,
   '23505',
   'duplicate key value violates unique constraint "player_private_pkey"',
   'one private identity row exists per player'

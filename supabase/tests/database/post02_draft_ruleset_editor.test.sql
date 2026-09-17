@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
 select plan(36);
 set constraints all deferred;
@@ -33,15 +34,13 @@ with series as (
   insert into public.categories(name,slug)
   values('POST02 editor','post02-editor') returning id
 ), source as (
-  insert into public.competitions(
-    series_id,category_id,year,display_name,status,gender_division,gender_division_review_required
-  ) select series.id,category.id,1976,'POST02 editor source','draft','male',false
-    from series,category returning id
+  select pg_temp.create_final_competition(
+    null,series.id,category.id,1976,'POST02 editor source','draft',null,'male','manual_scoresheet'
+  ) as id from series,category
 ), target as (
-  insert into public.competitions(
-    series_id,category_id,year,display_name,status,gender_division,gender_division_review_required
-  ) select series.id,category.id,1977,'POST02 editor target','draft','male',false
-    from series,category returning id
+  select pg_temp.create_final_competition(
+    null,series.id,category.id,1977,'POST02 editor target','draft',null,'male','manual_scoresheet'
+  ) as id from series,category
 )
 insert into editor_context(source_competition,target_competition)
 select source.id,target.id from source,target;

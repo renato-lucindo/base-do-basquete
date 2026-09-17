@@ -1,4 +1,5 @@
 begin;
+\ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
 select plan(16);
@@ -12,14 +13,12 @@ insert into public.competition_series (id, name, slug)
 overriding system value values (9201, 'Liga RPC', 'liga-rpc');
 insert into public.categories (id, name, slug)
 overriding system value values (9201, 'Categoria RPC', 'categoria-rpc');
-insert into public.competitions
-  (id, series_id, category_id, year, display_name, status, published_at)
-overriding system value values
-  (9201, 9201, 9201, 2026, 'Liga RPC 2026', 'published', now()),
-  (9202, 9201, 9201, 2027, 'Liga RPC 2027', 'published', now());
-update public.competitions
-set gender_division = 'male', gender_division_review_required = false
-where id in (9201, 9202);
+select pg_temp.create_final_competition(
+  9201,9201,9201,2026,'Liga RPC 2026','published',now(),'male','manual_scoresheet'
+);
+select pg_temp.create_final_competition(
+  9202,9201,9201,2027,'Liga RPC 2027','published',now(),'male','manual_scoresheet'
+);
 insert into public.teams (id, name, slug)
 overriding system value values
   (9201, 'Time RPC Um', 'time-rpc-um'),
@@ -30,9 +29,8 @@ overriding system value values
   (9201, 'Jogador RPC Um', 'jogador-rpc-um'),
   (9202, 'Jogador RPC Dois', 'jogador-rpc-dois'),
   (9203, 'Jogador RPC Tres', 'jogador-rpc-tres');
-update private.player_private
-set sex = 'male', sex_review_required = false
-where player_id in (9201, 9202, 9203);
+insert into private.player_private(player_id,sex,sex_review_required)
+values(9201,'male',false),(9202,'male',false),(9203,'male',false);
 
 select set_config(
   'request.jwt.claims',

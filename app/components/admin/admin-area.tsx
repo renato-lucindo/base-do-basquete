@@ -8,6 +8,7 @@ export function AdminNavigation() {
           ["/admin/competitions", "Competições"],
           ["/admin/teams", "Equipes"],
           ["/admin/players", "Atletas"],
+          ["/admin/review-queues", "Pendências"],
           ["/admin/security", "Segurança"],
         ] as const
       ).map(([to, label]) => (

@@ -1091,13 +1091,13 @@ export type Database = {
           category_id: number;
           created_at: string;
           current_publication_id: number | null;
-          data_profile_id: number | null;
+          data_profile_id: number;
           data_profile_review_required: boolean;
-          data_profile_validated_at: string | null;
-          data_profile_validated_by: string | null;
+          data_profile_validated_at: string;
+          data_profile_validated_by: string;
           display_name: string;
           ends_on: string | null;
-          gender_division: string | null;
+          gender_division: string;
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
@@ -1111,13 +1111,13 @@ export type Database = {
           category_id: number;
           created_at?: string;
           current_publication_id?: number | null;
-          data_profile_id?: number | null;
+          data_profile_id: number;
           data_profile_review_required?: boolean;
-          data_profile_validated_at?: string | null;
-          data_profile_validated_by?: string | null;
+          data_profile_validated_at: string;
+          data_profile_validated_by: string;
           display_name: string;
           ends_on?: string | null;
-          gender_division?: string | null;
+          gender_division: string;
           gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
@@ -1131,13 +1131,13 @@ export type Database = {
           category_id?: number;
           created_at?: string;
           current_publication_id?: number | null;
-          data_profile_id?: number | null;
+          data_profile_id?: number;
           data_profile_review_required?: boolean;
-          data_profile_validated_at?: string | null;
-          data_profile_validated_by?: string | null;
+          data_profile_validated_at?: string;
+          data_profile_validated_by?: string;
           display_name?: string;
           ends_on?: string | null;
-          gender_division?: string | null;
+          gender_division?: string;
           gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
@@ -4162,13 +4162,13 @@ export type Database = {
           category_id: number;
           created_at: string;
           current_publication_id: number | null;
-          data_profile_id: number | null;
+          data_profile_id: number;
           data_profile_review_required: boolean;
-          data_profile_validated_at: string | null;
-          data_profile_validated_by: string | null;
+          data_profile_validated_at: string;
+          data_profile_validated_by: string;
           display_name: string;
           ends_on: string | null;
-          gender_division: string | null;
+          gender_division: string;
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
@@ -4367,6 +4367,7 @@ export type Database = {
         Returns: number;
       };
       admin_get_classification_backfill_report: { Args: never; Returns: Json };
+      admin_get_player_review_queue: { Args: never; Returns: Json };
       admin_get_competition_schedule: {
         Args: { p_competition_id: number };
         Returns: Json;
@@ -4516,13 +4517,13 @@ export type Database = {
           category_id: number;
           created_at: string;
           current_publication_id: number | null;
-          data_profile_id: number | null;
+          data_profile_id: number;
           data_profile_review_required: boolean;
-          data_profile_validated_at: string | null;
-          data_profile_validated_by: string | null;
+          data_profile_validated_at: string;
+          data_profile_validated_by: string;
           display_name: string;
           ends_on: string | null;
-          gender_division: string | null;
+          gender_division: string;
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
@@ -4554,6 +4555,14 @@ export type Database = {
           full_name: string;
           id: number;
           nickname: string;
+        }[];
+      };
+      admin_bulk_set_player_sex: {
+        Args: { p_reason: string; p_reviews: Json };
+        Returns: {
+          enforcement_ready: boolean;
+          remaining_pending: number;
+          reviewed_count: number;
         }[];
       };
       admin_set_player_sex: {
