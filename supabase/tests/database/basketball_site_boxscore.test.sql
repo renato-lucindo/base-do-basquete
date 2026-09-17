@@ -214,7 +214,7 @@ select is((select count(*)::integer from public.player_period_stats
   where game_id=94101 and not plus_minus_available),10,
   'plus/minus is marked unavailable for every imported player');
 select is((select plus_minus from public.game_boxscore_player_statistics
-  where game_id=94101 and roster_entry_id=9411),null::bigint,
+  where game_id=94101 and player_id=9411),null::bigint,
   'the public projection exposes unavailable plus/minus as null');
 select is((select plus_minus from public.competition_boxscore_player_statistics
   where competition_id=9411 and player_id=9411),null::bigint,
