@@ -73,7 +73,12 @@ function BoxscoreMetrics({ summary }: { summary: BoxscorePlayerCompetitionSummar
     ["AST", totals ? perGame(totals.assists, summary.advancedGames) : null],
     ["AP%", totals ? fieldPercentage(totals) : null],
     ["EF", totals ? perGame(efficiency(totals), summary.advancedGames) : null],
-    ["+/-", totals ? perGame(totals.plusMinus, summary.advancedGames) : null],
+    [
+      "+/-",
+      !totals || totals.plusMinus === null
+        ? null
+        : perGame(totals.plusMinus, summary.advancedGames),
+    ],
   ] as const;
   return (
     <dl className="player-key-metrics">

@@ -4,13 +4,13 @@ import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
   createPdfStorageBody,
-  extractFibaGeniusBoxscore,
+  extractSupportedBoxscore,
   MAX_PDF_BYTES,
   sha256Bytes,
   validatePdfUpload,
 } from "../modules/boxscore/extract.server";
 import { suggestPlayerMatch } from "../modules/boxscore/matching";
-import { FIBA_GENIUS_PARSER_VERSION, validateParsedBoxscore } from "../modules/boxscore/parser";
+import { validateParsedBoxscore } from "../modules/boxscore/parser";
 import { BoxscoreReviewEditor } from "../modules/boxscore/review-editor";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
 import { logOperationalEvent } from "../modules/observability/operation.server";
@@ -150,7 +150,7 @@ export function mapImportError(
     case "BD714":
       return { message: "Este jogo já possui uma confirmação principal.", status: 409 };
     default:
-      return { message: "Não foi possível processar o boxscore FIBA/Genius Sports.", status: 400 };
+      return { message: "Não foi possível processar este modelo de boxscore.", status: 400 };
   }
 }
 
@@ -169,7 +169,7 @@ async function withExtractionDeadline<T>(operation: Promise<T>): Promise<T> {
 }
 
 export function meta() {
-  return [{ title: "Importar boxscore FIBA — Base do Basquete" }];
+  return [{ title: "Importar boxscore — Base do Basquete" }];
 }
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
@@ -400,14 +400,15 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     try {
       const importResult = await auth.client
         .from("boxscore_imports")
-        .select("id,status,game_id,storage_path,sha256")
+        .select("id,status,game_id,storage_path,sha256,parser_version")
         .eq("id", importId)
         .eq("competition_id", competitionId)
         .single();
       if (
         importResult.error ||
         importResult.data.status !== "confirmed" ||
-        !importResult.data.game_id
+        !importResult.data.game_id ||
+        importResult.data.parser_version !== "fiba-genius-v1"
       ) {
         return data({ error: "Importação confirmada não encontrada." }, { status: 404 });
       }
@@ -419,7 +420,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       if (bytes.length > MAX_PDF_BYTES || (await sha256Bytes(bytes)) !== importResult.data.sha256) {
         throw new Error("BDB_PDF_STORED_HASH");
       }
-      const parsed = await withExtractionDeadline(extractFibaGeniusBoxscore(bytes));
+      const parsed = await withExtractionDeadline(extractSupportedBoxscore(bytes));
       const validation = validateParsedBoxscore(parsed);
       if (!validation.valid) throw new Error(validation.issues[0]?.code ?? "BDB_PDF_INVALID");
       const refreshed = await auth.client.rpc("admin_refresh_boxscore_team_statistics", {
@@ -467,7 +468,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (!(uploaded instanceof File)) return data({ error: "Selecione um PDF." }, { status: 400 });
     try {
       const validated = await validatePdfUpload(uploaded);
-      const parsed = await withExtractionDeadline(extractFibaGeniusBoxscore(validated.bytes));
+      const parsed = await withExtractionDeadline(extractSupportedBoxscore(validated.bytes));
       const validation = validateParsedBoxscore(parsed);
       if (!validation.valid) throw new Error(validation.issues[0]?.code ?? "BDB_PDF_INVALID");
 
@@ -528,7 +529,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         return team.players.map((player) => ({
           sourceTeamName: team.name,
           sourcePlayerName: player.name,
-          ...suggestPlayerMatch(player.name, player.jerseyNumber, registration ? candidates : []),
+          ...suggestPlayerMatch(
+            player.name,
+            player.jerseyNumber,
+            registration ? candidates : [],
+            parsed.format === "BASKETBALL_SITE" ? team.name : undefined,
+          ),
         }));
       });
       const storagePath = `${competitionId}/${validated.sha256}.pdf`;
@@ -555,7 +561,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_storage_path: storagePath,
         p_source_filename: validated.filename,
         p_file_size_bytes: uploaded.size,
-        p_parser_version: FIBA_GENIUS_PARSER_VERSION,
+        p_parser_version: parsed.parserVersion,
         p_parsed_payload: parsed as unknown as Json,
         p_validation_payload: validation as unknown as Json,
         p_matches: matches as unknown as Json,
@@ -717,10 +723,10 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
         </span>
       </header>
       <section className="admin-welcome admin-hub">
-        <p className="eyebrow">Boxscore FIBA/Genius Sports</p>
+        <p className="eyebrow">Boxscore em PDF</p>
         <h1>Importar PDF</h1>
         <p>
-          {loaderData.competition.display_name}. Aceita exclusivamente o modelo documentado, com
+          {loaderData.competition.display_name}. Aceita exclusivamente os modelos documentados, com
           camada de texto; limite de 10 MiB.
         </p>
         {actionData?.error ? (
@@ -744,7 +750,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           >
             <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
             <label>
-              PDF FIBA/Genius Sports
+              PDF de boxscore compatível
               <input type="file" name="boxscore" accept="application/pdf,.pdf" required />
             </label>
             <button className="button button-primary" type="submit">
@@ -775,8 +781,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
                   <strong>{item.status}</strong>
                   <span>{item.parser_version}</span>
                   {item.status === "review" ? <Link to={`?import=${item.id}`}>Revisar</Link> : null}
-                  {item.status === "confirmed" &&
-                  item.parser_version !== FIBA_GENIUS_PARSER_VERSION ? (
+                  {item.status === "confirmed" && item.parser_version === "fiba-genius-v1" ? (
                     <Form method="post" action="?mode=refresh-stats">
                       <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
                       <input type="hidden" name="importId" value={item.id} />

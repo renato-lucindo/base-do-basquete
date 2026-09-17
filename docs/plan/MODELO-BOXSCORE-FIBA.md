@@ -2,7 +2,7 @@
 
 ## Escopo
 
-O importador deve ser desenvolvido exclusivamente para o modelo **Box Score FIBA / Genius Sports** representado pelos dois PDFs incluídos em `referencias/modelos-boxscore/`.
+Este contrato cobre exclusivamente o modelo **Box Score FIBA / Genius Sports** representado pelos dois PDFs incluídos em `referencias/modelos-boxscore/`. Outros formatos aceitos devem possuir contrato, versão, fixture e testes próprios.
 
 Fixtures oficiais:
 

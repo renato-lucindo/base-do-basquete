@@ -100,3 +100,39 @@ describe("FIBA/Genius Sports parser", () => {
     await expect(extractFibaGeniusBoxscore(new Uint8Array([37, 80, 68, 70, 45]))).rejects.toThrow();
   });
 });
+
+describe("basketball site parser", () => {
+  it("parses the two-page fixture without inventing unavailable statistics", async () => {
+    const parsed = await parseFixture("Boxscore-site.pdf");
+
+    expect(parsed).toMatchObject({
+      format: "BASKETBALL_SITE",
+      parserVersion: "basketball-site-v1",
+      competitionName: null,
+      gameNumber: null,
+      scheduledLocal: "2026-05-13T20:30",
+      durationSeconds: null,
+      venue: "Sesport",
+    });
+    expect(parsed.teams.map((team) => [team.name, team.score, team.players.length])).toEqual([
+      ["Instituto Viva Vida", 98, 12],
+      ["Saldanha da Gama", 57, 12],
+    ]);
+    expect(parsed.teams[0].periodScores).toBeNull();
+    expect(parsed.teams[0].teamStatistics).toBeUndefined();
+    expect(parsed.gameStatistics).toBeUndefined();
+    expect(parsed.teams[0].players[0]).toMatchObject({
+      jerseyNumber: "3",
+      name: "A. Freitas Brochado",
+      secondsPlayed: 928,
+      points: 6,
+      plusMinus: null,
+      foulsReceived: null,
+    });
+    expect(parsed.teams[1].players.find((player) => player.jerseyNumber === "13")).toMatchObject({
+      name: "V. Christ de Miranda",
+      points: 13,
+    });
+    expect(validateParsedBoxscore(parsed)).toEqual({ valid: true, issues: [] });
+  });
+});

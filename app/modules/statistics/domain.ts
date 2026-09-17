@@ -24,7 +24,7 @@ export interface StatisticTotals {
   steals: number;
   blocks: number;
   fouls: number;
-  plusMinus: number;
+  plusMinus: number | null;
 }
 
 export interface PlayerStatistics {
