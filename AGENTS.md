@@ -6,6 +6,17 @@ Construir e manter autonomamente a **Base do Basquete**, uma aplicação web de 
 
 Este arquivo vale para todo o repositório. Instruções mais específicas em subdiretórios podem complementar estas regras sem enfraquecer segurança, integridade dos dados ou decisões de produto registradas.
 
+## Agentes especializados
+
+As definições operacionais ficam em `.agents/`:
+
+- `.agents/agent-contract.md`: contrato compartilhado, write lock, review packet e validade dos pareceres;
+- `.agents/project-maintainer.md`: único agente escritor da unidade ativa;
+- `.agents/database-security-reviewer.md`: revisão especializada de banco e segurança, sem mutação;
+- `.agents/qa-reviewer.md`: revisão independente de qualidade e release, sem mutação.
+
+Todo agente especializado deve obedecer primeiro a este `AGENTS.md` e ao `HANDOFF.md`. As instruções de `.agents/` complementam estas regras sem substituí-las.
+
 ## Início obrigatório de cada sessão
 
 Antes de alterar arquivos ou serviços:
