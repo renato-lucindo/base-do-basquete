@@ -1,6 +1,6 @@
 # POST-04 — Enforcement e fechamento integral
 
-Estado: `READY_FOR_INTEGRATION` na branch `feature/post-04-enforcement-closure`.
+Estado: `DONE`. Integrado na `main` pela PR #45 e publicado em `v1.2.0`.
 
 ## Entrada humana medida em 16/09/2026
 
@@ -159,8 +159,26 @@ A validação pós-migration confirmou:
 - smoke real no preview com `Sessão AAL2`, três contadores em zero, mensagem de
   filas zeradas e confirmação de 42 revisões salvas/auditadas.
 
-Produção web permanece em `v1.1.0`; a integração e qualquer publicação ainda
-dependem dos checks finais da PR #45 e do fluxo protegido da `main`.
+## Integração e produção
+
+A PR #45 passou `gate`, banco desde zero, upload e CodeQL no head `acc5440` e
+foi integrada por squash em `392cbb7`. O primeiro workflow de produção aplicou
+corretamente o Worker e aprovou os smokes de saúde, contexto público e
+segurança/privacidade, mas o benchmark recusou a rota legada de jogadores sem
+naipe porque ela redireciona com HTTP 308.
+
+A PR #46 trocou somente o alvo do benchmark pela rota canônica masculina,
+preservando `redirect:error`. O benchmark direto confirmou HTTP 200 e p95 de
+460,8 ms para jogadores e 525,4 ms para o jogo FIBA. Após os quatro checks
+verdes, a correção foi integrada em `bd248f9`.
+
+O workflow protegido `35225504568` publicou a versão Cloudflare
+`e06a4898-f214-45d9-b6f8-eaa9c193ef89` e aprovou gate, deploy, saúde,
+cabeçalhos, entrada administrativa anônima, contexto público e privacidade do
+MVP. A medição no runner registrou p95 de 1.320,1 ms para jogadores e 1.841,9 ms
+para o jogo FIBA; a segunda cauda ficou acima da meta informativa de 1.500 ms e
+deve ser acompanhada antes de otimização baseada em uma amostra isolada. A tag
+imutável `v1.2.0` aponta para `bd248f9`.
 
 ## Advisors pós-enforcement
 
