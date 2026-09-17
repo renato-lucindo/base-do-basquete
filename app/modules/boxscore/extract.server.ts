@@ -1,6 +1,7 @@
 import { extractTextItems, getDocumentProxy } from "unpdf";
 
 import { parseFibaGeniusBoxscore } from "./parser";
+import { parseBasketballSiteBoxscore } from "./site-parser";
 
 export const MAX_PDF_BYTES = 10 * 1024 * 1024;
 export const MAX_PDF_PAGES = 4;
@@ -36,7 +37,7 @@ export async function validatePdfUpload(file: File): Promise<ValidatedPdf> {
   return { bytes, filename: file.name.slice(0, 160), sha256: await sha256Bytes(bytes) };
 }
 
-export async function extractFibaGeniusBoxscore(bytes: Uint8Array) {
+export async function extractSupportedBoxscore(bytes: Uint8Array) {
   const pdf = await getDocumentProxy(bytes, {
     maxImageSize: 16_777_216,
     stopAtErrors: true,
@@ -46,5 +47,13 @@ export async function extractFibaGeniusBoxscore(bytes: Uint8Array) {
   if (!items.some((page) => page.some((item) => item.str.trim()))) {
     throw new Error("BDB_PDF_NO_TEXT");
   }
-  return parseFibaGeniusBoxscore(items);
+  const completeText = items
+    .flat()
+    .map((item) => item.str)
+    .join(" ");
+  return completeText.includes("Ficha do Jogo")
+    ? parseBasketballSiteBoxscore(items)
+    : parseFibaGeniusBoxscore(items);
 }
+
+export const extractFibaGeniusBoxscore = extractSupportedBoxscore;

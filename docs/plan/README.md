@@ -29,9 +29,10 @@ Antes da implementação, colocar `AGENTS.md` e `HANDOFF.md` na raiz do novo rep
 6. `ARQUITETURA-SEGURANCA.md`
 7. `REQUISITOS-FUNCIONAIS.md`
 8. `MODELO-BOXSCORE-FIBA.md`
-9. `PLANO-EXECUCAO.md`
-10. `MATRIZ-RASTREABILIDADE.md`
-11. `FUTURO-OCR.md`
+9. `MODELO-BOXSCORE-SITE.md`
+10. `PLANO-EXECUCAO.md`
+11. `MATRIZ-RASTREABILIDADE.md`
+12. `FUTURO-OCR.md`
 
 O texto que inicia a primeira tarefa está em `PROMPT-PARA-EXECUCAO.md`.
 

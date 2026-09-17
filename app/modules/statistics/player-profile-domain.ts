@@ -15,7 +15,7 @@ export interface PlayerTotals {
   steals: number;
   blocks: number;
   fouls: number;
-  plusMinus: number;
+  plusMinus: number | null;
 }
 
 export const emptyPlayerTotals: PlayerTotals = {
@@ -61,7 +61,8 @@ export function addPlayerTotals(rows: PlayerTotals[]): PlayerTotals {
       steals: total.steals + row.steals,
       blocks: total.blocks + row.blocks,
       fouls: total.fouls + row.fouls,
-      plusMinus: total.plusMinus + row.plusMinus,
+      plusMinus:
+        total.plusMinus === null || row.plusMinus === null ? null : total.plusMinus + row.plusMinus,
     }),
     { ...emptyPlayerTotals },
   );

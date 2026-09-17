@@ -4,15 +4,15 @@
 
 ## 1. Objetivo
 
-Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e histórico do basquete, com administração de campeonatos, equipes, jogadores, elencos, jogos, estatísticas, colocações, conquistas, súmula manual e importação de um único formato de boxscore PDF.
+Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e histórico do basquete, com administração de campeonatos, equipes, jogadores, elencos, jogos, estatísticas, colocações, conquistas, súmula manual e importação de formatos de boxscore PDF explicitamente versionados.
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`.
-- Status geral: `POST_04_DONE`; as 42 revisões privadas restantes foram salvas atomicamente, o estado autoritativo é `0/0/0/0` e a migration final de perfil/naipe/elegibilidade foi aplicada sem remover colunas legadas. PgTAP 21/21, reconciliação, advisors, tipos, gate local e smoke AAL2 passaram. A PR #45 foi integrada em `392cbb7`; a correção de benchmark da PR #46 foi integrada em `bd248f9`. A release `v1.2.0` está em produção.
+- Fase: plano acelerado concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A implementação local da unidade `FEATURE-BOXSCORE-SITE-01` está concluída e aguarda validação remota.
+- Status geral: `FEATURE_BOXSCORE_SITE_REVIEW`; POST-04 e a correção de release foram integrados na `main` em `392cbb7` e `bd248f9`. Produção web continua na release estável `v1.2.0`; esta unidade não alterou serviços remotos.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `docs/post04-final-release`, criada de `origin/main` em `bd248f9` somente para registrar o fechamento verificado.
+- Branch atual: `feature/boxscore-site-format`, atualizada sobre `origin/main` em `0c69b0f` para suportar o segundo contrato explícito de PDF.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `bd248f9` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `e06a4898-f214-45d9-b6f8-eaa9c193ef89`; tag `v1.2.0`.
 - Smoke AAL2 final da release: sessão real confirmou “Sessão AAL2” e acesso protegido a `/admin/competitions` em produção, sem mutação de domínio.
@@ -33,7 +33,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Frontend é não confiável; regras e escritas são autoritativas no backend/banco.
 - Primeira temporada com um único administrador, MFA e `aal2`.
 - Multiadmin, convites, RBAC e gestão de usuários ficam para fase futura.
-- Importação restrita ao único modelo FIBA/Genius Sports documentado, usando os dois PDFs fornecidos como fixtures.
+- Importação restrita aos modelos documentados FIBA/Genius Sports e Basketball Site, usando os PDFs fornecidos como fixtures.
 - O parser FIBA/Genius v2 persiste também os indicadores coletivos do rodapé; os PDFs privados confirmados são a fonte do retroprocessamento idempotente.
 - Similaridade de nomes é somente apoio à decisão: alternativas nunca são pré-selecionadas. Vincular atleta existente ou criar um novo ocorre na mesma transação do jogo, com duplicidade normalizada recusada no banco.
 - OCR open source é alternativa futura e não deve ser pesquisado ou implementado agora.
@@ -46,8 +46,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Regras de autonomia e segurança definidas.
 - [x] Nome **Base do Basquete** definido.
 - [x] Escopo de administrador único definido.
-- [x] Formato único de boxscore definido.
-- [x] Dois PDFs de referência incorporados ao plano.
+- [x] Formatos explícitos e versionados de boxscore definidos.
+- [x] PDFs de referência incorporados ao plano como fixtures obrigatórias.
 - [x] OCR registrado apenas como possibilidade futura.
 - [x] Repositório remoto privado criado e baseline publicada.
 - [x] Repositório Git local inicializado em branch própria do WP-00.
@@ -64,7 +64,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] MFA TOTP matriculado e sessão real comprovada em `aal2`.
 - [x] Modelo canônico de campeonatos, edições, equipes, atletas, inscrições, elencos, jogos, períodos e colocações aplicado no Supabase.
 - [x] Placar e conquistas modelados como visões derivadas, sem estado duplicado gravável.
-- [x] Importação limitada ao boxscore FIBA/Genius Sports com hash SHA-256 único e bucket PDF privado.
+- [x] Importação limitada aos contratos de boxscore versionados com hash SHA-256 único e bucket PDF privado.
 - [x] RLS pública somente para dados publicados; escritas autenticadas exigem administrador singleton em `aal2` e `DELETE` não é concedido.
 - [x] Seed de staging não público, tipos TypeScript gerados e 34 testes SQL aprovados no banco remoto.
 
@@ -84,7 +84,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** POST-04 e o plano acelerado estão concluídos. Não reaplicar migrations nem repetir gates já verdes. Em nova demanda, criar branch curta da `main` `bd248f9` e usar a estratégia econômica de verificação registrada em `AGENTS.md`: testes focais durante a iteração, um único gate completo antes do push, status remotos compactos e logs somente em falhas. Acompanhar a cauda do detalhe FIBA: o runner da release mediu p95 de 1.841,9 ms em 10 amostras, acima da meta informativa de 1.500 ms, enquanto a validação direta anterior mediu 525,4 ms; coletar evidência adicional antes de otimizar. Produção permanece saudável em `v1.2.0`.
+**Próximo passo atual:** acompanhar a PR #49 de `FEATURE-BOXSCORE-SITE-01` e exigir gate, banco desde zero/pgTAP, preview e análise verdes. O gate local aprovou 44 arquivos/319 Vitest, TypeScript, Biome, cinco runbooks, builds cliente/SSR e scan de 594 arquivos; a revisão dedicada de banco/segurança aprovou o desenho. O ambiente local não possui Docker/Podman, portanto a migration e as 33 asserções pgTAP devem ser validadas pela CI antes de qualquer integração. Não aplicar migration compartilhada, fazer merge ou publicar produção nesta unidade de revisão; produção permanece saudável em `v1.2.0`.
 
 **Evidência AAL2 do POST-02:** sessão real confirmou AAL2; a fixture privada 100 gerou o draft 187, clonou 5 vagas e 4 confrontos sem equipes/jogos/resultados/publicação e passou duas edições CAS com restauração do nome original (`editor_revision=3`). A inscrição 15 exibiu retirada com preservação de histórico, sem executar a ação. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 6 revisões, 1 draft, 1 clone request, 2 edit requests, zero vagas órfãs e zero origens indefinidas. `/health` respondeu 200; acesso anônimo ao admin respondeu 302 para login com cabeçalhos seguros. Gate local: 290 Vitest, build e scan de 563 arquivos. As quatro tabelas auxiliares legadas no schema `private` com RLS desligada não concedem nenhum privilégio de tabela a `anon`/`authenticated` e `anon` não possui `USAGE` no schema; hardening de defesa em profundidade fica no POST-04, sem exposição atual.
 
@@ -230,7 +230,8 @@ Implementação concluída de `MVP-01`: `e28ac3d` criou a estrutura versionada `
 | `docs/plan/PROMPT-MESTRE-IDE.md` | Mandato de execução |
 | `docs/plan/PLANO-EXECUCAO.md` | Pacotes e critérios de conclusão |
 | `docs/plan/ARQUITETURA-SEGURANCA.md` | Stack e regras obrigatórias |
-| `docs/plan/MODELO-BOXSCORE-FIBA.md` | Contrato do único formato importado |
+| `docs/plan/MODELO-BOXSCORE-FIBA.md` | Contrato do formato FIBA/Genius Sports |
+| `docs/plan/MODELO-BOXSCORE-SITE.md` | Contrato do formato Basketball Site |
 | `docs/plan/FUTURO-OCR.md` | Alternativa futura, fora do escopo |
 | `docs/plan/referencias/modelos-boxscore/` | Dois PDFs usados como fixtures |
 
@@ -517,3 +518,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-17 | Responsável/Codex | As 42 decisões restantes foram salvas; filas `0/0/0/0`; enforcement final aplicado sem remover colunas; 21/21 pgTAP, hashes/inventário, advisors, tipos, gate local e smoke AAL2 aprovados | Commitar e enviar a evidência, aguardar os quatro checks, integrar a PR #45 e publicar somente pela `main` protegida |
 | 2026-09-17 | Codex | PR #45 integrada em `392cbb7`; primeiro deploy aplicou o Worker e aprovou smokes, mas o benchmark detectou a rota legada com redirect 308 | Corrigir somente o alvo canônico do benchmark em PR curta e repetir uma vez o workflow protegido |
 | 2026-09-17 | Codex | PR #46 integrada em `bd248f9`; workflow `35225504568`, Worker `e06a4898-f214-45d9-b6f8-eaa9c193ef89` e tag `v1.2.0` verdes; estratégia econômica de testes documentada | Plano acelerado encerrado; iniciar nova branch apenas sob nova demanda e monitorar a cauda FIBA com evidência adicional |
+| 2026-09-17 | Codex | `FEATURE-BOXSCORE-SITE-01` implementada, revisada e enviada na PR #49: parser/fixture Basketball Site, associação única por equipe+camisa+sobrenome, ausência explícita de parciais/plus-minus/estatísticas coletivas, migration aditiva e 33 pgTAP; gate local com 319 Vitest e scan de 594 arquivos verde | Validar banco desde zero, preview e análise da PR #49 antes de qualquer integração; Supabase compartilhado e produção permanecem intocados |

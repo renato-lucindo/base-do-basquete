@@ -67,9 +67,9 @@ A execução pode usar navegador autenticado no GitHub, Cloudflare e Supabase qu
 
 ## Importação de dados
 
-- A importação atual aceita exclusivamente o modelo único de boxscore FIBA/Genius Sports descrito em `docs/plan/MODELO-BOXSCORE-FIBA.md`.
+- A importação aceita somente os contratos explícitos FIBA/Genius Sports e Basketball Site descritos em `docs/plan/MODELO-BOXSCORE-FIBA.md` e `docs/plan/MODELO-BOXSCORE-SITE.md`.
 - Os dois PDFs fornecidos são fixtures obrigatórias do mesmo parser.
-- Não criar parser genérico, importação de súmula oficial completa ou OCR nesta etapa.
+- Não criar parser genérico, importação de súmula oficial completa ou OCR nesta etapa. Nomes abreviados do Basketball Site só podem ser pré-selecionados pela combinação única de equipe, camisa e sobrenome.
 - OCR open source permanece somente como alternativa futura documentada.
 
 ## Git e preservação do trabalho

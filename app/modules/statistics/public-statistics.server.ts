@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
-import { perGame, type PlayerStatistics, type StatisticTotals } from "./domain";
+import { type PlayerStatistics, perGame, type StatisticTotals } from "./domain";
 import { emptyStatisticTotals, pointsReconcile, sumStatisticTotals } from "./game-detail-domain";
 
 export interface ScoresheetPlayerStatistics {
@@ -146,7 +146,7 @@ function totalsFromRow(row: {
     steals: numberValue(row.steals),
     blocks: numberValue(row.blocks),
     fouls: numberValue(row.fouls ?? null),
-    plusMinus: numberValue(row.plus_minus),
+    plusMinus: row.plus_minus,
   };
 }
 
@@ -296,6 +296,7 @@ export async function loadPublicGameDetail(
       .from("game_period_scores")
       .select("registration_id,period_number,points")
       .eq("game_id", gameId)
+      .eq("score_scope", "period")
       .order("period_number"),
     playerResultPromise,
     client.from("game_roster_slots").select("id,is_starter").eq("game_id", gameId),

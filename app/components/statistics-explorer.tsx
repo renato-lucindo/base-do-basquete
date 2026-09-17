@@ -7,35 +7,35 @@ import {
   applyStatisticFilters,
   compareStatistic,
   efficiency,
-  perGame,
-  percentage,
-  rebounds,
-  statisticValue,
   type FilterMetric,
   type FilterOperator,
   type PlayerStatistics,
+  percentage,
+  perGame,
+  rebounds,
   type StatisticFilter,
   type StatisticsMode,
+  statisticValue,
 } from "../modules/statistics/domain";
 import type {
   CompetitionStatisticsDto,
   ScoresheetPlayerStatistics,
 } from "../modules/statistics/public-statistics.server";
 import {
+  type AdvancedColumn,
   advancedColumnPresets,
+  type ColumnPreset,
   compareValues,
   matchesStatisticsSearch,
   nextSort,
-  parseColumns,
   parseColumnPreset,
+  parseColumns,
   parsePage,
   parseSortDirection,
   parseSortKey,
-  serializeColumns,
-  type AdvancedColumn,
-  type ColumnPreset,
   type SortDirection,
   type StatisticsSortKey,
+  serializeColumns,
 } from "../modules/statistics/table-controls";
 import { ResourceState } from "./resource-state";
 import { ScrollableTable } from "./scrollable-table";
@@ -178,7 +178,8 @@ function playerPath(
   return `${pathname}?${searchParams.toString()}`;
 }
 
-function modeValue(total: number, games: number, mode: StatisticsMode) {
+function modeValue(total: number | null, games: number, mode: StatisticsMode) {
+  if (total === null) return null;
   return mode === "totals" ? total : perGame(total, games);
 }
 
