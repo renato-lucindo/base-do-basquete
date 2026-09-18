@@ -5971,3 +5971,35 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Baseline permanente de acessibilidade e integração isolada do Sienna. */
+.skip-link {
+  position: fixed;
+  z-index: 1000001;
+  top: max(12px, env(safe-area-inset-top));
+  left: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #075fca;
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 24px));
+}
+
+.skip-link:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}

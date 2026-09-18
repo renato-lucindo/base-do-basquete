@@ -58,6 +58,18 @@ A execução pode usar navegador autenticado no GitHub, Cloudflare e Supabase qu
 - Não confie em `user_metadata` para autorização.
 - Escritas críticas devem ser transacionais, validadas no servidor e idempotentes.
 
+## Acessibilidade obrigatória
+
+- Acessibilidade faz parte dos critérios de aceite de toda alteração de interface.
+- Prefira HTML semântico e controles nativos; não use `div` ou `span` clicável quando `button`, `a`, `input` ou outro elemento adequado resolver a interação.
+- Componentes interativos novos devem funcionar por teclado, manter ordem de foco lógica e exibir foco visível. Não remova `outline` sem substituição perceptível.
+- Formulários devem ter `label` associado, instruções compreensíveis e erros em texto vinculados programaticamente ao campo.
+- Imagens informativas precisam de alternativa textual; imagens decorativas usam `alt=""`.
+- Não transmita informação apenas por cor. Preserve contraste legível, alvos de toque confortáveis, zoom de 200% e o comportamento responsivo em celular e desktop.
+- Respeite `prefers-reduced-motion` e prefira elementos HTML nativos a ARIA. Ícones interativos precisam de nome acessível.
+- O Sienna é um recurso complementar de personalização e nunca substitui semântica, teclado, foco, contraste ou correções no código.
+- Não remova, ignore ou desabilite testes de acessibilidade existentes. Registre no `HANDOFF.md` qualquer limitação conhecida que não possa ser corrigida na mesma unidade.
+
 ## Administrador da primeira temporada
 
 - Haverá uma única conta administrativa, pertencente ao responsável do projeto.
