@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`.
-- Status geral: `POST_04_DONE`; as 42 revisões privadas restantes foram salvas atomicamente, o estado autoritativo é `0/0/0/0` e a migration final de perfil/naipe/elegibilidade foi aplicada sem remover colunas legadas. PgTAP 21/21, reconciliação, advisors, tipos, gate local e smoke AAL2 passaram. A PR #45 foi integrada em `392cbb7`; a correção de benchmark da PR #46 foi integrada em `bd248f9`. A release `v1.2.0` está em produção.
+- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A unidade transversal `ACCESSIBILITY-BASELINE-01` foi implementada e validada localmente.
+- Status geral: `ACCESSIBILITY_BASELINE_READY_FOR_PR`; o Sienna 2.2.333 foi integrado como recurso complementar, carregado apenas no navegador a partir de artefatos locais versionados no lockfile. A aplicação recebeu skip link e redução de movimento, as regras permanentes foram registradas no `AGENTS.md` e o gate local passou com 45 arquivos/315 testes, TypeScript, Biome, runbooks, build e scan de 595 arquivos. A conformidade WCAG completa não foi auditada nem declarada.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `docs/post04-final-release`, criada de `origin/main` em `bd248f9` somente para registrar o fechamento verificado.
+- Branch atual: `codex/accessibility-baseline-sienna`, criada de `origin/main` em `0c69b0f`; implementação no commit `5b95716`. A PR #49 (`feature/boxscore-site-format`) permanece aberta e intacta; seu merge não foi autorizado nesta sessão.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `bd248f9` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `e06a4898-f214-45d9-b6f8-eaa9c193ef89`; tag `v1.2.0`.
 - Smoke AAL2 final da release: sessão real confirmou “Sessão AAL2” e acesso protegido a `/admin/competitions` em produção, sem mutação de domínio.
@@ -56,6 +56,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Aplicação implementada integralmente; WP-00 a WP-13 concluídos e produção validada.
 - [x] Serviços cloud básicos configurados.
 - [x] Manual funcional do painel administrativo documentado em `docs/PAINEL-ADMINISTRATIVO.md` e referenciado pelo README.
+- [x] Baseline permanente de acessibilidade documentada; Sienna 2.2.333 integrado sem execução no SSR, com recursos locais, falha isolada e testes de inicialização única/navegação.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
 - [x] Fluxo server-side de login, matrícula/desafio TOTP e logout implementado.
@@ -84,7 +85,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** POST-04 e o plano acelerado estão concluídos. Não reaplicar migrations nem repetir gates já verdes. Em nova demanda, criar branch curta da `main` `bd248f9` e usar a estratégia econômica de verificação registrada em `AGENTS.md`: testes focais durante a iteração, um único gate completo antes do push, status remotos compactos e logs somente em falhas. Acompanhar a cauda do detalhe FIBA: o runner da release mediu p95 de 1.841,9 ms em 10 amostras, acima da meta informativa de 1.500 ms, enquanto a validação direta anterior mediu 525,4 ms; coletar evidência adicional antes de otimizar. Produção permanece saudável em `v1.2.0`.
+**Próximo passo atual:** enviar `codex/accessibility-baseline-sienna`, abrir PR contra `main` e aguardar gate, preview e CodeQL. No preview, confirmar abertura/fechamento do Sienna, foco e ausência de overflow em 390/768/1440 px; a validação local já aprovou esses itens, exceto o zoom real de 200%, que o navegador embutido não permitiu alterar. Não declarar conformidade WCAG, não fazer merge/deploy sem a autorização aplicável e não misturar esta unidade com a PR #49 ainda aberta. Produção permanece saudável em `v1.2.0`.
 
 **Evidência AAL2 do POST-02:** sessão real confirmou AAL2; a fixture privada 100 gerou o draft 187, clonou 5 vagas e 4 confrontos sem equipes/jogos/resultados/publicação e passou duas edições CAS com restauração do nome original (`editor_revision=3`). A inscrição 15 exibiu retirada com preservação de histórico, sem executar a ação. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 6 revisões, 1 draft, 1 clone request, 2 edit requests, zero vagas órfãs e zero origens indefinidas. `/health` respondeu 200; acesso anônimo ao admin respondeu 302 para login com cabeçalhos seguros. Gate local: 290 Vitest, build e scan de 563 arquivos. As quatro tabelas auxiliares legadas no schema `private` com RLS desligada não concedem nenhum privilégio de tabela a `anon`/`authenticated` e `anon` não possui `USAGE` no schema; hardening de defesa em profundidade fica no POST-04, sem exposição atual.
 
@@ -517,3 +518,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-17 | Responsável/Codex | As 42 decisões restantes foram salvas; filas `0/0/0/0`; enforcement final aplicado sem remover colunas; 21/21 pgTAP, hashes/inventário, advisors, tipos, gate local e smoke AAL2 aprovados | Commitar e enviar a evidência, aguardar os quatro checks, integrar a PR #45 e publicar somente pela `main` protegida |
 | 2026-09-17 | Codex | PR #45 integrada em `392cbb7`; primeiro deploy aplicou o Worker e aprovou smokes, mas o benchmark detectou a rota legada com redirect 308 | Corrigir somente o alvo canônico do benchmark em PR curta e repetir uma vez o workflow protegido |
 | 2026-09-17 | Codex | PR #46 integrada em `bd248f9`; workflow `35225504568`, Worker `e06a4898-f214-45d9-b6f8-eaa9c193ef89` e tag `v1.2.0` verdes; estratégia econômica de testes documentada | Plano acelerado encerrado; iniciar nova branch apenas sob nova demanda e monitorar a cauda FIBA com evidência adicional |
+| 2026-09-18 | Codex | Baseline de acessibilidade implementada em `5b95716`: Sienna 2.2.333 local e complementar, skip link, redução de movimento, regras permanentes e 315 testes/gate completos. QA local confirmou teclado, foco e 390/768/1440 px; zoom real de 200% ficou pendente por limitação do navegador embutido. PR #49 preservada sem merge | Publicar a branch em PR própria, aguardar checks/preview e validar o zoom de 200% em navegador que permita alterar a escala; não declarar conformidade WCAG |
