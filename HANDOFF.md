@@ -8,8 +8,8 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A nova demanda de UI/UX pública está em planejamento, sem implementação de código ou alteração de serviços.
-- Status geral: `UIUX_PLAN_DRAFT`; o plano está em `docs/plan/PLANO-UI-UX-PUBLICA-JOGOS-E-EQUIPES.md`, dividido em quatro pacotes curtos. A implementação que tocar projeções estatísticas deve aguardar a validação e integração da PR #49 de Basketball Site.
+- Fase: plano acelerado orientado ao MVP concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A nova demanda de UI/UX pública está em prototipação individual, sem implementação na aplicação ou alteração de serviços.
+- Status geral: `UIUX_PROTOTYPE_REVIEW`; o plano está em `docs/plan/PLANO-UI-UX-PUBLICA-JOGOS-E-EQUIPES.md`, dividido em quatro pacotes curtos. O primeiro protótipo, da página pública de jogo, está em `docs/prototypes/uiux/pagina-jogo.html` e aguarda avaliação do responsável. A implementação que tocar projeções estatísticas deve aguardar a validação e integração da PR #49 de Basketball Site.
 - Linha de produção preservada: a PR #45 foi integrada em `392cbb7`; a correção de benchmark da PR #46 foi integrada em `bd248f9`; a release `v1.2.0` permanece em produção.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
@@ -46,6 +46,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 ## 4. Concluído
 
 - [x] Plano greenfield condensado em pacotes verticais.
+- [x] Protótipo HTML autônomo da página pública de jogo criado e validado em desktop/celular, com boxscores simultâneos, ordenação compartilhada em três estados e navegação contextual.
 - [x] Arquitetura cloud-first definida.
 - [x] Regras de autonomia e segurança definidas.
 - [x] Nome **Base do Basquete** definido.
@@ -88,7 +89,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** revisar `docs/plan/PLANO-UI-UX-PUBLICA-JOGOS-E-EQUIPES.md` com o responsável e acompanhar a PR #49 até gate, banco, preview e análise verdes. Depois da integração da PR #49, criar `feature/uiux-01-navigation-games` a partir da `main` atualizada e implementar somente o pacote UIUX-01, começando por `app/modules/competition/context.ts`, `app/routes/home.tsx` e `app/components/public-navigation.tsx`. Validar redirecionamento de `/visao-geral`, teclado e viewports 390/768/1440 antes de alterar a lista de jogos. Não implementar, aplicar migration ou publicar produção a partir desta branch de planejamento.
+**Próximo passo atual:** o responsável revisa `docs/prototypes/uiux/pagina-jogo.html` e informa ajustes da página de jogo. Somente após essa avaliação, criar o próximo protótipo individual solicitado, sem antecipar as demais páginas. Em paralelo, acompanhar a PR #49 até gate, banco, preview e análise verdes. A implementação real continua condicionada à integração da PR #49: depois dela, criar `feature/uiux-01-navigation-games` a partir da `main` atualizada e implementar somente o pacote UIUX-01, começando por `app/modules/competition/context.ts`, `app/routes/home.tsx` e `app/components/public-navigation.tsx`. Não aplicar migration nem publicar produção a partir desta branch de planejamento.
 
 **Evidência AAL2 do POST-02:** sessão real confirmou AAL2; a fixture privada 100 gerou o draft 187, clonou 5 vagas e 4 confrontos sem equipes/jogos/resultados/publicação e passou duas edições CAS com restauração do nome original (`editor_revision=3`). A inscrição 15 exibiu retirada com preservação de histórico, sem executar a ação. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 6 revisões, 1 draft, 1 clone request, 2 edit requests, zero vagas órfãs e zero origens indefinidas. `/health` respondeu 200; acesso anônimo ao admin respondeu 302 para login com cabeçalhos seguros. Gate local: 290 Vitest, build e scan de 563 arquivos. As quatro tabelas auxiliares legadas no schema `private` com RLS desligada não concedem nenhum privilégio de tabela a `anon`/`authenticated` e `anon` não possui `USAGE` no schema; hardening de defesa em profundidade fica no POST-04, sem exposição atual.
 
@@ -521,3 +522,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-17 | Responsável/Codex | As 42 decisões restantes foram salvas; filas `0/0/0/0`; enforcement final aplicado sem remover colunas; 21/21 pgTAP, hashes/inventário, advisors, tipos, gate local e smoke AAL2 aprovados | Commitar e enviar a evidência, aguardar os quatro checks, integrar a PR #45 e publicar somente pela `main` protegida |
 | 2026-09-17 | Codex | PR #45 integrada em `392cbb7`; primeiro deploy aplicou o Worker e aprovou smokes, mas o benchmark detectou a rota legada com redirect 308 | Corrigir somente o alvo canônico do benchmark em PR curta e repetir uma vez o workflow protegido |
 | 2026-09-17 | Codex | PR #46 integrada em `bd248f9`; workflow `35225504568`, Worker `e06a4898-f214-45d9-b6f8-eaa9c193ef89` e tag `v1.2.0` verdes; estratégia econômica de testes documentada | Plano acelerado encerrado; iniciar nova branch apenas sob nova demanda e monitorar a cauda FIBA com evidência adicional |
+| 2026-09-18 | Responsável/Codex | Primeiro protótipo individual do plano UI/UX criado em `docs/prototypes/uiux/pagina-jogo.html`; HTML autônomo validado em viewport amplo e 390 px, sem overflow global, com tabelas responsivas e ordenação conjunta desc/asc/oficial | Responsável revisa somente a página de jogo e solicita ajustes; o próximo protótipo começa apenas depois dessa avaliação |
