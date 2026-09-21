@@ -8,16 +8,17 @@
   },
   "scripts": {
     "benchmark:public": "node scripts/benchmark-public.mjs",
-    "build": "react-router build",
+    "build": "npm run prepare:sienna && react-router build",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run check:runbooks && npm run build && npm run scan:secrets",
     "check:runbooks": "node scripts/check-runbooks.mjs",
     "deploy:preview": "npm run build && wrangler deploy --env preview",
     "deploy:production": "npm run build && wrangler deploy --env production",
-    "dev": "react-router dev",
+    "dev": "npm run prepare:sienna && react-router dev",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",
     "postinstall": "npm run typegen",
+    "prepare:sienna": "node scripts/prepare-sienna.mjs",
     "preview": "npm run build && vite preview",
     "preview:upload": "npm run build && wrangler versions upload --env preview",
     "scan:secrets": "node scripts/scan-secrets.mjs",
@@ -33,6 +34,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-router": "8.3.0",
+    "sienna-accessibility": "2.2.333",
     "unpdf": "1.8.1"
   },
   "devDependencies": {

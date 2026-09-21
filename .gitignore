@@ -15,5 +15,6 @@ work/
 *.log
 *.tsbuildinfo
 preview-output.log
+public/vendor/sienna/
 .DS_Store
 Thumbs.db

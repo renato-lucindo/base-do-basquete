@@ -8,6 +8,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { SiennaAccessibility } from "./components/sienna-accessibility";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [{ rel: "icon", href: "/favicon.svg" }];
@@ -23,7 +24,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Links />
       </head>
       <body>
-        {children}
+        <a className="skip-link" href="#main-content">
+          Pular para o conteúdo principal
+        </a>
+        <div id="main-content" tabIndex={-1}>
+          {children}
+        </div>
+        <SiennaAccessibility />
         <ScrollRestoration />
         <Scripts />
       </body>
