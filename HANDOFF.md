@@ -8,11 +8,11 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 
 ## 2. Estado atual
 
-- Fase: plano acelerado concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A baseline de acessibilidade foi integrada na `main` pela PR #50; a consolidação das PRs abertas está em andamento.
-- Status geral: `OPEN_PRS_CONSOLIDATION_DOING`; a `main` está em `79e510d` com Sienna 2.2.333 e regras permanentes de acessibilidade. A branch atual incorpora o suporte Basketball Site autorizado pelo responsável, sem aplicar migration em ambiente compartilhado. Produção continua na release estável `v1.2.0`.
+- Fase: plano acelerado concluído; MVP-01 a MVP-05 e POST-01 a POST-04 estão `DONE`. A baseline de acessibilidade foi integrada na `main` pela PR #50; a consolidação restante foi publicada na PR #51.
+- Status geral: `OPEN_PRS_CONSOLIDATION_READY_FOR_REVIEW`; a `main` está em `79e510d` com Sienna 2.2.333 e regras permanentes de acessibilidade. A PR #51 está limpa para merge, com suporte Basketball Site, compatibilidade, dependências, Actions e definições de agentes consolidados. Produção continua na release estável `v1.2.0`.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
-- Branch atual: `codex/consolidate-open-prs`, criada de `origin/main` em `79e510d` para consolidar somente o conteúdo ainda útil das PRs abertas.
+- Branch atual: `codex/consolidate-open-prs`, PR #51 contra `main`, criada em `79e510d` para consolidar somente o conteúdo ainda útil das PRs abertas.
 - Evidência final do WP-13 integrada em `main`: `2e7e530` (`WP-13 — Concluir release de produção (#22)`).
 - Aplicação publicada: commit `bd248f9` saudável em `https://base-do-basquete-prod.renato-lucindo-jr.workers.dev`; versão Cloudflare `e06a4898-f214-45d9-b6f8-eaa9c193ef89`; tag `v1.2.0`.
 - Smoke AAL2 final da release: sessão real confirmou “Sessão AAL2” e acesso protegido a `/admin/competitions` em produção, sem mutação de domínio.
@@ -57,6 +57,10 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - [x] Serviços cloud básicos configurados.
 - [x] Manual funcional do painel administrativo documentado em `docs/PAINEL-ADMINISTRATIVO.md` e referenciado pelo README.
 - [x] Baseline permanente de acessibilidade documentada; Sienna 2.2.333 integrado sem execução no SSR, com recursos locais, falha isolada e testes de inicialização única/navegação.
+- [x] PR #51 consolidou as PRs #4, #6, #7, #38, #48 e #49; as originais foram encerradas como substituídas.
+- [x] Contrato Basketball Site compatibilizado com publicações legadas, matching restrito e rótulo genérico `Boxscore PDF`; `fiba_boxscore` permanece somente como identificador interno legado.
+- [x] Gate local com 45 arquivos/324 Vitest, typecheck, build, cinco runbooks e scan de 604 arquivos aprovado; banco desde zero/pgTAP, preview com smokes, CodeQL e CI da PR #51 verdes no head funcional `1a013fc`.
+- [x] Pareceres `database-security-reviewer` e `qa-reviewer` aprovados para `1a013fc`; 146 avisos de lint sem erro permanecem como débito não bloqueante separado.
 - [x] Scaffold React Router full-stack em Cloudflare Workers.
 - [x] CI, preview por PR, Dependabot e CodeQL com SARIF configurados.
 - [x] Fluxo server-side de login, matrícula/desafio TOTP e logout implementado.
@@ -85,7 +89,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** concluir a branch `codex/consolidate-open-prs` com o contrato Basketball Site, definições de agentes compatibilizadas, Actions atuais e dependências reconciliadas com o Sienna. Executar testes focais e um único gate consolidado; então abrir uma PR contra `main` e exigir gate, banco desde zero/pgTAP, preview e CodeQL verdes. Não aplicar migration no Supabase compartilhado nem publicar produção antes da integração pela `main` protegida.
+**Próximo passo atual:** revisar e, quando autorizado, integrar a PR #51 pela `main` protegida. Antes do merge, confirmar que `gate`, banco desde zero/pgTAP, preview e CodeQL permanecem verdes no HEAD vigente. Depois do merge, aplicar a migration `20260917173556_basketball_site_boxscore.sql` ao Supabase compartilhado em uma unidade própria, com pgTAP persistente, advisors, reconciliação e smoke AAL2. Não aplicar a migration nem publicar produção antes da integração.
 
 **Evidência AAL2 do POST-02:** sessão real confirmou AAL2; a fixture privada 100 gerou o draft 187, clonou 5 vagas e 4 confrontos sem equipes/jogos/resultados/publicação e passou duas edições CAS com restauração do nome original (`editor_revision=3`). A inscrição 15 exibiu retirada com preservação de histórico, sem executar a ação. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 6 revisões, 1 draft, 1 clone request, 2 edit requests, zero vagas órfãs e zero origens indefinidas. `/health` respondeu 200; acesso anônimo ao admin respondeu 302 para login com cabeçalhos seguros. Gate local: 290 Vitest, build e scan de 563 arquivos. As quatro tabelas auxiliares legadas no schema `private` com RLS desligada não concedem nenhum privilégio de tabela a `anon`/`authenticated` e `anon` não possui `USAGE` no schema; hardening de defesa em profundidade fica no POST-04, sem exposição atual.
 
@@ -521,3 +525,4 @@ Não deixe informação essencial apenas na conversa. Faça commit e push do han
 | 2026-09-17 | Codex | PR #46 integrada em `bd248f9`; workflow `35225504568`, Worker `e06a4898-f214-45d9-b6f8-eaa9c193ef89` e tag `v1.2.0` verdes; estratégia econômica de testes documentada | Plano acelerado encerrado; iniciar nova branch apenas sob nova demanda e monitorar a cauda FIBA com evidência adicional |
 | 2026-09-18 | Codex | Baseline de acessibilidade implementada em `5b95716` e publicada na PR #50: Sienna 2.2.333 local e complementar, skip link, redução de movimento, regras permanentes e 315 testes/gate completos. Os quatro checks e o QA do preview passaram; zoom real de 200% ficou pendente por limitação do navegador embutido. PR #49 preservada sem merge | Revisar/integrar a PR #50 quando autorizado e validar 200% de zoom após deploy em navegador compatível; não declarar conformidade WCAG |
 | 2026-09-21 | Responsável/Codex | PR #50 integrada em `79e510d`; PRs #27–#34 encerradas como substituídas pela #35. Responsável autorizou remover a exclusividade FIBA e consolidar as demais PRs úteis em uma única branch | Concluir compatibilidade, gate local, PR consolidada e validações remotas sem aplicar migration compartilhada |
+| 2026-09-21 | Codex | PR #51 aberta com conteúdo útil das PRs #4/#6/#7/#38/#48/#49; originais encerradas; dois pareceres aprovados; gate/database/preview/CodeQL verdes no head funcional `1a013fc`; Supabase compartilhado e produção inalterados | Revisar e autorizar o merge da #51; aplicar a migration somente depois, em unidade própria com validação persistente |
