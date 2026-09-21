@@ -101,4 +101,16 @@ describe("boxscore player matching", () => {
       suggestPlayerMatch("Alisson Venâncio do Nascimento", "2", roster, "Saldanha da Gama"),
     ).not.toMatchObject({ kind: "exact" });
   });
+
+  it("does not preselect a truncated full name without an explicit initial", () => {
+    expect(suggestPlayerMatch("Alisson Venâncio do Nascim", "2", roster, "IVV")).not.toMatchObject({
+      kind: "exact",
+    });
+  });
+
+  it("does not preselect when a surname other than the last one is truncated", () => {
+    expect(suggestPlayerMatch("A. Venânc do Nascimento", "2", roster, "IVV")).not.toMatchObject({
+      kind: "exact",
+    });
+  });
 });

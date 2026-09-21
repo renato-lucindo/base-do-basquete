@@ -14,4 +14,4 @@ Execução greenfield em andamento por pacotes verticais. Consulte [HANDOFF.md](
 - Não existe cadastro público.
 - A primeira temporada usa uma única conta administrativa, MFA obrigatório e `aal2`.
 - Todas as tabelas expostas usam RLS com negação por padrão.
-- O formato de importação é restrito aos boxscores FIBA/Genius Sports documentados.
+- A importação é restrita aos contratos versionados FIBA/Genius Sports e Basketball Site documentados; parser genérico e OCR permanecem fora do escopo.

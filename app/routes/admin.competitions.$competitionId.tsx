@@ -854,7 +854,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           </article>
           <article>
             <h2>Importar boxscore</h2>
-            <p>Somente FIBA/Genius Sports, usando esta edição.</p>
+            <p>Formatos documentados FIBA/Genius Sports e Basketball Site.</p>
             <Link
               className="button button-primary"
               to={`/admin/competitions/${competition.id}/boxscores/import`}

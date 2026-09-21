@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(35);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -100,9 +100,12 @@ insert into public.matchups(
 insert into public.games(
   id,competition_id,game_number,status,source,matchup_id,matchup_game_number
 ) overriding system value values
-  (94101,9411,'SITE-01','scheduled','seed',94101,1);
+  (94101,9411,'SITE-01','scheduled','seed',94101,1),
+  (94102,9411,'LEGACY-01','scheduled','seed',94101,2);
 insert into public.game_participants(game_id,competition_id,registration_id,side)
-values (94101,9411,9411,'home'),(94101,9411,9412,'away');
+values
+  (94101,9411,9411,'home'),(94101,9411,9412,'away'),
+  (94102,9411,9411,'home'),(94102,9411,9412,'away');
 insert into storage.objects(id,bucket_id,name) values (
   '94110000-0000-4000-8000-000000000001','boxscore-pdfs',
   '9411/'||repeat('b',64)||'.pdf'
@@ -260,6 +263,28 @@ select lives_ok(
 );
 select ok(private.game_is_currently_published(94101),
   'the unchanged game matches its published fingerprint');
+select is(
+  private.publication_game_fingerprint(94102),
+  (select md5(jsonb_build_object(
+      'id',game.id,'competitionId',game.competition_id,'number',game.game_number,
+      'scheduledAt',game.scheduled_at,'venue',game.venue,'status',game.status,
+      'matchupId',game.matchup_id,'matchupGameNumber',game.matchup_game_number,
+      'participants',coalesce((select jsonb_agg(jsonb_build_object(
+        'registrationId',participant.registration_id,'side',participant.side
+      ) order by participant.side) from public.game_participants participant
+        where participant.game_id=game.id),'[]'::jsonb),
+      'periodScores',coalesce((select jsonb_agg(jsonb_build_object(
+        'registrationId',score.registration_id,'period',score.period_number,'points',score.points
+      ) order by score.period_number,score.registration_id)
+        from public.game_period_scores score where score.game_id=game.id),'[]'::jsonb),
+      'officialResultSubmissionId',(select authority.submission_id
+        from public.game_data_domain_authority authority
+        where authority.game_id=game.id and authority.domain='official_result')
+    )::text) from public.games game where game.id=94102),
+  'a game without technical totals preserves the legacy publication hash'
+);
+select ok(private.game_is_currently_published(94102),
+  'a publication created before technical totals remains publicly visible');
 create temp table site_fingerprint_before as
 select private.publication_game_fingerprint(94101) value;
 update public.game_period_scores

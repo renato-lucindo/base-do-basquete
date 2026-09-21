@@ -9,7 +9,7 @@ O MVP estará pronto quando o administrador singleton em AAL2 conseguir:
 1. criar uma edição privada por um preset validado;
 2. cadastrar e organizar equipes e atletas;
 3. gerar/agendar jogos dentro da estrutura esportiva;
-4. registrar súmula manual ou importar o boxscore FIBA/Genius Sports no jogo existente;
+4. registrar súmula manual ou importar um boxscore de contrato versionado no jogo existente;
 5. publicar explicitamente a edição;
 6. consultar a edição, jogos, classificação e jogadores na área pública sem vazamento de conteúdo privado.
 

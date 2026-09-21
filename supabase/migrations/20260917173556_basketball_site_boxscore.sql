@@ -781,28 +781,33 @@ join roster_ranked roster
 
 create or replace function private.publication_game_fingerprint(p_game_id bigint)
 returns text language sql stable security definer set search_path='' as $$
-  select md5(jsonb_build_object(
-    'id',game.id,'competitionId',game.competition_id,'number',game.game_number,
-    'scheduledAt',game.scheduled_at,'venue',game.venue,'status',game.status,
-    'matchupId',game.matchup_id,'matchupGameNumber',game.matchup_game_number,
-    'participants',coalesce((select jsonb_agg(jsonb_build_object(
-      'registrationId',participant.registration_id,'side',participant.side
-    ) order by participant.side) from public.game_participants participant
-      where participant.game_id=game.id),'[]'::jsonb),
-    'periodScores',coalesce((select jsonb_agg(jsonb_build_object(
-      'registrationId',score.registration_id,'period',score.period_number,'points',score.points
-    ) order by score.period_number,score.registration_id)
-      from public.game_period_scores score
-      where score.game_id=game.id and score.score_scope='period'),'[]'::jsonb),
-    'gameTotalScores',coalesce((select jsonb_agg(jsonb_build_object(
-      'registrationId',score.registration_id,'points',score.points
-    ) order by score.registration_id)
-      from public.game_period_scores score
-      where score.game_id=game.id and score.score_scope='game_total'),'[]'::jsonb),
-    'officialResultSubmissionId',(select authority.submission_id
-      from public.game_data_domain_authority authority
-      where authority.game_id=game.id and authority.domain='official_result')
-  )::text) from public.games game where game.id=p_game_id;
+  select md5((jsonb_build_object(
+      'id',game.id,'competitionId',game.competition_id,'number',game.game_number,
+      'scheduledAt',game.scheduled_at,'venue',game.venue,'status',game.status,
+      'matchupId',game.matchup_id,'matchupGameNumber',game.matchup_game_number,
+      'participants',coalesce((select jsonb_agg(jsonb_build_object(
+        'registrationId',participant.registration_id,'side',participant.side
+      ) order by participant.side) from public.game_participants participant
+        where participant.game_id=game.id),'[]'::jsonb),
+      'periodScores',coalesce((select jsonb_agg(jsonb_build_object(
+        'registrationId',score.registration_id,'period',score.period_number,'points',score.points
+      ) order by score.period_number,score.registration_id)
+        from public.game_period_scores score
+        where score.game_id=game.id and score.score_scope='period'),'[]'::jsonb),
+      'officialResultSubmissionId',(select authority.submission_id
+        from public.game_data_domain_authority authority
+        where authority.game_id=game.id and authority.domain='official_result')
+    ) || case when exists(
+      select 1 from public.game_period_scores score
+      where score.game_id=game.id and score.score_scope='game_total'
+    ) then jsonb_build_object(
+      'gameTotalScores',(select jsonb_agg(jsonb_build_object(
+        'registrationId',score.registration_id,'points',score.points
+      ) order by score.registration_id)
+        from public.game_period_scores score
+        where score.game_id=game.id and score.score_scope='game_total')
+    ) else '{}'::jsonb end)::text)
+  from public.games game where game.id=p_game_id;
 $$;
 revoke all on function private.publication_game_fingerprint(bigint)
 from public,anon,authenticated;

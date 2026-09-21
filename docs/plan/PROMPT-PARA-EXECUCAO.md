@@ -10,7 +10,7 @@ Anexe este ZIP a uma nova tarefa do Codex e envie o texto abaixo:
 >
 > Na primeira temporada haverá uma única conta administrativa, a minha. Implemente Supabase Auth, MFA obrigatório, `aal2`, sessão segura, autorização server-side, RLS e auditoria essencial. Não implemente agora cadastro público, convites, múltiplos administradores, RBAC, papéis, gestão de usuários ou painel de permissões; deixe isso apenas no backlog futuro.
 >
-> A importação aceita exclusivamente o único formato de boxscore FIBA/Genius Sports documentado em `MODELO-BOXSCORE-FIBA.md`. Use os dois PDFs incluídos como fixtures obrigatórias do mesmo parser. Não implemente súmula oficial completa, parser genérico nem OCR agora; OCR open source é apenas alternativa futura.
+> A importação aceita somente os contratos versionados FIBA/Genius Sports e Basketball Site documentados em `MODELO-BOXSCORE-FIBA.md` e `MODELO-BOXSCORE-SITE.md`. Use os dois PDFs FIBA como fixtures obrigatórias do mesmo parser e o PDF Basketball Site como fixture de seu parser próprio. Não implemente súmula oficial completa, parser genérico nem OCR agora; OCR open source é apenas alternativa futura.
 >
 > O nome do projeto é **Base do Basquete**. Nenhum domínio foi definido: não pesquise, registre, compre ou configure domínio; use as URLs temporárias das plataformas. GitHub e os serviços cloud são a fonte da verdade; não deixe infraestrutura ou artefato importante existindo apenas localmente.
 >

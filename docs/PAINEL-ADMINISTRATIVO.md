@@ -209,12 +209,12 @@ Em `/admin/competitions/{id}/scoresheets/new` é possível:
 A confirmação atualiza o jogo existente. O fluxo não cria uma partida paralela
 fora da estrutura da edição.
 
-## Importação de boxscore FIBA/Genius Sports
+## Importação de boxscore em PDF
 
 Em `/admin/competitions/{id}/boxscores/import` é possível:
 
 - enviar PDF de até 10 MiB;
-- aceitar exclusivamente o modelo FIBA/Genius Sports documentado;
+- aceitar somente os contratos versionados FIBA/Genius Sports e Basketball Site documentados;
 - extrair PDFs que possuam camada de texto;
 - revisar jogo, equipes, placar e estatísticas antes de gravar;
 - associar o documento a um jogo já existente;
