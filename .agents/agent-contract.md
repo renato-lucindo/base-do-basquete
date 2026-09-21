@@ -46,6 +46,8 @@ STATUS: ACTIVE | RELEASED
 
 Regras:
 
+- O lock deve ser registrado no `HANDOFF.md` quando a unidade atravessar sessões ou agentes; em uma execução contínua, pode permanecer no `REVIEW_PACKET` da PR.
+- O registro deve apontar somente estado operacional e nunca incluir secrets ou credenciais.
 - Revisores não possuem lock durante revisão.
 - Um agente sem lock não pode alterar arquivos versionados, aplicar migrations, fazer commit, push, merge ou modificar serviços remotos.
 - O lock não autoriza ações destrutivas, produção ou expansão do escopo.
@@ -100,12 +102,18 @@ WRITE_LOCK_OWNER:
 
 O pacote é incompleto se o commit, os critérios de aceite ou as evidências não puderem ser verificados.
 
+O `REVIEW_PACKET` deve ser publicado na descrição ou em comentário da PR. Se ainda não houver PR, pode permanecer temporariamente no `HANDOFF.md`, devendo migrar para a PR antes da revisão final.
+
 ## Seleção de revisores
 
 Use apenas os revisores exigidos pelo risco:
 
 - `database-security-reviewer`: obrigatório para migrations, schema, RLS, grants, RPCs, Auth, Storage, auditoria, dados privados, idempotência ou escrita crítica.
-- `qa-reviewer`: obrigatório antes de merge ou release e para mudanças funcionais relevantes.
+- `qa-reviewer`: obrigatório antes de merge ou release para mudanças funcionais, dependências, workflows, segurança, banco ou governança.
+
+Alterações exclusivamente documentais, sem mudança de comportamento, segurança, governança ou processo de release, podem dispensar revisor especializado. A dispensa e sua justificativa devem constar na PR; o gate normal continua obrigatório.
+
+Se um revisor exigido não estiver disponível, não simule nem atribua um parecer. Registre a ausência como bloqueio do gate de merge/release, mantendo permitidas correções e verificações locais reversíveis.
 
 Não acione revisores sem necessidade. A especialização deve reduzir duplicação, não multiplicar a mesma análise.
 
@@ -137,7 +145,7 @@ REVIEWED_AT:
 
 O parecer deixa de ser válido quando:
 
-- `HEAD_COMMIT` muda;
+- `HEAD_COMMIT` muda de forma que altere código, configuração, migration, teste ou a evidência material revisada;
 - migration, policy ou configuração de segurança muda;
 - teste relevante muda;
 - artefato implantado não corresponde ao commit revisado;
@@ -145,6 +153,8 @@ O parecer deixa de ser válido quando:
 - o escopo ou os critérios de aceite mudam.
 
 Uma revisão incremental pode analisar somente o delta, mas deve produzir novo parecer vinculado ao novo commit.
+
+Uma atualização exclusivamente documental que apenas registre o próprio parecer ou resultados já produzidos pode ser validada por revisão incremental do delta, sem repetir gates cujo artefato não mudou.
 
 ## Separação entre revisores
 

@@ -9,18 +9,15 @@ describe("versioned publication input", () => {
     expect(validatePublication(form)).toEqual({ ok: true, input: { expectedVersion: 2 } });
   });
 
-  it.each([
-    "",
-    "-1",
-    "1.2",
-    "01",
-    "9007199254740992",
-  ])("rejects invalid expected version %s", (version) => {
-    const form = new FormData();
-    form.set("expectedVersion", version);
-    form.set("confirmed", "yes");
-    expect(validatePublication(form).ok).toBe(false);
-  });
+  it.each(["", "-1", "1.2", "01", "9007199254740992"])(
+    "rejects invalid expected version %s",
+    (version) => {
+      const form = new FormData();
+      form.set("expectedVersion", version);
+      form.set("confirmed", "yes");
+      expect(validatePublication(form).ok).toBe(false);
+    },
+  );
 
   it("does not accept an unchecked confirmation", () => {
     const form = new FormData();

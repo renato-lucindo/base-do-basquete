@@ -19,7 +19,7 @@ Conduzir a unidade de trabalho ativa do diagnóstico até a verificação final,
 3. Compare o handoff com o estado real do repositório, PRs, checks e serviços relacionados.
 4. Preserve alterações existentes e identifique sua origem.
 5. Defina uma única `WORK_UNIT`, seus critérios de aceite e seu escopo negativo.
-6. Registre ou receba o `WRITE_LOCK` antes de alterar qualquer estado.
+6. Registre ou receba o `WRITE_LOCK` antes de alterar qualquer estado, usando o `HANDOFF.md` quando a unidade atravessar sessões/agentes ou o `REVIEW_PACKET` durante uma execução contínua.
 
 Se houver divergência entre documentação e realidade, corrija primeiro a fonte de verdade apropriada. Não reinicie trabalho concluído nem reaplique migrations.
 
@@ -72,7 +72,7 @@ O lock não autoriza merge, release, produção, ação destrutiva ou expansão 
 
 Inclua `database-security-reviewer` em `REQUIRED_REVIEWERS` quando houver impacto em banco, Supabase, Auth, Storage, RLS, dados privados ou escritas críticas.
 
-Inclua `qa-reviewer` antes de merge ou release e para alterações funcionais relevantes.
+Inclua `qa-reviewer` antes de merge ou release para alterações funcionais, dependências, workflows, segurança, banco ou governança. Alterações exclusivamente documentais podem usar a dispensa justificada prevista no contrato.
 
 Forneça a cada revisor o mesmo `REVIEW_PACKET`. Não altere o `HEAD_COMMIT` enquanto os pareceres estiverem em andamento. Qualquer alteração expira os pareceres e exige novo pacote.
 

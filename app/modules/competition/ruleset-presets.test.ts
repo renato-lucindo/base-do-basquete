@@ -58,30 +58,14 @@ describe("versioned competition presets", () => {
     }
   }
 
-  it.each([
-    null,
-    undefined,
-    "Final",
-    "Grupo único",
-    "single_group_v2",
-    {},
-    1,
-  ])("rejects unrecognized preset %s without inferring from names", (value) =>
-    expect(() => compilePreset(value, 4)).toThrow("invalid-preset"));
-  it.each([
-    null,
-    undefined,
-    "4",
-    0,
-    1,
-    17,
-    -1,
-    2.5,
-    Number.NaN,
-    Infinity,
-    {},
-  ])("rejects invalid entry count %s", (value) =>
-    expect(() => compilePreset("single_group", value)).toThrow("invalid-entry-count"));
+  it.each([null, undefined, "Final", "Grupo único", "single_group_v2", {}, 1])(
+    "rejects unrecognized preset %s without inferring from names",
+    (value) => expect(() => compilePreset(value, 4)).toThrow("invalid-preset"),
+  );
+  it.each([null, undefined, "4", 0, 1, 17, -1, 2.5, Number.NaN, Infinity, {}])(
+    "rejects invalid entry count %s",
+    (value) => expect(() => compilePreset("single_group", value)).toThrow("invalid-entry-count"),
+  );
 
   it("returns independent copies, not a mutable shared template", () => {
     const first = compilePreset("single_elimination", 4);
@@ -125,15 +109,15 @@ describe("versioned competition presets", () => {
     at(matches, 1).home = at(matches, 0).home;
     expect(() => validateCompiledPreset(preset)).toThrow("source-reused");
   });
-  it.each([
-    "single_group",
-    "single_elimination",
-  ] satisfies PresetKey[])("%s refuses a duplicated matchup identifier", (key) => {
-    const preset = compilePreset(key, 4);
-    const matches = at(preset.rounds, 0).matchups;
-    at(matches, 1).code = at(matches, 0).code;
-    expect(() => validateCompiledPreset(preset)).toThrow("invalid-matchup");
-  });
+  it.each(["single_group", "single_elimination"] satisfies PresetKey[])(
+    "%s refuses a duplicated matchup identifier",
+    (key) => {
+      const preset = compilePreset(key, 4);
+      const matches = at(preset.rounds, 0).matchups;
+      at(matches, 1).code = at(matches, 0).code;
+      expect(() => validateCompiledPreset(preset)).toThrow("invalid-matchup");
+    },
+  );
   it("refuses a round-robin pair repeated in another round", () => {
     const preset = compilePreset("single_group", 4);
     at(preset.rounds, 1).matchups = at(preset.rounds, 0).matchups.map((match, index) => ({

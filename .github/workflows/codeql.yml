@@ -16,7 +16,7 @@ jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
@@ -26,7 +26,7 @@ jobs:
           output: sarif-results
           upload: false
       - name: Preserve CodeQL SARIF
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codeql-sarif
           path: sarif-results

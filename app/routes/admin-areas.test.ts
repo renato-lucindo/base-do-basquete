@@ -38,30 +38,27 @@ beforeEach(() => {
 });
 
 describe("administrative area isolation", () => {
-  it.each([
-    indexLoader,
-    competitionsLoader,
-    teamsLoader,
-    playersLoader,
-    securityLoader,
-  ])("authorizes before querying a protected area", async (loader) => {
-    authorization.mockRejectedValue(new Response(null, { status: 403 }));
-    await expect(loader(args(new Request("https://example.test/admin")))).rejects.toMatchObject({
-      status: 403,
-    });
-    expect(client.from).not.toHaveBeenCalled();
-    expect(client.rpc).not.toHaveBeenCalled();
-  });
+  it.each([indexLoader, competitionsLoader, teamsLoader, playersLoader, securityLoader])(
+    "authorizes before querying a protected area",
+    async (loader) => {
+      authorization.mockRejectedValue(new Response(null, { status: 403 }));
+      await expect(loader(args(new Request("https://example.test/admin")))).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(client.from).not.toHaveBeenCalled();
+      expect(client.rpc).not.toHaveBeenCalled();
+    },
+  );
 
-  it.each([
-    teamsAction,
-    playersAction,
-  ])("rejects cross-origin writes before authorization", async (action) => {
-    await expect(action(args(post("teams", {}, "https://other.test")))).rejects.toMatchObject({
-      status: 403,
-    });
-    expect(authorization).not.toHaveBeenCalled();
-  });
+  it.each([teamsAction, playersAction])(
+    "rejects cross-origin writes before authorization",
+    async (action) => {
+      await expect(action(args(post("teams", {}, "https://other.test")))).rejects.toMatchObject({
+        status: 403,
+      });
+      expect(authorization).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([teamsAction, playersAction])("rejects missing CSRF before writing", async (action) => {
     await expect(action(args(post("teams", { intent: "create-team" })))).rejects.toMatchObject({
