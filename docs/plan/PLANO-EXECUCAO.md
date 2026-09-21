@@ -82,9 +82,9 @@ Entregar página pública do jogo, agregações isoladas, tabelas simples/avanç
 
 **Dependências:** WP-06, WP-07, WP-08.
 
-Entregar upload seguro, hash, duplicidade, extração da camada de texto, parser, validação, associação de jogadores, revisão administrativa, rascunho, auditoria e commit transacional. Implementar exclusivamente o modelo definido em `MODELO-BOXSCORE-FIBA.md`, usando os dois PDFs incluídos como fixtures. Não implementar OCR nesta etapa.
+Entregar upload seguro, hash, duplicidade, extração da camada de texto, parser, validação, associação de jogadores, revisão administrativa, rascunho, auditoria e commit transacional. Implementar somente os contratos explícitos e versionados definidos em `MODELO-BOXSCORE-FIBA.md` e `MODELO-BOXSCORE-SITE.md`, usando os dois PDFs FIBA e o PDF Basketball Site como fixtures dos respectivos parsers. Não implementar parser genérico nem OCR nesta etapa.
 
-**Concluído quando:** os dois PDFs oficiais são importados pelo mesmo contrato normalizado, ambiguidade exige revisão, duplicata é recusada, PDF sem texto segue para entrada manual e nenhuma falha deixa jogo parcial.
+**Concluído quando:** cada PDF suportado é importado por seu contrato versionado e pelo contrato normalizado comum, os dois PDFs FIBA exercitam o mesmo parser, ambiguidade exige revisão, duplicata é recusada, PDF sem texto segue para entrada manual e nenhuma falha deixa jogo parcial.
 
 ## WP-10 — Histórico, colocações e conquistas
 

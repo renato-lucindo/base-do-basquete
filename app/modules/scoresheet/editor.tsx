@@ -376,7 +376,7 @@ export function ManualScoresheetEditor({
         </p>
         {requiresFallbackReason ? (
           <p className="admin-note">
-            Esta edição usa boxscore FIBA como fonte principal. A súmula manterá o campeonato em
+            Esta edição usa boxscore PDF como fonte principal. A súmula manterá o campeonato em
             andamento como fallback auditado enquanto o PDF é aguardado.
           </p>
         ) : null}

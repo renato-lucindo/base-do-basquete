@@ -33,7 +33,7 @@ Migrations de banco são ensaiadas primeiro em transação com rollback. Aplica�
 - AAL2 permite e AAL1/usuário comum/anon negam operações administrativas.
 - Nenhum PDF, sexo privado ou conteúdo não publicado aparece no tráfego público.
 - 390 px, 768 px e desktop; teclado; foco; zoom 200%; estados vazio/erro/carregamento.
-- Os dois PDFs FIBA e ao menos uma súmula manual passam.
+- Os dois PDFs FIBA, o PDF Basketball Site e ao menos uma súmula manual passam.
 - Migrações desde zero, base representativa, advisors e checksums passam.
 - Release candidata pode ser publicada por versão; produção nunca recebe WIP.
 

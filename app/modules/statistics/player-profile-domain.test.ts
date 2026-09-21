@@ -45,4 +45,13 @@ describe("player profile domain", () => {
       blocks: 1,
     });
   });
+
+  it("keeps career plus/minus unavailable when coverage is incomplete", () => {
+    expect(
+      addPlayerTotals([
+        { ...emptyPlayerTotals, plusMinus: 3 },
+        { ...emptyPlayerTotals, plusMinus: null },
+      ]).plusMinus,
+    ).toBeNull();
+  });
 });

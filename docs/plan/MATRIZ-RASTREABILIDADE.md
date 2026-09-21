@@ -7,7 +7,7 @@
 | Contexto e rotas públicas | WP-05 | TSK-030 a TSK-045 |
 | Estatísticas e comparação | WP-08, WP-11 | TSK-050 a TSK-072 |
 | Importação de boxscore PDF | WP-09 | TSK-080 a TSK-097 |
-| Modelo único FIBA/Genius Sports | WP-09 | `MODELO-BOXSCORE-FIBA.md` e PDFs incluídos |
+| Contratos FIBA/Genius Sports e Basketball Site | WP-09 | `MODELO-BOXSCORE-FIBA.md`, `MODELO-BOXSCORE-SITE.md` e PDFs incluídos |
 | Inscrições, elencos e camisas | WP-06 | TSK-100 a TSK-112 |
 | Súmula manual | WP-07 | TSK-120 a TSK-149 |
 | Admin, colocações e histórico | WP-06, WP-10 | TSK-160 a TSK-174 |

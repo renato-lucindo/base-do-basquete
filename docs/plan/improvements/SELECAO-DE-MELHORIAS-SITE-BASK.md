@@ -586,7 +586,7 @@ O rascunho local é apenas conveniência. MFA/AAL2, CSRF, idempotência, autoriz
 
 ### Diretriz técnica
 
-Manter os fluxos atuais do `base-do-basquete` para súmula transacional, importação FIBA/Genius, MFA, armazenamento privado e auditoria. Adaptar somente a ergonomia da interface.
+Manter os fluxos atuais do `base-do-basquete` para súmula transacional, importação de boxscore PDF versionado, MFA, armazenamento privado e auditoria. Adaptar somente a ergonomia da interface.
 
 **Observações:**
 
@@ -605,7 +605,7 @@ Marque quando desejar uma revisão visual ou funcional, sem reconstrução compl
 - [ ] Preferência da edição em cookie
 - [ ] Súmula manual transacional
 - [ ] Validação de prorrogação e placar
-- [ ] Importação segura de boxscore FIBA/Genius
+- [ ] Importação segura de boxscore PDF versionado
 - [ ] Prevenção de importação duplicada
 - [ ] Gestão de inscrições e elencos
 - [ ] Histórico de camisas

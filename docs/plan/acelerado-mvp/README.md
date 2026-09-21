@@ -9,7 +9,7 @@ O MVP estará pronto quando o administrador singleton em AAL2 conseguir:
 1. criar uma edição privada por um preset validado;
 2. cadastrar e organizar equipes e atletas;
 3. gerar/agendar jogos dentro da estrutura esportiva;
-4. registrar súmula manual ou importar o boxscore FIBA/Genius Sports no jogo existente;
+4. registrar súmula manual ou importar um boxscore de contrato versionado no jogo existente;
 5. publicar explicitamente a edição;
 6. consultar a edição, jogos, classificação e jogadores na área pública sem vazamento de conteúdo privado.
 
@@ -40,7 +40,7 @@ O escopo completo não foi reduzido. Fallbacks entre fontes, conflitos avançado
 
 Este plano acelerado é a fila operacional. Em conflito de granularidade ou ordem com `../tasks-pr35/`, prevalece este pacote. As fontes normativas de produto e segurança no diretório pai continuam obrigatórias.
 
-Não antecipar produção, ações destrutivas, remoção de colunas legadas, exposição de secrets, relaxamento de MFA/RLS ou mudança do formato FIBA documentado.
+Não antecipar produção, ações destrutivas, remoção de colunas legadas, exposição de secrets, relaxamento de MFA/RLS ou formato de importação sem contrato versionado.
 
 ## Previsão
 

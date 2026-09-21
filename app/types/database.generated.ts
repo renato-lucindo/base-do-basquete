@@ -1764,18 +1764,21 @@ export type Database = {
           period_number: number;
           points: number;
           registration_id: number;
+          score_scope: string;
         };
         Insert: {
           game_id: number;
           period_number: number;
           points?: number;
           registration_id: number;
+          score_scope?: string;
         };
         Update: {
           game_id?: number;
           period_number?: number;
           points?: number;
           registration_id?: number;
+          score_scope?: string;
         };
         Relationships: [
           {
@@ -1806,18 +1809,21 @@ export type Database = {
           ended_at: string | null;
           game_id: number;
           period_number: number;
+          period_scope: string;
           started_at: string | null;
         };
         Insert: {
           ended_at?: string | null;
           game_id: number;
           period_number: number;
+          period_scope?: string;
           started_at?: string | null;
         };
         Update: {
           ended_at?: string | null;
           game_id?: number;
           period_number?: number;
+          period_scope?: string;
           started_at?: string | null;
         };
         Relationships: [
@@ -2781,6 +2787,7 @@ export type Database = {
           offensive_rebounds: number;
           period_number: number;
           plus_minus: number;
+          plus_minus_available: boolean;
           points: number | null;
           seconds_played: number;
           stat_scope: string;
@@ -2802,6 +2809,7 @@ export type Database = {
           offensive_rebounds?: number;
           period_number: number;
           plus_minus?: number;
+          plus_minus_available?: boolean;
           points?: number | null;
           seconds_played?: number;
           stat_scope?: string;
@@ -2823,6 +2831,7 @@ export type Database = {
           offensive_rebounds?: number;
           period_number?: number;
           plus_minus?: number;
+          plus_minus_available?: boolean;
           points?: number | null;
           seconds_played?: number;
           stat_scope?: string;

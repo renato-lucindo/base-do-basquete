@@ -8,7 +8,7 @@
 - Criação transacional de edição privada com naipe, perfil de dados, período e preset.
 - Administração de equipes e elencos pelos fluxos existentes.
 - Agendamento de jogos somente em confronto válido.
-- Súmula manual e boxscore FIBA/Genius Sports confirmados sobre um jogo existente, sem jogo paralelo.
+- Súmula manual e boxscore de contrato versionado confirmados sobre um jogo existente, sem jogo paralelo.
 - Autoridade de dados server-side/banco e idempotência.
 - Página pública simples de jogadores para edições de súmula.
 - Página boxscore existente sem regressão e orientada pela autoridade.

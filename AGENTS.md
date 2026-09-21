@@ -6,6 +6,19 @@ Construir e manter autonomamente a **Base do Basquete**, uma aplicação web de 
 
 Este arquivo vale para todo o repositório. Instruções mais específicas em subdiretórios podem complementar estas regras sem enfraquecer segurança, integridade dos dados ou decisões de produto registradas.
 
+## Agentes especializados
+
+As definições operacionais ficam em `.agents/`:
+
+- `.agents/agent-contract.md`: contrato compartilhado, write lock, review packet e validade dos pareceres;
+- `.agents/project-maintainer.md`: único agente escritor da unidade ativa;
+- `.agents/database-security-reviewer.md`: revisão especializada de banco e segurança, sem mutação;
+- `.agents/qa-reviewer.md`: revisão independente de qualidade e release, sem mutação.
+
+Todo agente especializado deve obedecer primeiro a este `AGENTS.md` e ao `HANDOFF.md`. As instruções de `.agents/` complementam estas regras sem substituí-las.
+
+Essas definições passam a reger unidades iniciadas depois de sua integração na `main`; não criam exigência retroativa para a própria PR que as introduz. Alterações apenas documentais e sem mudança de governança podem usar o gate normal sem revisor especializado, desde que a dispensa seja registrada na PR. Mudanças funcionais, de dependências, workflows, segurança, banco ou governança continuam sujeitas à revisão proporcional definida no contrato.
+
 ## Início obrigatório de cada sessão
 
 Antes de alterar arquivos ou serviços:
@@ -79,9 +92,9 @@ A execução pode usar navegador autenticado no GitHub, Cloudflare e Supabase qu
 
 ## Importação de dados
 
-- A importação atual aceita exclusivamente o modelo único de boxscore FIBA/Genius Sports descrito em `docs/plan/MODELO-BOXSCORE-FIBA.md`.
+- A importação aceita somente os contratos explícitos FIBA/Genius Sports e Basketball Site descritos em `docs/plan/MODELO-BOXSCORE-FIBA.md` e `docs/plan/MODELO-BOXSCORE-SITE.md`.
 - Os dois PDFs fornecidos são fixtures obrigatórias do mesmo parser.
-- Não criar parser genérico, importação de súmula oficial completa ou OCR nesta etapa.
+- Não criar parser genérico, importação de súmula oficial completa ou OCR nesta etapa. Nomes abreviados do Basketball Site só podem ser pré-selecionados pela combinação única de equipe, camisa e sobrenome.
 - OCR open source permanece somente como alternativa futura documentada.
 
 ## Git e preservação do trabalho

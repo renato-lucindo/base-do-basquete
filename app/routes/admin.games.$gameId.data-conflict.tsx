@@ -188,7 +188,7 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
         <p className="eyebrow">Conciliação de fontes</p>
         <h1>Jogo {loaderData.game.game_number ?? `#${loaderData.game.id}`}</h1>
         <p>
-          {loaderData.competition.display_name}. Compare a súmula emergencial com o boxscore FIBA
+          {loaderData.competition.display_name}. Compare a súmula emergencial com o boxscore PDF
           posterior antes de alterar a autoridade dos dados.
         </p>
 
@@ -221,7 +221,7 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
                 <input type="hidden" name="intent" value="finalizeFallback" />
                 <input type="hidden" name="submissionId" value={loaderData.fallback.id} />
                 <p>
-                  Use somente quando o boxscore FIBA definitivo não chegar. A cobertura avançada
+                  Use somente quando o boxscore PDF definitivo não chegar. A cobertura avançada
                   continuará explicitamente indisponível.
                 </p>
                 <label>
@@ -250,14 +250,14 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
                 <pre>{JSON.stringify(item.base, null, 2)}</pre>
               </article>
               <article>
-                <h3>Boxscore FIBA candidato</h3>
+                <h3>Boxscore PDF candidato</h3>
                 <pre>{JSON.stringify(item.candidate, null, 2)}</pre>
               </article>
               <article>
                 <h3>Impacto</h3>
                 <p>
                   {item.result === "matching"
-                    ? "A promoção mantém os valores e adiciona a proveniência FIBA."
+                    ? "A promoção mantém os valores e adiciona a proveniência do boxscore."
                     : "A escolha altera este domínio; a decisão ficará no histórico de auditoria."}
                 </p>
               </article>
@@ -280,7 +280,7 @@ export default function GameDataConflict({ loaderData, actionData }: Route.Compo
                 </label>
                 <label>
                   <input type="radio" name="decision" value="use_fiba" required />
-                  Promover o boxscore FIBA nos domínios compatíveis
+                  Promover o boxscore PDF nos domínios compatíveis
                 </label>
               </fieldset>
               <label>

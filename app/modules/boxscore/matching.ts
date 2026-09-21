@@ -63,13 +63,63 @@ export function suggestPlayerMatch(
   sourceName: string,
   sourceJersey: string,
   candidates: RosterMatchCandidate[],
+  sourceTeamName?: string,
 ): PlayerMatchSuggestion {
   const normalized = normalizePersonName(sourceName);
   const exact = candidates.filter(
-    (candidate) => normalizePersonName(candidate.playerName) === normalized,
+    (candidate) =>
+      normalizePersonName(candidate.playerName) === normalized &&
+      (!sourceTeamName ||
+        (candidate.jerseyNumber === sourceJersey &&
+          normalizePersonName(candidate.teamName ?? "") === normalizePersonName(sourceTeamName))),
   );
   if (exact.length === 1) {
     const candidate = exact[0] as RosterMatchCandidate;
+    return {
+      sourceName,
+      sourceJersey,
+      kind: "exact",
+      playerId: candidate.playerId,
+      rosterEntryId: candidate.rosterEntryId,
+      registrationId: candidate.registrationId,
+      score: 1,
+      alternatives: [{ ...candidate, score: 1 }],
+    };
+  }
+  const ignored = new Set(["da", "das", "de", "do", "dos", "e"]);
+  const sourceTokens = normalized.split(" ").filter((token) => !ignored.has(token));
+  const initial = sourceTokens[0]?.length === 1 ? sourceTokens[0] : null;
+  const surnameTokens = initial ? sourceTokens.slice(1) : [];
+  const identified = sourceTeamName
+    ? candidates.filter((candidate) => {
+        if (
+          candidate.jerseyNumber !== sourceJersey ||
+          normalizePersonName(candidate.teamName ?? "") !== normalizePersonName(sourceTeamName)
+        ) {
+          return false;
+        }
+        const candidateTokens = normalizePersonName(candidate.playerName)
+          .split(" ")
+          .filter((token) => !ignored.has(token));
+        if (!initial || candidateTokens[0]?.[0] !== initial) return false;
+        const candidateSurnameTokens = candidateTokens.slice(1);
+        return (
+          surnameTokens.length > 0 &&
+          surnameTokens.length === candidateSurnameTokens.length &&
+          surnameTokens.every((token, index) => {
+            const candidateToken = candidateSurnameTokens[index];
+            if (!candidateToken) return false;
+            const isLastSurname = index === surnameTokens.length - 1;
+            return (
+              candidateToken === token ||
+              (isLastSurname && token.length >= 4 && candidateToken.startsWith(token))
+            );
+          })
+        );
+      })
+    : [];
+  if (identified.length === 1) {
+    const candidate = identified[0] as RosterMatchCandidate;
     return {
       sourceName,
       sourceJersey,

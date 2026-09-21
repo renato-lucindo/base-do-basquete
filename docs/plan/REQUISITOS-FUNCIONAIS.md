@@ -64,8 +64,9 @@
 ## Importação de boxscore em PDF
 
 - A importação atual é de boxscore, não de súmula oficial completa.
-- Aceitar exclusivamente o modelo FIBA/Genius Sports definido em `MODELO-BOXSCORE-FIBA.md` e nos dois PDFs incluídos.
-- Usar os dois arquivos como fixtures obrigatórias do extrator e parser.
+- Aceitar somente os contratos explícitos e versionados FIBA/Genius Sports e Basketball Site definidos em `MODELO-BOXSCORE-FIBA.md` e `MODELO-BOXSCORE-SITE.md`.
+- Usar os dois PDFs FIBA como fixtures obrigatórias do mesmo parser e o PDF Basketball Site como fixture obrigatória de seu parser próprio.
+- Não interpretar formatos sem contrato, criar parser genérico nem habilitar OCR nesta etapa.
 - Permitir upload somente a administrador autorizado.
 - Validar tamanho, assinatura real, formato, páginas e rate limit no backend.
 - Calcular SHA-256 e bloquear duplicidade.

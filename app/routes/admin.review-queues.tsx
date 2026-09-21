@@ -612,7 +612,8 @@ export default function ReviewQueues({ loaderData, actionData }: Route.Component
                 </strong>
                 <small>
                   {competition.gameCount} jogo(s): {competition.manualGameCount} súmula,{" "}
-                  {competition.boxscoreGameCount} FIBA e {competition.seedGameCount} legado(s)
+                  {competition.boxscoreGameCount} boxscore(s) PDF e {competition.seedGameCount}{" "}
+                  legado(s)
                 </small>
                 <Link to={`/admin/competitions/${competition.competitionId}/data-profile`}>
                   Revisar competição

@@ -253,7 +253,7 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
             >
               <option value="">Selecione</option>
               <option value="manual_scoresheet">Súmula manual</option>
-              <option value="fiba_boxscore">Boxscore FIBA/Genius Sports</option>
+              <option value="fiba_boxscore">Boxscore PDF</option>
             </select>
           </label>
           <label>
@@ -304,10 +304,8 @@ export default function NewCompetition({ loaderData, actionData }: Route.Compone
             Rascunho privado
           </p>
           <p>
-            {review.input.source === "manual_scoresheet"
-              ? "Súmula manual"
-              : "Boxscore FIBA/Genius Sports"}{" "}
-            · {review.input.preset === "single_group" ? "Grupo único" : "Eliminatória simples"}
+            {review.input.source === "manual_scoresheet" ? "Súmula manual" : "Boxscore PDF"} ·{" "}
+            {review.input.preset === "single_group" ? "Grupo único" : "Eliminatória simples"}
           </p>
           <p>
             {review.input.entryCount} equipes · {review.summary.rounds} rodadas ·{" "}

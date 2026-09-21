@@ -5,11 +5,11 @@ import {
   categoryCapabilities,
   compareStatistic,
   efficiency,
+  type PlayerStatistics,
   percentage,
   perGame,
-  statisticValue,
-  type PlayerStatistics,
   type StatisticTotals,
+  statisticValue,
 } from "./domain";
 
 const player = (
@@ -137,5 +137,12 @@ describe("statistics domain", () => {
     fallbackOnly.advancedTotals = null;
     expect(statisticValue(fallbackOnly, "points", "totals")).toBe(7);
     expect(statisticValue(fallbackOnly, "assists", "totals")).toBeNull();
+  });
+
+  it("does not turn unavailable plus/minus into zero", () => {
+    const withoutPlusMinus = player(1, 7, 1);
+    withoutPlusMinus.advancedTotals.plusMinus = null;
+    expect(statisticValue(withoutPlusMinus, "plusMinus", "totals")).toBeNull();
+    expect(statisticValue(withoutPlusMinus, "plusMinus", "averages")).toBeNull();
   });
 });

@@ -492,21 +492,21 @@ export function parseFibaGeniusBoxscore(pages: PositionedTextItem[][]): ParsedBo
 
 export function validateParsedBoxscore(boxscore: ParsedBoxscore): BoxscoreValidation {
   const issues: BoxscoreValidation["issues"] = [];
-  const periodCount = boxscore.teams[0].periodScores.length;
+  const periodCount = boxscore.teams[0].periodScores?.length ?? 4;
   const gameClockSeconds = 2400 + Math.max(periodCount - 4, 0) * 300;
   if (boxscore.teams[0].name === boxscore.teams[1].name) {
     issues.push({ code: "BDB_PDF_DUPLICATE_TEAM", message: "As equipes devem ser diferentes." });
   }
   for (const team of boxscore.teams) {
     const playerPoints = team.players.reduce((total, player) => total + player.points, 0);
-    const periodPoints = team.periodScores.reduce((total, points) => total + points, 0);
+    const periodPoints = team.periodScores?.reduce((total, points) => total + points, 0);
     if (playerPoints !== team.score) {
       issues.push({
         code: "BDB_PDF_PLAYER_TOTAL",
         message: `A soma dos atletas de ${team.name} diverge do placar.`,
       });
     }
-    if (periodPoints !== team.score) {
+    if (periodPoints !== undefined && periodPoints !== team.score) {
       issues.push({
         code: "BDB_PDF_PERIOD_TOTAL",
         message: `A soma dos períodos de ${team.name} diverge do placar.`,

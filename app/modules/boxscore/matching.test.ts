@@ -71,4 +71,46 @@ describe("boxscore player matching", () => {
       alternatives: [],
     });
   });
+
+  it("identifies an abbreviated name only by the unique team, jersey and surname", () => {
+    expect(suggestPlayerMatch("A. Venâncio do Nascim", "2", roster, "IVV")).toMatchObject({
+      kind: "exact",
+      playerId: 11,
+      rosterEntryId: 1,
+    });
+  });
+
+  it("does not preselect an abbreviated name when the composite key is ambiguous", () => {
+    const duplicate = roster[0];
+    if (!duplicate) throw new Error("Fixture incompleta");
+    const result = suggestPlayerMatch(
+      "A. Venâncio do Nascim",
+      "2",
+      [...roster, { ...duplicate, playerId: 99, rosterEntryId: 99 }],
+      "IVV",
+    );
+    expect(result.playerId).toBeNull();
+    expect(result.rosterEntryId).toBeNull();
+  });
+
+  it("does not identify an abbreviated name across another team", () => {
+    expect(
+      suggestPlayerMatch("A. Venâncio do Nascim", "2", roster, "Saldanha da Gama"),
+    ).not.toMatchObject({ kind: "exact" });
+    expect(
+      suggestPlayerMatch("Alisson Venâncio do Nascimento", "2", roster, "Saldanha da Gama"),
+    ).not.toMatchObject({ kind: "exact" });
+  });
+
+  it("does not preselect a truncated full name without an explicit initial", () => {
+    expect(suggestPlayerMatch("Alisson Venâncio do Nascim", "2", roster, "IVV")).not.toMatchObject({
+      kind: "exact",
+    });
+  });
+
+  it("does not preselect when a surname other than the last one is truncated", () => {
+    expect(suggestPlayerMatch("A. Venânc do Nascimento", "2", roster, "IVV")).not.toMatchObject({
+      kind: "exact",
+    });
+  });
 });

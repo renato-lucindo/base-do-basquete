@@ -9,7 +9,7 @@
 - Estrutura mínima versionada com `legacy_unclassified` e vínculo opcional íntegro entre jogo e confronto.
 - Comparador puro de participantes, placar, períodos, pontos, cestas e avisos de camisa.
 - Súmula manual confirmada no jogo existente, transacional e idempotente.
-- PDF FIBA/Genius Sports confirmado no jogo existente usando as duas fixtures, sem escrita parcial e com PDF privado.
+- PDFs dos contratos FIBA/Genius Sports e Basketball Site confirmados no jogo existente usando as três fixtures documentadas, sem escrita parcial e com PDF privado.
 - Autoridades compatíveis ativadas pelo banco.
 - Depois de adaptar ambos os fluxos, impedir novos jogos fora de confronto válido; histórico continua legível.
 
@@ -23,4 +23,4 @@ Banco desde zero, pgTAP de integridade/RLS/concorrência, testes puros, duas fix
 
 ## Concluído quando
 
-Um jogo estrutural aceita exatamente uma confirmação principal manual ou FIBA, repetições são seguras e nenhum fluxo novo contorna o confronto.
+Um jogo estrutural aceita exatamente uma confirmação principal manual ou por boxscore PDF suportado, repetições são seguras e nenhum fluxo novo contorna o confronto.

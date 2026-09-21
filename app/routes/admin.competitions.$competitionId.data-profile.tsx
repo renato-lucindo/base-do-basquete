@@ -29,7 +29,7 @@ function genderLabel(value: string | null): string {
 }
 
 function sourceLabel(value: string): string {
-  return value === "fiba_boxscore" ? "Boxscore FIBA/Genius" : "Súmula manual";
+  return value === "fiba_boxscore" ? "Boxscore PDF" : "Súmula manual";
 }
 
 function formError(message: string, status: number, cookie: string | null) {
@@ -444,7 +444,7 @@ export default function CompetitionDataProfileReview({
                       </p>
                     </article>
                     <article>
-                      <h3>Boxscore FIBA/Genius</h3>
+                      <h3>Boxscore PDF</h3>
                       <p>
                         Habilita cobertura avançada somente nos jogos em que o PDF autoritativo
                         realmente forneceu cada métrica.
@@ -499,7 +499,7 @@ export default function CompetitionDataProfileReview({
                           Selecione sem sugestão
                         </option>
                         <option value="manual_scoresheet">Súmula manual</option>
-                        <option value="fiba_boxscore">Boxscore FIBA/Genius</option>
+                        <option value="fiba_boxscore">Boxscore PDF</option>
                       </select>
                     </label>
                     <label>

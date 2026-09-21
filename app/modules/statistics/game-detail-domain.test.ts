@@ -23,4 +23,13 @@ describe("expanded game detail", () => {
   it("keeps reconciliation unavailable when the boxscore is absent", () => {
     expect(pointsReconcile(0, null)).toBeNull();
   });
+
+  it("keeps team plus/minus unavailable when any player lacks it", () => {
+    expect(
+      sumStatisticTotals([
+        { ...totals(10, 2), plusMinus: 4 },
+        { ...totals(7, 3), plusMinus: null },
+      ]).plusMinus,
+    ).toBeNull();
+  });
 });

@@ -39,7 +39,8 @@ export function sumStatisticTotals(rows: StatisticTotals[]): StatisticTotals {
       steals: total.steals + row.steals,
       blocks: total.blocks + row.blocks,
       fouls: total.fouls + row.fouls,
-      plusMinus: total.plusMinus + row.plusMinus,
+      plusMinus:
+        total.plusMinus === null || row.plusMinus === null ? null : total.plusMinus + row.plusMinus,
     }),
     emptyStatisticTotals(),
   );

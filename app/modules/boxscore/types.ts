@@ -30,8 +30,8 @@ export interface ParsedBoxscorePlayer {
   steals: number;
   blocks: number;
   foulsCommitted: number;
-  foulsReceived: number;
-  plusMinus: number;
+  foulsReceived: number | null;
+  plusMinus: number | null;
   efficiency: number;
   points: number;
 }
@@ -60,18 +60,18 @@ export interface ParsedBoxscoreTeam {
   name: string;
   abbreviation: string;
   score: number;
-  periodScores: number[];
+  periodScores: number[] | null;
   players: ParsedBoxscorePlayer[];
   teamStatistics?: ParsedBoxscoreTeamStatistics;
 }
 
 export interface ParsedBoxscore {
-  format: "FIBA_GENIUS_SPORTS";
+  format: "FIBA_GENIUS_SPORTS" | "BASKETBALL_SITE";
   parserVersion: string;
-  competitionName: string;
-  gameNumber: string;
+  competitionName: string | null;
+  gameNumber: string | null;
   scheduledLocal: string;
-  durationSeconds: number;
+  durationSeconds: number | null;
   venue: string;
   teams: [ParsedBoxscoreTeam, ParsedBoxscoreTeam];
   gameStatistics?: ParsedBoxscoreGameStatistics;

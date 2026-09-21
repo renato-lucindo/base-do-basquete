@@ -147,7 +147,7 @@ function totalsFromRow(row: {
     steals: numberValue(row.steals),
     blocks: numberValue(row.blocks),
     fouls: numberValue(row.fouls),
-    plusMinus: numberValue(row.plus_minus),
+    plusMinus: row.plus_minus,
   };
 }
 

@@ -19,4 +19,4 @@ Boxscore suplementar raro em edição manual fica em `POST-01`. Até lá, soment
 
 ## Gate
 
-Banco/domínio/UI em um ciclo: ausência permanece nula, fontes não são somadas no mesmo domínio, totais listagem/perfil conferem, cenário FIBA não regride e 390/768/desktop/teclado passam.
+Banco/domínio/UI em um ciclo: ausência permanece nula, fontes não são somadas no mesmo domínio, totais listagem/perfil conferem, cenários de boxscore PDF não regridem e 390/768/desktop/teclado passam.
