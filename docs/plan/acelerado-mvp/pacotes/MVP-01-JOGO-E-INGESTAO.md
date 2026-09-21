@@ -23,4 +23,4 @@ Banco desde zero, pgTAP de integridade/RLS/concorrência, testes puros, duas fix
 
 ## Concluído quando
 
-Um jogo estrutural aceita exatamente uma confirmação principal manual ou FIBA, repetições são seguras e nenhum fluxo novo contorna o confronto.
+Um jogo estrutural aceita exatamente uma confirmação principal manual ou por boxscore PDF suportado, repetições são seguras e nenhum fluxo novo contorna o confronto.

@@ -36,7 +36,7 @@ O protótipo HTML foi retirado do fluxo. A validação visual ocorrerá diretame
 1. A fonte primária não pertence à raiz genérica do campeonato.
 2. A fonte primária é definida pela combinação exata **série + categoria + naipe**.
 3. A edição anual é identificada por **série + categoria + naipe + ano** e mantém vínculo imutável com a versão da configuração que recebeu ao ser criada ou validada.
-4. As opções iniciais são `Súmula manual` e `Boxscore FIBA/Genius`.
+4. As opções iniciais são `Súmula manual` e `Boxscore PDF`; o segundo aceita somente contratos de formato explicitamente versionados.
 5. Não haverá opção livre, automática ou “mista” como fonte primária.
 6. A fonte primária define o fluxo esperado, as capacidades públicas e o desenho da página de jogadores; ela não proíbe exceções por jogo.
 7. Campeonatos cuja fonte primária é súmula usarão uma nova página de jogadores, desenhada somente com dados realmente disponíveis na súmula.
@@ -118,7 +118,7 @@ Conclusão: o `site-bask` valida a estratégia de **capacidades + dois desenhos*
 | Naipe | Divisão pública da disputa: Masculino ou Feminino |
 | Sexo do atleta | Dado administrativo privado usado somente para elegibilidade; não é conteúdo público |
 | Perfil de dados | Configuração versionada da combinação série + categoria + naipe |
-| Fonte primária | Meio normalmente esperado: súmula manual ou boxscore FIBA |
+| Fonte primária | Meio normalmente esperado: súmula manual ou boxscore PDF de contrato versionado |
 | Edição | Ocorrência anual de uma combinação série + categoria + naipe |
 | Jogo | Identidade esportiva única vinculada a um confronto |
 | Submissão | Entrada versionada de dados de um jogo, por súmula ou boxscore |
@@ -140,7 +140,7 @@ Criar `series_category_data_profiles` com, no mínimo:
 - `category_id`;
 - `gender_division`: `male` ou `female`;
 - `version` crescente dentro do par;
-- `primary_source`: `manual_scoresheet` ou `fiba_boxscore`;
+- `primary_source`: `manual_scoresheet` ou `fiba_boxscore`; o segundo é o identificador interno legado apresentado como `Boxscore PDF` e abrange apenas formatos documentados;
 - `status`: `draft`, `active` ou `superseded`;
 - `change_reason` obrigatório a partir da versão 2;
 - `created_by`, `created_at`, `activated_by`, `activated_at`;
@@ -176,8 +176,8 @@ Fonte primária dos jogos
 (•) Súmula manual
     Pontos, cestas convertidas, participação e faltas.
 
-( ) Boxscore FIBA/Genius
-    Estatísticas completas importadas do PDF.
+( ) Boxscore PDF
+    Cobertura conforme as métricas realmente fornecidas pelo contrato do formato.
 ```
 
 Comportamento:
@@ -284,7 +284,7 @@ O jogo deve existir uma única vez e ser criado pelo regulamento/confronto ou po
 Criar `game_data_submissions` com:
 
 - `id` e `game_id`;
-- `source_type`: `manual_scoresheet`, `fiba_boxscore` ou `legacy_seed`; o terceiro valor existe somente para backfill e não aparece na interface;
+- `source_type`: `manual_scoresheet`, `fiba_boxscore` ou `legacy_seed`; `fiba_boxscore` é mantido como identificador interno legado de qualquer boxscore PDF suportado, e o terceiro valor existe somente para backfill e não aparece na interface;
 - `role`: `primary`, `fallback` ou `supplemental`;
 - `status`: `draft`, `review`, `validated`, `active`, `rejected` ou `superseded`;
 - `parser_version`, `payload_hash`, `storage_object_id` quando aplicável;
@@ -315,17 +315,17 @@ Cada linha aponta para a submissão ativa e registra quem validou a troca. O ban
 
 Capacidades:
 
-| Domínio | Súmula manual | Boxscore FIBA |
+| Domínio | Súmula manual | Boxscore PDF |
 | --- | ---: | ---: |
 | Resultado oficial | Sim | Sim |
-| Placar por período | Sim | Sim |
+| Placar por período | Sim | Quando fornecido pelo contrato |
 | Participação/relacionados | Sim | Sim |
 | Pontos e cestas convertidas | Sim | Sim |
-| Tentativas e métricas avançadas do atleta | Não | Sim |
+| Tentativas e métricas avançadas do atleta | Não | Quando fornecidas pelo contrato |
 | Total de faltas | Sim | Sim |
 | Cronologia/tipo de falta | Sim | Não confiável |
-| Estatísticas coletivas avançadas | Não | Sim |
-| Estatísticas gerais da partida | Não | Sim |
+| Estatísticas coletivas avançadas | Não | Quando fornecidas pelo contrato |
+| Estatísticas gerais da partida | Não | Quando fornecidas pelo contrato |
 
 O boxscore não deve criar uma cronologia fictícia de faltas no primeiro período. Quando o PDF fornece apenas o total, a precisão será `game_total` e não `timeline`.
 

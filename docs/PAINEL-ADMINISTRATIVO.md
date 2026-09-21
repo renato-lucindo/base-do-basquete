@@ -183,7 +183,7 @@ Em `/admin/competitions/{id}/data-profile` é possível:
 - visualizar o impacto sobre jogos já existentes;
 - vincular um perfil ativo compatível;
 - criar e ativar uma nova versão do perfil;
-- escolher a fonte primária entre súmula manual e boxscore FIBA/Genius Sports;
+- escolher a fonte primária entre súmula manual e boxscore PDF;
 - justificar mudanças de fonte;
 - preservar a versão anteriormente usada pelo histórico.
 

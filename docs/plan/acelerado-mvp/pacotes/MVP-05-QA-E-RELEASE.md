@@ -8,7 +8,7 @@
 - Reconciliação de migrations desde zero e sobre a base compartilhada, com contagens/checksums e advisors.
 - Tipos regenerados e relatório de pendências pós-MVP.
 - QA AAL2, AAL1, usuário comum e anon.
-- Fluxos completos manual e FIBA em edição criada por preset.
+- Fluxos completos manual e de boxscore PDF em edição criada por preset.
 - QA público em 390/768/desktop, teclado e zoom 200%.
 - Descrição da PR, HANDOFF e runbook de release candidata.
 - Candidata versionada; merge/produção somente pelo processo já autorizado e nunca com WIP.

@@ -582,7 +582,9 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                       : `Jogo #${fallback.game_id}`}
                   </span>
                   <strong>
-                    {fallback.fallback_finalized_at ? "fallback encerrado" : "aguardando FIBA"}
+                    {fallback.fallback_finalized_at
+                      ? "fallback encerrado"
+                      : "aguardando boxscore PDF"}
                   </strong>
                   <Link to={`/admin/games/${fallback.game_id}/data-conflict`}>Revisar fonte</Link>
                 </li>

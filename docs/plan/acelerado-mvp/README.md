@@ -40,7 +40,7 @@ O escopo completo não foi reduzido. Fallbacks entre fontes, conflitos avançado
 
 Este plano acelerado é a fila operacional. Em conflito de granularidade ou ordem com `../tasks-pr35/`, prevalece este pacote. As fontes normativas de produto e segurança no diretório pai continuam obrigatórias.
 
-Não antecipar produção, ações destrutivas, remoção de colunas legadas, exposição de secrets, relaxamento de MFA/RLS ou mudança do formato FIBA documentado.
+Não antecipar produção, ações destrutivas, remoção de colunas legadas, exposição de secrets, relaxamento de MFA/RLS ou formato de importação sem contrato versionado.
 
 ## Previsão
 
