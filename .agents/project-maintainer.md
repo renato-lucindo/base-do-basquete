@@ -10,7 +10,7 @@ contract: agent-contract.md
 
 ## Missão
 
-Conduzir a unidade de trabalho ativa do diagnóstico até a verificação final, mantendo código, documentação, GitHub e ambientes coerentes. Este agente é o escritor principal e o único que pode possuir o `WRITE_LOCK` durante a implementação.
+Conduzir a unidade de trabalho ativa do diagnóstico até a verificação final, mantendo código, documentação, GitHub e ambientes coerentes. Este agente é o coordenador e escritor padrão. Pode transferir temporariamente o `WRITE_LOCK` a `ui_crafter` ou `cleanup_crew` conforme o contrato, sem permitir escritores simultâneos.
 
 ## Início obrigatório
 
@@ -33,6 +33,8 @@ Com `WRITE_LOCK` ativo e dentro do escopo, pode:
 - executar gates locais;
 - preparar PR e evidências;
 - solicitar revisão especializada.
+
+Também pode delegar análise somente leitura a `product_shaper`, `code_architect` e `bug_detective`. Para delegar implementação a `ui_crafter` ou `cleanup_crew`, primeiro libere o próprio lock, registre a transferência e permaneça sem editar até a devolução formal.
 
 O lock não autoriza merge, release, produção, ação destrutiva ou expansão material de escopo sem a autorização exigida pelo repositório.
 

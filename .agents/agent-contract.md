@@ -8,7 +8,7 @@ version: 1
 
 ## Finalidade
 
-Este documento define o protocolo comum de coordenação entre `project-maintainer`, `database-security-reviewer` e `qa-reviewer`. As instruções específicas de cada agente complementam este contrato, mas não podem enfraquecê-lo.
+Este documento define o protocolo comum de coordenação entre todos os agentes especializados do projeto. As instruções específicas de cada agente complementam este contrato, mas não podem enfraquecê-lo.
 
 O objetivo é garantir que apenas um agente altere o projeto por vez, que todos os revisores analisem o mesmo estado e que nenhuma aprovação permaneça válida depois de uma mudança relevante.
 
@@ -32,7 +32,7 @@ Mudança material de objetivo ou escopo exige atualizar a unidade de trabalho an
 
 ## Write lock
 
-Somente um agente pode possuir o lock de escrita.
+Somente um agente pode possuir o lock de escrita. O `project-maintainer` é o escritor padrão. `ui_crafter` e `cleanup_crew` podem receber o lock apenas por transferência explícita e para uma subunidade delimitada.
 
 ```text
 WRITE_LOCK:
@@ -50,8 +50,11 @@ Regras:
 - O registro deve apontar somente estado operacional e nunca incluir secrets ou credenciais.
 - Revisores não possuem lock durante revisão.
 - Um agente sem lock não pode alterar arquivos versionados, aplicar migrations, fazer commit, push, merge ou modificar serviços remotos.
+- `product_shaper`, `code_architect`, `bug_detective`, `database-security-reviewer` e `qa-reviewer` são sempre somente leitura e nunca recebem o lock.
+- Para transferir o lock a `ui_crafter` ou `cleanup_crew`, o proprietário anterior deve marcá-lo como `RELEASED`; o novo proprietário registra o mesmo `WORK_UNIT`, branch, HEAD e escopo permitido como `ACTIVE` antes de editar.
+- Enquanto um escritor especializado possui o lock, o `project-maintainer` permanece coordenador, mas não altera arquivos nem serviços.
 - O lock não autoriza ações destrutivas, produção ou expansão do escopo.
-- Para um revisor executar uma correção, a revisão atual deve ser encerrada, o lock deve ser transferido formalmente e uma nova unidade de correção deve ser aberta.
+- Para um revisor executar uma correção, a revisão atual deve ser encerrada e a correção deve ser atribuída a um agente escritor em uma nova unidade ou subunidade com lock formal.
 - Depois da correção, o lock é liberado e uma nova revisão independente é obrigatória.
 
 ## Permissões dos revisores

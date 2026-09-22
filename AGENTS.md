@@ -8,12 +8,25 @@ Este arquivo vale para todo o repositório. Instruções mais específicas em su
 
 ## Agentes especializados
 
-As definições operacionais ficam em `.agents/`:
+As regras operacionais e o contrato compartilhado ficam em `.agents/`:
 
 - `.agents/agent-contract.md`: contrato compartilhado, write lock, review packet e validade dos pareceres;
-- `.agents/project-maintainer.md`: único agente escritor da unidade ativa;
+- `.agents/project-maintainer.md`: coordenador e escritor padrão da unidade ativa;
 - `.agents/database-security-reviewer.md`: revisão especializada de banco e segurança, sem mutação;
 - `.agents/qa-reviewer.md`: revisão independente de qualidade e release, sem mutação.
+
+Os agentes executáveis com escopo deste projeto ficam em `.codex/agents/`. O Codex os descobre ao iniciar uma nova sessão a partir deste repositório:
+
+- `project-maintainer`: coordenador e escritor padrão da unidade ativa;
+- `database-security-reviewer`: revisor somente leitura de PostgreSQL, Supabase, Auth, RLS, Storage e dados privados;
+- `qa-reviewer`: revisor somente leitura de qualidade, acessibilidade, CI e release;
+- `product_shaper`: transforma uma demanda em escopo e critérios de aceite, sem implementar;
+- `code_architect`: analisa limites e contratos do monólito modular, sem implementar;
+- `bug_detective`: reproduz e diagnostica falhas, sem corrigi-las;
+- `ui_crafter`: implementa uma unidade de interface após receber explicitamente o lock de escrita;
+- `cleanup_crew`: simplifica uma unidade já correta após receber explicitamente o lock de escrita.
+
+`ui_crafter` e `cleanup_crew` são escritores especializados, não escritores simultâneos. O `project-maintainer` deve liberar e transferir formalmente o `WRITE_LOCK` antes de delegar alterações a um deles. Durante a transferência, o mantenedor coordena sem modificar arquivos. Ao concluir, o especialista libera o lock e devolve um pacote verificável ao mantenedor.
 
 Todo agente especializado deve obedecer primeiro a este `AGENTS.md` e ao `HANDOFF.md`. As instruções de `.agents/` complementam estas regras sem substituí-las.
 
