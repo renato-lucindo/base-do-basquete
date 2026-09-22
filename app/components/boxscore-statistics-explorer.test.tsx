@@ -74,7 +74,7 @@ const data: BoxscoreStatisticsPageDto = {
 };
 
 describe("BoxscoreStatisticsExplorer", () => {
-  it("renders all modes and scopes without a second page hero", () => {
+  it("renders the reference title, compact controls and all modes and scopes", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/?mode=per-30&scope=all"]}>
         <BoxscoreStatisticsExplorer context={context} data={data} />
@@ -84,7 +84,29 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Por 30 min.");
     expect(html).toContain("Fase regular");
     expect(html).toContain("Eliminatórias");
-    expect(html).not.toContain("<h1>");
+    expect(html).toContain("<h1>Liga</h1>");
+    expect(html).toContain("Filtro de colunas");
+    expect(html).toContain("Comparar jogadores");
+    expect(html).toContain("<dialog");
+    expect(html).toContain('aria-labelledby="comparison-title"');
+  });
+
+  it("groups shooting columns and keeps team and jersey in the pinned athlete cell", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?scope=all"]}>
+        <BoxscoreStatisticsExplorer context={context} data={{ ...data, mode: "per-game" }} />
+      </MemoryRouter>,
+    );
+    expect(html).toContain("AC/AT");
+    expect(html).toContain("LLC/LLT");
+    expect(html).toContain("FG%");
+    expect(html).toContain("4.0/10.0");
+    expect(html).toContain("+4.0");
+    expect(html).toContain('class="reference-player"');
+    expect(html).toContain('class="reference-team" title="Azul">AZL');
+    expect(html).not.toContain('class="column-position"');
+    expect(html).not.toContain('class="column-team"');
+    expect(html).toContain('aria-sort="descending"');
   });
 
   it("hides MIN temporarily, explains unavailable states and exposes a keyboard region", () => {
