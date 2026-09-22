@@ -5972,6 +5972,86 @@ body {
   }
 }
 
+.statistics-primary-controls,
+.statistics-secondary-controls,
+.statistics-filter-editor,
+.statistics-comparison-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.statistics-primary-controls > label,
+.statistics-filter-editor > label,
+.statistics-comparison-controls > label {
+  display: grid;
+  gap: 6px;
+  min-width: min(220px, 100%);
+  font-weight: 700;
+}
+
+.statistics-primary-controls input,
+.statistics-primary-controls select,
+.statistics-filter-editor input,
+.statistics-filter-editor select,
+.statistics-comparison-controls select {
+  min-height: 44px;
+}
+
+.statistics-secondary-controls {
+  margin-top: 12px;
+  align-items: start;
+}
+
+.statistics-secondary-controls > details {
+  flex: 1 1 240px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.statistics-secondary-controls summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.statistics-filter-editor,
+.statistics-comparison-controls,
+.statistics-comparison-results,
+.statistics-secondary-controls .column-options {
+  margin-top: 12px;
+}
+
+.statistics-table td[data-status="insufficient-sample"] {
+  font-weight: 800;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.statistics-table td[data-status="unavailable"] {
+  color: var(--muted);
+}
+
+.statistics-leader {
+  font-weight: 900;
+}
+
+@media (max-width: 768px) {
+  .statistics-primary-controls,
+  .statistics-filter-editor,
+  .statistics-comparison-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .statistics-primary-controls > *,
+  .statistics-filter-editor > *,
+  .statistics-comparison-controls > * {
+    width: 100%;
+  }
+}
+
 /* Baseline permanente de acessibilidade e integração isolada do Sienna. */
 .skip-link {
   position: fixed;
