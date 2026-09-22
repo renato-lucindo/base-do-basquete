@@ -26,6 +26,8 @@ Gate local após reconciliação de tipos: formatação, TypeScript, 342 testes/
 
 Smoke público pós-migration: `node scripts/smoke-public-context.mjs https://pr-53-base-do-basquete-preview.renato-lucindo-jr.workers.dev` aprovado. Confirma disponibilidade do fallback; não substitui QA da interface nova.
 
+O responsável definiu `2026-09-01` como data de início da fixture FIBA. A atualização remota foi aplicada com comparação do valor anterior nulo e validada: competição 20 sem bloqueadores, `canPublish=true`, `changed=true`, versão pública atual 1. A publicação da versão 2 ainda não ocorreu porque a prévia exige login e MFA do responsável; a tela administrativa foi deixada aberta no login.
+
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
 2. obter parecer do `qa-reviewer` no mesmo commit;
 3. obter autorização explícita para aplicar a migration no Supabase compartilhado;
