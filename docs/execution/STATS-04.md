@@ -6,11 +6,14 @@ Em andamento na PR draft #53. Os read models anteriores continuam presentes e o 
 
 A primeira inspeção da prévia encontrou que o PostgREST sem a migration devolvia `PGRST205` e acionava o error boundary. O carregador passou a tratar exclusivamente schema ausente (`PGRST205`/`42P01`) como rollout anterior; erros de autorização ou consulta continuam bloqueantes. O gate local foi repetido após a correção: 49 arquivos/342 testes, TypeScript, build, cinco runbooks e scan de 622 arquivos aprovados.
 
+No HEAD funcional `8e2fa01`, os quatro checks remotos passaram: `gate` em 50 s, `database` desde zero/pgTAP integral em 2 min 17 s, `upload` com smoke em 1 min 24 s e CodeQL em 3 min 8 s. A prévia `pr-53-base-do-basquete-preview` confirmou o fallback legado sem erro e sem overflow global em 320, 390, 768 e 1440 px; a tabela manteve overflow próprio e `tabindex=0`. O override de viewport foi restaurado.
+
+A interface `boxscore-v2` não pode ser exercitada nessa prévia antes da migration existir no Supabase compartilhado. Aplicá-la continua fora da autorização desta unidade; portanto, a validação visual do novo componente permanece pendente e não é substituída pela confirmação do fallback.
+
 ## Gate pendente
 
-1. executar o gate local consolidado no HEAD estável;
-2. validar migration desde zero e pgTAP integral na CI;
-3. validar preview com os contratos FIBA/Genius e Basketball Site, cobertura parcial, teclado, acessibilidade e larguras 320, 390, 768 e 1440 px;
-4. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
-5. obter parecer do `qa-reviewer` no mesmo commit;
-6. manter a PR draft e não aplicar schema compartilhado, merge ou produção sem autorização explícita.
+1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
+2. obter parecer do `qa-reviewer` no mesmo commit;
+3. obter autorização explícita para aplicar a migration no Supabase compartilhado;
+4. regenerar tipos a partir do schema aplicado e validar a interface nova com FIBA/Genius, Basketball Site, cobertura parcial, teclado, acessibilidade e larguras 320, 390, 768 e 1440 px;
+5. manter a PR draft e não integrar nem publicar produção sem autorização explícita.
