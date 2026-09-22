@@ -37,11 +37,18 @@ export function scopesForStageKind(
   return ["all"];
 }
 
-export function hasMinimumPer30Sample(secondsCovered: number): boolean {
-  return Number.isFinite(secondsCovered) && secondsCovered >= MINIMUM_PER_30_SECONDS;
+export function hasMinimumPer30Sample(
+  secondsCovered: number,
+  minimumSeconds = MINIMUM_PER_30_SECONDS,
+): boolean {
+  return Number.isFinite(secondsCovered) && secondsCovered >= minimumSeconds;
 }
 
-export function normalizePer30(total: number | null, secondsCovered: number): number | null {
-  if (total === null || !hasMinimumPer30Sample(secondsCovered)) return null;
+export function normalizePer30(
+  total: number | null,
+  secondsCovered: number,
+  minimumSeconds = MINIMUM_PER_30_SECONDS,
+): number | null {
+  if (total === null || !hasMinimumPer30Sample(secondsCovered, minimumSeconds)) return null;
   return Math.round(((total * 1800) / secondsCovered) * 10) / 10;
 }
