@@ -12,6 +12,8 @@ A interface `boxscore-v2` não pode ser exercitada nessa prévia antes da migrat
 
 O primeiro parecer QA no HEAD `4c0cb55` foi `BLOCK_RELEASE`: apontou base completa incorreta no review packet, ausência inevitável de QA real da UI, ausência do parecer especializado de banco e teste de troca de autoridade apenas estrutural. A base foi reconciliada para `fe642353992f50079233d5c39c6adb8ec6da142b`; a fixture FIBA agora troca efetivamente para uma submissão sem FR, comprova limpeza do `game_total`, preserva uma linha de período e restaura/reprojeta a autoridade FIBA. Os bloqueios externo e visual permanecem declarados.
 
+No HEAD `3c71324`, gate, banco desde zero/pgTAP integral, preview/smokes e CodeQL passaram. A revisão QA incremental de 2026-09-22 12:39 -03:00 confirmou como resolvidos o hash da base e o teste comportamental, mas manteve `BLOCK_RELEASE` por dois gates externos: parecer obrigatório do `database-security-reviewer` indisponível nesta sessão e QA real da UI dependente de migration não autorizada. A PR permanece draft por desenho.
+
 ## Gate pendente
 
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
