@@ -18,6 +18,14 @@ O primeiro commit exclusivamente documental do parecer chegou à branch remota c
 
 ## Gate pendente
 
+Atualização 22/09 após autorização: migration STATS aplicada ao projeto `yjnbemfeyjhxhomprlnm` como `20260922161633_stats_public_player_snapshot` (arquivo local `20260922141453_stats_public_player_snapshot.sql`). Ensaio DDL em rollback e 20/20 pgTAP focais pós-aplicação aprovados; 74 linhas preservadas, 42 com FR. A referência da PR já acompanha `50a76fa`. Tipos das novas tabelas reconciliados com o schema real, sem remover campos das migrations locais pendentes.
+
+A autorização e aplicação do item 3 abaixo estão cumpridas. A interface permanece no fallback porque não há snapshot: competição 20/publicação 2 possui hash editorial inalterado, mas `starts_on=NULL` impede republicação (`START_DATE_REQUIRED`). Aguardar data correta do responsável; não inventar data nem contornar o gate administrativo. A migration anterior Basketball Site ainda está ausente no banco compartilhado e precisa ser reconciliada antes do QA daquele formato. Parecer especializado continua indisponível. Nenhum merge/deploy da aplicação em produção realizado.
+
+Gate local após reconciliação de tipos: formatação, TypeScript, 342 testes/49 arquivos, cinco runbooks, build e scan de 622 arquivos aprovados; lint com 151 avisos e zero erro. A primeira tentativa parou por `spawn EPERM` do sandbox; a execução autorizada fora dele passou. Tipos de campos locais da migration Basketball Site foram preservados: regenerar cegamente pelo remoto os removeria indevidamente.
+
+Smoke público pós-migration: `node scripts/smoke-public-context.mjs https://pr-53-base-do-basquete-preview.renato-lucindo-jr.workers.dev` aprovado. Confirma disponibilidade do fallback; não substitui QA da interface nova.
+
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
 2. obter parecer do `qa-reviewer` no mesmo commit;
 3. obter autorização explícita para aplicar a migration no Supabase compartilhado;

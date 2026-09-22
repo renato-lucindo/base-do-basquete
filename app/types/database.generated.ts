@@ -613,10 +613,10 @@ export type Database = {
           offensive_rebounds: number | null;
           official_points: number | null;
           per_30_minimum_seconds: number;
-          playoff_games: number;
           player_id: number;
           player_name: string;
           player_slug: string;
+          playoff_games: number;
           plus_minus: number | null;
           publication_id: number;
           registration_id: number;
@@ -658,10 +658,10 @@ export type Database = {
           offensive_rebounds?: number | null;
           official_points?: number | null;
           per_30_minimum_seconds?: number;
-          playoff_games: number;
           player_id: number;
           player_name: string;
           player_slug: string;
+          playoff_games: number;
           plus_minus?: number | null;
           publication_id: number;
           registration_id: number;
@@ -703,10 +703,10 @@ export type Database = {
           offensive_rebounds?: number | null;
           official_points?: number | null;
           per_30_minimum_seconds?: number;
-          playoff_games?: number;
           player_id?: number;
           player_name?: string;
           player_slug?: string;
+          playoff_games?: number;
           plus_minus?: number | null;
           publication_id?: number;
           registration_id?: number;
@@ -727,7 +727,71 @@ export type Database = {
           two_point_made?: number | null;
           unclassified_games?: number;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "competition_player_stats_player_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "players";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_player_fkey";
+            columns: ["player_id"];
+            isOneToOne: false;
+            referencedRelation: "public_player_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "active_series_category_data_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_data_coverage";
+            referencedColumns: ["data_profile_id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "series_category_data_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_publication_fkey";
+            columns: ["publication_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_publication_statistics";
+            referencedColumns: ["publication_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_registration_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "manual_scoresheet_prefill";
+            referencedColumns: ["registration_id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_registration_fkey";
+            columns: ["registration_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "competition_player_stats_team_fkey";
+            columns: ["team_id"];
+            isOneToOne: false;
+            referencedRelation: "teams";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       competition_publication_statistics: {
         Row: {
@@ -778,7 +842,36 @@ export type Database = {
           statistics_contract?: string;
           unclassified_games?: number;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "competition_publication_statistics_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "active_series_category_data_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_publication_statistics_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_data_coverage";
+            referencedColumns: ["data_profile_id"];
+          },
+          {
+            foreignKeyName: "competition_publication_statistics_profile_fkey";
+            columns: ["data_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "series_category_data_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competition_publication_statistics_publication_fkey";
+            columns: ["publication_id", "competition_id"];
+            isOneToOne: true;
+            referencedRelation: "competition_publications";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
       };
       competition_publications: {
         Row: {
@@ -4390,6 +4483,14 @@ export type Database = {
         Args: { p_entry_id: number; p_registration_id: number };
         Returns: number;
       };
+      admin_bulk_set_player_sex: {
+        Args: { p_reason: string; p_reviews: Json };
+        Returns: {
+          enforcement_ready: boolean;
+          remaining_pending: number;
+          reviewed_count: number;
+        }[];
+      };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
       admin_clone_competition_ruleset: {
         Args: {
@@ -4568,7 +4669,6 @@ export type Database = {
         Returns: number;
       };
       admin_get_classification_backfill_report: { Args: never; Returns: Json };
-      admin_get_player_review_queue: { Args: never; Returns: Json };
       admin_get_competition_schedule: {
         Args: { p_competition_id: number };
         Returns: Json;
@@ -4598,6 +4698,7 @@ export type Database = {
           sex: string;
         }[];
       };
+      admin_get_player_review_queue: { Args: never; Returns: Json };
       admin_get_publication_review: {
         Args: { p_competition_id: number };
         Returns: Json;
@@ -4756,14 +4857,6 @@ export type Database = {
           full_name: string;
           id: number;
           nickname: string;
-        }[];
-      };
-      admin_bulk_set_player_sex: {
-        Args: { p_reason: string; p_reviews: Json };
-        Returns: {
-          enforcement_ready: boolean;
-          remaining_pending: number;
-          reviewed_count: number;
         }[];
       };
       admin_set_player_sex: {
