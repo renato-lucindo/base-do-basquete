@@ -41,7 +41,7 @@ describe("public boxscore statistics contract baseline", () => {
 
   it("classifies stages structurally and never treats unclassified games as regular", () => {
     expect(scopesForStageKind("round_robin")).toEqual(["regular", "all"]);
-    expect(scopesForStageKind("playoffs")).toEqual(["playoffs", "all"]);
+    expect(scopesForStageKind("knockout")).toEqual(["playoffs", "all"]);
     expect(scopesForStageKind("legacy_unclassified")).toEqual(["all"]);
     expect(scopesForStageKind(null)).toEqual(["all"]);
   });

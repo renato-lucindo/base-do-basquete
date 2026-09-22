@@ -11,7 +11,7 @@
 
 O contrato exclusivo de boxscore admite os modos `per-game`, `total` e `per-30` e os escopos `regular`, `playoffs` e `all`, totalizando nove pares válidos. Valores de URL fora das allowlists retornam aos padrões seguros `per-game` e `regular`.
 
-O escopo é derivado exclusivamente de `competition_stages.stage_kind`: `round_robin` participa de `regular` e `all`; `playoffs` participa de `playoffs` e `all`; `null` e `legacy_unclassified` participam somente de `all`.
+O escopo é derivado exclusivamente de `competition_stages.stage_kind`: `round_robin` participa de `regular` e `all`; o valor canônico existente `knockout` é apresentado como `playoffs` e participa de `playoffs` e `all`; `null` e `legacy_unclassified` participam somente de `all`. Nenhum nome, código, data ou número de rodada é usado para inferir a fase.
 
 O limite por 30 minutos é inclusivo em 600 segundos: 9:59 permanece inelegível e 10:00 é elegível. A fórmula congelada é `total × 1800 ÷ segundos cobertos`; zero segundos nunca divide.
 

@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(24);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -126,7 +126,7 @@ with players as (
       'steals', 0,
       'blocks', 0,
       'foulsCommitted', case when number = 1 then 2 else 0 end,
-      'foulsReceived', 0,
+      'foulsReceived', case when number = 1 then 1 else 0 end,
       'plusMinus', 0,
       'efficiency', 0,
       'points', case when number = 1 then 1 else 0 end
@@ -250,6 +250,7 @@ select is((select count(*)::integer from public.game_periods where game_id = (se
 select is((select count(*)::integer from public.game_roster_slots where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 10, 'all roster slots are committed');
 select is((select count(*)::integer from public.player_period_stats where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)) and stat_scope = 'game_total'), 10, 'all imported game totals are explicit');
 select is((select count(*)::integer from public.foul_events where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 2, 'reported committed fouls are preserved');
+select is((select fouls_received from public.player_period_stats stat join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id where stat.game_id=94001 and slot.roster_entry_id=9401),1::smallint,'reported received fouls are persisted canonically');
 select is((select score from public.game_scores where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)) and side = 'home'), 1, 'home score is derived from imported periods');
 select is((select count(*)::integer from public.admin_mutation_audit where action = 'boxscore_import_confirmed' and entity_id = (select import_id from boxscore_test_data)), 1, 'confirmation has one append-only audit record');
 select is(public.admin_commit_boxscore_import((select import_id from boxscore_test_data), (select resolution from boxscore_test_data)), (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'commit retry is idempotent');

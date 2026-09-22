@@ -30,10 +30,10 @@ export function parseBoxscoreGameScope(value: string | null): BoxscoreGameScope 
 }
 
 export function scopesForStageKind(
-  stageKind: "round_robin" | "playoffs" | "legacy_unclassified" | null,
+  stageKind: "round_robin" | "knockout" | "legacy_unclassified" | null,
 ): BoxscoreGameScope[] {
   if (stageKind === "round_robin") return ["regular", "all"];
-  if (stageKind === "playoffs") return ["playoffs", "all"];
+  if (stageKind === "knockout") return ["playoffs", "all"];
   return ["all"];
 }
 

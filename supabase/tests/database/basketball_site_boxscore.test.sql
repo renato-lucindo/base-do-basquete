@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(38);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -216,6 +216,9 @@ select is((select count(*)::integer from public.game_period_scores
 select is((select count(*)::integer from public.player_period_stats
   where game_id=94101 and not plus_minus_available),10,
   'plus/minus is marked unavailable for every imported player');
+select is((select count(*)::integer from public.player_period_stats
+  where game_id=94101 and fouls_received is not null),0,
+  'Basketball Site keeps received fouls unavailable rather than fabricating zero');
 select is((select plus_minus from public.game_boxscore_player_statistics
   where game_id=94101 and player_id=9411),null::bigint,
   'the public projection exposes unavailable plus/minus as null');
@@ -261,6 +264,11 @@ select lives_ok(
   $$select private.backfill_legacy_competition_publication(9411,'published')$$,
   'the imported game can be captured in a publication'
 );
+select is((select count(*)::integer from public.competition_publication_statistics
+  where competition_id=9411),1,'publication creates one immutable statistics header');
+select is((select count(*)::integer from public.competition_player_statistics_publications
+  where competition_id=9411 and scope='all'),10,
+  'unclassified imported players are snapshotted only in the all scope');
 select ok(private.game_is_currently_published(94101),
   'the unchanged game matches its published fingerprint');
 select is(
