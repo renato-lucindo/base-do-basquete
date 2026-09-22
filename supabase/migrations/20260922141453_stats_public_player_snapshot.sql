@@ -56,7 +56,7 @@ declare
   roster_entry_id bigint;
   jersey_number text;
 begin
-  if new.fouls_received is not null then
+  if new.stat_scope <> 'game_total' or new.fouls_received is not null then
     return new;
   end if;
   select slot.roster_entry_id, slot.jersey_number
@@ -92,11 +92,9 @@ as $$
   from public.game_roster_slots slot
   where stat.game_id = p_game_id
     and slot.id = stat.game_roster_slot_id
+    and stat.stat_scope = 'game_total'
     and slot.roster_entry_id is not null
-    and slot.jersey_number is not null
-    and private.boxscore_fouls_received_for_slot(
-      stat.game_id, slot.roster_entry_id, slot.jersey_number
-    ) is not null;
+    and slot.jersey_number is not null;
 $$;
 
 revoke all on function private.project_game_boxscore_fouls_received(bigint)
@@ -153,6 +151,7 @@ set fouls_received = private.boxscore_fouls_received_for_slot(
 )
 from public.game_roster_slots slot
 where slot.id = stat.game_roster_slot_id
+  and stat.stat_scope = 'game_total'
   and slot.roster_entry_id is not null
   and slot.jersey_number is not null
   and stat.fouls_received is null

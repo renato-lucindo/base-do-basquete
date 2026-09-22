@@ -6,7 +6,7 @@ A migration `20260922141453_stats_public_player_snapshot.sql` cria um cabeçalho
 
 O escopo interno canônico `knockout` é publicado como `playoffs`. Jogos sem classificação estrutural entram somente em `all`. Os read models anteriores permanecem disponíveis durante esta versão de rollback.
 
-`fouls_received` é anulável e projetado apenas da submissão FIBA/Genius confirmada e autoritativa. O contrato Basketball Site preserva `null`; ausência não é convertida em zero. O fingerprint estatístico é separado do hash editorial e participa da decisão idempotente de republicação.
+`fouls_received` é anulável e projetado apenas no `game_total` canônico da submissão FIBA/Genius confirmada e autoritativa. Trocar a autoridade para uma fonte sem FR limpa o valor anterior para `null`; linhas de período nunca repetem o total do jogo. O contrato Basketball Site preserva `null`; ausência não é convertida em zero. O fingerprint estatístico é separado do hash editorial e participa da decisão idempotente de republicação.
 
 ## Segurança
 
@@ -19,4 +19,3 @@ As duas tabelas públicas usam `ENABLE/FORCE ROW LEVEL SECURITY`, concedem somen
 - CI inicial: gate, database desde zero/pgTAP integral, preview upload e CodeQL aprovados;
 - Supabase compartilhado e produção: inalterados;
 - tipos TypeScript sincronizados localmente com a migration; regeneração autoritativa fica condicionada à futura aplicação autorizada do schema.
-

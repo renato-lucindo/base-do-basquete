@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(20);
 
 select has_column('public','player_period_stats','fouls_received',
   'canonical player totals preserve nullable received fouls');
@@ -31,6 +31,14 @@ select has_trigger('public','competition_publications',
   'player statistics are frozen in the publication transaction');
 select has_trigger('public','boxscore_imports','boxscore_imports_project_fouls_received',
   'confirmed imports project received fouls');
+select ok(lower(pg_get_functiondef(
+  'private.hydrate_player_period_fouls_received()'::regprocedure
+)) like '%new.stat_scope <> ''game_total''%',
+  'received fouls hydrate only the canonical game total');
+select ok(lower(pg_get_functiondef(
+  'private.project_game_boxscore_fouls_received(bigint)'::regprocedure
+)) like '%stat.stat_scope = ''game_total''%',
+  'authority changes project or clear received fouls only on game totals');
 select ok(not has_function_privilege('anon',
   'private.snapshot_competition_player_statistics()','execute'),
   'anonymous clients cannot invoke snapshot internals');
