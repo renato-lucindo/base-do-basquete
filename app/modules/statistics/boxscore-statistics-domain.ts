@@ -290,6 +290,14 @@ export function boxscorePlayerRow(
         mode,
         minimumSeconds,
       ),
+      threePointersMade: scaled(row.three_point_made, advancedGames, seconds, mode, minimumSeconds),
+      threePointersAttempted: scaled(
+        row.three_point_attempted,
+        advancedGames,
+        seconds,
+        mode,
+        minimumSeconds,
+      ),
       freeThrowsMade: scaled(row.free_throw_made, advancedGames, seconds, mode, minimumSeconds),
       freeThrowsAttempted: scaled(
         row.free_throw_attempted,
@@ -301,6 +309,7 @@ export function boxscorePlayerRow(
       efficiency: scaled(efficiency(row), advancedGames, seconds, mode, minimumSeconds),
       plusMinus,
       fieldGoalPercentage: available(percentage(fieldGoalsMade, fieldGoalsAttempted)),
+      threePointPercentage: available(percentage(row.three_point_made, row.three_point_attempted)),
       freeThrowPercentage: available(percentage(row.free_throw_made, row.free_throw_attempted)),
     },
   };

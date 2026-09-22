@@ -571,11 +571,21 @@
 }
 
 @media (max-width: 600px) {
-  .reference-explorer .statistics-search {
-    flex-basis: 248px;
-    max-width: calc(100% - 96px);
+  .reference-toolbar {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    justify-content: start;
+    gap: 10px 12px;
   }
+
+  .reference-explorer .statistics-search {
+    grid-column: 1 / -1;
+    width: 248px;
+    max-width: 100%;
+  }
+
   .reference-explorer .reference-mode {
+    grid-column: 1 / -1;
     flex: 0 0 auto;
   }
   .reference-explorer .statistics-table .column-player {

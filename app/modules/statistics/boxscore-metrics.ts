@@ -48,6 +48,18 @@ export const BOXSCORE_METRICS = {
     normalizable: true,
     lowerIsBetter: false,
   },
+  threePointersMade: {
+    label: "3PC",
+    name: "Cestas de três convertidas",
+    normalizable: true,
+    lowerIsBetter: false,
+  },
+  threePointersAttempted: {
+    label: "3PT",
+    name: "Cestas de três tentadas",
+    normalizable: true,
+    lowerIsBetter: false,
+  },
   freeThrowsMade: {
     label: "LLC",
     name: "Lances livres convertidos",
@@ -65,6 +77,12 @@ export const BOXSCORE_METRICS = {
   fieldGoalPercentage: {
     label: "AP",
     name: "Aproveitamento de arremessos",
+    normalizable: false,
+    lowerIsBetter: false,
+  },
+  threePointPercentage: {
+    label: "3P%",
+    name: "Aproveitamento de três pontos",
     normalizable: false,
     lowerIsBetter: false,
   },

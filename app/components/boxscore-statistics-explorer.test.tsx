@@ -57,11 +57,14 @@ const data: BoxscoreStatisticsPageDto = {
         foulsReceived: { status: "unavailable", value: null },
         fieldGoalsMade: cell(4),
         fieldGoalsAttempted: cell(10),
+        threePointersMade: cell(2),
+        threePointersAttempted: cell(5),
         freeThrowsMade: cell(2),
         freeThrowsAttempted: cell(3),
         efficiency: cell(12),
         plusMinus: cell(4),
         fieldGoalPercentage: cell(40),
+        threePointPercentage: cell(40),
         freeThrowPercentage: cell(66.7),
       },
     },
@@ -100,7 +103,10 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("AC/AT");
     expect(html).toContain("LLC/LLT");
     expect(html).toContain("FG%");
+    expect(html).toContain("3PC/3PT");
+    expect(html).toContain("3P%");
     expect(html).toContain("4.0/10.0");
+    expect(html).toContain("2.0/5.0");
     expect(html).toContain("+4.0");
     expect(html).toContain('class="reference-player"');
     expect(html).toContain('class="reference-team" title="Azul">AZL');

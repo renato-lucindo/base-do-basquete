@@ -103,8 +103,18 @@ describe("boxscore statistics server domain", () => {
     const perGame = boxscorePlayerRow(raw(1, 600), "per-game");
     const per30 = boxscorePlayerRow(raw(1, 600), "per-30");
     expect(per30.metrics.fieldGoalPercentage).toEqual(perGame.metrics.fieldGoalPercentage);
+    expect(per30.metrics.threePointPercentage).toEqual(perGame.metrics.threePointPercentage);
     expect(per30.metrics.freeThrowPercentage).toEqual(perGame.metrics.freeThrowPercentage);
     expect(per30.metrics.plusMinus).toEqual(perGame.metrics.plusMinus);
+  });
+
+  it("exposes three-point makes, attempts and percentage in every mode", () => {
+    const total = boxscorePlayerRow(raw(1, 1200), "total");
+    const perGame = boxscorePlayerRow(raw(1, 1200), "per-game");
+    expect(total.metrics.threePointersMade).toEqual({ status: "available", value: 2 });
+    expect(total.metrics.threePointersAttempted).toEqual({ status: "available", value: 8 });
+    expect(total.metrics.threePointPercentage).toEqual({ status: "available", value: 25 });
+    expect(perGame.metrics.threePointersMade).toEqual({ status: "available", value: 1 });
   });
 
   it("preserves unavailable received fouls for Basketball Site-style rows", () => {

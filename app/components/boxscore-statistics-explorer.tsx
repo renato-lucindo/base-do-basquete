@@ -23,12 +23,14 @@ const defaultColumns: BoxscoreMetric[] = [
   "points",
   "rebounds",
   "assists",
-  "turnovers",
   "blocks",
   "steals",
   "fieldGoalsMade",
   "fieldGoalsAttempted",
   "fieldGoalPercentage",
+  "threePointersMade",
+  "threePointersAttempted",
+  "threePointPercentage",
   "freeThrowsMade",
   "freeThrowsAttempted",
   "freeThrowPercentage",
@@ -38,6 +40,7 @@ const defaultColumns: BoxscoreMetric[] = [
 
 const pairedMetrics: Partial<Record<BoxscoreMetric, BoxscoreMetric>> = {
   fieldGoalsMade: "fieldGoalsAttempted",
+  threePointersMade: "threePointersAttempted",
   freeThrowsMade: "freeThrowsAttempted",
 };
 
@@ -153,6 +156,8 @@ export function BoxscoreStatisticsExplorer({
   context: CompetitionContext;
   data: BoxscoreStatisticsPageDto;
 }) {
+  const pageTitle =
+    context.series.name === "Copa ES Ouro" ? "Copa ES - Série Ouro" : context.series.name;
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterMetric, setFilterMetric] = useState<BoxscoreMetric>("points");
   const [filterOperator, setFilterOperator] = useState(">=");
@@ -229,7 +234,7 @@ export function BoxscoreStatisticsExplorer({
       className="statistics-explorer reference-explorer"
     >
       <header className="reference-heading">
-        <h1>{context.series.name}</h1>
+        <h1>{pageTitle}</h1>
         <p>
           Estatísticas dos jogadores{" "}
           {data.scope === "regular"
