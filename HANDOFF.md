@@ -18,6 +18,7 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - HEAD funcional `8e2fa01`: `gate`, banco desde zero/pgTAP integral, preview upload/smokes e CodeQL aprovados. Preview do fallback legado aprovado sem overflow global em 320/390/768/1440 e com tabela horizontal focalizável; viewport restaurado. A interface `boxscore-v2` permanece sem QA visual real porque ativá-la exige a migration ainda não autorizada no Supabase compartilhado.
 - Hardening `4c0cb55`: FR foi restringida ao `stat_scope='game_total'` e a reprojeção por troca de autoridade limpa valor FIBA antigo quando a nova fonte não fornece FR.
 - HEAD funcional `3c71324`: fixture comportamental alterna autoridade sem FR/restaura FIBA; gate, banco desde zero/pgTAP integral, preview/smokes e CodeQL verdes. QA incremental confirmou resolvidos o hash da base e o teste comportamental, mas emitiu `BLOCK_RELEASE` por ausência do parecer obrigatório de banco/segurança e por UI nova sem QA real antes da migration autorizada.
+- A branch remota recebeu o registro documental `9041652`, mas a API da PR #53 ainda reportou `headRefOid=3c71324`; reconciliar essa indexação é requisito adicional antes de qualquer gate de merge.
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Branch atual: `codex/stats-player-statistics`, baseada em `origin/main` `fe64235`.

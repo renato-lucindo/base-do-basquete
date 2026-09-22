@@ -14,6 +14,8 @@ O primeiro parecer QA no HEAD `4c0cb55` foi `BLOCK_RELEASE`: apontou base comple
 
 No HEAD `3c71324`, gate, banco desde zero/pgTAP integral, preview/smokes e CodeQL passaram. A revisão QA incremental de 2026-09-22 12:39 -03:00 confirmou como resolvidos o hash da base e o teste comportamental, mas manteve `BLOCK_RELEASE` por dois gates externos: parecer obrigatório do `database-security-reviewer` indisponível nesta sessão e QA real da UI dependente de migration não autorizada. A PR permanece draft por desenho.
 
+O primeiro commit exclusivamente documental do parecer chegou à branch remota como `9041652`, mas a API da PR permaneceu temporariamente indexada no pai funcional `3c71324`. Essa divergência de identidade também bloqueia o gate até a referência da PR acompanhar a branch, sem reescrita de histórico.
+
 ## Gate pendente
 
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
