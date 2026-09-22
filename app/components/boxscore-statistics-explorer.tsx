@@ -508,7 +508,7 @@ export function BoxscoreStatisticsExplorer({
             </div>
           ))}
         </div>
-        {data.compared.length ? (
+        {data.compared.length === 2 ? (
           <div className="reference-comparison-results">
             <table>
               <caption>Comparação no modo e escopo atuais</caption>

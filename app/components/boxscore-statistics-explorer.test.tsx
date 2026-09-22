@@ -131,4 +131,18 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Líder:");
     expect(html).toContain("#var.");
   });
+
+  it("waits for two selected players before rendering comparison results", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?compare=9"]}>
+        <BoxscoreStatisticsExplorer
+          context={context}
+          data={{ ...data, compared: [data.rows[0]!] }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("Escolha dois jogadores para ver a comparação.");
+    expect(html).not.toContain('class="reference-comparison-results"');
+  });
 });
