@@ -28,6 +28,8 @@ Smoke público pós-migration: `node scripts/smoke-public-context.mjs https://pr
 
 O responsável definiu `2026-09-01` como data de início da fixture FIBA. A atualização remota foi aplicada com comparação do valor anterior nulo e validada: competição 20 sem bloqueadores, `canPublish=true`, `changed=true`, versão pública atual 1. A publicação da versão 2 ainda não ocorreu porque a prévia exige login e MFA do responsável; a tela administrativa foi deixada aberta no login.
 
+Após login/MFA, o responsável confirmou a versão 2 pelo fluxo administrativo. Reconciliação: publicação atual 11, contrato `boxscore` schema 1, 35 linhas `all`, nenhuma linha `regular`/`playoffs` e dois jogos `unclassified`, coerente com a ausência de etapa estrutural nas fixtures. QA real aprovou renderização de 35 atletas, paginação, totais, modo por 30 minutos e seu aviso de cobertura; fase regular apresentou estado vazio explícito. A aba entregue ao responsável ficou em total/`all`. Restam os viewports, teclado/zoom/comparação e o formato Basketball Site pendente da migration anterior ausente no compartilhado.
+
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
 2. obter parecer do `qa-reviewer` no mesmo commit;
 3. obter autorização explícita para aplicar a migration no Supabase compartilhado;
