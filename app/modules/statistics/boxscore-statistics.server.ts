@@ -17,6 +17,10 @@ export class PublicBoxscoreStatisticsQueryError extends Error {
   }
 }
 
+function isSnapshotSchemaUnavailable(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST205" || error?.code === "42P01";
+}
+
 export async function loadBoxscoreStatisticsPage(
   client: SupabaseClient<Database>,
   context: CompetitionContext,
@@ -35,6 +39,7 @@ export async function loadBoxscoreStatisticsPage(
     .eq("competition_id", context.competitionId)
     .eq("statistics_contract", "boxscore")
     .maybeSingle();
+  if (isSnapshotSchemaUnavailable(headerResult.error)) return null;
   if (headerResult.error) throw new PublicBoxscoreStatisticsQueryError();
   if (!headerResult.data) return null;
   const header = headerResult.data as BoxscoreSnapshotHeader;

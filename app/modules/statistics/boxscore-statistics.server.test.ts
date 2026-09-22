@@ -98,4 +98,24 @@ describe("boxscore statistics server query", () => {
     ).toBeNull();
     expect(client.from).toHaveBeenCalledTimes(1);
   });
+
+  it("falls back only when the additive snapshot schema is not deployed yet", async () => {
+    const headerChain = headerResultChain({
+      data: null,
+      error: { code: "PGRST205" },
+    });
+    const client = { from: vi.fn(() => headerChain) };
+    expect(
+      await loadBoxscoreStatisticsPage(client as never, boxscoreContext, new URLSearchParams()),
+    ).toBeNull();
+
+    const failedChain = headerResultChain({ data: null, error: { code: "42501" } });
+    await expect(
+      loadBoxscoreStatisticsPage(
+        { from: vi.fn(() => failedChain) } as never,
+        boxscoreContext,
+        new URLSearchParams(),
+      ),
+    ).rejects.toBeInstanceOf(Error);
+  });
 });

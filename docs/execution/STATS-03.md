@@ -10,8 +10,7 @@ A tabela oferece cabeçalhos ordenáveis com `aria-sort`, região horizontal foc
 
 ## Verificação focal
 
-- 7 arquivos e 33 testes aprovados após a integração;
+- 7 arquivos e 33 testes focais aprovados após a integração;
 - TypeScript estrito aprovado;
 - formatação e lint dos módulos alterados aprovados, ressalvados os avisos históricos do CSS global;
 - responsividade, acessibilidade automatizada e preview ainda pertencem ao gate STATS-04.
-
