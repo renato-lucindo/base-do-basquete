@@ -94,10 +94,10 @@ game.matchup_id
 → competition_stages.stage_kind
 ```
 
-| `stage_kindknock` | Escopo |
+| `stage_kind` | Escopo |
 |---|---|
 | `round_robin` | Fase regular |
-| `playoffs` | Eliminatórias |
+| `knockout` | Eliminatórias (`playoffs` no contrato público) |
 | nulo ou `legacy_unclassified` | Somente Todos |
 
 Regras:
@@ -119,7 +119,7 @@ Grão recomendado:
 publication_id + scope + registration_id + player_id
 ```
 
-O snapshot terá linhas para `regular`, playoffs` e `all` e congelará:
+O snapshot terá linhas para `regular`, `playoffs` e `all` e congelará:
 
 - competição, publicação e perfil de dados;
 - contrato `boxscore`;
@@ -244,7 +244,7 @@ scope=regular|playoffs|all
 ### Fases
 
 - `round_robin` entra em `regular` e `all`;
-- playoffs entra em playoffs` e `all`;
+- `knockout` entra em `playoffs` e `all`;
 - não classificado entra somente em `all`;
 - jogos agendados, ao vivo, draft ou não publicados não entram;
 - fase vazia não muda automaticamente para outro escopo.
@@ -291,18 +291,19 @@ scope=regular|playoffs|all
 
 ## 11. Estado atual
 
-- STATS-00 iniciado em modo somente leitura.
-- Baseline focal atual: 5 arquivos e 26 testes aprovados.
-- Branch atual ainda contém `AGENT-CONFIG-01`; não misturar implementação funcional antes
-  da reconciliação dessa unidade.
-- Nenhum código funcional, banco ou serviço foi alterado por este plano.
+- STATS-00 concluído no commit `201508b`.
+- STATS-01 implementado no commit `dd6a778`; migration e pgTAP passaram no banco desde zero
+  da CI da PR #53, sem aplicação no Supabase compartilhado.
+- STATS-02 e STATS-03 implementados localmente e em validação focal.
+- `AGENT-CONFIG-01` foi isolado na PR #52 e não integra esta branch.
+- Produção e Supabase compartilhado permanecem inalterados.
 
 ## 12. Próximo passo exato
 
 ```text
-PROXIMO_PASSO_EXATO: concluir STATS-00 com os oráculos dos nove pares modo × escopo e limites 9:59/10:00
+PROXIMO_PASSO_EXATO: concluir STATS-04 com gate integral, preview e revisões independentes no HEAD estável
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: domínio estatístico, contexto estrutural, read models atuais e testes
-ACAO: registrar os valores esperados sem alterar comportamento; depois abrir STATS-01 em branch própria
-CRITERIO_DE_CONCLUSAO: baseline boxscore reproduzível, fase regular padrão, mínimo de 10 minutos definido e súmula fora do contrato
+ARQUIVO_OU_SERVICO: PR #53, CI, preview, documentação de execução e HANDOFF.md
+ACAO: enviar STATS-02/STATS-03, validar banco desde zero e interface responsiva, obter pareceres de banco/segurança e QA
+CRITERIO_DE_CONCLUSAO: todos os checks e pareceres aprovados no mesmo commit, sem migration compartilhada nem produção
 ```
