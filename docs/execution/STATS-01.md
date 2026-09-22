@@ -17,5 +17,6 @@ As duas tabelas públicas usam `ENABLE/FORCE ROW LEVEL SECURITY`, concedem somen
 - commit inicial: `dd6a778`;
 - PR draft: #53;
 - CI inicial: gate, database desde zero/pgTAP integral, preview upload e CodeQL aprovados;
+- fixture FIBA troca a autoridade para uma submissão sem FR e comprova `game_total=null`, preservação da linha de período e reprojeção ao restaurar FIBA;
 - Supabase compartilhado e produção: inalterados;
 - tipos TypeScript sincronizados localmente com a migration; regeneração autoritativa fica condicionada à futura aplicação autorizada do schema.

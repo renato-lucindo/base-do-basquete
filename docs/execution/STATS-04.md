@@ -10,6 +10,8 @@ No HEAD funcional `8e2fa01`, os quatro checks remotos passaram: `gate` em 50 s, 
 
 A interface `boxscore-v2` não pode ser exercitada nessa prévia antes da migration existir no Supabase compartilhado. Aplicá-la continua fora da autorização desta unidade; portanto, a validação visual do novo componente permanece pendente e não é substituída pela confirmação do fallback.
 
+O primeiro parecer QA no HEAD `4c0cb55` foi `BLOCK_RELEASE`: apontou base completa incorreta no review packet, ausência inevitável de QA real da UI, ausência do parecer especializado de banco e teste de troca de autoridade apenas estrutural. A base foi reconciliada para `fe642353992f50079233d5c39c6adb8ec6da142b`; a fixture FIBA agora troca efetivamente para uma submissão sem FR, comprova limpeza do `game_total`, preserva uma linha de período e restaura/reprojeta a autoridade FIBA. Os bloqueios externo e visual permanecem declarados.
+
 ## Gate pendente
 
 1. obter parecer do `database-security-reviewer` para STATS-01/STATS-02;
