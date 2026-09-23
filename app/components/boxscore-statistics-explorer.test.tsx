@@ -91,7 +91,11 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Fase regular");
     expect(html).toContain("Eliminatórias");
     expect(html).toContain("<h1>Liga</h1>");
-    expect(html).toContain("Filtro de colunas");
+    expect(html).toContain("Colunas · 17");
+    expect(html).toContain("Principais");
+    expect(html).toContain("Defesa e controle");
+    expect(html).toContain("Arremessos");
+    expect(html).toContain("Avançadas");
     expect(html).toContain("Comparar jogadores");
     expect(html).toContain("<dialog");
     expect(html).toContain('aria-labelledby="comparison-title"');
@@ -116,6 +120,29 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).not.toContain('class="column-position"');
     expect(html).not.toContain('class="column-team"');
     expect(html).toContain('aria-sort="descending"');
+    expect(html).toContain("Líder em rebotes neste escopo");
+    expect(html).toContain('class="statistics-leader">★</span>');
+  });
+
+  it("uses compact athlete names while preserving the full accessible name", () => {
+    const longName = "João Pedro de Almeida Neves";
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?scope=all"]}>
+        <BoxscoreStatisticsExplorer
+          context={context}
+          data={{
+            ...data,
+            mode: "per-game",
+            rows: [{ ...athlete, playerName: longName }],
+            playerOptions: [{ id: athlete.playerId, name: longName, teamName: athlete.teamName }],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain(`aria-label="${longName}"`);
+    expect(html).toContain(">João Neves</a>");
+    expect(html).toContain(`title="${longName}"`);
   });
 
   it("hides MIN temporarily, explains unavailable states and exposes a keyboard region", () => {

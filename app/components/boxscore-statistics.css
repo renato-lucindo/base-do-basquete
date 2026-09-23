@@ -298,17 +298,42 @@
 
 .reference-panel .column-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
   margin-top: 16px;
   font-size: 12px;
+}
+
+.reference-panel .column-options fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reference-panel .column-options legend {
+  width: 100%;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e8ebee;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.column-group-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 8px;
 }
 
 .reference-panel .column-options label {
   display: flex;
   align-items: center;
   gap: 6px;
-  min-height: 28px;
+  min-height: 26px;
 }
 
 .reference-explorer > .scrollable-table {
@@ -345,8 +370,8 @@
 }
 
 .reference-explorer .statistics-table .column-player {
-  width: 220px;
-  min-width: 220px;
+  width: 200px;
+  min-width: 200px;
 }
 
 .reference-explorer .statistics-table .column-metric {
@@ -425,7 +450,7 @@
 
 .reference-explorer .reference-player a {
   display: inline-block;
-  max-width: 200px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;
@@ -468,6 +493,15 @@
 
 .reference-explorer [data-leader="true"] {
   font-weight: 700;
+}
+
+.reference-explorer .statistics-leader {
+  display: inline-block;
+  margin-right: 4px;
+  color: #9a6700;
+  font-family: Inter, "Helvetica Neue", system-ui, sans-serif;
+  font-size: 10px;
+  transform: translateY(-1px);
 }
 
 .reference-explorer .statistics-pagination {
@@ -768,11 +802,11 @@
     flex: 0 0 auto;
   }
   .reference-explorer .statistics-table .column-player {
-    min-width: 210px;
-    width: 210px;
+    min-width: 170px;
+    width: 170px;
   }
   .reference-explorer .reference-player a {
-    max-width: 125px;
+    max-width: 80px;
   }
   .reference-explorer .statistics-table .column-metric {
     min-width: 58px;

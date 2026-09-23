@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 
 import type { CompetitionContext } from "../modules/competition/context";
@@ -43,6 +43,97 @@ const pairedMetrics: Partial<Record<BoxscoreMetric, BoxscoreMetric>> = {
   threePointersMade: "threePointersAttempted",
   freeThrowsMade: "freeThrowsAttempted",
 };
+
+const columnGroups: Array<{
+  label: string;
+  metrics: BoxscoreMetric[];
+}> = [
+  {
+    label: "Principais",
+    metrics: ["games", "minutes", "points", "rebounds", "assists"],
+  },
+  {
+    label: "Defesa e controle",
+    metrics: [
+      "offensiveRebounds",
+      "defensiveRebounds",
+      "turnovers",
+      "blocks",
+      "steals",
+      "foulsCommitted",
+      "foulsReceived",
+    ],
+  },
+  {
+    label: "Arremessos",
+    metrics: [
+      "fieldGoalsMade",
+      "fieldGoalsAttempted",
+      "fieldGoalPercentage",
+      "threePointersMade",
+      "threePointersAttempted",
+      "threePointPercentage",
+      "freeThrowsMade",
+      "freeThrowsAttempted",
+      "freeThrowPercentage",
+    ],
+  },
+  { label: "Avançadas", metrics: ["efficiency", "plusMinus"] },
+];
+
+const highlightedLeaderMetrics = new Set<BoxscoreMetric>([
+  "points",
+  "rebounds",
+  "assists",
+  "steals",
+  "blocks",
+  "efficiency",
+]);
+
+const nameConnectors = new Set(["da", "das", "de", "do", "dos", "e"]);
+
+function meaningfulNameParts(name: string): string[] {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter((part, index) => index === 0 || !nameConnectors.has(part.toLocaleLowerCase("pt-BR")));
+}
+
+function compactPlayerNames(
+  players: BoxscoreStatisticsPageDto["playerOptions"],
+): Map<number, string> {
+  const entries = players.map((player) => {
+    const parts = meaningfulNameParts(player.name);
+    const short = parts.length > 2 ? `${parts[0]} ${parts.at(-1)}` : player.name;
+    return { ...player, parts, short };
+  });
+  const shortCounts = new Map<string, number>();
+  for (const entry of entries) {
+    const key = entry.short.toLocaleLowerCase("pt-BR");
+    shortCounts.set(key, (shortCounts.get(key) ?? 0) + 1);
+  }
+  const expanded = entries.map((entry) => {
+    const duplicate = (shortCounts.get(entry.short.toLocaleLowerCase("pt-BR")) ?? 0) > 1;
+    const display =
+      duplicate && entry.parts.length > 2
+        ? `${entry.parts[0]} ${entry.parts[1]} ${entry.parts.at(-1)}`
+        : entry.short;
+    return { ...entry, display };
+  });
+  const displayCounts = new Map<string, number>();
+  for (const entry of expanded) {
+    const key = entry.display.toLocaleLowerCase("pt-BR");
+    displayCounts.set(key, (displayCounts.get(key) ?? 0) + 1);
+  }
+  return new Map(
+    expanded.map((entry) => [
+      entry.id,
+      (displayCounts.get(entry.display.toLocaleLowerCase("pt-BR")) ?? 0) > 1
+        ? entry.name
+        : entry.display,
+    ]),
+  );
+}
 
 function metricLabel(metric: BoxscoreMetric, columns: BoxscoreMetric[]) {
   if (metric === "fieldGoalPercentage") return "FG%";
@@ -182,6 +273,8 @@ export function BoxscoreStatisticsExplorer({
   const [filterMetric, setFilterMetric] = useState<BoxscoreMetric>("points");
   const [filterOperator, setFilterOperator] = useState(">=");
   const [filterValue, setFilterValue] = useState("");
+  const filterDetails = useRef<HTMLDetailsElement>(null);
+  const columnDetails = useRef<HTMLDetailsElement>(null);
   const comparisonDialog = useRef<HTMLDialogElement>(null);
   const [comparisonSearch, setComparisonSearch] = useState(["", ""]);
   const [currentCompare, setCurrentCompare] = useState(() =>
@@ -247,6 +340,30 @@ export function BoxscoreStatisticsExplorer({
   const activeFilters = [
     ...new Set((searchParams.get("filters") ?? "").split(";").filter(Boolean)),
   ];
+  const playerDisplayNames = compactPlayerNames(data.playerOptions);
+
+  useEffect(() => {
+    const details = [filterDetails.current, columnDetails.current];
+    const closeOutside = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      for (const detail of details) {
+        if (detail?.open && !detail.contains(event.target)) detail.open = false;
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      const openDetail = details.find((detail) => detail?.open);
+      if (!openDetail) return;
+      openDetail.open = false;
+      openDetail.querySelector<HTMLElement>("summary")?.focus();
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
 
   return (
     <section
@@ -284,7 +401,7 @@ export function BoxscoreStatisticsExplorer({
             value={searchParams.get("q") ?? ""}
           />
         </label>
-        <details className="reference-filters">
+        <details className="reference-filters" ref={filterDetails}>
           <summary>
             <StatsIcon name="filter" />
             Filtrar{activeFilters.length ? ` (${activeFilters.length})` : ""}
@@ -455,10 +572,10 @@ export function BoxscoreStatisticsExplorer({
         </div>
       ) : null}
       <div className="reference-column-toolbar">
-        <details>
+        <details ref={columnDetails}>
           <summary>
             <StatsIcon name="columns" />
-            Filtro de colunas
+            Colunas · {availableColumns.length}
           </summary>
           <div className="reference-panel">
             <h2>Colunas da tabela</h2>
@@ -466,24 +583,31 @@ export function BoxscoreStatisticsExplorer({
               Restaurar padrão
             </button>
             <div className="column-options">
-              {Object.entries(BOXSCORE_METRICS).map(([metric, definition]) => (
-                <label key={metric}>
-                  <input
-                    checked={selectedColumns.includes(metric as BoxscoreMetric)}
-                    disabled={data.mode === "per-30" && metric === "minutes"}
-                    onChange={(event) =>
-                      update((next) => {
-                        const stored = visibleColumns(next, false);
-                        const selected = event.target.checked
-                          ? [...new Set([...stored, metric as BoxscoreMetric])]
-                          : stored.filter((item) => item !== metric);
-                        next.set("visible", selected.join(","));
-                      })
-                    }
-                    type="checkbox"
-                  />
-                  {definition.label}
-                </label>
+              {columnGroups.map((group) => (
+                <fieldset key={group.label}>
+                  <legend>{group.label}</legend>
+                  <div className="column-group-options">
+                    {group.metrics.map((metric) => (
+                      <label key={metric}>
+                        <input
+                          checked={selectedColumns.includes(metric)}
+                          disabled={data.mode === "per-30" && metric === "minutes"}
+                          onChange={(event) =>
+                            update((next) => {
+                              const stored = visibleColumns(next, false);
+                              const selected = event.target.checked
+                                ? [...new Set([...stored, metric])]
+                                : stored.filter((item) => item !== metric);
+                              next.set("visible", selected.join(","));
+                            })
+                          }
+                          type="checkbox"
+                        />
+                        {BOXSCORE_METRICS[metric].label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               ))}
             </div>
           </div>
@@ -671,7 +795,9 @@ export function BoxscoreStatisticsExplorer({
                 <tr key={`${row.registrationId}:${row.playerId}`}>
                   <th scope="row" className="reference-player" title={row.playerName}>
                     <span className="reference-jersey">{row.jersey ? `#${row.jersey}` : "—"}</span>
-                    <Link to={playerPath(context, row)}>{row.playerName}</Link>
+                    <Link aria-label={row.playerName} to={playerPath(context, row)}>
+                      {playerDisplayNames.get(row.playerId) ?? row.playerName}
+                    </Link>
                     <span className="reference-team" title={row.teamName}>
                       {row.teamAbbreviation ?? row.teamName}
                     </span>
@@ -679,20 +805,27 @@ export function BoxscoreStatisticsExplorer({
                   {columns.map((metric) => {
                     const cell = row.metrics[metric];
                     const pair = pairedMetrics[metric];
-                    const leader = data.leaders[metric]?.includes(row.playerId);
+                    const leader =
+                      highlightedLeaderMetrics.has(metric) &&
+                      data.leaders[metric]?.includes(row.playerId);
                     return (
                       <td
                         className={data.sort === metric ? "reference-sorted" : undefined}
                         data-leader={leader || undefined}
                         data-status={cell.status}
                         key={metric}
-                        title={cellTitle(cell)}
+                        title={
+                          leader
+                            ? `Líder em ${BOXSCORE_METRICS[metric].name.toLocaleLowerCase("pt-BR")} neste escopo`
+                            : cellTitle(cell)
+                        }
                       >
                         {leader ? (
-                          <span className="statistics-leader">
-                            <span className="sr-only">Líder: </span>
+                          <span aria-hidden="true" className="statistics-leader">
+                            ★
                           </span>
                         ) : null}
+                        {leader ? <span className="sr-only">Líder: </span> : null}
                         {displayMetric(cell, metric, data.mode)}
                         {pair && availableColumns.includes(pair) ? (
                           <>/{displayMetric(row.metrics[pair], pair, data.mode)}</>
