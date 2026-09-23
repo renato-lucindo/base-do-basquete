@@ -82,6 +82,16 @@ describe("boxscore statistics server domain", () => {
     expect(query.compare).toEqual([2, 3]);
   });
 
+  it("parses repeated team checkboxes and preserves an explicit empty selection", () => {
+    expect(
+      parseBoxscoreStatisticsQuery(
+        new URLSearchParams("team=azul&team=verde&team=azul&team=invalida!"),
+      ).teams,
+    ).toEqual(["azul", "verde"]);
+    expect(parseBoxscoreStatisticsQuery(new URLSearchParams("team=")).teams).toEqual([]);
+    expect(parseBoxscoreStatisticsQuery(new URLSearchParams()).teams).toBeNull();
+  });
+
   it("uses the exact 9:59 and 10:00 per-30 boundary", () => {
     expect(boxscorePlayerRow(raw(1, 599), "per-30").metrics.points.status).toBe(
       "insufficient-sample",
@@ -145,5 +155,22 @@ describe("boxscore statistics server domain", () => {
     });
     expect(page.rows.map((row) => row.playerId)).toEqual([2]);
     expect(page.leaders.foulsReceived).toBeUndefined();
+  });
+
+  it("filters multiple selected teams", () => {
+    const green = {
+      ...raw(2, 1200),
+      team_id: 32,
+      team_name: "Verde",
+      team_slug: "verde",
+    };
+    const page = buildBoxscoreStatisticsPage([raw(1, 1200), green], header, {
+      ...parseBoxscoreStatisticsQuery(new URLSearchParams("team=azul&team=verde")),
+    });
+    const empty = buildBoxscoreStatisticsPage([raw(1, 1200), green], header, {
+      ...parseBoxscoreStatisticsQuery(new URLSearchParams("team=")),
+    });
+    expect(page.rows.map((row) => row.playerId)).toEqual([1, 2]);
+    expect(empty.rows).toEqual([]);
   });
 });

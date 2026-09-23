@@ -27,7 +27,7 @@ export interface BoxscoreStatisticsQuery {
   sort: BoxscoreMetric | "player" | "team";
   direction: "asc" | "desc";
   search: string;
-  team: string | null;
+  teams: string[] | null;
   filters: BoxscoreStatisticsFilter[];
   page: number;
   compare: number[];
@@ -117,8 +117,12 @@ export function parseBoxscoreStatisticsQuery(
     mode,
     scope,
     search: (searchParams.get("q") ?? "").trim().slice(0, 80),
-    team: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(searchParams.get("team") ?? "")
-      ? searchParams.get("team")
+    teams: searchParams.has("team")
+      ? [
+          ...new Set(
+            searchParams.getAll("team").filter((team) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(team)),
+          ),
+        ].slice(0, 32)
       : null,
     filters,
     sort,
@@ -355,7 +359,7 @@ export function buildBoxscoreStatisticsPage(
     const search = normalized(query.search);
     return (
       (!search || normalized(`${row.playerName} ${row.teamName}`).includes(search)) &&
-      (!query.team || row.teamSlug === query.team) &&
+      (query.teams === null || query.teams.includes(row.teamSlug)) &&
       query.filters.every((filter) => {
         const cell = row.metrics[filter.metric];
         return cell.status === "available" && matches(cell.value, filter.operator, filter.value);

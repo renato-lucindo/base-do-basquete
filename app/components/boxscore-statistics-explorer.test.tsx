@@ -88,8 +88,13 @@ describe("BoxscoreStatisticsExplorer", () => {
     );
     expect(html).toContain("Por jogo");
     expect(html).toContain("Por 30 min.");
-    expect(html).toContain("Fase regular");
     expect(html).toContain("Eliminatórias");
+    expect(html).toContain("Temporada regular");
+    expect(html.indexOf('class="segmented-control reference-scope"')).toBeGreaterThan(
+      html.indexOf("</details>"),
+    );
+    expect(html).toContain("Equipes · 1/1");
+    expect(html).toContain('type="checkbox" checked=""');
     expect(html).toContain("<h1>Liga</h1>");
     expect(html).toContain("Colunas · 12/19");
     expect(html).toContain("Todas");

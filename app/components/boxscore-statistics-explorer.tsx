@@ -343,6 +343,10 @@ export function BoxscoreStatisticsExplorer({
   const activeFilters = [
     ...new Set((searchParams.get("filters") ?? "").split(";").filter(Boolean)),
   ];
+  const hasTeamFilter = searchParams.has("team");
+  const selectedTeams = new Set(searchParams.getAll("team"));
+  const selectedTeamCount = hasTeamFilter ? selectedTeams.size : data.teams.length;
+  const filterCount = activeFilters.length + (hasTeamFilter ? 1 : 0);
   const playerDisplayNames = compactPlayerNames(data.playerOptions);
 
   useEffect(() => {
@@ -415,53 +419,53 @@ export function BoxscoreStatisticsExplorer({
         >
           <summary>
             <StatsIcon name="filter" />
-            Filtrar{activeFilters.length ? ` (${activeFilters.length})` : ""}
+            Filtrar{filterCount ? ` (${filterCount})` : ""}
           </summary>
           <div className="reference-panel">
             <h2>Filtrar jogadores</h2>
             <p>Combine condições. Todas precisam ser atendidas.</p>
-            <div className="reference-context-filters">
-              <label>
-                Equipe
-                <select
-                  onChange={(event) =>
-                    update((next) => {
-                      if (event.target.value) next.set("team", event.target.value);
-                      else next.delete("team");
-                      resetPage(next);
-                    })
-                  }
-                  value={searchParams.get("team") ?? ""}
-                >
-                  <option value="">Todas</option>
-                  {data.teams.map((team) => (
-                    <option key={team.id} value={team.slug}>
-                      {team.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <fieldset className="segmented-control">
-                <legend>Jogos</legend>
-                {(
-                  [
-                    ["regular", "Fase regular"],
-                    ["playoffs", "Eliminatórias"],
-                    ["all", "Todos"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <label key={value}>
-                    <input
-                      checked={data.scope === value}
-                      name="statistics-scope"
-                      onChange={() => setScope(value)}
-                      type="radio"
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </fieldset>
-            </div>
+            <fieldset className="reference-team-filter">
+              <legend>
+                Equipes · {selectedTeamCount}/{data.teams.length}
+              </legend>
+              <div className="reference-team-options">
+                {data.teams.map((team) => {
+                  const checked = !hasTeamFilter || selectedTeams.has(team.slug);
+                  return (
+                    <label key={team.id}>
+                      <input
+                        checked={checked}
+                        onChange={() =>
+                          update((next) => {
+                            const selected = new Set(
+                              next.has("team")
+                                ? next.getAll("team")
+                                : data.teams.map((option) => option.slug),
+                            );
+                            if (selected.has(team.slug)) selected.delete(team.slug);
+                            else selected.add(team.slug);
+                            next.delete("team");
+                            if (selected.size === data.teams.length) {
+                              resetPage(next);
+                              return;
+                            }
+                            if (!selected.size) next.append("team", "");
+                            else {
+                              for (const option of data.teams) {
+                                if (selected.has(option.slug)) next.append("team", option.slug);
+                              }
+                            }
+                            resetPage(next);
+                          })
+                        }
+                        type="checkbox"
+                      />
+                      <span>{team.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
             <div className="statistics-filter-editor">
               <label>
                 Métrica
@@ -525,6 +529,26 @@ export function BoxscoreStatisticsExplorer({
           <StatsIcon name="users" />
           Comparar jogadores
         </button>
+        <fieldset className="segmented-control reference-scope">
+          <legend className="sr-only">Jogos</legend>
+          {(
+            [
+              ["regular", "Temporada regular"],
+              ["playoffs", "Eliminatórias"],
+              ["all", "Todos"],
+            ] as const
+          ).map(([value, label]) => (
+            <label key={value}>
+              <input
+                checked={data.scope === value}
+                name="statistics-scope"
+                onChange={() => setScope(value)}
+                type="radio"
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
         <fieldset className="segmented-control reference-mode">
           <legend className="sr-only">Modo</legend>
           {(
