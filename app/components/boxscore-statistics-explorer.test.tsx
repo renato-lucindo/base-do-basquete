@@ -76,6 +76,9 @@ const data: BoxscoreStatisticsPageDto = {
   coverage: { regularGames: 2, playoffGames: 1, unclassifiedGames: 1 },
 };
 
+const athlete = data.rows[0];
+if (!athlete) throw new Error("A fixture de atleta é obrigatória");
+
 describe("BoxscoreStatisticsExplorer", () => {
   it("renders the reference title, compact controls and all modes and scopes", () => {
     const html = renderToStaticMarkup(
@@ -135,14 +138,56 @@ describe("BoxscoreStatisticsExplorer", () => {
   it("waits for two selected players before rendering comparison results", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/?compare=9"]}>
-        <BoxscoreStatisticsExplorer
-          context={context}
-          data={{ ...data, compared: [data.rows[0]!] }}
-        />
+        <BoxscoreStatisticsExplorer context={context} data={{ ...data, compared: [athlete] }} />
       </MemoryRouter>,
     );
 
     expect(html).toContain("Escolha dois jogadores para ver a comparação.");
     expect(html).not.toContain('class="reference-comparison-results"');
+  });
+
+  it("formats active filters and highlights comparison advantages", () => {
+    const rival = {
+      ...athlete,
+      playerId: 10,
+      playerName: "Atleta Verde",
+      playerSlug: "atleta-verde",
+      registrationId: 22,
+      metrics: {
+        ...athlete.metrics,
+        points: cell(8),
+        turnovers: cell(3),
+      },
+    };
+    const compared = [
+      {
+        ...athlete,
+        metrics: { ...athlete.metrics, points: cell(12), turnovers: cell(1) },
+      },
+      rival,
+    ];
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?scope=all&filters=points:%3E=:10&compare=9,10"]}>
+        <BoxscoreStatisticsExplorer
+          context={context}
+          data={{
+            ...data,
+            mode: "per-game",
+            compared,
+            playerOptions: [
+              ...data.playerOptions,
+              { id: 10, name: "Atleta Verde", teamName: "Verde" },
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("PTS &gt;= 10");
+    expect(html).toContain("Limpar todos");
+    expect(html).toContain("Atleta Azul</strong><span>×</span><strong>Atleta Verde");
+    expect(html).toContain('data-tone="better"');
+    expect(html).toContain('data-tone="worse"');
+    expect(html).toContain("quanto menor, melhor");
   });
 });

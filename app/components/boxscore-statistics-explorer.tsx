@@ -145,6 +145,26 @@ function serializedFilter(metric: string, operator: string, value: string): stri
   return Number.isFinite(numeric) ? `${metric}:${operator}:${numeric}` : null;
 }
 
+function filterLabel(serialized: string): string {
+  const [metric, operator, value] = serialized.split(":");
+  if (!metric || !isBoxscoreMetric(metric) || !operator || value === undefined) return serialized;
+  return `${BOXSCORE_METRICS[metric].label} ${operator} ${value.replace(".", ",")}`;
+}
+
+function comparisonTone(
+  metric: BoxscoreMetric,
+  cells: [BoxscoreMetricCell, BoxscoreMetricCell],
+  side: 0 | 1,
+): "better" | "worse" | undefined {
+  const [left, right] = cells;
+  if (left.status !== "available" || right.status !== "available" || left.value === right.value) {
+    return undefined;
+  }
+  const sideIsGreater = side === 0 ? left.value > right.value : right.value > left.value;
+  const better = BOXSCORE_METRICS[metric].lowerIsBetter ? !sideIsGreater : sideIsGreater;
+  return better ? "better" : "worse";
+}
+
 function playerPath(context: CompetitionContext, row: BoxscoreStatisticsPlayerRow): string {
   return contextPath(context, "jogadores", row.playerSlug);
 }
@@ -365,29 +385,6 @@ export function BoxscoreStatisticsExplorer({
                 Adicionar
               </button>
             </div>
-            {activeFilters.length ? (
-              <ul className="active-filters" aria-label="Filtros ativos">
-                {activeFilters.map((filter) => (
-                  <li key={filter}>
-                    {filter}
-                    <button
-                      aria-label={`Remover filtro ${filter}`}
-                      onClick={() =>
-                        update((next) => {
-                          const remaining = activeFilters.filter((item) => item !== filter);
-                          if (remaining.length) next.set("filters", remaining.join(";"));
-                          else next.delete("filters");
-                          resetPage(next);
-                        })
-                      }
-                      type="button"
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         </details>
         <button
@@ -419,6 +416,44 @@ export function BoxscoreStatisticsExplorer({
           ))}
         </fieldset>
       </div>
+      {activeFilters.length ? (
+        <div className="active-filters">
+          <span>Filtros:</span>
+          <ul aria-label="Filtros ativos">
+            {activeFilters.map((filter) => (
+              <li key={filter}>
+                {filterLabel(filter)}
+                <button
+                  aria-label={`Remover filtro ${filterLabel(filter)}`}
+                  onClick={() =>
+                    update((next) => {
+                      const remaining = activeFilters.filter((item) => item !== filter);
+                      if (remaining.length) next.set("filters", remaining.join(";"));
+                      else next.delete("filters");
+                      resetPage(next);
+                    })
+                  }
+                  type="button"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            className="active-filters-clear"
+            onClick={() =>
+              update((next) => {
+                next.delete("filters");
+                resetPage(next);
+              })
+            }
+            type="button"
+          >
+            Limpar todos
+          </button>
+        </div>
+      ) : null}
       <div className="reference-column-toolbar">
         <details>
           <summary>
@@ -470,71 +505,118 @@ export function BoxscoreStatisticsExplorer({
           </button>
         </header>
         <div className="statistics-comparison-controls">
-          {[0, 1].map((side) => (
-            <div className="reference-player-picker" key={side}>
-              <label>
-                Jogador {side === 0 ? "A" : "B"}
-                <input
-                  type="search"
-                  placeholder="Buscar jogador ou time…"
-                  value={comparisonSearch[side]}
-                  onChange={(event) =>
-                    setComparisonSearch((current) =>
-                      current.map((value, index) => (index === side ? event.target.value : value)),
-                    )
-                  }
-                />
-              </label>
-              <div className="reference-player-options">
-                {data.playerOptions
-                  .filter((player) =>
-                    `${player.name} ${player.teamName}`
-                      .toLocaleLowerCase("pt-BR")
-                      .includes((comparisonSearch[side] ?? "").toLocaleLowerCase("pt-BR")),
-                  )
-                  .map((player) => (
-                    <button
-                      type="button"
-                      key={player.id}
-                      aria-pressed={currentCompare[side] === String(player.id)}
-                      disabled={currentCompare[1 - side] === String(player.id)}
-                      onClick={() => setComparison(side, String(player.id))}
-                    >
-                      {player.name}
-                      <small>{player.teamName}</small>
+          {([0, 1] as const).map((side) => {
+            const selectedId = currentCompare[side];
+            const selected = data.playerOptions.find((player) => String(player.id) === selectedId);
+            const selectedRow = data.compared.find(
+              (player) => String(player.playerId) === selectedId,
+            );
+            return (
+              <div className="reference-player-picker" key={side}>
+                <p className="reference-player-picker-label">Jogador {side === 0 ? "A" : "B"}</p>
+                {selected ? (
+                  <div className="reference-player-selected">
+                    <div>
+                      <strong>{selected.name}</strong>
+                      <small>
+                        {selected.teamName}
+                        {selectedRow?.jersey ? ` · #${selectedRow.jersey}` : ""}
+                        {selectedRow?.metrics.games.status === "available"
+                          ? ` · ${display(selectedRow.metrics.games)} J`
+                          : ""}
+                      </small>
+                    </div>
+                    <button type="button" onClick={() => setComparison(side, "")}>
+                      Trocar
                     </button>
-                  ))}
+                  </div>
+                ) : (
+                  <>
+                    <label className="reference-player-search">
+                      <span className="sr-only">Buscar jogador {side === 0 ? "A" : "B"}</span>
+                      <StatsIcon name="search" />
+                      <input
+                        type="search"
+                        placeholder="Buscar jogador ou time…"
+                        value={comparisonSearch[side]}
+                        onChange={(event) =>
+                          setComparisonSearch((current) =>
+                            current.map((value, index) =>
+                              index === side ? event.target.value : value,
+                            ),
+                          )
+                        }
+                      />
+                    </label>
+                    <div className="reference-player-options">
+                      {data.playerOptions
+                        .filter((player) =>
+                          `${player.name} ${player.teamName}`
+                            .toLocaleLowerCase("pt-BR")
+                            .includes((comparisonSearch[side] ?? "").toLocaleLowerCase("pt-BR")),
+                        )
+                        .slice(0, 30)
+                        .map((player) => (
+                          <button
+                            type="button"
+                            key={player.id}
+                            disabled={currentCompare[1 - side] === String(player.id)}
+                            onClick={() => setComparison(side, String(player.id))}
+                          >
+                            <span>{player.name}</span>
+                            <small>{player.teamName}</small>
+                          </button>
+                        ))}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {data.compared.length === 2 ? (
           <div className="reference-comparison-results">
+            <div className="reference-comparison-matchup" aria-hidden="true">
+              <strong>{data.compared[0]?.playerName}</strong>
+              <span>×</span>
+              <strong>{data.compared[1]?.playerName}</strong>
+            </div>
             <table>
               <caption>Comparação no modo e escopo atuais</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Estatística</th>
-                  {data.compared.map((player) => (
-                    <th key={player.playerId} scope="col">
-                      {player.playerName}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
               <tbody>
-                {columns.map((metric) => (
-                  <tr key={metric}>
-                    <th scope="row">{BOXSCORE_METRICS[metric].name}</th>
-                    {data.compared.map((player) => (
-                      <td key={player.playerId}>
-                        {displayMetric(player.metrics[metric], metric, data.mode)}
+                {columns.map((metric) => {
+                  const leftPlayer = data.compared[0];
+                  const rightPlayer = data.compared[1];
+                  if (!leftPlayer || !rightPlayer) return null;
+                  const cells = [leftPlayer.metrics[metric], rightPlayer.metrics[metric]] as [
+                    BoxscoreMetricCell,
+                    BoxscoreMetricCell,
+                  ];
+                  const pair = pairedMetrics[metric];
+                  return (
+                    <tr key={metric}>
+                      <td data-tone={comparisonTone(metric, cells, 0)}>
+                        {displayMetric(cells[0], metric, data.mode)}
+                        {pair && availableColumns.includes(pair)
+                          ? `/${displayMetric(leftPlayer.metrics[pair], pair, data.mode)}`
+                          : ""}
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      <th scope="row">{metricLabel(metric, availableColumns)}</th>
+                      <td data-tone={comparisonTone(metric, cells, 1)}>
+                        {displayMetric(cells[1], metric, data.mode)}
+                        {pair && availableColumns.includes(pair)
+                          ? `/${displayMetric(rightPlayer.metrics[pair], pair, data.mode)}`
+                          : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
+            <p>
+              Valores no modo e escopo atuais. Verde = melhor, vermelho = pior. Para ER e FC, quanto
+              menor, melhor.
+            </p>
           </div>
         ) : (
           <p>Escolha dois jogadores para ver a comparação.</p>

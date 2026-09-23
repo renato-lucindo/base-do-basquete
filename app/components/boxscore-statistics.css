@@ -177,6 +177,7 @@
 }
 
 .reference-column-toolbar,
+.active-filters,
 .reference-explorer > .scrollable-table,
 .reference-explorer > .statistics-pagination,
 .reference-explorer > .statistics-coverage-notice,
@@ -241,6 +242,58 @@
 
 .reference-panel .statistics-filter-editor > button {
   grid-column: 1 / -1;
+}
+
+.reference-explorer .active-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.reference-explorer .active-filters ul {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reference-explorer .active-filters li {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 3px 4px 3px 10px;
+  border-radius: 999px;
+  color: #073363;
+  background: #dcecf7;
+  font-weight: 600;
+}
+
+.reference-explorer .active-filters li button {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.reference-explorer .active-filters-clear {
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 4px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
 }
 
 .reference-panel .column-options {
@@ -447,6 +500,7 @@
 .reference-comparison {
   width: min(768px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   padding: 24px;
   border: 1px solid #d2d6dc;
   border-radius: 6px;
@@ -491,18 +545,80 @@
   background: white;
 }
 
-.reference-explorer .reference-player-picker label {
+.reference-player-picker-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reference-player-search {
+  display: block;
+  position: relative;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: component sections follow document order. */
+.reference-player-search svg {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.reference-explorer .reference-player-search input {
+  padding-left: 32px;
+}
+
+.reference-player-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px;
+  border-radius: 5px;
+  background: #f2f4f6;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: component sections follow document order. */
+.reference-player-selected > div {
   display: grid;
-  gap: 6px;
+  min-width: 0;
+}
+
+.reference-player-selected strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.reference-player-selected small {
   color: var(--muted);
   font-size: 11px;
-  text-transform: uppercase;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: component sections follow document order. */
+.reference-explorer .reference-player-selected button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 4px;
+  color: #073363;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .reference-player-options {
   max-height: 224px;
   overflow: auto;
   margin-top: 8px;
+  border: 1px solid #dce0e5;
+  border-radius: 4px;
 }
 
 .reference-explorer .reference-comparison .reference-player-options button {
@@ -539,6 +655,28 @@
 .reference-comparison-results {
   overflow-x: auto;
   margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #dce0e5;
+  border-radius: 6px;
+  background: white;
+}
+
+.reference-comparison-matchup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.reference-comparison-matchup strong:first-child {
+  text-align: right;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: component sections follow document order. */
+.reference-comparison-matchup span {
+  color: var(--muted);
 }
 
 .reference-comparison-results table {
@@ -550,7 +688,44 @@
 .reference-comparison-results :is(th, td) {
   padding: 7px;
   border-bottom: 1px solid #dce0e5;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: dialog table is isolated from the statistics table. */
+.reference-comparison-results th {
+  width: 34%;
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: dialog table is isolated from the statistics table. */
+.reference-comparison-results td {
+  width: 33%;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.reference-comparison-results td:last-child {
   text-align: left;
+}
+
+.reference-comparison-results td[data-tone="better"] {
+  color: #08783e;
+  font-weight: 700;
+}
+
+.reference-comparison-results td[data-tone="worse"] {
+  color: #b42318;
+  font-weight: 700;
+}
+
+.reference-comparison-results > p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 16px;
 }
 
 @media (max-width: 1199px) {
@@ -573,15 +748,19 @@
 @media (max-width: 600px) {
   .reference-toolbar {
     display: grid;
-    grid-template-columns: max-content max-content;
+    grid-template-columns: minmax(0, 1fr) max-content;
     justify-content: start;
     gap: 10px 12px;
   }
 
   .reference-explorer .statistics-search {
-    grid-column: 1 / -1;
-    width: 248px;
+    width: 100%;
     max-width: 100%;
+  }
+
+  .reference-compare-button {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .reference-explorer .reference-mode {
