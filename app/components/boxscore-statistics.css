@@ -234,7 +234,7 @@
 
 .reference-panel .statistics-filter-editor {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 0.75fr 1.35fr 0.9fr;
   align-items: end;
   gap: 8px;
   margin: 0;
@@ -327,6 +327,10 @@
 }
 
 @media (max-width: 480px) {
+  .reference-panel .statistics-filter-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .reference-panel .column-options {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
