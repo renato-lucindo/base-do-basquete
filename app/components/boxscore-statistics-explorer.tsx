@@ -404,7 +404,15 @@ export function BoxscoreStatisticsExplorer({
             value={searchParams.get("q") ?? ""}
           />
         </label>
-        <details className="reference-filters" ref={filterDetails}>
+        <details
+          className="reference-filters"
+          ref={filterDetails}
+          onToggle={(event) => {
+            if (event.currentTarget.open && columnDetails.current?.open) {
+              columnDetails.current.open = false;
+            }
+          }}
+        >
           <summary>
             <StatsIcon name="filter" />
             Filtrar{activeFilters.length ? ` (${activeFilters.length})` : ""}
@@ -577,7 +585,14 @@ export function BoxscoreStatisticsExplorer({
         </div>
       ) : null}
       <div className="reference-column-toolbar">
-        <details ref={columnDetails}>
+        <details
+          ref={columnDetails}
+          onToggle={(event) => {
+            if (event.currentTarget.open && filterDetails.current?.open) {
+              filterDetails.current.open = false;
+            }
+          }}
+        >
           <summary>
             <StatsIcon name="columns" />
             Colunas · {columns.length}/{selectableColumnOptions.length}
