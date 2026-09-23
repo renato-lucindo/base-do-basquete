@@ -298,35 +298,25 @@
 
 .reference-panel .column-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
-  margin-top: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+  margin-top: 12px;
   font-size: 12px;
 }
 
-.reference-panel .column-options fieldset {
-  min-width: 0;
+.reference-panel .column-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.reference-panel .column-options legend {
-  width: 100%;
-  margin-bottom: 5px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #e8ebee;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.column-group-options {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 2px 8px;
+.reference-panel .column-actions .column-action {
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 11px;
 }
 
 .reference-panel .column-options label {
@@ -334,6 +324,12 @@
   align-items: center;
   gap: 6px;
   min-height: 26px;
+}
+
+@media (max-width: 480px) {
+  .reference-panel .column-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .reference-explorer > .scrollable-table {

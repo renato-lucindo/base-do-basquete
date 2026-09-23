@@ -23,8 +23,6 @@ const defaultColumns: BoxscoreMetric[] = [
   "points",
   "rebounds",
   "assists",
-  "blocks",
-  "steals",
   "fieldGoalsMade",
   "fieldGoalsAttempted",
   "fieldGoalPercentage",
@@ -44,42 +42,39 @@ const pairedMetrics: Partial<Record<BoxscoreMetric, BoxscoreMetric>> = {
   freeThrowsMade: "freeThrowsAttempted",
 };
 
-const columnGroups: Array<{
+const columnOptions: Array<{
   label: string;
   metrics: BoxscoreMetric[];
 }> = [
-  {
-    label: "Principais",
-    metrics: ["games", "minutes", "points", "rebounds", "assists"],
-  },
-  {
-    label: "Defesa e controle",
-    metrics: [
-      "offensiveRebounds",
-      "defensiveRebounds",
-      "turnovers",
-      "blocks",
-      "steals",
-      "foulsCommitted",
-      "foulsReceived",
-    ],
-  },
-  {
-    label: "Arremessos",
-    metrics: [
-      "fieldGoalsMade",
-      "fieldGoalsAttempted",
-      "fieldGoalPercentage",
-      "threePointersMade",
-      "threePointersAttempted",
-      "threePointPercentage",
-      "freeThrowsMade",
-      "freeThrowsAttempted",
-      "freeThrowPercentage",
-    ],
-  },
-  { label: "Avançadas", metrics: ["efficiency", "plusMinus"] },
+  { label: "J", metrics: ["games"] },
+  { label: "MIN", metrics: ["minutes"] },
+  { label: "PTS", metrics: ["points"] },
+  { label: "REB", metrics: ["rebounds"] },
+  { label: "AST", metrics: ["assists"] },
+  { label: "AC/AT", metrics: ["fieldGoalsMade", "fieldGoalsAttempted"] },
+  { label: "AP", metrics: ["fieldGoalPercentage"] },
+  { label: "3PC/3PT", metrics: ["threePointersMade", "threePointersAttempted"] },
+  { label: "3P%", metrics: ["threePointPercentage"] },
+  { label: "LLC/LLT", metrics: ["freeThrowsMade", "freeThrowsAttempted"] },
+  { label: "LL%", metrics: ["freeThrowPercentage"] },
+  { label: "EF", metrics: ["efficiency"] },
+  { label: "+/-", metrics: ["plusMinus"] },
+  { label: "RO", metrics: ["offensiveRebounds"] },
+  { label: "RD", metrics: ["defensiveRebounds"] },
+  { label: "ER", metrics: ["turnovers"] },
+  { label: "TO", metrics: ["blocks"] },
+  { label: "BR", metrics: ["steals"] },
+  { label: "FC", metrics: ["foulsCommitted"] },
+  { label: "FR", metrics: ["foulsReceived"] },
 ];
+
+const filterOperatorLabels = {
+  ">=": "Maior ou igual a",
+  ">": "Maior que",
+  "=": "Igual a",
+  "<=": "Menor ou igual a",
+  "<": "Menor que",
+} as const;
 
 const highlightedLeaderMetrics = new Set<BoxscoreMetric>([
   "points",
@@ -136,7 +131,6 @@ function compactPlayerNames(
 }
 
 function metricLabel(metric: BoxscoreMetric, columns: BoxscoreMetric[]) {
-  if (metric === "fieldGoalPercentage") return "FG%";
   const pair = pairedMetrics[metric];
   return pair && columns.includes(pair)
     ? `${BOXSCORE_METRICS[metric].label}/${BOXSCORE_METRICS[pair].label}`
@@ -225,9 +219,14 @@ function cellTitle(cell: BoxscoreMetricCell): string | undefined {
 }
 
 function visibleColumns(searchParams: URLSearchParams, per30: boolean): BoxscoreMetric[] {
-  const requested = (searchParams.get("visible") ?? "").split(",").filter(isBoxscoreMetric);
-  const selected = requested.length ? [...new Set(requested)] : defaultColumns;
+  const serialized = searchParams.get("visible");
+  const requested = (serialized ?? "").split(",").filter(isBoxscoreMetric);
+  const selected = serialized === null ? defaultColumns : [...new Set(requested)];
   return per30 ? selected.filter((metric) => metric !== "minutes") : selected;
+}
+
+function orderedColumnMetrics(selected: Set<BoxscoreMetric>): BoxscoreMetric[] {
+  return columnOptions.flatMap((option) => option.metrics.filter((metric) => selected.has(metric)));
 }
 
 function serializedFilter(metric: string, operator: string, value: string): string | null {
@@ -239,7 +238,8 @@ function serializedFilter(metric: string, operator: string, value: string): stri
 function filterLabel(serialized: string): string {
   const [metric, operator, value] = serialized.split(":");
   if (!metric || !isBoxscoreMetric(metric) || !operator || value === undefined) return serialized;
-  return `${BOXSCORE_METRICS[metric].label} ${operator} ${value.replace(".", ",")}`;
+  const condition = filterOperatorLabels[operator as keyof typeof filterOperatorLabels] ?? operator;
+  return `${BOXSCORE_METRICS[metric].label} ${condition} ${value.replace(".", ",")}`;
 }
 
 function comparisonTone(
@@ -291,6 +291,9 @@ export function BoxscoreStatisticsExplorer({
         ([made, attempted]) =>
           attempted === metric && availableColumns.includes(made as BoxscoreMetric),
       ),
+  );
+  const selectableColumnOptions = columnOptions.filter(
+    (option) => data.mode !== "per-30" || !option.metrics.includes("minutes"),
   );
   const update = (change: (next: URLSearchParams) => void) => {
     const next = new URLSearchParams(searchParams);
@@ -468,13 +471,15 @@ export function BoxscoreStatisticsExplorer({
                 </select>
               </label>
               <label>
-                Operador
+                Condição
                 <select
                   onChange={(event) => setFilterOperator(event.target.value)}
                   value={filterOperator}
                 >
-                  {[">=", ">", "<=", "<", "="].map((operator) => (
-                    <option key={operator}>{operator}</option>
+                  {Object.entries(filterOperatorLabels).map(([operator, label]) => (
+                    <option key={operator} value={operator}>
+                      {label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -575,39 +580,63 @@ export function BoxscoreStatisticsExplorer({
         <details ref={columnDetails}>
           <summary>
             <StatsIcon name="columns" />
-            Colunas · {availableColumns.length}
+            Colunas · {columns.length}/{selectableColumnOptions.length}
           </summary>
           <div className="reference-panel">
             <h2>Colunas da tabela</h2>
-            <button type="button" onClick={() => update((next) => next.delete("visible"))}>
-              Restaurar padrão
-            </button>
+            <fieldset className="column-actions">
+              <legend className="sr-only">Ações de seleção de colunas</legend>
+              <button
+                className="column-action"
+                type="button"
+                onClick={() =>
+                  update((next) =>
+                    next.set(
+                      "visible",
+                      orderedColumnMetrics(
+                        new Set(columnOptions.flatMap((option) => option.metrics)),
+                      ).join(","),
+                    ),
+                  )
+                }
+              >
+                Todas
+              </button>
+              <button
+                className="column-action"
+                type="button"
+                onClick={() => update((next) => next.set("visible", ""))}
+              >
+                Nenhuma
+              </button>
+              <button
+                className="column-action"
+                type="button"
+                onClick={() => update((next) => next.delete("visible"))}
+              >
+                Restaurar padrão
+              </button>
+            </fieldset>
             <div className="column-options">
-              {columnGroups.map((group) => (
-                <fieldset key={group.label}>
-                  <legend>{group.label}</legend>
-                  <div className="column-group-options">
-                    {group.metrics.map((metric) => (
-                      <label key={metric}>
-                        <input
-                          checked={selectedColumns.includes(metric)}
-                          disabled={data.mode === "per-30" && metric === "minutes"}
-                          onChange={(event) =>
-                            update((next) => {
-                              const stored = visibleColumns(next, false);
-                              const selected = event.target.checked
-                                ? [...new Set([...stored, metric])]
-                                : stored.filter((item) => item !== metric);
-                              next.set("visible", selected.join(","));
-                            })
-                          }
-                          type="checkbox"
-                        />
-                        {BOXSCORE_METRICS[metric].label}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
+              {columnOptions.map((option) => (
+                <label key={option.label}>
+                  <input
+                    checked={option.metrics.every((metric) => selectedColumns.includes(metric))}
+                    disabled={data.mode === "per-30" && option.metrics.includes("minutes")}
+                    onChange={(event) =>
+                      update((next) => {
+                        const selected = new Set(visibleColumns(next, false));
+                        for (const metric of option.metrics) {
+                          if (event.target.checked) selected.add(metric);
+                          else selected.delete(metric);
+                        }
+                        next.set("visible", orderedColumnMetrics(selected).join(","));
+                      })
+                    }
+                    type="checkbox"
+                  />
+                  {option.label}
+                </label>
               ))}
             </div>
           </div>
@@ -874,7 +903,7 @@ export function BoxscoreStatisticsExplorer({
       <p className="reference-legend">
         J = Jogos · MIN = Minutos · PTS = Pontos · REB = Rebotes · RO/RD = Rebotes Of./Def. · AST =
         Assistências · ER = Erros · TO = Tocos · BR = Bolas recuperadas · FC/FR = Faltas
-        cometidas/recebidas · AC/AT = Arremessos Convertidos/Tentados · FG% = Aproveitamento nos
+        cometidas/recebidas · AC/AT = Arremessos Convertidos/Tentados · AP = Aproveitamento nos
         arremessos · LL = Lances Livres · EF = Eficiência · +/- = Saldo em quadra. “—” = dado não
         fornecido.
       </p>

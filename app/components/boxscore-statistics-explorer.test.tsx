@@ -91,11 +91,14 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Fase regular");
     expect(html).toContain("Eliminatórias");
     expect(html).toContain("<h1>Liga</h1>");
-    expect(html).toContain("Colunas · 17");
-    expect(html).toContain("Principais");
-    expect(html).toContain("Defesa e controle");
-    expect(html).toContain("Arremessos");
-    expect(html).toContain("Avançadas");
+    expect(html).toContain("Colunas · 12/19");
+    expect(html).toContain("Todas");
+    expect(html).toContain("Nenhuma");
+    expect(html).toContain("Restaurar padrão");
+    expect(html).not.toContain("Principais");
+    expect(html).not.toContain("Defesa e controle");
+    expect(html).toContain("Condição");
+    expect(html).toContain("Maior ou igual a");
     expect(html).toContain("Comparar jogadores");
     expect(html).toContain("<dialog");
     expect(html).toContain('aria-labelledby="comparison-title"');
@@ -109,9 +112,10 @@ describe("BoxscoreStatisticsExplorer", () => {
     );
     expect(html).toContain("AC/AT");
     expect(html).toContain("LLC/LLT");
-    expect(html).toContain("FG%");
+    expect(html).toContain("AP");
     expect(html).toContain("3PC/3PT");
     expect(html).toContain("3P%");
+    expect(html).toContain("Colunas · 13/20");
     expect(html).toContain("4.0/10.0");
     expect(html).toContain("2.0/5.0");
     expect(html).toContain("+4.0");
@@ -122,6 +126,18 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain('aria-sort="descending"');
     expect(html).toContain("Líder em rebotes neste escopo");
     expect(html).toContain('class="statistics-leader">★</span>');
+  });
+
+  it("allows hiding every optional statistic without falling back to the default", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?scope=all&visible="]}>
+        <BoxscoreStatisticsExplorer context={context} data={{ ...data, mode: "per-game" }} />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("Colunas · 0/20");
+    expect(html).not.toContain('<abbr title="Pontos">PTS</abbr>');
+    expect(html).toContain('class="column-player"');
   });
 
   it("uses compact athlete names while preserving the full accessible name", () => {
@@ -210,7 +226,7 @@ describe("BoxscoreStatisticsExplorer", () => {
       </MemoryRouter>,
     );
 
-    expect(html).toContain("PTS &gt;= 10");
+    expect(html).toContain("PTS Maior ou igual a 10");
     expect(html).toContain("Limpar todos");
     expect(html).toContain("Atleta Azul</strong><span>×</span><strong>Atleta Verde");
     expect(html).toContain('data-tone="better"');
