@@ -20,6 +20,61 @@ function parseId(value: string | FormDataEntryValue | null): number | null {
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
 }
 
+type CompetitionPrimarySource = "manual_scoresheet" | "fiba_boxscore" | null;
+
+interface CompetitionDataAction {
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+export function resolveCompetitionDataActions({
+  status,
+  primarySource,
+  gameCount,
+}: {
+  status: string;
+  primarySource: CompetitionPrimarySource;
+  gameCount: number;
+}): { scoresheet: CompetitionDataAction | null; boxscore: CompetitionDataAction | null } {
+  if (status === "archived" || !primarySource) return { scoresheet: null, boxscore: null };
+  const hasGame = gameCount > 0;
+  if (primarySource === "manual_scoresheet") {
+    return {
+      scoresheet: {
+        label: "Registrar súmula",
+        description: hasGame
+          ? "Registre o resultado e os dados básicos no jogo já organizado."
+          : "Organize ao menos um confronto na agenda antes de registrar a súmula.",
+        enabled: hasGame,
+      },
+      boxscore: {
+        label: "Importar boxscore suplementar",
+        description: hasGame
+          ? "Use um PDF compatível para enriquecer um jogo existente após revisão."
+          : "Organize ao menos um confronto na agenda antes de importar um PDF.",
+        enabled: hasGame,
+      },
+    };
+  }
+  return {
+    scoresheet: {
+      label: "Registrar súmula emergencial",
+      description: hasGame
+        ? "Use somente quando o boxscore principal ainda não estiver disponível; o motivo será auditado."
+        : "Organize ao menos um confronto na agenda antes de usar o fallback emergencial.",
+      enabled: hasGame,
+    },
+    boxscore: {
+      label: "Importar boxscore",
+      description: hasGame
+        ? "Envie e revise o PDF da fonte principal para um jogo existente."
+        : "Organize ao menos um confronto na agenda antes de importar o boxscore.",
+      enabled: hasGame,
+    },
+  };
+}
+
 export function parseRegistrationRemovalDecision(value: unknown): {
   decision: "remove" | "withdraw" | "blocked";
   reasonCode: string;
@@ -99,12 +154,21 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const competitionResult = await auth.client
     .from("competitions")
-    .select("id,display_name,year,status,series_id,category_id,gender_division")
+    .select("id,display_name,year,status,series_id,category_id,gender_division,data_profile_id")
     .eq("id", competitionId)
     .limit(1);
   if (competitionResult.error) throw new Error("Competition hub query failed");
   const competition = competitionResult.data[0];
   if (!competition) throw new Response("Edição não encontrada", { status: 404 });
+
+  const profileResult = competition.data_profile_id
+    ? await auth.client
+        .from("series_category_data_profiles")
+        .select("primary_source")
+        .eq("id", competition.data_profile_id)
+        .single()
+    : { data: null, error: null };
+  if (profileResult.error) throw new Error("Competition data profile query failed");
 
   const [
     seriesResult,
@@ -348,10 +412,20 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       availableTeams: teamsResult.data.filter((team) => !registeredTeamIds.has(team.id)),
       playerCount: playerCountResult.count ?? 0,
       gameCount: gamesResult.count ?? 0,
+      dataActions: resolveCompetitionDataActions({
+        status: competition.status,
+        primarySource:
+          profileResult.data?.primary_source === "manual_scoresheet" ||
+          profileResult.data?.primary_source === "fiba_boxscore"
+            ? profileResult.data.primary_source
+            : null,
+        gameCount: gamesResult.count ?? 0,
+      }),
       sourceFallbacks,
       savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
       changedRegistrationId: parseId(new URL(request.url).searchParams.get("changedRegistration")),
       registrationOutcome: new URL(request.url).searchParams.get("registrationOutcome"),
+      confirmedBatch: parseId(new URL(request.url).searchParams.get("confirmedBatch")),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -377,6 +451,26 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       p_competition_id: competitionId,
       p_team_id: teamId,
     });
+  } else if (intent === "confirm-registrations") {
+    const registrationIds = formData.getAll("registrationId").map((value) => parseId(value));
+    if (
+      registrationIds.length === 0 ||
+      registrationIds.some((registrationId) => registrationId === null)
+    ) {
+      return data({ error: "Selecione ao menos uma inscrição em rascunho." }, { status: 400 });
+    }
+    const validIds = registrationIds as number[];
+    const bulkResult = await auth.client.rpc("admin_confirm_team_registrations", {
+      p_competition_id: competitionId,
+      p_registration_ids: validIds,
+    });
+    if (bulkResult.error) {
+      result = bulkResult;
+    } else {
+      throw redirect(`/admin/competitions/${competitionId}?confirmedBatch=${validIds.length}`, {
+        headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+      });
+    }
   } else if (intent === "transition-registration") {
     const registrationId = parseId(formData.get("registrationId"));
     const status = String(formData.get("status") ?? "");
@@ -521,6 +615,9 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   useEffect(() => {
     if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
   }, [loaderData.savedRosterId]);
+  const draftRegistrations = loaderData.registrations.filter(
+    (registration) => registration.status === "draft",
+  );
   return (
     <main className="admin-shell">
       <header className="site-header admin-header">
@@ -552,6 +649,13 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           </p>
         ) : loaderData.registrationOutcome === "unchanged" ? (
           <p className="form-success">A inscrição já estava no estado solicitado.</p>
+        ) : null}
+        {loaderData.confirmedBatch ? (
+          <p className="form-success">
+            {loaderData.confirmedBatch === 1
+              ? "1 inscrição foi confirmada."
+              : `${loaderData.confirmedBatch} inscrições foram confirmadas em uma única operação.`}
+          </p>
         ) : null}
 
         <div className="admin-status-grid">
@@ -616,6 +720,34 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </button>
           </Form>
         </section>
+
+        {draftRegistrations.length ? (
+          <section className="admin-panel">
+            <h2>Confirmar inscrições</h2>
+            <p>Selecione as equipes prontas. A operação inteira é validada antes de confirmar.</p>
+            <Form method="post" className="admin-form">
+              <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+              <input type="hidden" name="intent" value="confirm-registrations" />
+              <fieldset>
+                <legend>Inscrições em rascunho</legend>
+                {draftRegistrations.map((registration) => (
+                  <label className="checkbox-label" key={registration.id}>
+                    <input
+                      type="checkbox"
+                      name="registrationId"
+                      value={registration.id}
+                      defaultChecked
+                    />
+                    {registration.teamName}
+                  </label>
+                ))}
+              </fieldset>
+              <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Confirmando…" : "Confirmar selecionadas"}
+              </button>
+            </Form>
+          </section>
+        ) : null}
 
         <div className="registration-list">
           {loaderData.registrations.map((registration) => (
@@ -844,26 +976,42 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               Revisar exceções
             </Link>
           </article>
-          <article>
-            <h2>Súmula manual</h2>
-            <p>Requer confronto na agenda, equipes confirmadas e elencos preenchidos.</p>
-            <Link
-              className="button button-primary"
-              to={`/admin/competitions/${competition.id}/scoresheets/new`}
-            >
-              Abrir súmula
-            </Link>
-          </article>
-          <article>
-            <h2>Importar boxscore</h2>
-            <p>Formatos documentados FIBA/Genius Sports e Basketball Site.</p>
-            <Link
-              className="button button-primary"
-              to={`/admin/competitions/${competition.id}/boxscores/import`}
-            >
-              Enviar e revisar PDF
-            </Link>
-          </article>
+          {loaderData.dataActions.scoresheet ? (
+            <article>
+              <h2>{loaderData.dataActions.scoresheet.label}</h2>
+              <p>{loaderData.dataActions.scoresheet.description}</p>
+              {loaderData.dataActions.scoresheet.enabled ? (
+                <Link
+                  className="button button-primary"
+                  to={`/admin/competitions/${competition.id}/scoresheets/new`}
+                >
+                  {loaderData.dataActions.scoresheet.label}
+                </Link>
+              ) : (
+                <button className="button button-primary" type="button" disabled>
+                  Indisponível até organizar a agenda
+                </button>
+              )}
+            </article>
+          ) : null}
+          {loaderData.dataActions.boxscore ? (
+            <article>
+              <h2>{loaderData.dataActions.boxscore.label}</h2>
+              <p>{loaderData.dataActions.boxscore.description}</p>
+              {loaderData.dataActions.boxscore.enabled ? (
+                <Link
+                  className="button button-primary"
+                  to={`/admin/competitions/${competition.id}/boxscores/import`}
+                >
+                  {loaderData.dataActions.boxscore.label}
+                </Link>
+              ) : (
+                <button className="button button-primary" type="button" disabled>
+                  Indisponível até organizar a agenda
+                </button>
+              )}
+            </article>
+          ) : null}
         </section>
       </section>
     </main>

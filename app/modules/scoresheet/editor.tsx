@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Form, Link, useNavigation } from "react-router";
 
 import { AdminDraftNotice } from "../../components/admin/admin-draft-notice";
@@ -68,6 +68,14 @@ interface ScoresheetDraftData {
   step: number;
   viewMode: "cards" | "compact";
   activePeriod: number;
+}
+
+export function ScoresheetStep({ active, children }: { active: boolean; children?: ReactNode }) {
+  return (
+    <div className="scoresheet-step" hidden={!active}>
+      {children}
+    </div>
+  );
 }
 
 function statKey(side: TeamSide, slotNumber: number, periodNumber: number, field: string) {
@@ -350,11 +358,6 @@ export function ManualScoresheetEditor({
     markChanged();
     setStats((current) => ({ ...current, [key]: value }));
   };
-  const canAdvance =
-    (step === 1 && Boolean(scheduledLocal && venue.trim())) ||
-    (step === 2 && !invalidParticipants && !hasDuplicateJersey && activePlayers > 0) ||
-    step >= 3;
-
   return (
     <main className="admin-shell scoresheet-shell">
       <header className="site-header admin-header">
@@ -402,7 +405,7 @@ export function ManualScoresheetEditor({
           <input type="hidden" name="periodCount" value={periodCount} />
           <input type="hidden" name="gameId" value={gameId} />
 
-          <div hidden={step !== 1}>
+          <ScoresheetStep active={step === 1}>
             <fieldset className="scoresheet-header-grid">
               <legend>Cabeçalho do jogo</legend>
               <label>
@@ -447,9 +450,9 @@ export function ManualScoresheetEditor({
                 Continuar para equipes
               </button>
             </div>
-          </div>
+          </ScoresheetStep>
 
-          <div hidden={step !== 2}>
+          <ScoresheetStep active={step === 2}>
             <section className="participant-grid">
               {sides.map((side) => {
                 const opposite = side === "home" ? "away" : "home";
@@ -565,9 +568,9 @@ export function ManualScoresheetEditor({
                 Continuar para lançamentos
               </button>
             </div>
-          </div>
+          </ScoresheetStep>
 
-          <div hidden={step !== 3}>
+          <ScoresheetStep active={step === 3}>
             <section className="scoresheet-scoreboard" aria-live="polite">
               <div>
                 <span>{registrationById.get(registrationIds.home)?.teamName ?? "Mandante"}</span>
@@ -772,7 +775,7 @@ export function ManualScoresheetEditor({
                 Revisar súmula
               </button>
             </div>
-          </div>
+          </ScoresheetStep>
 
           {step === 4 ? (
             <div className="scoresheet-submit">
@@ -795,39 +798,27 @@ export function ManualScoresheetEditor({
             </div>
           ) : null}
 
-          <StickyActionSummary
-            title="Resumo da súmula"
-            metrics={[
-              {
-                label: "Placar",
-                value: `${Number.isNaN(homeScore) ? "—" : homeScore} × ${Number.isNaN(awayScore) ? "—" : awayScore}`,
-              },
-              { label: "Período", value: periodLabel(activePeriod) },
-              { label: "Atletas", value: activePlayers },
-            ]}
-            status={
-              pendingDraft
-                ? "Salvando rascunho…"
-                : savedAt
-                  ? "Rascunho salvo"
-                  : actionError
-                    ? "Há pendências"
-                    : "Pronto para editar"
-            }
-          >
-            {step < 4 ? (
-              <button
-                className="button button-primary"
-                type="button"
-                disabled={!canAdvance}
-                onClick={() => {
-                  setStep(Math.min(4, step + 1));
-                  markChanged();
-                }}
-              >
-                Próxima etapa
-              </button>
-            ) : (
+          {step === 4 ? (
+            <StickyActionSummary
+              title="Resumo da súmula"
+              metrics={[
+                {
+                  label: "Placar",
+                  value: `${Number.isNaN(homeScore) ? "—" : homeScore} × ${Number.isNaN(awayScore) ? "—" : awayScore}`,
+                },
+                { label: "Período", value: periodLabel(activePeriod) },
+                { label: "Atletas", value: activePlayers },
+              ]}
+              status={
+                pendingDraft
+                  ? "Salvando rascunho…"
+                  : savedAt
+                    ? "Rascunho salvo"
+                    : actionError
+                      ? "Há pendências"
+                      : "Pronto para confirmar"
+              }
+            >
               <button
                 className="button button-primary"
                 type="submit"
@@ -839,8 +830,8 @@ export function ManualScoresheetEditor({
                     ? "Salvar fallback emergencial"
                     : "Salvar jogo"}
               </button>
-            )}
-          </StickyActionSummary>
+            </StickyActionSummary>
+          ) : null}
         </Form>
       </section>
     </main>

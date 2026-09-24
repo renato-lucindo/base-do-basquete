@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(21);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -156,6 +156,50 @@ select is(
   (select count(*) from public.admin_mutation_audit where entity_type = 'team_registration'),
   6::bigint,
   'successful administrative mutations are audited once'
+);
+
+select public.admin_create_team_registration(9201, 9203);
+select lives_ok(
+  $$select public.admin_confirm_team_registrations(
+      9201,
+      array[
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9202),
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9203)
+      ]
+    )$$,
+  'multiple draft registrations are confirmed in one transaction'
+);
+select is(
+  (select count(*) from public.team_registrations where competition_id = 9201 and status = 'confirmed'),
+  3::bigint,
+  'bulk confirmation transitions every selected registration'
+);
+select is(
+  (select count(*) from public.admin_mutation_audit where action = 'registration_transitioned' and entity_id in (
+    select id from public.team_registrations where competition_id = 9201
+  )),
+  3::bigint,
+  'bulk confirmation preserves one transition audit per registration'
+);
+
+insert into public.teams (id, name, slug)
+overriding system value values (9204, 'Time RPC Quatro', 'time-rpc-quatro');
+select public.admin_create_team_registration(9201, 9204);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(
+      9201,
+      array[
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9204),
+        (select id from public.team_registrations where competition_id = 9202 and team_id = 9203)
+      ]
+    )$$,
+  'BD102', 'BDB_INVALID_REGISTRATION_TRANSITION',
+  'a registration from another competition rejects the complete batch'
+);
+select is(
+  (select status from public.team_registrations where competition_id = 9201 and team_id = 9204),
+  'draft'::text,
+  'a rejected batch leaves valid registrations unchanged'
 );
 
 reset role;

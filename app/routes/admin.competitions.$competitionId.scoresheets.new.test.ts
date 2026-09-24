@@ -4,6 +4,7 @@ import { createRoutesStub } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
+import { ScoresheetStep } from "../modules/scoresheet/editor";
 import {
   describeScoresheetUnavailability,
   loader,
@@ -155,5 +156,20 @@ describe("manual scoresheet availability guidance", () => {
     expect(html).toContain("Revisar equipes e elencos");
     expect(html).toContain('href="/admin/competitions/100"');
     expect(html).not.toContain("Abrir agenda");
+  });
+});
+
+describe("manual scoresheet step isolation", () => {
+  it("marks inactive step content as hidden with a dedicated class", () => {
+    const hidden = renderToStaticMarkup(
+      createElement(ScoresheetStep, { active: false }, createElement("p", null, "Revisão")),
+    );
+    const active = renderToStaticMarkup(
+      createElement(ScoresheetStep, { active: true }, createElement("p", null, "Jogo")),
+    );
+
+    expect(hidden).toContain('class="scoresheet-step"');
+    expect(hidden).toContain("hidden");
+    expect(active).not.toContain("hidden");
   });
 });

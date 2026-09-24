@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(34);
 set constraints all deferred;
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id) select '11111111-1111-4111-8111-111111111111' where not exists(select 1 from private.admin_accounts);
@@ -31,6 +31,16 @@ select is((select home_registration_id from public.matchups where id=(select fir
 select lives_ok($$update schedule_context set game_id=public.admin_prepare_matchup(first_matchup,0,'2025-03-01T19:30:00-03:00','Quadra 1')$$,'ready matchup creates a game transactionally');
 select is((select status from public.games where id=(select game_id from schedule_context)),'scheduled','prepared dated game is scheduled');
 select is(jsonb_array_length(public.admin_get_competition_schedule((select competition_id from schedule_context))->'matchups'),3,'AAL2 reads all reserved matchups');
+select is((
+  select count(distinct item->>'label')
+  from schedule_context context
+  cross join lateral jsonb_array_elements(public.admin_get_competition_schedule(context.competition_id)->'entries') item
+),4::bigint,'active entry labels are unique and contextual');
+select is((
+  select count(distinct item->>'label')
+  from schedule_context context
+  cross join lateral jsonb_array_elements(public.admin_get_competition_schedule(context.competition_id)->'matchups') item
+),3::bigint,'active matchup labels are unique and contextual');
 select is((select count(*) from public.game_participants where game_id=(select game_id from schedule_context)),2::bigint,'exactly two participants generated');
 select is((select count(*) from public.game_period_scores where game_id=(select game_id from schedule_context)),0::bigint,'scheduled game has no invented zero score');
 select is((select public.admin_prepare_matchup(first_matchup,0,'2025-03-01T19:30:00-03:00','Quadra 1') from schedule_context),(select game_id from schedule_context),'retry returns same game even with original expected revision');
