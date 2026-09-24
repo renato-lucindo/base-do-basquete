@@ -74,7 +74,7 @@ select is((select home_registration_id from public.matchups where id=(select man
 select ok(not ((public.admin_get_publication_review((select competition_id from schedule_context))->'blockers') @> '["UNASSIGNED_ENTRIES"]'::jsonb),'unused seed positions no longer block publication');
 select lives_ok($$update schedule_context set game_id=public.admin_prepare_matchup(first_matchup,0,'2025-03-01T19:30:00-03:00','Quadra 1')$$,'ready matchup creates a game transactionally');
 select is((select status from public.games where id=(select game_id from schedule_context)),'scheduled','prepared dated game is scheduled');
-select is(jsonb_array_length(public.admin_get_competition_schedule((select competition_id from schedule_context))->'matchups'),3,'AAL2 reads all reserved matchups');
+select is(jsonb_array_length(public.admin_get_competition_schedule((select competition_id from schedule_context))->'matchups'),4,'AAL2 reads all reserved matchups');
 select is((
   select count(distinct item->>'label')
   from schedule_context context
@@ -84,7 +84,7 @@ select is((
   select count(distinct item->>'label')
   from schedule_context context
   cross join lateral jsonb_array_elements(public.admin_get_competition_schedule(context.competition_id)->'matchups') item
-),3::bigint,'active matchup labels are unique and contextual');
+),4::bigint,'active matchup labels are unique and contextual');
 select is((select count(*) from public.game_participants where game_id=(select game_id from schedule_context)),2::bigint,'exactly two participants generated');
 select is((select count(*) from public.game_period_scores where game_id=(select game_id from schedule_context)),0::bigint,'scheduled game has no invented zero score');
 select lives_ok($$
