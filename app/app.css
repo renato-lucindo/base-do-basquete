@@ -6528,7 +6528,7 @@ body {
   }
 
   .sticky-action-summary {
-    bottom: max(6px, env(safe-area-inset-bottom));
+    position: static;
   }
 
   .sticky-action-summary > p {
