@@ -4652,7 +4652,7 @@ export type Database = {
           p_competition_id: number;
           p_home_registration_id: number;
           p_request_id: string;
-          p_round_id: number;
+          p_round_id: number | null;
           p_scheduled_at: string;
           p_venue: string;
         };

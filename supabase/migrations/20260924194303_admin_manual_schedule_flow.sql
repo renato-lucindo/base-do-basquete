@@ -20,7 +20,7 @@ create table private.manual_matchup_requests (
   request_id uuid primary key,
   actor_id uuid not null references auth.users(id) on delete restrict,
   competition_id bigint not null references public.competitions(id) on delete restrict,
-  round_id bigint not null,
+  round_id bigint,
   home_registration_id bigint not null,
   away_registration_id bigint not null,
   scheduled_at timestamptz,
@@ -96,12 +96,16 @@ begin
   if manual_matchup then
     perform 1
     from public.competition_rounds round_item
+    join public.competition_stages stage_item
+      on stage_item.id = round_item.stage_id
+     and stage_item.competition_id = round_item.competition_id
     join public.competition_ruleset_revisions revision
-      on revision.id = round_item.ruleset_revision_id
-     and revision.competition_id = round_item.competition_id
+      on revision.id = stage_item.ruleset_revision_id
+     and revision.competition_id = stage_item.competition_id
     where round_item.id = matchup_row.round_id
       and round_item.competition_id = matchup_row.competition_id
       and revision.status = 'active'
+      and (round_item.ruleset_revision_id is null or round_item.ruleset_revision_id = revision.id)
     for update of revision;
   else
     perform 1 from public.competition_ruleset_revisions
@@ -216,7 +220,10 @@ declare
   competition public.competitions;
   existing private.manual_matchup_requests;
   normalized_venue text := nullif(btrim(p_venue), '');
+  active_revision public.competition_ruleset_revisions;
   active_revision_id bigint;
+  target_stage_id bigint;
+  target_round_id bigint;
   next_order integer;
   created_matchup_id bigint;
   created_game_id bigint;
@@ -224,7 +231,7 @@ begin
   if not private.is_admin_aal2() then
     raise exception using errcode='BD401',message='BDB_ADMIN_AAL2_REQUIRED';
   end if;
-  if p_request_id is null or p_competition_id is null or p_round_id is null
+  if p_request_id is null or p_competition_id is null
     or p_home_registration_id is null or p_away_registration_id is null
     or p_home_registration_id = p_away_registration_id
     or char_length(normalized_venue) > 160
@@ -237,7 +244,7 @@ begin
   if found then
     if existing.actor_id <> auth.uid()
       or existing.competition_id <> p_competition_id
-      or existing.round_id <> p_round_id
+      or existing.round_id is distinct from p_round_id
       or existing.home_registration_id <> p_home_registration_id
       or existing.away_registration_id <> p_away_registration_id
       or existing.scheduled_at is distinct from p_scheduled_at
@@ -264,20 +271,74 @@ begin
     raise exception using errcode='BR025',message='BDB_SCHEDULE_INPUT_INVALID';
   end if;
 
-  select id into active_revision_id
+  select * into active_revision
   from public.competition_ruleset_revisions
   where competition_id = p_competition_id and status = 'active'
   for update;
-  if active_revision_id is null then
+  if not found then
     raise exception using errcode='BR022',message='BDB_ACTIVE_RULESET_REQUIRED';
   end if;
-  perform 1 from public.competition_rounds
-  where id = p_round_id
-    and competition_id = p_competition_id
-    and ruleset_revision_id = active_revision_id
-  for update;
-  if not found then
-    raise exception using errcode='BD404',message='BDB_ROUND_NOT_FOUND';
+  active_revision_id := active_revision.id;
+
+  if p_round_id is not null then
+    select round_item.id into target_round_id
+    from public.competition_rounds round_item
+    join public.competition_stages stage_item
+      on stage_item.id = round_item.stage_id
+     and stage_item.competition_id = round_item.competition_id
+    where round_item.id = p_round_id
+      and round_item.competition_id = p_competition_id
+      and stage_item.ruleset_revision_id = active_revision_id
+      and (round_item.ruleset_revision_id is null or round_item.ruleset_revision_id = active_revision_id)
+    for update of round_item;
+    if target_round_id is null then
+      raise exception using errcode='BD404',message='BDB_ROUND_NOT_FOUND';
+    end if;
+  else
+    select round_item.id into target_round_id
+    from public.competition_rounds round_item
+    join public.competition_stages stage_item
+      on stage_item.id = round_item.stage_id
+     and stage_item.competition_id = round_item.competition_id
+    where round_item.competition_id = p_competition_id
+      and round_item.ruleset_revision_id is null
+      and round_item.code = 'manual_schedule'
+      and stage_item.ruleset_revision_id = active_revision_id
+    order by stage_item.stage_order, round_item.round_order
+    limit 1
+    for update of round_item;
+
+    if target_round_id is null then
+      select stage_item.id into target_stage_id
+      from public.competition_stages stage_item
+      where stage_item.competition_id = p_competition_id
+        and stage_item.ruleset_revision_id = active_revision_id
+      order by stage_item.stage_order
+      limit 1
+      for update of stage_item;
+
+      if target_stage_id is null then
+        if active_revision.preset_key is not null or active_revision.cloned_from_revision_id is not null then
+          raise exception using errcode='BR022',message='BDB_ACTIVE_RULESET_REQUIRED';
+        end if;
+        insert into public.competition_stages(
+          competition_id, ruleset_revision_id, code, name, stage_order, structure_kind
+        ) values(
+          p_competition_id, active_revision_id, 'manual_schedule', 'Agenda manual', 1, 'regulated'
+        ) returning id into target_stage_id;
+      end if;
+
+      insert into public.competition_rounds(
+        competition_id, stage_id, code, name, round_order, structure_kind
+      ) values(
+        p_competition_id,
+        target_stage_id,
+        'manual_schedule',
+        'Agenda geral',
+        coalesce((select max(round_order) from public.competition_rounds where stage_id=target_stage_id),0)+1,
+        'regulated'
+      ) returning id into target_round_id;
+    end if;
   end if;
   if (
     select count(*) from public.team_registrations
@@ -299,7 +360,7 @@ begin
   where request_id = p_request_id for update;
   if existing.actor_id <> auth.uid()
     or existing.competition_id <> p_competition_id
-    or existing.round_id <> p_round_id
+    or existing.round_id is distinct from p_round_id
     or existing.home_registration_id <> p_home_registration_id
     or existing.away_registration_id <> p_away_registration_id
     or existing.scheduled_at is distinct from p_scheduled_at
@@ -311,12 +372,12 @@ begin
   end if;
 
   select coalesce(max(matchup_order),0)+1 into next_order
-  from public.matchups where round_id = p_round_id;
+  from public.matchups where round_id = target_round_id;
   insert into public.matchups(
     competition_id, round_id, home_registration_id, away_registration_id,
     matchup_order, structure_kind, allow_side_inversion
   ) values(
-    p_competition_id, p_round_id, p_home_registration_id, p_away_registration_id,
+    p_competition_id, target_round_id, p_home_registration_id, p_away_registration_id,
     next_order, 'regulated', false
   ) returning id into created_matchup_id;
 
@@ -334,7 +395,7 @@ begin
   insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
   values('manual_matchup_created','matchup',created_matchup_id,jsonb_build_object(
     'competitionId',p_competition_id,
-    'roundId',p_round_id,
+    'roundId',target_round_id,
     'gameId',created_game_id,
     'homeRegistrationId',p_home_registration_id,
     'awayRegistrationId',p_away_registration_id
@@ -493,7 +554,8 @@ begin
       from public.competition_rounds round_item
       join public.competition_stages stage_item on stage_item.id=round_item.stage_id
       where round_item.competition_id=p_competition_id
-        and round_item.ruleset_revision_id=active_revision_id),'[]'::jsonb),
+        and stage_item.ruleset_revision_id=active_revision_id
+        and (round_item.ruleset_revision_id=active_revision_id or round_item.ruleset_revision_id is null)),'[]'::jsonb),
     'entries',coalesce((select jsonb_agg(jsonb_build_object(
       'id',entry.id,
       'seed',entry.seed,
@@ -577,7 +639,8 @@ begin
           matchup.ruleset_revision_id is null
           and matchup.structure_kind='regulated'
           and matchup.legacy_game_id is null
-          and round_item.ruleset_revision_id=active_revision_id
+          and stage_item.ruleset_revision_id=active_revision_id
+          and (round_item.ruleset_revision_id=active_revision_id or round_item.ruleset_revision_id is null)
         )
       )), '[]'::jsonb)
   );

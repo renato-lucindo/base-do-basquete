@@ -229,14 +229,21 @@ function scheduleDetails(form: FormData) {
 
 export function validateManualMatchup(form: FormData) {
   const requestId = scheduleRequestId(form.get("requestId"));
-  const roundId = scheduleId(form.get("roundId"));
+  const rawRoundId = form.get("roundId");
+  const roundId = rawRoundId === null || rawRoundId === "" ? null : scheduleId(rawRoundId);
   const homeRegistrationId = scheduleId(form.get("homeRegistrationId"));
   const awayRegistrationId = scheduleId(form.get("awayRegistrationId"));
   const details = scheduleDetails(form);
-  if (!requestId || !roundId || !homeRegistrationId || !awayRegistrationId || !details.ok) {
+  if (
+    !requestId ||
+    (rawRoundId !== null && rawRoundId !== "" && !roundId) ||
+    !homeRegistrationId ||
+    !awayRegistrationId ||
+    !details.ok
+  ) {
     return {
       ok: false as const,
-      error: details.ok ? "Escolha a fase e duas equipes válidas." : details.error,
+      error: details.ok ? "Escolha duas equipes válidas e revise a fase opcional." : details.error,
     };
   }
   if (homeRegistrationId === awayRegistrationId) {

@@ -187,8 +187,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
   const rounds = schedule.rounds ?? [];
   const name = (id: number | null) =>
     registrations.find((r) => r.id === id)?.name ?? "Equipe a definir";
-  const canCreateManual =
-    edition.status !== "archived" && rounds.length > 0 && confirmedRegistrations.length >= 2;
+  const canCreateManual = edition.status !== "archived" && confirmedRegistrations.length >= 2;
   return (
     <AdminArea title={`Jogos e agenda — ${edition.display_name}`}>
       <Link to={`/admin/competitions/${edition.id}`}>Voltar ao hub</Link>
@@ -202,15 +201,9 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
         <p className="eyebrow">Fluxo padrão</p>
         <h2 id="manual-matchup-title">Novo jogo</h2>
         <p>
-          Escolha as equipes e a fase. Data, horário e local são opcionais: sem eles, o jogo fica em
-          rascunho para ser concluído depois nesta mesma agenda.
+          Escolha as equipes. Fase/rodada, data, horário e local são opcionais: sem data e horário,
+          o jogo fica em rascunho para ser concluído depois nesta mesma agenda.
         </p>
-        {!rounds.length ? (
-          <p>
-            Defina ao menos uma fase/rodada na{" "}
-            <Link to={`/admin/competitions/${edition.id}/structure`}>estrutura da edição</Link>.
-          </p>
-        ) : null}
         {confirmedRegistrations.length < 2 ? (
           <p>
             São necessárias duas equipes confirmadas.{" "}
@@ -222,11 +215,9 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
           <input type="hidden" name="intent" value="create-manual" />
           <input type="hidden" name="requestId" value={requestId} />
           <label>
-            Fase e rodada
-            <select name="roundId" required defaultValue="" disabled={!rounds.length}>
-              <option value="" disabled>
-                Selecione a fase
-              </option>
+            Fase e rodada (opcional)
+            <select name="roundId" defaultValue="">
+              <option value="">Agenda geral</option>
               {rounds.map((round) => (
                 <option key={round.id} value={round.id}>
                   {round.label}

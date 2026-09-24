@@ -33,11 +33,7 @@ select lives_ok($$
     select public.admin_create_manual_matchup(
       '33333333-3333-4333-8333-333333333333',
       context.competition_id,
-      (select min(round_item.id)
-        from public.competition_rounds round_item
-        join public.competition_ruleset_revisions revision
-          on revision.id=round_item.ruleset_revision_id
-        where revision.competition_id=context.competition_id and revision.status='active'),
+      null,
       context.reg_one,context.reg_three,null,'Quadra manual'
     ) result
     from schedule_context context
@@ -61,7 +57,7 @@ select is((
   public.admin_create_manual_matchup(
     '33333333-3333-4333-8333-333333333333',
     competition_id,
-    (select round_id from public.matchups where id=manual_matchup),
+    null,
     reg_one,reg_three,null,'Quadra manual'
   )->>'gameId'
 )::bigint,manual_game,'manual create request is idempotent') from schedule_context;

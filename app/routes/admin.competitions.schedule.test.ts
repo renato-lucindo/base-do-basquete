@@ -135,6 +135,18 @@ describe("private schedule boundary", () => {
       p_venue: "Ginásio Central",
     });
   });
+  it("creates a manual game without requiring a structural round", async () => {
+    await expect(action(manualPost({ roundId: "" }))).resolves.toMatchObject({ status: 302 });
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_create_manual_matchup", {
+      p_request_id: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+      p_competition_id: 100,
+      p_round_id: null,
+      p_home_registration_id: 21,
+      p_away_registration_id: 22,
+      p_scheduled_at: "2026-09-15T22:30:00.000Z",
+      p_venue: "Ginásio Central",
+    });
+  });
   it("rejects an invalid manual game before any database call", async () => {
     const result = await action(manualPost({ awayRegistrationId: "21" }));
     expect(result).toMatchObject({ init: { status: 400 } });
