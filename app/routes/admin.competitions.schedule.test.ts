@@ -1,14 +1,9 @@
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
-import { createRoutesStub } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { scheduleLocalParts, scheduleLocalToIso } from "../modules/competition/scheduling";
 import {
   action,
-  getAssignableRegistrations,
   loader,
-  SchedulePrerequisiteNotice,
   scheduleEntryLabel,
   scheduleMatchupLabel,
 } from "./admin.competitions.$competitionId.schedule";
@@ -68,6 +63,19 @@ function batchPost() {
     }),
   );
 }
+function manualPost(fields: Record<string, string> = {}) {
+  return post({
+    intent: "create-manual",
+    requestId: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+    roundId: "7",
+    homeRegistrationId: "21",
+    awayRegistrationId: "22",
+    scheduledDate: "2026-09-15",
+    scheduledTime: "19:30",
+    venue: "Ginásio Central",
+    ...fields,
+  });
+}
 beforeEach(() => {
   vi.clearAllMocks();
   query.select.mockReturnValue(query);
@@ -112,6 +120,47 @@ describe("private schedule boundary", () => {
       p_expected_revision: 0,
       p_scheduled_at: null,
       p_venue: null,
+    });
+  });
+  it("creates and schedules a manual game through one transactional RPC", async () => {
+    await expect(action(manualPost())).resolves.toMatchObject({ status: 302 });
+    expect(client.from).not.toHaveBeenCalled();
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_create_manual_matchup", {
+      p_request_id: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+      p_competition_id: 100,
+      p_round_id: 7,
+      p_home_registration_id: 21,
+      p_away_registration_id: 22,
+      p_scheduled_at: "2026-09-15T22:30:00.000Z",
+      p_venue: "Ginásio Central",
+    });
+  });
+  it("rejects an invalid manual game before any database call", async () => {
+    const result = await action(manualPost({ awayRegistrationId: "21" }));
+    expect(result).toMatchObject({ init: { status: 400 } });
+    expect(client.from).not.toHaveBeenCalled();
+    expect(client.rpc).not.toHaveBeenCalled();
+    expect(JSON.stringify(result)).toContain("diferentes");
+  });
+  it("updates teams only after checking the matchup belongs to the edition", async () => {
+    await expect(
+      action(
+        post({
+          intent: "update-participants",
+          expectedHomeRegistrationId: "21",
+          expectedAwayRegistrationId: "22",
+          homeRegistrationId: "23",
+          awayRegistrationId: "24",
+        }),
+      ),
+    ).resolves.toMatchObject({ status: 302 });
+    expect(query.eq).toHaveBeenCalledWith("competition_id", 100);
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_update_manual_matchup_participants", {
+      p_matchup_id: 12,
+      p_expected_home_registration_id: 21,
+      p_expected_away_registration_id: 22,
+      p_home_registration_id: 23,
+      p_away_registration_id: 24,
     });
   });
   it("saves selected schedule rows through one transactional batch RPC", async () => {
@@ -185,7 +234,7 @@ describe("schedule local date and time", () => {
   });
 });
 
-describe("schedule registration prerequisites", () => {
+describe("schedule labels", () => {
   it("keeps accessible labels when the shared RPC still returns the previous contract", () => {
     expect(scheduleEntryLabel({ id: 1, seed: 3, registrationId: null })).toBe("Posição 3");
     expect(
@@ -194,52 +243,20 @@ describe("schedule registration prerequisites", () => {
         code: "SF-1",
         round: "Semifinal",
         order: 1,
+        manual: false,
         homeRegistrationId: null,
         awayRegistrationId: null,
         revision: 0,
         scheduledAt: null,
         venue: null,
         gameId: null,
+        gameStatus: null,
+        participantsEditable: false,
         officialResultSubmissionId: null,
         readyToSchedule: false,
         readyToResolve: false,
         resolution: null,
       }),
     ).toBe("Semifinal · confronto 1");
-  });
-
-  it("offers only confirmed registrations that do not occupy another position", () => {
-    const registrations = [
-      { id: 10, status: "confirmed" },
-      { id: 20, status: "draft" },
-      { id: 30, status: "confirmed" },
-    ];
-    const entries = [
-      { id: 1, seed: 1, registrationId: 10, label: "Semifinal · posição 1" },
-      { id: 2, seed: 2, registrationId: null, label: "Semifinal · posição 2" },
-    ];
-
-    expect(getAssignableRegistrations(registrations, entries)).toEqual([
-      { id: 30, status: "confirmed" },
-    ]);
-  });
-
-  it("explains where to confirm pending teams before using the agenda", () => {
-    const RouterStub = createRoutesStub([
-      {
-        path: "/",
-        Component: () =>
-          createElement(SchedulePrerequisiteNotice, {
-            competitionId: 100,
-            pendingCount: 4,
-          }),
-      },
-    ]);
-    const html = renderToStaticMarkup(createElement(RouterStub));
-
-    expect(html).toContain("Confirme as equipes antes de ocupar as posições");
-    expect(html).toContain("Há 4 inscrições aguardando confirmação");
-    expect(html).toContain('href="/admin/competitions/100"');
-    expect(html).toContain("Revisar equipes");
   });
 });

@@ -198,13 +198,100 @@ export function validateResolution(form: FormData) {
   return { ok: true as const, input: { matchupId, submissionId } };
 }
 
+function scheduleRequestId(value: unknown): string | null {
+  return typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+    ? value
+    : null;
+}
+
+function scheduleDetails(form: FormData) {
+  const rawDate = form.get("scheduledDate");
+  const rawTime = form.get("scheduledTime");
+  const rawVenue = form.get("venue");
+  if (typeof rawDate !== "string" || typeof rawTime !== "string" || typeof rawVenue !== "string") {
+    return { ok: false as const, error: "Revise a data, o horário e o local." };
+  }
+  const venue = rawVenue.trim();
+  if (venue.length > 160) {
+    return { ok: false as const, error: "O local deve ter no máximo 160 caracteres." };
+  }
+  if (Boolean(rawDate) !== Boolean(rawTime)) {
+    return { ok: false as const, error: "Informe data e horário juntos." };
+  }
+  let scheduledAt: string | null = null;
+  if (rawDate && rawTime) {
+    scheduledAt = scheduleLocalToIso(rawDate, rawTime);
+    if (!scheduledAt) return { ok: false as const, error: "Informe data e horário válidos." };
+  }
+  return { ok: true as const, scheduledAt, venue: venue || null };
+}
+
+export function validateManualMatchup(form: FormData) {
+  const requestId = scheduleRequestId(form.get("requestId"));
+  const roundId = scheduleId(form.get("roundId"));
+  const homeRegistrationId = scheduleId(form.get("homeRegistrationId"));
+  const awayRegistrationId = scheduleId(form.get("awayRegistrationId"));
+  const details = scheduleDetails(form);
+  if (!requestId || !roundId || !homeRegistrationId || !awayRegistrationId || !details.ok) {
+    return {
+      ok: false as const,
+      error: details.ok ? "Escolha a fase e duas equipes válidas." : details.error,
+    };
+  }
+  if (homeRegistrationId === awayRegistrationId) {
+    return { ok: false as const, error: "Mandante e visitante precisam ser equipes diferentes." };
+  }
+  return {
+    ok: true as const,
+    input: {
+      requestId,
+      roundId,
+      homeRegistrationId,
+      awayRegistrationId,
+      scheduledAt: details.scheduledAt,
+      venue: details.venue,
+    },
+  };
+}
+
+export function validateManualParticipants(form: FormData) {
+  const matchupId = scheduleId(form.get("matchupId"));
+  const expectedHomeRegistrationId = scheduleId(form.get("expectedHomeRegistrationId"));
+  const expectedAwayRegistrationId = scheduleId(form.get("expectedAwayRegistrationId"));
+  const homeRegistrationId = scheduleId(form.get("homeRegistrationId"));
+  const awayRegistrationId = scheduleId(form.get("awayRegistrationId"));
+  if (
+    !matchupId ||
+    !expectedHomeRegistrationId ||
+    !expectedAwayRegistrationId ||
+    !homeRegistrationId ||
+    !awayRegistrationId
+  ) {
+    return { ok: false as const, error: "Recarregue a página e escolha as duas equipes." };
+  }
+  if (homeRegistrationId === awayRegistrationId) {
+    return { ok: false as const, error: "Mandante e visitante precisam ser equipes diferentes." };
+  }
+  return {
+    ok: true as const,
+    input: {
+      matchupId,
+      expectedHomeRegistrationId,
+      expectedAwayRegistrationId,
+      homeRegistrationId,
+      awayRegistrationId,
+    },
+  };
+}
+
 export function schedulingError(code: string | undefined): string {
   const messages: Record<string, string> = {
     BD401: "Confirme novamente o MFA para continuar.",
     BD404: "Confronto ou vaga não encontrado.",
     BR020: "Esta operação exige uma edição privada em rascunho.",
     BR021: "Esta vaga já foi atribuída. A alteração exige um fluxo de correção.",
-    BR022: "A edição precisa de um preset ativo.",
+    BR022: "A edição precisa de uma estrutura ativa com fase e rodada.",
     BR023: "Confirme a inscrição da equipe antes de continuar.",
     BR024: "Esta equipe já ocupa outra vaga nesta edição.",
     BR025: "Revise o horário, o local e o período da edição.",
@@ -216,6 +303,9 @@ export function schedulingError(code: string | undefined): string {
     BR033: "A progressão automática básica vale somente para confrontos eliminatórios.",
     BR034: "O jogo precisa estar finalizado antes de resolver o confronto.",
     BR035: "O resultado oficial está incompleto ou inconsistente.",
+    BR097: "Este confronto não pode ser alterado pelo fluxo manual.",
+    BR098: "As equipes ou a agenda mudaram. Recarregue antes de salvar.",
+    BR099: "Este jogo já possui histórico que impede a troca das equipes.",
   };
   return messages[code ?? ""] ?? "Não foi possível salvar. Recarregue e tente novamente.";
 }

@@ -1,11 +1,11 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(42);
+select plan(57);
 set constraints all deferred;
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id) select '11111111-1111-4111-8111-111111111111' where not exists(select 1 from private.admin_accounts);
 select set_config('request.jwt.claims',jsonb_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
-create temporary table schedule_context(competition_id bigint,first_matchup bigint,final_matchup bigint,entry_one bigint,entry_two bigint,reg_one bigint,reg_two bigint,reg_three bigint,game_id bigint);
+create temporary table schedule_context(competition_id bigint,first_matchup bigint,final_matchup bigint,entry_one bigint,entry_two bigint,reg_one bigint,reg_two bigint,reg_three bigint,game_id bigint,manual_matchup bigint,manual_game bigint);
 with s as(insert into public.competition_series(name,slug) values('MVP04 test','mvp04-test') returning id),
 c as(insert into public.categories(name,slug) values('MVP04 test','mvp04-test') returning id)
 insert into schedule_context(competition_id) select public.admin_create_competition_from_preset(gen_random_uuid(),jsonb_build_object(
@@ -28,6 +28,48 @@ select throws_ok($$select public.admin_assign_competition_entry(entry_one,reg_tw
 select throws_ok($$select public.admin_assign_competition_entry(entry_two,reg_one) from schedule_context$$,'BR024','BDB_REGISTRATION_ALREADY_ASSIGNED','same team cannot occupy two entries');
 select lives_ok($$select public.admin_assign_competition_entry(entry_two,reg_two) from schedule_context$$,'second explicit entry resolves the matchup');
 select is((select home_registration_id from public.matchups where id=(select first_matchup from schedule_context)),(select reg_one from schedule_context),'home derives from the actual slot');
+select lives_ok($$
+  update schedule_context context
+  set manual_matchup=(created.result->>'matchupId')::bigint,
+      manual_game=(created.result->>'gameId')::bigint
+  from lateral (
+    select public.admin_create_manual_matchup(
+      '33333333-3333-4333-8333-333333333333',
+      context.competition_id,
+      (select min(round_item.id)
+        from public.competition_rounds round_item
+        join public.competition_ruleset_revisions revision
+          on revision.id=round_item.ruleset_revision_id
+        where revision.competition_id=context.competition_id and revision.status='active'),
+      context.reg_one,context.reg_three,null,'Quadra manual'
+    ) result
+  ) created
+$$,'manual game is created and prepared in one transaction');
+select is((select ruleset_revision_id from public.matchups where id=(select manual_matchup from schedule_context)),null::bigint,'manual matchup stays outside the automatic seed graph');
+select is((select status from public.games where id=(select manual_game from schedule_context)),'draft','manual game without date remains a draft');
+select is((select count(*) from public.game_participants where game_id=(select manual_game from schedule_context)),2::bigint,'manual game has exactly two participants');
+select is((
+  select count(*)
+  from schedule_context context
+  cross join lateral jsonb_array_elements(public.admin_get_competition_schedule(context.competition_id)->'matchups') item
+  where (item->>'id')::bigint=context.manual_matchup and (item->>'manual')::boolean
+),1::bigint,'schedule exposes the manual matchup explicitly');
+select ok(jsonb_array_length(public.admin_get_competition_schedule((select competition_id from schedule_context))->'rounds')>0,'schedule exposes active rounds for direct game creation');
+select is((
+  public.admin_create_manual_matchup(
+    '33333333-3333-4333-8333-333333333333',
+    competition_id,
+    (select round_id from public.matchups where id=manual_matchup),
+    reg_one,reg_three,null,'Quadra manual'
+  )->>'gameId'
+)::bigint,manual_game,'manual create request is idempotent') from schedule_context;
+select lives_ok($$
+  select public.admin_update_manual_matchup_participants(
+    manual_matchup,reg_one,reg_three,reg_two,reg_three
+  ) from schedule_context
+$$,'manual draft participants can be corrected before historical use');
+select is((select home_registration_id from public.matchups where id=(select manual_matchup from schedule_context)),(select reg_two from schedule_context),'manual participant correction updates the matchup');
+select ok(not ((public.admin_get_publication_review((select competition_id from schedule_context))->'blockers') @> '["UNASSIGNED_ENTRIES"]'::jsonb),'unused seed positions no longer block publication');
 select lives_ok($$update schedule_context set game_id=public.admin_prepare_matchup(first_matchup,0,'2025-03-01T19:30:00-03:00','Quadra 1')$$,'ready matchup creates a game transactionally');
 select is((select status from public.games where id=(select game_id from schedule_context)),'scheduled','prepared dated game is scheduled');
 select is(jsonb_array_length(public.admin_get_competition_schedule((select competition_id from schedule_context))->'matchups'),3,'AAL2 reads all reserved matchups');
@@ -113,6 +155,10 @@ select is(private.preset_blueprint((select id from public.competition_ruleset_re
 select throws_ok($$update public.matchups set matchup_order=20 where id=(select first_matchup from schedule_context)$$,'BR004','BDB_ACTIVE_RULESET_IMMUTABLE','operational exception cannot mutate graph');
 select throws_ok($$update public.matchups set home_registration_id=(select reg_three from schedule_context) where id=(select first_matchup from schedule_context)$$,'BR004','BDB_ACTIVE_RULESET_IMMUTABLE','operational exception cannot invent participants');
 select is((select count(*) from public.admin_mutation_audit where action='competition_entry_assigned' and entity_id in(select entry_one from schedule_context union all select entry_two from schedule_context)),2::bigint,'one audit per assignment');
+update public.games set status='live',started_at=now() where id=(select manual_game from schedule_context);
+set local role authenticated;
+select throws_ok($$select public.admin_update_manual_matchup_participants(manual_matchup,reg_two,reg_three,reg_one,reg_three) from schedule_context$$,'BR099','BDB_MANUAL_MATCHUP_PARTICIPANTS_IMMUTABLE','started manual game participants cannot be rewritten');
+reset role;
 update public.games set status='live',started_at=now() where id=(select game_id from schedule_context);
 select throws_ok($$select public.admin_prepare_matchup(first_matchup,2,null,null) from schedule_context$$,'BR027','BDB_STARTED_GAME_SCHEDULE_IMMUTABLE','started game cannot be rescheduled');
 select set_config('request.jwt.claims',jsonb_set(current_setting('request.jwt.claims')::jsonb,'{aal}','"aal1"')::text,true);
@@ -120,6 +166,8 @@ set local role authenticated;
 select throws_ok($$select public.admin_prepare_matchup(null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 rejected before validating schedule');
 select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 batch scheduling rejected');
 select throws_ok($$select public.admin_assign_competition_entry(null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 assignment rejected');
+select throws_ok($$select public.admin_create_manual_matchup(null,null,null,null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 manual game creation rejected');
+select throws_ok($$select public.admin_update_manual_matchup_participants(null,null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 manual participant correction rejected');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 summary rejected');
 select is((select count(*) from public.matchup_preparations),0::bigint,'AAL1 cannot read private preparation');
 reset role;
@@ -131,6 +179,8 @@ reset role;
 set local role anon;
 select throws_ok($$select public.admin_prepare_matchup(null,null,null,null)$$,'42501',null,'anon cannot execute');
 select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$$,'42501',null,'anon cannot execute batch scheduling');
+select throws_ok($$select public.admin_create_manual_matchup(null,null,null,null,null,null,null)$$,'42501',null,'anon cannot create manual games');
+select throws_ok($$select public.admin_update_manual_matchup_participants(null,null,null,null,null)$$,'42501',null,'anon cannot change manual participants');
 select throws_ok($$select * from public.matchup_preparations$$,'42501',null,'anon cannot read preparation');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'42501',null,'anon cannot read summary RPC');
 reset role;

@@ -4646,6 +4646,18 @@ export type Database = {
         Args: { p_abbreviation: string; p_competition_id: number; p_name: string };
         Returns: Json;
       };
+      admin_create_manual_matchup: {
+        Args: {
+          p_away_registration_id: number;
+          p_competition_id: number;
+          p_home_registration_id: number;
+          p_request_id: string;
+          p_round_id: number;
+          p_scheduled_at: string;
+          p_venue: string;
+        };
+        Returns: Json;
+      };
       admin_create_team: {
         Args: { p_abbreviation: string; p_name: string };
         Returns: {
@@ -4779,6 +4791,16 @@ export type Database = {
       };
       admin_prepare_matchups_batch: {
         Args: { p_competition_id: number; p_items: Json };
+        Returns: Json;
+      };
+      admin_update_manual_matchup_participants: {
+        Args: {
+          p_away_registration_id: number;
+          p_expected_away_registration_id: number;
+          p_expected_home_registration_id: number;
+          p_home_registration_id: number;
+          p_matchup_id: number;
+        };
         Returns: Json;
       };
       admin_publish_competition: {

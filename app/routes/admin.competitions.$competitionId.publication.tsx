@@ -3,13 +3,13 @@ import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
-import { scheduleId } from "../modules/competition/scheduling";
 import {
   type PublicationReview,
   publicationBlocker,
   publicationError,
   validatePublication,
 } from "../modules/competition/publication";
+import { scheduleId } from "../modules/competition/scheduling";
 import type { Route } from "./+types/admin.competitions.$competitionId.publication";
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
@@ -88,10 +88,6 @@ export default function PublicationPage({ loaderData, actionData }: Route.Compon
           <div>
             <dt>Jogos elegíveis</dt>
             <dd>{review.eligibleGames}</dd>
-          </div>
-          <div>
-            <dt>Posições pendentes</dt>
-            <dd>{review.unassignedEntries}</dd>
           </div>
         </dl>
         {review.blockers.length ? (

@@ -1055,13 +1055,13 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </Link>
           </article>
           <article>
-            <h2>Estrutura e agenda</h2>
-            <p>Atribua equipes às vagas e prepare os jogos sem publicar.</p>
+            <h2>Jogos e agenda</h2>
+            <p>Crie os confrontos diretamente e organize data, horário e local.</p>
             <Link
               className="button button-primary"
               to={`/admin/competitions/${competition.id}/schedule`}
             >
-              Organizar confrontos
+              Organizar jogos
             </Link>
           </article>
           <article>

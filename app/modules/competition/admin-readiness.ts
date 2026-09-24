@@ -64,7 +64,7 @@ export function resolveCompetitionReadiness(
       : "Registrar resultados"
     : "Definir fonte dos jogos";
   const resultDescription = input.primarySource
-    ? "Registre os resultados dos jogos preparados antes de publicar a edição."
+    ? "Registre os resultados dos jogos cadastrados antes de publicar a edição."
     : "Defina a fonte principal dos jogos antes de registrar resultados.";
 
   const definitions = [
@@ -87,7 +87,7 @@ export function resolveCompetitionReadiness(
     {
       key: "schedule" as const,
       label: "Agenda",
-      description: "Distribua as equipes nas posições e prepare os jogos.",
+      description: "Crie os jogos e organize data, horário e local.",
       href: `/admin/competitions/${input.competitionId}/schedule`,
       actionLabel: "Organizar agenda",
       complete: scheduleComplete,
