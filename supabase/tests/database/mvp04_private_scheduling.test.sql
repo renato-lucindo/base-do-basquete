@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(42);
 set constraints all deferred;
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id) select '11111111-1111-4111-8111-111111111111' where not exists(select 1 from private.admin_accounts);
@@ -43,6 +43,65 @@ select is((
 ),3::bigint,'active matchup labels are unique and contextual');
 select is((select count(*) from public.game_participants where game_id=(select game_id from schedule_context)),2::bigint,'exactly two participants generated');
 select is((select count(*) from public.game_period_scores where game_id=(select game_id from schedule_context)),0::bigint,'scheduled game has no invented zero score');
+select lives_ok($$
+  select public.admin_prepare_matchups_batch(
+    context.competition_id,
+    jsonb_build_array(
+      jsonb_build_object(
+        'matchupId',context.first_matchup,
+        'expectedRevision',0,
+        'scheduledAt','2025-03-01T19:30:00-03:00',
+        'venue','Quadra 1'
+      ),
+      jsonb_build_object(
+        'matchupId',(
+          select id from public.matchups
+          where competition_id=context.competition_id
+            and id not in(context.first_matchup,context.final_matchup)
+          limit 1
+        ),
+        'expectedRevision',0,
+        'scheduledAt','2025-04-01T18:00:00-03:00',
+        'venue','Quadra 2'
+      )
+    )
+  )
+  from schedule_context context
+$$,'multiple schedule rows are saved through one transactional RPC');
+select is((
+  select count(*) from public.matchup_preparations preparation
+  where preparation.venue='Quadra 2'
+),1::bigint,'batch preparation persists the unresolved matchup without inventing a game');
+select throws_ok($$
+  select public.admin_prepare_matchups_batch(
+    context.competition_id,
+    jsonb_build_array(
+      jsonb_build_object(
+        'matchupId',context.first_matchup,
+        'expectedRevision',1,
+        'scheduledAt','2025-03-01T19:30:00-03:00',
+        'venue','Temporary venue'
+      ),
+      jsonb_build_object(
+        'matchupId',(
+          select id from public.matchups
+          where competition_id=context.competition_id
+            and id not in(context.first_matchup,context.final_matchup)
+          limit 1
+        ),
+        'expectedRevision',0,
+        'scheduledAt','2025-04-02T18:00:00-03:00',
+        'venue','Stale venue'
+      )
+    )
+  )
+  from schedule_context context
+$$,'BR026','BDB_SCHEDULE_CHANGED_RELOAD','one stale row rejects the complete schedule batch');
+select is((select venue from public.games where id=(select game_id from schedule_context)),'Quadra 1'::text,'a rejected schedule batch rolls back earlier rows');
+select throws_ok(
+  $$select public.admin_prepare_matchups_batch((select competition_id from schedule_context),'[]'::jsonb)$$,
+  'BR025','BDB_SCHEDULE_INPUT_INVALID','empty schedule batches are rejected'
+);
 select is((select public.admin_prepare_matchup(first_matchup,0,'2025-03-01T19:30:00-03:00','Quadra 1') from schedule_context),(select game_id from schedule_context),'retry returns same game even with original expected revision');
 select throws_ok($$select public.admin_prepare_matchup(first_matchup,0,'2025-03-02T19:30:00-03:00','Quadra 2') from schedule_context$$,'BR026','BDB_SCHEDULE_CHANGED_RELOAD','stale schedule change rejected');
 select throws_ok($$select public.admin_prepare_matchup(first_matchup,1,'2026-01-01T03:00:00Z','Quadra') from schedule_context$$,'BR025','BDB_SCHEDULE_INPUT_INVALID','Sao Paulo date outside edition interval rejected');
@@ -59,6 +118,7 @@ select throws_ok($$select public.admin_prepare_matchup(first_matchup,2,null,null
 select set_config('request.jwt.claims',jsonb_set(current_setting('request.jwt.claims')::jsonb,'{aal}','"aal1"')::text,true);
 set local role authenticated;
 select throws_ok($$select public.admin_prepare_matchup(null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 rejected before validating schedule');
+select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 batch scheduling rejected');
 select throws_ok($$select public.admin_assign_competition_entry(null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 assignment rejected');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 summary rejected');
 select is((select count(*) from public.matchup_preparations),0::bigint,'AAL1 cannot read private preparation');
@@ -66,9 +126,11 @@ reset role;
 select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
 select throws_ok($$select public.admin_prepare_matchup(null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','non-admin AAL2 rejected');
+select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','non-admin AAL2 batch scheduling rejected');
 reset role;
 set local role anon;
 select throws_ok($$select public.admin_prepare_matchup(null,null,null,null)$$,'42501',null,'anon cannot execute');
+select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$$,'42501',null,'anon cannot execute batch scheduling');
 select throws_ok($$select * from public.matchup_preparations$$,'42501',null,'anon cannot read preparation');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'42501',null,'anon cannot read summary RPC');
 reset role;

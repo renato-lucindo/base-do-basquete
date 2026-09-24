@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(37);
 set constraints all deferred;
 
 insert into private.admin_accounts (user_id)
@@ -43,6 +43,21 @@ select throws_ok(
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'a non-admin at aal2 cannot create registrations'
 );
+select throws_ok(
+  $$select public.admin_create_team('Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot create teams'
+);
+select throws_ok(
+  $$select public.admin_create_and_register_team(9201, 'Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot create and register teams'
+);
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the private team resolver also rejects a non-admin at aal2'
+);
 
 reset role;
 select set_config(
@@ -55,6 +70,16 @@ select throws_ok(
   $$select public.admin_create_team_registration(9201, 9201)$$,
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'the administrator at aal1 cannot create registrations'
+);
+select throws_ok(
+  $$select public.admin_create_and_register_team(9201, 'Equipe sem MFA', 'ESM')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the administrator at aal1 cannot create and register teams'
+);
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe sem MFA', 'ESM')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the private team resolver also requires administrator aal2'
 );
 
 reset role;
@@ -202,6 +227,63 @@ select is(
   'a rejected batch leaves valid registrations unchanged'
 );
 
+select lives_ok(
+  $$select public.admin_create_team('Águias do Sul', 'ADS')$$,
+  'team creation generates its technical identifier server-side'
+);
+select is(
+  (select slug from public.teams where name = 'Águias do Sul'),
+  'aguias-do-sul'::text,
+  'team slug is derived from the normalized public name'
+);
+select lives_ok(
+  $$select public.admin_create_team('  Águias   do Sul ', 'ADS')$$,
+  'retrying the same normalized team name is idempotent'
+);
+select is(
+  (select count(*) from public.teams where lower(regexp_replace(name, '\s+', ' ', 'g')) = 'águias do sul'),
+  1::bigint,
+  'normalized retries leave one active team'
+);
+select lives_ok(
+  $$select public.admin_create_and_register_team(9201, 'Leões do Norte', 'LDN')$$,
+  'a new team can be created and registered atomically'
+);
+select lives_ok(
+  $$select public.admin_create_and_register_team(9201, 'Leões do Norte', 'LDN')$$,
+  'create and register retries are idempotent'
+);
+select is(
+  (
+    select count(*)
+    from public.team_registrations registration
+    join public.teams team on team.id = registration.team_id
+    where registration.competition_id = 9201 and team.name = 'Leões do Norte'
+  ),
+  1::bigint,
+  'create and register leaves one registration for the resolved team'
+);
+select lives_ok(
+  $$select public.admin_create_team('Aguia Sul', null)$$,
+  'first colliding slug candidate is created'
+);
+select lives_ok(
+  $$select public.admin_create_team('Aguia-Sul', null)$$,
+  'a distinct team with the same slug base is still created'
+);
+select is(
+  (select slug from public.teams where name = 'Aguia-Sul'),
+  'aguia-sul-2'::text,
+  'slug collisions receive a deterministic suffix'
+);
+
+reset role;
+set local role anon;
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe anônima', null)$$,
+  '42501', null,
+  'anon cannot execute the private team resolver'
+);
 reset role;
 select * from finish();
 rollback;

@@ -126,6 +126,70 @@ export function validateSchedule(form: FormData) {
   };
 }
 
+export function validateScheduleBatch(form: FormData) {
+  const selectedIds = form.getAll("selectedMatchupId").map((value) => scheduleId(value));
+  if (
+    selectedIds.length === 0 ||
+    selectedIds.length > 64 ||
+    selectedIds.some((value) => value === null) ||
+    new Set(selectedIds).size !== selectedIds.length
+  ) {
+    return { ok: false as const, error: "Selecione ao menos um jogo válido para salvar." };
+  }
+
+  const bulkDate = String(form.get("bulkDate") ?? "");
+  const bulkTime = String(form.get("bulkTime") ?? "");
+  const bulkVenue = String(form.get("bulkVenue") ?? "").trim();
+  if (bulkVenue.length > 160) {
+    return { ok: false as const, error: "O local em lote deve ter no máximo 160 caracteres." };
+  }
+
+  const items: Array<{
+    matchupId: number;
+    expectedRevision: number;
+    scheduledAt: string | null;
+    venue: string | null;
+  }> = [];
+  for (const matchupId of selectedIds as number[]) {
+    const revisionText = String(form.get(`revision-${matchupId}`) ?? "");
+    const rowDate = String(form.get(`date-${matchupId}`) ?? "");
+    const rowTime = String(form.get(`time-${matchupId}`) ?? "");
+    const rowVenue = String(form.get(`venue-${matchupId}`) ?? "").trim();
+    if (!/^(0|[1-9][0-9]*)$/.test(revisionText) || !Number.isSafeInteger(Number(revisionText))) {
+      return { ok: false as const, error: "A agenda mudou. Recarregue antes de salvar." };
+    }
+    if (rowVenue.length > 160) {
+      return { ok: false as const, error: "O local deve ter no máximo 160 caracteres." };
+    }
+
+    const scheduledDate = bulkDate || rowDate;
+    const scheduledTime = bulkTime || rowTime;
+    if (Boolean(scheduledDate) !== Boolean(scheduledTime)) {
+      return {
+        ok: false as const,
+        error:
+          "Cada jogo precisa ter data e horário juntos. O valor em lote pode completar a linha.",
+      };
+    }
+    let scheduledAt: string | null = null;
+    if (scheduledDate && scheduledTime) {
+      scheduledAt = scheduleLocalToIso(scheduledDate, scheduledTime);
+      if (!scheduledAt) {
+        return { ok: false as const, error: "Revise as datas e horários selecionados." };
+      }
+    }
+
+    items.push({
+      matchupId,
+      expectedRevision: Number(revisionText),
+      scheduledAt,
+      venue: bulkVenue || rowVenue || null,
+    });
+  }
+
+  return { ok: true as const, input: { items } };
+}
+
 export function validateResolution(form: FormData) {
   const matchupId = scheduleId(form.get("matchupId"));
   const submissionId = scheduleId(form.get("officialResultSubmissionId"));

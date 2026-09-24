@@ -10,6 +10,7 @@ import {
   schedulingError,
   validateResolution,
   validateSchedule,
+  validateScheduleBatch,
 } from "../modules/competition/scheduling";
 import type { Route } from "./+types/admin.competitions.$competitionId.schedule";
 
@@ -137,6 +138,15 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_registration_id: registrationId,
       })
     ).error?.code;
+  } else if (form.get("intent") === "prepare-batch") {
+    const parsed = validateScheduleBatch(form);
+    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    code = (
+      await auth.client.rpc("admin_prepare_matchups_batch", {
+        p_competition_id: id,
+        p_items: parsed.input.items,
+      })
+    ).error?.code;
   } else if (form.get("intent") === "prepare") {
     const parsed = validateSchedule(form);
     if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
@@ -253,102 +263,155 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
           )}
         </Form>
       ))}
-      <h2>Confrontos e preparação</h2>
-      {schedule.matchups.map((m) => {
-        const localSchedule = scheduleLocalParts(m.scheduledAt);
-        const canPrepare = m.readyToSchedule || m.gameId !== null;
-        return (
-          <section key={m.id} className="admin-card" aria-labelledby={`matchup-${m.id}`}>
-            <h3 id={`matchup-${m.id}`}>{m.label}</h3>
-            <p>
-              {name(m.homeRegistrationId)} × {name(m.awayRegistrationId)}
-            </p>
-            <p>
-              {m.gameId
-                ? `Jogo #${m.gameId} preparado`
-                : "Preparação privada; sem jogo até as duas vagas estarem resolvidas."}
-            </p>
-            {m.resolution ? (
-              <p>
-                Resultado confirmado: {m.resolution.homeScore} × {m.resolution.awayScore}.
-                Classificado: {name(m.resolution.winnerRegistrationId)}.
-              </p>
-            ) : m.readyToResolve && m.officialResultSubmissionId ? (
-              <Form method="post" className="admin-form">
-                <input type="hidden" name="csrfToken" value={csrfToken} />
-                <input type="hidden" name="intent" value="resolve" />
-                <input type="hidden" name="matchupId" value={m.id} />
-                <input
-                  type="hidden"
-                  name="officialResultSubmissionId"
-                  value={m.officialResultSubmissionId}
-                />
-                <p>
-                  Há um resultado oficial principal ativo. A equipe classificada será calculada no
-                  banco.
-                </p>
-                <button type="submit" className="button button-primary" disabled={busy}>
-                  Confirmar progressão pelo resultado oficial
-                </button>
-              </Form>
-            ) : m.gameId ? (
-              <p>
-                O confronto será liberado para progressão somente após o resultado oficial ativo.
-              </p>
-            ) : null}
-            {!canPrepare ? (
-              <p className="admin-note">
-                Este confronto ainda depende da definição das duas equipes nas posições anteriores.
-              </p>
-            ) : null}
-            <Form method="post" className="admin-form" aria-label={`Preparar ${m.label}`}>
-              <input type="hidden" name="csrfToken" value={csrfToken} />
-              <input type="hidden" name="intent" value="prepare" />
-              <input type="hidden" name="matchupId" value={m.id} />
-              <input type="hidden" name="expectedRevision" value={m.revision} />
-              <label>
-                Data (opcional)
-                <input
-                  name="scheduledDate"
-                  type="date"
-                  defaultValue={localSchedule.date}
-                  disabled={!canPrepare}
-                />
-              </label>
-              <label>
-                Horário (opcional)
-                <input
-                  name="scheduledTime"
-                  type="time"
-                  defaultValue={localSchedule.time}
-                  disabled={!canPrepare}
-                  aria-describedby={`time-help-${m.id}`}
-                />
-              </label>
-              <p id={`time-help-${m.id}`}>
-                Horário oficial da competição: {competitionTimeZone}. O servidor converte a data e a
-                hora para o instante canônico.
-              </p>
-              <label>
-                Local (opcional)
-                <input
-                  name="venue"
-                  maxLength={160}
-                  defaultValue={m.venue ?? ""}
-                  disabled={!canPrepare}
-                />
-              </label>
-              <button
-                type="submit"
-                className="button button-primary"
-                disabled={busy || edition.status === "archived" || !canPrepare}
-              >
-                Salvar preparação
-              </button>
-            </Form>
-          </section>
-        );
-      })}
+      <h2>Confrontos e agenda</h2>
+      <p>
+        Edite um jogo por linha. Data e horário usam {competitionTimeZone}; o servidor faz a
+        conversão para o instante canônico.
+      </p>
+      <Form id="schedule-batch" method="post" className="admin-panel admin-schedule-batch-tools">
+        <input type="hidden" name="csrfToken" value={csrfToken} />
+        <input type="hidden" name="intent" value="prepare-batch" />
+        <fieldset>
+          <legend>Aplicar valores às linhas selecionadas</legend>
+          <p>
+            Preencha somente o que deseja repetir. Os valores informados aqui substituem o campo
+            correspondente das linhas marcadas.
+          </p>
+          <div className="admin-schedule-bulk-grid">
+            <label>
+              Data
+              <input name="bulkDate" type="date" />
+            </label>
+            <label>
+              Horário
+              <input name="bulkTime" type="time" />
+            </label>
+            <label>
+              Local
+              <input name="bulkVenue" maxLength={160} />
+            </label>
+          </div>
+        </fieldset>
+        <button
+          type="submit"
+          className="button button-primary"
+          disabled={
+            busy ||
+            edition.status === "archived" ||
+            !schedule.matchups.some((matchup) => matchup.readyToSchedule || matchup.gameId !== null)
+          }
+        >
+          {busy ? "Salvando…" : "Salvar jogos selecionados"}
+        </button>
+      </Form>
+      <div className="admin-schedule-table-wrap">
+        <table className="admin-schedule-table">
+          <caption>Agenda de jogos</caption>
+          <thead>
+            <tr>
+              <th scope="col">Salvar</th>
+              <th scope="col">Confronto</th>
+              <th scope="col">Equipes</th>
+              <th scope="col">Data</th>
+              <th scope="col">Horário</th>
+              <th scope="col">Local</th>
+              <th scope="col">Situação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {schedule.matchups.map((m) => {
+              const localSchedule = scheduleLocalParts(m.scheduledAt);
+              const canPrepare = m.readyToSchedule || m.gameId !== null;
+              return (
+                <tr key={m.id}>
+                  <td>
+                    <input
+                      form="schedule-batch"
+                      type="checkbox"
+                      name="selectedMatchupId"
+                      value={m.id}
+                      defaultChecked={canPrepare}
+                      disabled={!canPrepare || edition.status === "archived"}
+                      aria-label={`Salvar ${m.label}`}
+                    />
+                    <input
+                      form="schedule-batch"
+                      type="hidden"
+                      name={`revision-${m.id}`}
+                      value={m.revision}
+                    />
+                  </td>
+                  <th scope="row">
+                    {m.label}
+                    {m.gameId ? <small>Jogo #{m.gameId}</small> : null}
+                  </th>
+                  <td>
+                    {name(m.homeRegistrationId)} × {name(m.awayRegistrationId)}
+                  </td>
+                  <td>
+                    <input
+                      form="schedule-batch"
+                      name={`date-${m.id}`}
+                      type="date"
+                      defaultValue={localSchedule.date}
+                      disabled={!canPrepare}
+                      aria-label={`Data de ${m.label}`}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      form="schedule-batch"
+                      name={`time-${m.id}`}
+                      type="time"
+                      defaultValue={localSchedule.time}
+                      disabled={!canPrepare}
+                      aria-label={`Horário de ${m.label}`}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      form="schedule-batch"
+                      name={`venue-${m.id}`}
+                      maxLength={160}
+                      defaultValue={m.venue ?? ""}
+                      disabled={!canPrepare}
+                      aria-label={`Local de ${m.label}`}
+                    />
+                  </td>
+                  <td>
+                    {m.resolution ? (
+                      <span>
+                        {m.resolution.homeScore} × {m.resolution.awayScore} · classificado:{" "}
+                        {name(m.resolution.winnerRegistrationId)}
+                      </span>
+                    ) : m.readyToResolve && m.officialResultSubmissionId ? (
+                      <Form method="post" className="inline-admin-form">
+                        <input type="hidden" name="csrfToken" value={csrfToken} />
+                        <input type="hidden" name="intent" value="resolve" />
+                        <input type="hidden" name="matchupId" value={m.id} />
+                        <input
+                          type="hidden"
+                          name="officialResultSubmissionId"
+                          value={m.officialResultSubmissionId}
+                        />
+                        <button type="submit" className="button button-ghost" disabled={busy}>
+                          Confirmar progressão
+                        </button>
+                      </Form>
+                    ) : !canPrepare ? (
+                      <span>Aguardando definição das equipes</span>
+                    ) : m.gameId ? (
+                      <span>Aguardando resultado oficial</span>
+                    ) : (
+                      <span>Pronto para preparar</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </AdminArea>
   );
 }

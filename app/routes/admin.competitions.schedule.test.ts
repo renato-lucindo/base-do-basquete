@@ -40,6 +40,32 @@ function post(fields: Record<string, string> = {}, origin = "https://example.tes
     }),
   );
 }
+function batchPost() {
+  const body = new URLSearchParams({
+    csrfToken: "test-csrf",
+    intent: "prepare-batch",
+    "revision-12": "0",
+    "date-12": "2026-09-15",
+    "time-12": "19:30",
+    "venue-12": "Quadra A",
+    "revision-13": "2",
+    "date-13": "2026-09-16",
+    "time-13": "20:00",
+    "venue-13": "Quadra B",
+    bulkDate: "",
+    bulkTime: "",
+    bulkVenue: "Ginásio Central",
+  });
+  body.append("selectedMatchupId", "12");
+  body.append("selectedMatchupId", "13");
+  return args(
+    new Request("https://example.test/admin/competitions/100/schedule", {
+      method: "POST",
+      headers: { Origin: "https://example.test" },
+      body,
+    }),
+  );
+}
 beforeEach(() => {
   vi.clearAllMocks();
   query.select.mockReturnValue(query);
@@ -84,6 +110,27 @@ describe("private schedule boundary", () => {
       p_expected_revision: 0,
       p_scheduled_at: null,
       p_venue: null,
+    });
+  });
+  it("saves selected schedule rows through one transactional batch RPC", async () => {
+    await expect(action(batchPost())).resolves.toMatchObject({ status: 302 });
+    expect(client.from).not.toHaveBeenCalled();
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_prepare_matchups_batch", {
+      p_competition_id: 100,
+      p_items: [
+        {
+          matchupId: 12,
+          expectedRevision: 0,
+          scheduledAt: "2026-09-15T22:30:00.000Z",
+          venue: "Ginásio Central",
+        },
+        {
+          matchupId: 13,
+          expectedRevision: 2,
+          scheduledAt: "2026-09-16T23:00:00.000Z",
+          venue: "Ginásio Central",
+        },
+      ],
     });
   });
   it("validates before querying", async () => {

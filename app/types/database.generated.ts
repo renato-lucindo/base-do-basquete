@@ -4642,6 +4642,29 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_create_and_register_team: {
+        Args: { p_abbreviation: string; p_competition_id: number; p_name: string };
+        Returns: Json;
+      };
+      admin_create_team: {
+        Args: { p_abbreviation: string; p_name: string };
+        Returns: {
+          abbreviation: string | null;
+          created_at: string;
+          id: number;
+          is_active: boolean;
+          is_public: boolean;
+          name: string;
+          slug: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "teams";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_create_team_registration: {
         Args: { p_competition_id: number; p_team_id: number };
         Returns: {
@@ -4753,6 +4776,10 @@ export type Database = {
           p_venue: string;
         };
         Returns: number;
+      };
+      admin_prepare_matchups_batch: {
+        Args: { p_competition_id: number; p_items: Json };
+        Returns: Json;
       };
       admin_publish_competition: {
         Args: {
