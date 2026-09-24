@@ -29,10 +29,7 @@ select throws_ok($$select public.admin_assign_competition_entry(entry_two,reg_on
 select lives_ok($$select public.admin_assign_competition_entry(entry_two,reg_two) from schedule_context$$,'second explicit entry resolves the matchup');
 select is((select home_registration_id from public.matchups where id=(select first_matchup from schedule_context)),(select reg_one from schedule_context),'home derives from the actual slot');
 select lives_ok($$
-  update schedule_context context
-  set manual_matchup=(created.result->>'matchupId')::bigint,
-      manual_game=(created.result->>'gameId')::bigint
-  from lateral (
+  with created as (
     select public.admin_create_manual_matchup(
       '33333333-3333-4333-8333-333333333333',
       context.competition_id,
@@ -43,7 +40,12 @@ select lives_ok($$
         where revision.competition_id=context.competition_id and revision.status='active'),
       context.reg_one,context.reg_three,null,'Quadra manual'
     ) result
-  ) created
+    from schedule_context context
+  )
+  update schedule_context
+  set manual_matchup=(created.result->>'matchupId')::bigint,
+      manual_game=(created.result->>'gameId')::bigint
+  from created
 $$,'manual game is created and prepared in one transaction');
 select is((select ruleset_revision_id from public.matchups where id=(select manual_matchup from schedule_context)),null::bigint,'manual matchup stays outside the automatic seed graph');
 select is((select status from public.games where id=(select manual_game from schedule_context)),'draft','manual game without date remains a draft');
