@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -5,8 +6,8 @@ import {
   compareValues,
   matchesStatisticsSearch,
   nextSort,
-  parseColumns,
   parseColumnPreset,
+  parseColumns,
   parsePage,
   parseSortDirection,
   parseSortKey,
@@ -55,5 +56,27 @@ describe("statistics table controls", () => {
       key: "player",
       direction: "asc",
     });
+  });
+
+  it("round-trips any non-empty allowlisted column selection", () => {
+    fc.assert(
+      fc.property(
+        fc.uniqueArray(fc.constantFrom(...advancedColumnPresets.all), {
+          minLength: 1,
+          maxLength: advancedColumnPresets.all.length,
+        }),
+        (columns) => {
+          expect(parseColumns(serializeColumns(columns), "essentials")).toEqual(columns);
+        },
+      ),
+    );
+  });
+
+  it("parses every positive safe integer page without changing its value", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: Number.MAX_SAFE_INTEGER }), (page) => {
+        expect(parsePage(String(page))).toBe(page);
+      }),
+    );
   });
 });

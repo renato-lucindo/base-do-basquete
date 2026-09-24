@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const ADMIN_DRAFT_SCHEMA_VERSION = 1 as const;
 export const ADMIN_DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -17,6 +19,18 @@ export type AdminDraftReadResult<T> =
   | { status: "missing" }
   | { status: "expired" | "incompatible" | "unsafe" }
   | { status: "available"; draft: AdminDraft<T> };
+
+const adminDraftEnvelopeSchema = z
+  .object({
+    schemaVersion: z.literal(ADMIN_DRAFT_SCHEMA_VERSION),
+    flow: z.enum(["roster", "manual-scoresheet", "boxscore-review"]),
+    competitionId: z.number().int(),
+    entityId: z.number().int().optional(),
+    savedAt: z.string(),
+    expiresAt: z.string(),
+    data: z.unknown(),
+  })
+  .passthrough();
 
 const forbiddenKeyPattern =
   /(^|_)(pdf|file|binary|blob|token|cookie|session|secret|credential|password|signed_?url|csrf|idempotency)(_|$)/i;
@@ -76,15 +90,15 @@ export function parseAdminDraft<T>(
   if (!value || typeof value !== "object" || hasForbiddenValue(value)) {
     return { status: "unsafe" };
   }
-  const candidate = value as Partial<AdminDraft<T>>;
+  const parsed = adminDraftEnvelopeSchema.safeParse(value);
+  if (!parsed.success) {
+    return { status: "incompatible" };
+  }
+  const candidate = parsed.data;
   if (
-    candidate.schemaVersion !== ADMIN_DRAFT_SCHEMA_VERSION ||
     candidate.flow !== expected.flow ||
     candidate.competitionId !== expected.competitionId ||
-    candidate.entityId !== expected.entityId ||
-    typeof candidate.savedAt !== "string" ||
-    typeof candidate.expiresAt !== "string" ||
-    !("data" in candidate)
+    candidate.entityId !== expected.entityId
   ) {
     return { status: "incompatible" };
   }
