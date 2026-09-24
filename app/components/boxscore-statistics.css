@@ -398,6 +398,11 @@
   background: var(--paper);
 }
 
+.reference-explorer .statistics-table thead {
+  position: relative;
+  z-index: 4;
+}
+
 .reference-explorer .statistics-table thead th {
   position: relative;
   z-index: 2;
