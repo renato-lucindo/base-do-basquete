@@ -355,7 +355,7 @@ function RecentGames({
   return (
     <section aria-labelledby="recent-games-title" className="player-recent-games">
       <div>
-        <p className="eyebrow">Últimas partidas</p>
+        <p className="eyebrow">Últimas partidas · todas as fases</p>
         <h3 id="recent-games-title">Jogos recentes</h3>
       </div>
       <ol>

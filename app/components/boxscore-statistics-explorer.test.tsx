@@ -187,6 +187,7 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain(`aria-label="${longName}"`);
     expect(html).toContain(">João Neves</a>");
     expect(html).toContain(`title="${longName}"`);
+    expect(html).toContain("/jogadores/atleta-azul?scope=all");
   });
 
   it("hides MIN temporarily, explains unavailable states and exposes a keyboard region", () => {

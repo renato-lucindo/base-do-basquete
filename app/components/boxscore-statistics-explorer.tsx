@@ -263,8 +263,15 @@ function comparisonTone(
   return better ? "better" : "worse";
 }
 
-function playerPath(context: CompetitionContext, row: BoxscoreStatisticsPlayerRow): string {
-  return contextPath(context, "jogadores", row.playerSlug);
+function playerPath(
+  context: CompetitionContext,
+  row: BoxscoreStatisticsPlayerRow,
+  data: Pick<BoxscoreStatisticsPageDto, "mode" | "scope">,
+): string {
+  const params = new URLSearchParams();
+  if (data.mode !== "per-game") params.set("mode", data.mode);
+  if (data.scope !== "regular") params.set("scope", data.scope);
+  return `${contextPath(context, "jogadores", row.playerSlug)}${params.size ? `?${params}` : ""}`;
 }
 
 export function BoxscoreStatisticsExplorer({
@@ -902,7 +909,7 @@ export function BoxscoreStatisticsExplorer({
                 <tr key={`${row.registrationId}:${row.playerId}`}>
                   <th scope="row" className="reference-player" title={row.playerName}>
                     <span className="reference-jersey">{row.jersey ? `#${row.jersey}` : "—"}</span>
-                    <Link aria-label={row.playerName} to={playerPath(context, row)}>
+                    <Link aria-label={row.playerName} to={playerPath(context, row, data)}>
                       {playerDisplayNames.get(row.playerId) ?? row.playerName}
                     </Link>
                     <span className="reference-team" title={row.teamName}>
