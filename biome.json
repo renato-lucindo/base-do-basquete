@@ -8,7 +8,9 @@
       "!node_modules",
       "!.react-router",
       "!.wrangler",
+      "!docs/prototypes",
       "!docs/plan/referencias",
+      "!tmp",
       "!public/vendor/sienna"
     ]
   },
