@@ -142,8 +142,8 @@
 }
 
 .reference-filters .reference-panel {
-  left: auto;
-  right: 0;
+  left: 0;
+  right: auto;
 }
 
 .reference-summary {
@@ -399,8 +399,11 @@
 }
 
 .reference-explorer .statistics-table thead th {
+  position: relative;
+  z-index: 2;
   height: 33px;
   padding: 0 10px;
+  overflow: visible;
   color: #33415c;
   background: #f4f8fd;
   font-size: 11px;
