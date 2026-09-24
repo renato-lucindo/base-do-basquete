@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import type { CompetitionContext } from "../modules/competition/context";
 import type { BoxscoreStatisticsPageDto } from "../modules/statistics/boxscore-statistics-domain";
+import { PublicContextContent } from "../routes/public-context";
 import { BoxscoreStatisticsExplorer } from "./boxscore-statistics-explorer";
 
 const context: CompetitionContext = {
@@ -80,7 +81,7 @@ const athlete = data.rows[0];
 if (!athlete) throw new Error("A fixture de atleta é obrigatória");
 
 describe("BoxscoreStatisticsExplorer", () => {
-  it("renders the reference title, compact controls and all modes and scopes", () => {
+  it("renders compact controls and all modes and scopes without a duplicate page title", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/?mode=per-30&scope=all"]}>
         <BoxscoreStatisticsExplorer context={context} data={data} />
@@ -95,10 +96,14 @@ describe("BoxscoreStatisticsExplorer", () => {
     );
     expect(html).toContain("Equipes · 1/1");
     expect(html).toContain('type="checkbox" checked=""');
-    expect(html).toContain("<h1>Liga</h1>");
+    expect(html).not.toContain("<h1>Liga</h1>");
+    expect(html).toContain("1 atleta");
+    expect(html).toContain("Por 30 min. · todos os jogos · somente jogos finalizados");
     expect(html).toContain("Colunas · 12/19");
     expect(html).toContain("Todas");
     expect(html).toContain("Nenhuma");
+    expect(html).toContain('aria-label="Selecionar todas as equipes"');
+    expect(html).toContain('aria-label="Não selecionar nenhuma equipe"');
     expect(html).toContain("Restaurar padrão");
     expect(html).not.toContain("Principais");
     expect(html).not.toContain("Defesa e controle");
@@ -107,6 +112,21 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Comparar jogadores");
     expect(html).toContain("<dialog");
     expect(html).toContain('aria-labelledby="comparison-title"');
+  });
+
+  it("represents an explicit empty team selection without selecting a checkbox", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?mode=per-30&scope=all&team="]}>
+        <BoxscoreStatisticsExplorer context={context} data={{ ...data, rows: [], total: 0 }} />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("Equipes · 0/1");
+    expect(html).toContain('aria-label="Não selecionar nenhuma equipe" disabled=""');
+    expect(html).toContain("0 atletas");
+    expect(html).toContain(
+      '<div class="reference-team-options"><label><input type="checkbox"/><span>Azul</span>',
+    );
   });
 
   it("groups shooting columns and keeps team and jersey in the pinned athlete cell", () => {
@@ -120,6 +140,9 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("AP");
     expect(html).toContain("3PC/3PT");
     expect(html).toContain("3P%");
+    expect(html).toContain('class="metric-help-icon">?</span>');
+    expect(html).toContain('role="tooltip">Pontos</span>');
+    expect(html).toContain('aria-label="Ordenar por Pontos"');
     expect(html).toContain("Colunas · 13/20");
     expect(html).toContain("4.0/10.0");
     expect(html).toContain("2.0/5.0");
@@ -237,5 +260,26 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain('data-tone="better"');
     expect(html).toContain('data-tone="worse"');
     expect(html).toContain("quanto menor, melhor");
+  });
+
+  it("renders the statistics explorer inside the shared public header", () => {
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/2026/liga/adulto/masculino/jogadores?scope=all"]}>
+        <PublicContextContent
+          boxscoreStatistics={{ ...data, mode: "per-game" }}
+          context={context}
+          contexts={[context]}
+          playerStatistics={null}
+          resource="jogadores"
+          sportsCore={null}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain('class="public-header"');
+    expect(html).toContain('class="public-nav"');
+    expect(html).toContain("Base do Basquete");
+    expect(html).not.toContain("boxscore-reference-shell");
+    expect(html).not.toContain("<h1>Liga</h1>");
   });
 });

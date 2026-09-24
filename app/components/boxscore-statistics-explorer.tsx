@@ -137,6 +137,13 @@ function metricLabel(metric: BoxscoreMetric, columns: BoxscoreMetric[]) {
     : BOXSCORE_METRICS[metric].label;
 }
 
+function metricName(metric: BoxscoreMetric, columns: BoxscoreMetric[]) {
+  const pair = pairedMetrics[metric];
+  return pair && columns.includes(pair)
+    ? `${BOXSCORE_METRICS[metric].name}/${BOXSCORE_METRICS[pair].name.toLocaleLowerCase("pt-BR")}`
+    : BOXSCORE_METRICS[metric].name;
+}
+
 // Lucide paths used by the reference site; decorative icons retain native control labels.
 function StatsIcon({
   name,
@@ -267,8 +274,6 @@ export function BoxscoreStatisticsExplorer({
   context: CompetitionContext;
   data: BoxscoreStatisticsPageDto;
 }) {
-  const pageTitle =
-    context.series.name === "Copa ES Ouro" ? "Copa ES - Série Ouro" : context.series.name;
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterMetric, setFilterMetric] = useState<BoxscoreMetric>("points");
   const [filterOperator, setFilterOperator] = useState(">=");
@@ -344,10 +349,18 @@ export function BoxscoreStatisticsExplorer({
     ...new Set((searchParams.get("filters") ?? "").split(";").filter(Boolean)),
   ];
   const hasTeamFilter = searchParams.has("team");
-  const selectedTeams = new Set(searchParams.getAll("team"));
+  const selectedTeams = new Set(searchParams.getAll("team").filter(Boolean));
   const selectedTeamCount = hasTeamFilter ? selectedTeams.size : data.teams.length;
   const filterCount = activeFilters.length + (hasTeamFilter ? 1 : 0);
   const playerDisplayNames = compactPlayerNames(data.playerOptions);
+  const modeLabel =
+    data.mode === "total" ? "Totais" : data.mode === "per-30" ? "Por 30 min." : "Por jogo";
+  const scopeLabel =
+    data.scope === "regular"
+      ? "temporada regular"
+      : data.scope === "playoffs"
+        ? "eliminatórias"
+        : "todos os jogos";
 
   useEffect(() => {
     const details = [filterDetails.current, columnDetails.current];
@@ -377,37 +390,7 @@ export function BoxscoreStatisticsExplorer({
       aria-label="Estatísticas dos jogadores"
       className="statistics-explorer reference-explorer"
     >
-      <header className="reference-heading">
-        <h1>{pageTitle}</h1>
-        <p>
-          Estatísticas dos jogadores{" "}
-          {data.scope === "regular"
-            ? "da fase regular"
-            : data.scope === "playoffs"
-              ? "das eliminatórias"
-              : "de todos os jogos"}
-        </p>
-        <p className="reference-count" aria-live="polite">
-          {data.total} atletas · ao menos 1 jogo · página {data.page} de {data.totalPages}
-        </p>
-      </header>
       <div className="reference-toolbar">
-        <label className="statistics-search">
-          <span className="sr-only">Buscar atleta ou equipe</span>
-          <StatsIcon name="search" />
-          <input
-            placeholder="Buscar jogador ou time…"
-            onChange={(event) =>
-              update((next) => {
-                if (event.target.value) next.set("q", event.target.value);
-                else next.delete("q");
-                resetPage(next);
-              })
-            }
-            type="search"
-            value={searchParams.get("q") ?? ""}
-          />
-        </label>
         <details
           className="reference-filters"
           ref={filterDetails}
@@ -428,6 +411,36 @@ export function BoxscoreStatisticsExplorer({
               <legend>
                 Equipes · {selectedTeamCount}/{data.teams.length}
               </legend>
+              <fieldset className="reference-team-actions">
+                <legend className="sr-only">Ações de seleção de equipes</legend>
+                <button
+                  aria-label="Selecionar todas as equipes"
+                  disabled={!data.teams.length || !hasTeamFilter}
+                  onClick={() =>
+                    update((next) => {
+                      next.delete("team");
+                      resetPage(next);
+                    })
+                  }
+                  type="button"
+                >
+                  Todas
+                </button>
+                <button
+                  aria-label="Não selecionar nenhuma equipe"
+                  disabled={!data.teams.length || (hasTeamFilter && !selectedTeams.size)}
+                  onClick={() =>
+                    update((next) => {
+                      next.delete("team");
+                      next.append("team", "");
+                      resetPage(next);
+                    })
+                  }
+                  type="button"
+                >
+                  Nenhuma
+                </button>
+              </fieldset>
               <div className="reference-team-options">
                 {data.teams.map((team) => {
                   const checked = !hasTeamFilter || selectedTeams.has(team.slug);
@@ -439,7 +452,7 @@ export function BoxscoreStatisticsExplorer({
                           update((next) => {
                             const selected = new Set(
                               next.has("team")
-                                ? next.getAll("team")
+                                ? next.getAll("team").filter(Boolean)
                                 : data.teams.map((option) => option.slug),
                             );
                             if (selected.has(team.slug)) selected.delete(team.slug);
@@ -569,6 +582,14 @@ export function BoxscoreStatisticsExplorer({
             </label>
           ))}
         </fieldset>
+      </div>
+      <div className="reference-summary" aria-live="polite">
+        <strong>
+          {data.total} {data.total === 1 ? "atleta" : "atletas"}
+        </strong>
+        <span>
+          {modeLabel} · {scopeLabel} · somente jogos finalizados
+        </span>
       </div>
       {activeFilters.length ? (
         <div className="active-filters">
@@ -844,10 +865,28 @@ export function BoxscoreStatisticsExplorer({
                     key={metric}
                     scope="col"
                   >
-                    <button className="statistics-sort" onClick={() => sort(metric)} type="button">
-                      <abbr title={BOXSCORE_METRICS[metric].name}>
-                        {metricLabel(metric, availableColumns)}
-                      </abbr>
+                    <button
+                      aria-describedby={`metric-help-${metric}`}
+                      aria-label={`Ordenar por ${metricName(metric, availableColumns)}`}
+                      className="statistics-sort"
+                      onClick={() => sort(metric)}
+                      type="button"
+                    >
+                      <span className="metric-header-label">
+                        <abbr title={metricName(metric, availableColumns)}>
+                          {metricLabel(metric, availableColumns)}
+                        </abbr>
+                        <span aria-hidden="true" className="metric-help-icon">
+                          ?
+                        </span>
+                        <span
+                          className="metric-help-tooltip"
+                          id={`metric-help-${metric}`}
+                          role="tooltip"
+                        >
+                          {metricName(metric, availableColumns)}
+                        </span>
+                      </span>
                       <StatsIcon
                         name={
                           data.sort === metric ? (data.direction === "asc" ? "up" : "down") : "sort"

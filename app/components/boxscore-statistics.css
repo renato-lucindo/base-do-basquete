@@ -1,55 +1,15 @@
-/* Scoped to the boxscore page: measurements and palette from copa-es.pages.dev. */
-.public-shell.boxscore-reference-shell {
-  --ink: oklch(0.18 0.02 250);
-  --paper: oklch(0.985 0.005 90);
-  --muted: #626b75;
-  --line: #d2d6dc;
-  --green: #073363;
-  min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
-  font-family: Inter, "Helvetica Neue", system-ui, sans-serif;
-}
-
-.boxscore-reference-shell .public-content {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 32px 16px 0;
-}
-
+/* Boxscore layout inherits the public site's palette and shell. */
 .reference-explorer.statistics-explorer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px 12px;
-  padding: 0;
+  padding: 20px 0 0;
   margin: 0;
-}
-
-.reference-heading h1 {
-  margin: 0;
-  font-size: 30px;
-  line-height: 36px;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-.reference-heading p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
-}
-
-.reference-heading .reference-count {
-  color: var(--muted);
-  font-weight: 400;
 }
 
 .reference-toolbar {
   display: flex;
   align-items: center;
-  align-self: end;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -64,7 +24,7 @@
 }
 
 .reference-explorer :where(button, summary, input, select, a):focus-visible {
-  outline: 2px solid #1477b7;
+  outline: 2px solid var(--green);
   outline-offset: 3px;
 }
 
@@ -73,39 +33,17 @@
   opacity: 0.5;
 }
 
-.reference-explorer .statistics-search {
-  display: block;
-  position: relative;
-  flex: 0 1 256px;
-  width: 256px;
-  min-width: 0;
-  margin: 0;
-}
-
-.reference-explorer .statistics-search > svg {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  color: var(--muted);
-  pointer-events: none;
-}
-
 .reference-explorer input:not([type="radio"]):not([type="checkbox"]),
 .reference-explorer select {
   width: 100%;
   min-width: 0;
   min-height: 36px;
   padding: 4px 10px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: transparent;
+  background: var(--paper);
   font-size: 14px;
   box-shadow: 0 1px 2px #0000000d;
-}
-
-.reference-explorer .statistics-search input {
-  padding-left: 32px;
-  font-weight: 400;
 }
 
 .reference-explorer summary,
@@ -118,7 +56,7 @@
   gap: 8px;
   min-height: 32px;
   padding: 0 12px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 5px;
   background: var(--paper);
   font-size: 12px;
@@ -134,7 +72,7 @@
 
 .reference-explorer summary:hover,
 .reference-explorer button:not(:disabled):hover {
-  background: #edf0f3;
+  background: var(--surface-muted);
 }
 
 .reference-explorer details {
@@ -151,7 +89,7 @@
   padding: 3px;
   border: 0;
   border-radius: 6px;
-  background: #edf0f3;
+  background: var(--surface-muted);
 }
 
 .reference-explorer .segmented-control span {
@@ -167,16 +105,18 @@
 }
 
 .reference-explorer .segmented-control input:checked + span {
-  color: var(--ink);
+  color: var(--green);
   background: var(--paper);
+  box-shadow: 0 1px 3px #0d74fc1f;
 }
 
 .reference-explorer .segmented-control input:focus-visible + span {
-  outline: 2px solid #1477b7;
+  outline: 2px solid var(--green);
   outline-offset: 2px;
 }
 
 .reference-column-toolbar,
+.reference-summary,
 .active-filters,
 .reference-explorer > .scrollable-table,
 .reference-explorer > .statistics-pagination,
@@ -195,7 +135,7 @@
   width: 440px;
   max-width: calc(100vw - 32px);
   padding: 16px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--paper);
   box-shadow: 0 6px 20px #0000001a;
@@ -204,6 +144,28 @@
 .reference-filters .reference-panel {
   left: auto;
   right: 0;
+}
+
+.reference-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-muted);
+}
+
+.reference-summary strong {
+  font-size: 15px;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: summary copy is isolated from segmented controls. */
+.reference-summary span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .reference-panel h2,
@@ -229,6 +191,23 @@
   margin-bottom: 7px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.reference-team-actions {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  border: 0;
+}
+
+.reference-explorer .reference-team-actions button {
+  min-height: 28px;
+  padding: 3px 9px;
+  color: var(--green);
+  background: var(--paper);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .reference-team-options {
@@ -296,8 +275,8 @@
   min-height: 28px;
   padding: 3px 4px 3px 10px;
   border-radius: 999px;
-  color: #073363;
-  background: #dcecf7;
+  color: var(--green-dark);
+  background: var(--accent);
   font-weight: 600;
 }
 
@@ -376,14 +355,14 @@
   min-height: 12px;
   border: 0;
   border-radius: 0;
-  background: #e9ecef;
+  background: var(--surface-muted);
 }
 
 .reference-explorer .statistics-table-wrap {
   max-height: 70vh;
   border: 1px solid var(--line);
   border-radius: 0;
-  background: white;
+  background: var(--paper);
 }
 
 .reference-explorer .statistics-table {
@@ -416,14 +395,14 @@
   border-bottom: 1px solid var(--line);
   text-align: right;
   white-space: nowrap;
-  background: white;
+  background: var(--paper);
 }
 
 .reference-explorer .statistics-table thead th {
   height: 33px;
   padding: 0 10px;
-  color: var(--paper);
-  background: oklch(0.3 0.1 255);
+  color: #33415c;
+  background: #f4f8fd;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -448,6 +427,72 @@
   width: 12px;
   height: 12px;
   opacity: 0.5;
+}
+
+.metric-header-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.metric-header-label abbr {
+  text-decoration: none;
+}
+
+.metric-help-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font:
+    700 9px / 1 Inter,
+    "Helvetica Neue",
+    system-ui,
+    sans-serif;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.metric-help-tooltip {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 50%;
+  z-index: 8;
+  width: max-content;
+  max-width: 220px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 6px 18px #17203324;
+  font:
+    600 11px / 1.35 Inter,
+    "Helvetica Neue",
+    system-ui,
+    sans-serif;
+  text-align: left;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition:
+    opacity 120ms ease,
+    visibility 120ms ease;
+}
+
+.statistics-sort:is(:hover, :focus-visible) .metric-help-icon {
+  opacity: 1;
+}
+
+.statistics-sort:is(:hover, :focus-visible) .metric-help-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .reference-explorer [aria-sort] .statistics-sort svg {
@@ -484,7 +529,7 @@
   text-overflow: ellipsis;
   vertical-align: bottom;
   color: var(--ink);
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .reference-jersey {
@@ -505,19 +550,19 @@
   padding: 2px 6px;
   margin-left: 8px;
   border-radius: 3px;
-  color: #58626b;
-  background: #eef0f2;
+  color: var(--muted);
+  background: var(--surface-muted);
   font-size: 10px;
   line-height: 14px;
   font-weight: 600;
 }
 
 .reference-explorer .statistics-table tbody tr > .reference-sorted {
-  background: #d9effc;
+  background: var(--accent);
 }
 
 .reference-explorer .statistics-table tbody tr:hover > * {
-  background: #eef7fc;
+  background: #f0f7ff;
 }
 
 .reference-explorer [data-leader="true"] {
@@ -565,7 +610,7 @@
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   padding: 24px;
-  border: 1px solid #d2d6dc;
+  border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink);
   background: var(--paper);
@@ -603,9 +648,9 @@
 .reference-player-picker {
   min-width: 0;
   padding: 12px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 4px;
-  background: white;
+  background: var(--paper);
 }
 
 .reference-player-picker-label {
@@ -643,7 +688,7 @@
   min-height: 58px;
   padding: 8px;
   border-radius: 5px;
-  background: #f2f4f6;
+  background: var(--surface-muted);
 }
 
 /* biome-ignore lint/style/noDescendingSpecificity: component sections follow document order. */
@@ -670,7 +715,7 @@
   padding: 0 9px;
   border: 0;
   border-radius: 4px;
-  color: #073363;
+  color: var(--green);
   background: transparent;
   font-size: 12px;
   font-weight: 600;
@@ -680,7 +725,7 @@
   max-height: 224px;
   overflow: auto;
   margin-top: 8px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 4px;
 }
 
@@ -692,8 +737,8 @@
   min-height: 32px;
   padding: 6px;
   border: 0;
-  border-bottom: 1px solid #edf0f3;
-  background: white;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
   font-size: 12px;
   text-align: left;
 }
@@ -704,8 +749,8 @@
 }
 
 .reference-player-options button[aria-pressed="true"] {
-  background: #d9effc;
-  box-shadow: inset 3px 0 #073363;
+  background: var(--accent);
+  box-shadow: inset 3px 0 var(--green);
 }
 
 .reference-comparison > p {
@@ -719,9 +764,9 @@
   overflow-x: auto;
   margin-top: 16px;
   padding: 12px;
-  border: 1px solid #dce0e5;
+  border: 1px solid var(--line);
   border-radius: 6px;
-  background: white;
+  background: var(--paper);
 }
 
 .reference-comparison-matchup {
@@ -750,7 +795,7 @@
 
 .reference-comparison-results :is(th, td) {
   padding: 7px;
-  border-bottom: 1px solid #dce0e5;
+  border-bottom: 1px solid var(--line);
 }
 
 /* biome-ignore lint/style/noDescendingSpecificity: dialog table is isolated from the statistics table. */
@@ -816,11 +861,6 @@
     gap: 10px 12px;
   }
 
-  .reference-explorer .statistics-search {
-    width: 100%;
-    max-width: 100%;
-  }
-
   .reference-compare-button {
     grid-column: 1 / -1;
     justify-self: start;
@@ -855,5 +895,17 @@
   }
   .reference-player-options {
     max-height: 150px;
+  }
+
+  .reference-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metric-help-icon,
+  .metric-help-tooltip {
+    transition: none;
   }
 }

@@ -74,12 +74,8 @@ export function PublicContextContent({
   const title = resourceLabel(resource);
 
   return (
-    <main
-      className={`public-shell${resource === "jogadores" && boxscoreStatistics ? " boxscore-reference-shell" : ""}`}
-    >
-      {resource === "jogadores" && boxscoreStatistics ? null : (
-        <PublicHeader context={context} contexts={contexts} resource={resource} />
-      )}
+    <main className="public-shell">
+      <PublicHeader context={context} contexts={contexts} resource={resource} />
       <div className="public-content">
         {resource === "jogadores" ? null : (
           <>
