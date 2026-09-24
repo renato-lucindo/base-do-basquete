@@ -15,13 +15,13 @@ import {
 import type { Route } from "./+types/admin.competitions.$competitionId.schedule";
 
 interface Schedule {
-  entries: { id: number; seed: number; registrationId: number | null; label: string }[];
+  entries: { id: number; seed: number; registrationId: number | null; label?: string }[];
   matchups: {
     id: number;
     code: string;
     round: string;
     order: number;
-    label: string;
+    label?: string;
     homeRegistrationId: number | null;
     awayRegistrationId: number | null;
     revision: number;
@@ -44,6 +44,17 @@ interface Schedule {
 interface ScheduleRegistration {
   id: number;
   status: string;
+}
+
+export function scheduleEntryLabel(entry: Schedule["entries"][number]): string {
+  return entry.label?.trim() || `Posição ${entry.seed}`;
+}
+
+export function scheduleMatchupLabel(matchup: Schedule["matchups"][number]): string {
+  return (
+    matchup.label?.trim() ||
+    `${matchup.round?.trim() || "Confronto"} · confronto ${matchup.order || matchup.code || matchup.id}`
+  );
 }
 
 export function getAssignableRegistrations<T extends ScheduleRegistration>(
@@ -223,12 +234,12 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
           <input type="hidden" name="entryId" value={entry.id} />
           {entry.registrationId ? (
             <p>
-              {entry.label}: {name(entry.registrationId)}
+              {scheduleEntryLabel(entry)}: {name(entry.registrationId)}
             </p>
           ) : (
             <>
               <label>
-                {entry.label}
+                {scheduleEntryLabel(entry)}
                 <select
                   name="registrationId"
                   required
@@ -322,6 +333,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
             {schedule.matchups.map((m) => {
               const localSchedule = scheduleLocalParts(m.scheduledAt);
               const canPrepare = m.readyToSchedule || m.gameId !== null;
+              const matchupLabel = scheduleMatchupLabel(m);
               return (
                 <tr key={m.id}>
                   <td>
@@ -332,7 +344,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                       value={m.id}
                       defaultChecked={canPrepare}
                       disabled={!canPrepare || edition.status === "archived"}
-                      aria-label={`Salvar ${m.label}`}
+                      aria-label={`Salvar ${matchupLabel}`}
                     />
                     <input
                       form="schedule-batch"
@@ -342,7 +354,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                     />
                   </td>
                   <th scope="row">
-                    {m.label}
+                    {matchupLabel}
                     {m.gameId ? <small>Jogo #{m.gameId}</small> : null}
                   </th>
                   <td>
@@ -355,7 +367,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                       type="date"
                       defaultValue={localSchedule.date}
                       disabled={!canPrepare}
-                      aria-label={`Data de ${m.label}`}
+                      aria-label={`Data de ${matchupLabel}`}
                     />
                   </td>
                   <td>
@@ -365,7 +377,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                       type="time"
                       defaultValue={localSchedule.time}
                       disabled={!canPrepare}
-                      aria-label={`Horário de ${m.label}`}
+                      aria-label={`Horário de ${matchupLabel}`}
                     />
                   </td>
                   <td>
@@ -375,7 +387,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                       maxLength={160}
                       defaultValue={m.venue ?? ""}
                       disabled={!canPrepare}
-                      aria-label={`Local de ${m.label}`}
+                      aria-label={`Local de ${matchupLabel}`}
                     />
                   </td>
                   <td>

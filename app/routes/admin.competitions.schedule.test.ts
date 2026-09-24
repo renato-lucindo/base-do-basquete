@@ -9,6 +9,8 @@ import {
   getAssignableRegistrations,
   loader,
   SchedulePrerequisiteNotice,
+  scheduleEntryLabel,
+  scheduleMatchupLabel,
 } from "./admin.competitions.$competitionId.schedule";
 
 vi.mock("../modules/auth/authorization.server", () => ({ requireAdminAal2: vi.fn() }));
@@ -184,6 +186,28 @@ describe("schedule local date and time", () => {
 });
 
 describe("schedule registration prerequisites", () => {
+  it("keeps accessible labels when the shared RPC still returns the previous contract", () => {
+    expect(scheduleEntryLabel({ id: 1, seed: 3, registrationId: null })).toBe("Posição 3");
+    expect(
+      scheduleMatchupLabel({
+        id: 12,
+        code: "SF-1",
+        round: "Semifinal",
+        order: 1,
+        homeRegistrationId: null,
+        awayRegistrationId: null,
+        revision: 0,
+        scheduledAt: null,
+        venue: null,
+        gameId: null,
+        officialResultSubmissionId: null,
+        readyToSchedule: false,
+        readyToResolve: false,
+        resolution: null,
+      }),
+    ).toBe("Semifinal · confronto 1");
+  });
+
   it("offers only confirmed registrations that do not occupy another position", () => {
     const registrations = [
       { id: 10, status: "confirmed" },
