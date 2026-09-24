@@ -4,6 +4,17 @@ import { data } from "react-router";
 import type { Database } from "../../types/database.generated";
 import { type CompetitionContext, isGenderDivision } from "../competition/context";
 import type { PublicAchievement } from "../competition/public-data.server";
+import type {
+  BoxscoreStatisticsPlayerRow,
+  BoxscoreStatisticsPageDto,
+} from "./boxscore-statistics-domain";
+import { loadBoxscoreStatisticsPage } from "./boxscore-statistics.server";
+import {
+  type BoxscoreGameScope,
+  type BoxscoreStatisticsMode,
+  parseBoxscoreGameScope,
+  parseBoxscoreStatisticsMode,
+} from "./boxscore-statistics-contract";
 import type { PlayerTotals } from "./player-profile-domain";
 
 interface PlayerCompetitionBase {
@@ -82,12 +93,18 @@ export interface PublicPlayerProfileDto {
   birthYear: number | null;
   bio: string | null;
   heightCm: number | null;
-  weightKg: number | null;
   mainPosition: string | null;
   hand: string | null;
-  homeCity: string | null;
-  homeState: string | null;
   current: PlayerCompetitionSummary | null;
+  selection: {
+    mode: BoxscoreStatisticsMode;
+    scope: BoxscoreGameScope;
+  };
+  currentBoxscore: {
+    row: BoxscoreStatisticsPlayerRow | null;
+    per30MinimumSeconds: number;
+    coverage: BoxscoreStatisticsPageDto["coverage"];
+  } | null;
   competitions: PlayerCompetitionSummary[];
   achievements: PublicAchievement[];
   honors: Array<{
@@ -156,12 +173,11 @@ export async function loadPublicPlayerProfile(
   context: CompetitionContext,
   contexts: CompetitionContext[],
   slug: string,
+  searchParams = new URLSearchParams(),
 ): Promise<PublicPlayerProfileDto | null> {
   const profileResult = await client
     .from("public_player_profiles")
-    .select(
-      "id,full_name,slug,nickname,birth_year,bio,height_cm,weight_kg,main_position,hand,home_city,home_state,is_public",
-    )
+    .select("id,full_name,slug,nickname,birth_year,bio,height_cm,main_position,hand,is_public")
     .eq("slug", slug)
     .eq("is_public", true)
     .limit(2);
@@ -183,11 +199,8 @@ export async function loadPublicPlayerProfile(
           birth_year: null,
           bio: null,
           height_cm: null,
-          weight_kg: null,
           main_position: null,
           hand: null,
-          home_city: null,
-          home_state: null,
         }
       : null;
   }
@@ -203,24 +216,37 @@ export async function loadPublicPlayerProfile(
   ensure(rosterResult.error, "Inscrição pública temporariamente indisponível");
   if (rosterResult.data.length !== 1) return null;
 
+  const selection = {
+    mode: parseBoxscoreStatisticsMode(searchParams.get("mode")),
+    scope: parseBoxscoreGameScope(searchParams.get("scope")),
+  };
+  const snapshotParams = new URLSearchParams();
+  if (selection.mode !== "per-game") snapshotParams.set("mode", selection.mode);
+  if (selection.scope !== "regular") snapshotParams.set("scope", selection.scope);
+  snapshotParams.set("compare", String(profile.id));
+
   const contextById = new Map(contexts.map((item) => [item.competitionId, item]));
-  const [scoresheetStatisticsResult, boxscoreStatisticsResult, legacyStatisticsResult] =
-    await Promise.all([
-      client
-        .from("competition_scoresheet_player_statistics")
-        .select("*")
-        .eq("player_id", profile.id),
-      client.from("competition_boxscore_player_statistics").select("*").eq("player_id", profile.id),
-      client.from("competition_player_statistics").select("*").eq("player_id", profile.id),
-    ]);
-  ensure(scoresheetStatisticsResult.error, "Estatísticas de súmula temporariamente indisponíveis");
-  ensure(boxscoreStatisticsResult.error, "Estatísticas de boxscore temporariamente indisponíveis");
+  const [
+    scoresheetStatisticsResult,
+    boxscoreStatisticsResult,
+    legacyStatisticsResult,
+    currentBoxscorePage,
+  ] = await Promise.all([
+    client.from("competition_scoresheet_player_statistics").select("*").eq("player_id", profile.id),
+    client.from("competition_boxscore_player_statistics").select("*").eq("player_id", profile.id),
+    client.from("competition_player_statistics").select("*").eq("player_id", profile.id),
+    context.statisticsMode === "boxscore"
+      ? loadBoxscoreStatisticsPage(client, context, snapshotParams)
+      : Promise.resolve(null),
+  ]);
+  ensure(scoresheetStatisticsResult.error, "Estatísticas básicas temporariamente indisponíveis");
+  ensure(boxscoreStatisticsResult.error, "Estatísticas detalhadas temporariamente indisponíveis");
   ensure(legacyStatisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
 
   const scoresheetCompetitions = scoresheetStatisticsResult.data.flatMap(
     (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
-      if (!rowContext || rowContext.statisticsMode !== "scoresheet") return [];
+      if (rowContext?.statisticsMode !== "scoresheet") return [];
       return [
         {
           kind: "scoresheet",
@@ -246,7 +272,7 @@ export async function loadPublicPlayerProfile(
   const boxscoreCompetitions = boxscoreStatisticsResult.data.flatMap(
     (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
-      if (!rowContext || rowContext.statisticsMode !== "boxscore") return [];
+      if (rowContext?.statisticsMode !== "boxscore") return [];
       const advancedGames = numberValue(row.advanced_games_played);
       return [
         {
@@ -276,7 +302,7 @@ export async function loadPublicPlayerProfile(
   const legacyCompetitions = legacyStatisticsResult.data.flatMap(
     (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
-      if (!rowContext || rowContext.statisticsMode !== "legacy") return [];
+      if (rowContext?.statisticsMode !== "legacy") return [];
       return [
         {
           kind: "scoresheet",
@@ -336,11 +362,11 @@ export async function loadPublicPlayerProfile(
   ]);
   ensure(
     scoresheetGameStatisticsResult.error,
-    "Participações de súmula temporariamente indisponíveis",
+    "Participações básicas temporariamente indisponíveis",
   );
   ensure(
     boxscoreGameStatisticsResult.error,
-    "Participações de boxscore temporariamente indisponíveis",
+    "Participações detalhadas temporariamente indisponíveis",
   );
   ensure(legacyGameStatisticsResult.error, "Participações públicas temporariamente indisponíveis");
 
@@ -410,13 +436,18 @@ export async function loadPublicPlayerProfile(
     birthYear: profile.birth_year,
     bio: profile.bio,
     heightCm: profile.height_cm,
-    weightKg: profile.weight_kg,
     mainPosition: profile.main_position,
     hand: profile.hand,
-    homeCity: profile.home_city,
-    homeState: profile.home_state,
     current:
       competitions.find((item) => item.context.competitionId === context.competitionId) ?? null,
+    selection,
+    currentBoxscore: currentBoxscorePage
+      ? {
+          row: currentBoxscorePage.compared.find((item) => item.playerId === profile.id) ?? null,
+          per30MinimumSeconds: currentBoxscorePage.per30MinimumSeconds,
+          coverage: currentBoxscorePage.coverage,
+        }
+      : null,
     competitions,
     achievements: achievementsResult.error
       ? []

@@ -68,6 +68,8 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     resolvedContext,
     params.resource,
     params.detail,
+    undefined,
+    new URL(request.url).searchParams,
   );
   if (!payload) return notFound();
 

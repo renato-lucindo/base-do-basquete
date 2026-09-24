@@ -1625,6 +1625,588 @@ a {
   }
 }
 
+/* Perfil público do atleta: leitura progressiva em uma página única. */
+.public-shell .player-profile {
+  color: var(--ink);
+}
+
+.public-shell .player-profile .back-link {
+  margin-top: 18px;
+  color: var(--green);
+}
+
+.public-shell .player-profile-header {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) max-content;
+  gap: 24px;
+  min-height: 0;
+  padding: 28px 0 30px;
+}
+
+.player-jersey {
+  display: grid;
+  width: 92px;
+  height: 104px;
+  place-items: center;
+  border: 1px solid #b8d8ff;
+  border-radius: 14px;
+  color: var(--green);
+  background: linear-gradient(145deg, #f2f8ff, #e3f0ff);
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  box-shadow: inset 0 -4px 0 rgba(13, 116, 252, 0.08);
+}
+
+.player-identity-copy {
+  min-width: 0;
+}
+
+.public-shell .player-profile-header h1 {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.player-nickname,
+.player-identity-line,
+.player-personal-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 9px 0 0;
+}
+
+.player-nickname {
+  font-weight: 720;
+}
+
+.player-identity-line span:not(:first-child)::before,
+.player-identity-line a + span::before,
+.player-personal-line span:not(:first-child)::before {
+  margin-right: 14px;
+  color: #a7b2c2;
+  content: "·";
+}
+
+.public-shell .player-profile .compare-profile-action {
+  align-self: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.public-shell .player-profile-nav {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  margin: 0 calc(50% - 50vw);
+  padding: 0 max(24px, calc((100vw - 1280px) / 2));
+  border-block: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 5px 16px rgba(23, 32, 51, 0.04);
+  scrollbar-width: none;
+  backdrop-filter: blur(12px);
+}
+
+.public-shell .player-profile-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.public-shell .player-profile-nav a {
+  flex: 0 0 auto;
+  padding: 15px 16px 13px;
+  border-bottom: 3px solid transparent;
+  color: #566174;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.public-shell .player-profile-nav a:hover,
+.public-shell .player-profile-nav a:focus-visible,
+.public-shell .player-profile-nav a[aria-current="location"] {
+  border-bottom-color: var(--green);
+  color: var(--green);
+}
+
+.public-shell .player-profile-section {
+  scroll-margin-top: 58px;
+  padding: 46px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.public-shell .player-profile-section:last-child {
+  border-bottom: 0;
+}
+
+.profile-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.profile-section-heading .eyebrow {
+  margin: 0 0 5px;
+}
+
+.public-shell .player-profile-section h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.35rem);
+}
+
+.player-competition-controls {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) max-content max-content;
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.player-competition-controls > label,
+.player-game-filters label {
+  display: grid;
+  gap: 6px;
+  color: #445064;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.public-shell .player-profile .player-competition-controls select,
+.public-shell .player-profile .player-game-filters select {
+  min-height: 42px;
+  border-color: #bdcbe0;
+  background: var(--paper);
+}
+
+.player-competition-controls fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.player-competition-controls legend {
+  margin-bottom: 6px;
+  color: #445064;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.player-competition-controls .segmented-control {
+  display: flex;
+  min-height: 42px;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #edf1f6;
+}
+
+.player-competition-controls .segmented-control span {
+  min-width: 74px;
+  padding: 8px 10px;
+}
+
+.segmented-control input:focus-visible + span {
+  outline: 3px solid rgba(13, 116, 252, 0.28);
+  outline-offset: 1px;
+}
+
+.public-shell .player-key-metrics {
+  grid-template-columns: repeat(6, minmax(92px, 1fr));
+  margin: 0;
+}
+
+.public-shell .player-key-metrics div {
+  min-height: 88px;
+  align-content: center;
+  padding: 15px 17px;
+}
+
+.public-shell .player-key-metrics dd {
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
+}
+
+.player-summary-note,
+.player-availability-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.player-availability-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--green);
+  background: var(--accent);
+}
+
+.player-recent-games {
+  margin-top: 30px;
+}
+
+.player-recent-games h3,
+.player-selected-competition h3,
+.player-history-layout h3,
+.player-achievement-groups h3,
+.player-individual-honors h3 {
+  margin: 0;
+}
+
+.player-recent-games ol,
+.player-achievement-groups ul,
+.player-individual-honors ul,
+.player-team-history {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.player-recent-games li {
+  display: grid;
+  grid-template-columns: 74px minmax(160px, 1fr) minmax(170px, 0.8fr) 72px;
+  gap: 14px;
+  align-items: center;
+  min-height: 48px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 0.84rem;
+}
+
+.player-recent-games li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.player-recent-games li > strong:last-child {
+  text-align: right;
+}
+
+.player-statistics-table caption,
+.player-competition-detail-table caption,
+.player-games-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.player-statistics-table th:first-child {
+  min-width: 230px;
+  text-align: left;
+}
+
+.player-statistics-table th:first-child a {
+  display: grid;
+  gap: 3px;
+  text-decoration: none;
+}
+
+.player-statistics-table th:first-child span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.player-selected-competition {
+  margin-top: 28px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.player-selected-competition > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.player-selected-competition > header > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.player-detail-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--line);
+}
+
+.public-shell .player-profile .player-detail-list div {
+  padding: 14px;
+  background: var(--paper);
+}
+
+.player-detail-list dt,
+.player-public-information dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.public-shell .player-profile .player-detail-list dd,
+.public-shell .player-profile .player-public-information dd {
+  margin: 5px 0 0;
+  font-weight: 800;
+}
+
+.player-achievement-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.player-achievement-groups section,
+.player-individual-honors {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--paper);
+}
+
+.player-achievement-groups li {
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.84rem;
+}
+
+.player-placement {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 50%;
+  color: #684900;
+  background: #fff1bd;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.player-individual-honors {
+  margin-top: 14px;
+}
+
+.player-individual-honors li + li {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.player-individual-honors li p {
+  margin: 5px 0 0;
+  color: var(--muted);
+}
+
+.player-game-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.player-game-filters label {
+  min-width: min(260px, 100%);
+}
+
+.player-games-table th,
+.player-games-table td {
+  white-space: nowrap;
+}
+
+.player-history-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 28px;
+}
+
+.player-team-history {
+  display: grid;
+  gap: 0;
+}
+
+.player-team-history li {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.player-team-history time {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.player-team-history p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.player-history-layout aside {
+  align-self: start;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface-muted);
+}
+
+.player-public-information {
+  margin: 14px 0 0;
+}
+
+.player-public-information div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.player-public-information dd {
+  text-align: right;
+}
+
+@media (max-width: 980px) {
+  .player-competition-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .player-competition-controls > label {
+    grid-column: 1 / -1;
+  }
+
+  .player-history-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .public-shell .player-profile-header {
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 16px;
+    padding: 24px 0;
+  }
+
+  .player-jersey {
+    width: 74px;
+    height: 84px;
+    border-radius: 12px;
+  }
+
+  .public-shell .player-profile .compare-profile-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .player-competition-controls {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .player-competition-controls > label {
+    grid-column: auto;
+  }
+
+  .player-competition-controls .segmented-control span {
+    min-width: 0;
+  }
+
+  .public-shell .player-key-metrics {
+    grid-template-columns: repeat(3, minmax(86px, 1fr));
+    overflow-x: auto;
+  }
+
+  .player-recent-games li {
+    grid-template-columns: 68px minmax(130px, 1fr) 64px;
+  }
+
+  .player-recent-games li > strong:nth-child(3) {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+
+  .player-recent-games li > strong:last-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .player-selected-competition > header {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 460px) {
+  .public-shell .player-profile-header h1 {
+    font-size: 1.9rem;
+  }
+
+  .public-shell .player-profile-nav {
+    padding-inline: 12px;
+  }
+
+  .public-shell .player-profile-nav a {
+    padding-inline: 12px;
+  }
+
+  .public-shell .player-profile-section {
+    padding: 36px 0;
+  }
+
+  .public-shell .player-key-metrics {
+    grid-template-columns: repeat(2, minmax(90px, 1fr));
+  }
+
+  .player-competition-controls .segmented-control {
+    overflow-x: auto;
+  }
+
+  .player-recent-games li {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .player-recent-games li > strong:last-child {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .player-recent-games li > strong:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .player-game-filters,
+  .player-game-filters label {
+    width: 100%;
+  }
+}
+
 /* WP-16: reusable, accessible table infrastructure. */
 .statistics-controls {
   display: flex;

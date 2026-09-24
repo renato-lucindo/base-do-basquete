@@ -51,6 +51,7 @@ export async function loadPublicDetailPayload(
   resource: DetailResource,
   detailReference: string,
   knownContexts?: CompetitionContext[],
+  searchParams = new URLSearchParams(),
 ) {
   const contexts = knownContexts ?? (await listPublicContexts(client));
   const [loadedDetail, game, playerProfile] = await Promise.all([
@@ -61,7 +62,7 @@ export async function loadPublicDetailPayload(
       ? loadPublicGameDetail(client, resolvedContext, detailReference)
       : Promise.resolve(null),
     resource === "jogadores"
-      ? loadPublicPlayerProfile(client, resolvedContext, contexts, detailReference)
+      ? loadPublicPlayerProfile(client, resolvedContext, contexts, detailReference, searchParams)
       : Promise.resolve(null),
   ]);
   const detail = playerProfile

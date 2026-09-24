@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { addPlayerTotals, emptyPlayerTotals, perGame } from "./player-profile-domain";
+import {
+  addPlayerTotals,
+  emptyPlayerTotals,
+  groupPlayerAchievements,
+  perGame,
+} from "./player-profile-domain";
 
 describe("player profile domain", () => {
   it("does not turn absence of games into a misleading zero average", () => {
@@ -53,5 +58,40 @@ describe("player profile domain", () => {
         { ...emptyPlayerTotals, plusMinus: null },
       ]).plusMinus,
     ).toBeNull();
+  });
+
+  it("groups repeated achievements without losing category, placement or year", () => {
+    const base = {
+      competitionDisplayName: "Liga Sub-15",
+      seriesName: "Liga",
+      seriesSlug: "liga",
+      categoryName: "Sub-15",
+      categorySlug: "sub-15",
+      genderDivision: null,
+      placement: 1,
+      resultLabel: null,
+    } as const;
+    expect(
+      groupPlayerAchievements([
+        { ...base, competitionId: 2, year: 2026 },
+        { ...base, competitionId: 1, year: 2025 },
+        {
+          ...base,
+          competitionId: 3,
+          year: 2026,
+          placement: 2,
+          categoryName: "Sub-17",
+          categorySlug: "sub-17",
+        },
+      ]),
+    ).toEqual([
+      {
+        competitionName: "Liga",
+        entries: [
+          { placement: 1, categoryName: "Sub-15", years: [2025, 2026] },
+          { placement: 2, categoryName: "Sub-17", years: [2026] },
+        ],
+      },
+    ]);
   });
 });
