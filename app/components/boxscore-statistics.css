@@ -404,8 +404,9 @@
 }
 
 .reference-explorer .statistics-table thead th {
-  position: relative;
-  z-index: 2;
+  position: sticky;
+  top: 0;
+  z-index: 10;
   height: 33px;
   padding: 0 10px;
   overflow: visible;
@@ -515,7 +516,7 @@
 }
 
 .reference-explorer .statistics-table thead th:first-child {
-  z-index: 3;
+  z-index: 11;
 }
 
 .reference-explorer .statistics-table th:first-child .statistics-sort {
