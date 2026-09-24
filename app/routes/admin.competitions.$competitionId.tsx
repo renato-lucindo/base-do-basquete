@@ -846,12 +846,12 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           </article>
           <article>
             <h2>Súmula manual</h2>
-            <p>Fluxo isolado da importação, usando esta edição.</p>
+            <p>Requer confronto na agenda, equipes confirmadas e elencos preenchidos.</p>
             <Link
               className="button button-primary"
               to={`/admin/competitions/${competition.id}/scoresheets/new`}
             >
-              Selecionar jogo e preencher súmula
+              Abrir súmula
             </Link>
           </article>
           <article>
