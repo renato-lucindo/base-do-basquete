@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação inicial preparada em branch isolada, aguardando revisão de governança antes de merge.
+Implementação inicial preparada em branch isolada. O primeiro parecer independente solicitou correções de consistência documental; os achados foram tratados antes da nova revisão.
 
 ## Base
 
@@ -29,7 +29,7 @@ Implementação inicial preparada em branch isolada, aguardando revisão de gove
 - nenhuma duplicata do workspace original foi modificada;
 - requisitos, arquitetura e decisões de produto não foram alterados;
 - nenhum código funcional, migration, serviço remoto ou dado foi modificado;
-- `HANDOFF.md` não foi reescrito enquanto existe trabalho funcional concorrente fora desta worktree.
+- `HANDOFF.md` foi reconciliado sem incorporar ou alterar o conteúdo funcional da PR paralela #57.
 
 ## Validação
 
@@ -38,7 +38,9 @@ Implementação inicial preparada em branch isolada, aguardando revisão de gove
 - Biome focal em `biome.json`, `package.json` e `scripts/document-inventory.mjs`: aprovado;
 - `node scripts/scan-secrets.mjs`: aprovado em 611 arquivos rastreados após a ampliação do perfil;
 - `git diff --check origin/main...HEAD`: aprovado após normalização do EOF;
-- Biome global: executado e bloqueado por 19 erros e 146 avisos preexistentes fora do escopo, principalmente ordenação de imports e especificidade do CSS; nenhum arquivo apontado pertence ao delta desta unidade.
+- CI `gate` e `database`, preview/smokes e CodeQL: aprovados no HEAD `c6dcaf2` antes das correções solicitadas; devem ser renovados no novo HEAD.
+- primeiro parecer `qa-reviewer`: `REQUEST_CHANGES` em `c6dcaf2`; handoff divergente, baseline local não reproduzível e próximo passo superado foram corrigidos nesta revisão.
+- gate local consolidado após as correções: aprovado; formatação em 164 arquivos, lint em 165 arquivos sem erros e com 146 avisos preexistentes, TypeScript estrito, 45 arquivos/324 Vitest, cinco runbooks, build cliente/SSR e scan de 611 arquivos.
 
 ## Revisão necessária
 

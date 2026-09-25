@@ -33,7 +33,6 @@ Este catálogo identifica as fontes principais do repositório e os conflitos qu
 | --- | --- | --- | --- |
 | Mais de um plano se declara ativo | `docs/plan/README.md` apresenta plano mestre, tasks retomáveis e plano acelerado em momentos sucessivos | Agente escolher fila antiga | Definir um único ciclo operacional ativo e marcar os demais como congelados ou históricos |
 | Handoff mistura estado e histórico | `HANDOFF.md` concentra centenas de linhas de unidades concluídas | Próximo passo antigo ser interpretado como atual | Extrair histórico para `docs/execution/` e manter resumo com links |
-| Planos de estatísticas aparecem em mais de um local no workspace principal | Arquivos na raiz e em `docs/plan/improvements/` | Commitar a cópia errada | Identificar origem, comparar conteúdo e escolher autoridade sem apagar antes da reconciliação |
 | Task e evidência compartilham basename | Exemplos `ADM-REF-02A.md` em `tasks-pr35` e `docs/execution` | Busca e links ambíguos | Manter diretórios distintos e introduzir tipo/estado nos metadados; avaliar sufixos apenas em unidade futura |
 | Arquitetura descrita diverge da árvore atual | Documento cita `app/contracts`, `app/domain` e `app/server`; implementação usa `app/modules` | Onboarding e barreiras inconsistentes | Registrar a estrutura real ou executar refatoração separada; não misturar com governança documental |
 
@@ -45,18 +44,14 @@ O inventário pode ser reproduzido sem alterar arquivos:
 npm run docs:inventory
 ```
 
-O comando inclui Markdown rastreado e não rastreado, respeita exclusões do Git e relata contagens, maiores arquivos, hashes duplicados e colisões de basename. Valores observados no workspace principal no início de `DOC-GOV-01`:
+O comando inclui Markdown rastreado e não rastreado, respeita exclusões do Git e relata contagens, maiores arquivos, hashes duplicados e colisões de basename. A baseline reproduzível no checkout limpo de `DOC-GOV-01`, antes da correção dos achados de revisão, registrou:
 
-- 330 documentos Markdown no workspace principal, incluindo 4 arquivos não rastreados;
-- 267 documentos Markdown sob `docs/plan`;
-- 165 arquivos sob `docs/plan/referencias`;
-- 67 arquivos sob `docs/plan/tasks-pr35`;
-- 41 arquivos sob `docs/execution`;
-- `HANDOFF.md` com 576 linhas e aproximadamente 122 KB;
-- uma duplicata exata conhecida de `PLANO-PERFIL-JOGADOR-SIMPLIFICADO.md` no workspace principal;
-- duas variantes divergentes conhecidas de `PLANO-ESTATISTICAS-JOGADORES-END-TO-END.md` no workspace principal.
+- 326 documentos Markdown, todos rastreados;
+- nenhuma duplicata exata;
+- colisões de basename entre índices, prompts e pares task/evidência, com os caminhos completos emitidos pelo comando;
+- `HANDOFF.md` com mais de 500 linhas, confirmando a necessidade de redução em unidade própria.
 
-Os dois últimos itens pertencem ao workspace original e não foram copiados, movidos ou apagados nesta worktree.
+Arquivos não rastreados observados em outro workspace são deliberadamente excluídos desta baseline e não fundamentam classificação, autoridade ou remoção. Caso continuem existindo, devem ser redescobertos e atribuídos no workspace de origem antes de qualquer decisão.
 
 ## Regras durante a auditoria
 

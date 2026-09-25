@@ -416,7 +416,7 @@ Este plano não autoriza:
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: docs/plan/README.md e inventário Markdown do repositório
-ACAO: abrir DOC-GOV-01, gerar inventário somente leitura e propor a tabela de autoridade sem mover ou excluir arquivos
-CRITERIO_DE_CONCLUSAO: inventário reproduzível, fontes principais classificadas, conflitos de autoridade enumerados e diff limitado à documentação de governança
+ARQUIVO_OU_SERVICO: HANDOFF.md e evidências históricas em docs/execution/
+ACAO: após a integração de DOC-GOV-01, abrir DOC-GOV-02 para separar estado operacional corrente do histórico, sem apagar evidências
+CRITERIO_DE_CONCLUSAO: handoff retomável e conciso, histórico preservado por links versionados e nenhum próximo passo concorrente
 ```
