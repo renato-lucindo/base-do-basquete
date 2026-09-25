@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(57);
+select plan(63);
 set constraints all deferred;
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id) select '11111111-1111-4111-8111-111111111111' where not exists(select 1 from private.admin_accounts);
@@ -153,6 +153,16 @@ select is(private.preset_blueprint((select id from public.competition_ruleset_re
 select throws_ok($$update public.matchups set matchup_order=20 where id=(select first_matchup from schedule_context)$$,'BR004','BDB_ACTIVE_RULESET_IMMUTABLE','operational exception cannot mutate graph');
 select throws_ok($$update public.matchups set home_registration_id=(select reg_three from schedule_context) where id=(select first_matchup from schedule_context)$$,'BR004','BDB_ACTIVE_RULESET_IMMUTABLE','operational exception cannot invent participants');
 select is((select count(*) from public.admin_mutation_audit where action='competition_entry_assigned' and entity_id in(select entry_one from schedule_context union all select entry_two from schedule_context)),2::bigint,'one audit per assignment');
+select ok((
+  select relrowsecurity and relforcerowsecurity
+  from pg_class
+  where oid='private.manual_matchup_requests'::regclass
+),'manual matchup request ledger enforces and forces RLS');
+select is((
+  select count(*)
+  from pg_policies
+  where schemaname='private' and tablename='manual_matchup_requests'
+),0::bigint,'manual matchup request ledger has no permissive policies');
 update public.games set status='live',started_at=now() where id=(select manual_game from schedule_context);
 set local role authenticated;
 select throws_ok($$select public.admin_update_manual_matchup_participants(manual_matchup,reg_two,reg_three,reg_one,reg_three) from schedule_context$$,'BR099','BDB_MANUAL_MATCHUP_PARTICIPANTS_IMMUTABLE','started manual game participants cannot be rewritten');
@@ -168,6 +178,8 @@ select throws_ok($$select public.admin_create_manual_matchup(null,null,null,null
 select throws_ok($$select public.admin_update_manual_matchup_participants(null,null,null,null,null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 manual participant correction rejected');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 summary rejected');
 select is((select count(*) from public.matchup_preparations),0::bigint,'AAL1 cannot read private preparation');
+select throws_ok($$select * from private.manual_matchup_requests$$,'42501',null,'authenticated cannot read the private manual matchup request ledger directly');
+select throws_ok($$insert into private.manual_matchup_requests default values$$,'42501',null,'authenticated cannot write the private manual matchup request ledger directly');
 reset role;
 select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}',true);
 set local role authenticated;
@@ -180,6 +192,8 @@ select throws_ok($$select public.admin_prepare_matchups_batch(null,'[]'::jsonb)$
 select throws_ok($$select public.admin_create_manual_matchup(null,null,null,null,null,null,null)$$,'42501',null,'anon cannot create manual games');
 select throws_ok($$select public.admin_update_manual_matchup_participants(null,null,null,null,null)$$,'42501',null,'anon cannot change manual participants');
 select throws_ok($$select * from public.matchup_preparations$$,'42501',null,'anon cannot read preparation');
+select throws_ok($$select * from private.manual_matchup_requests$$,'42501',null,'anon cannot read the private manual matchup request ledger');
+select throws_ok($$insert into private.manual_matchup_requests default values$$,'42501',null,'anon cannot write the private manual matchup request ledger');
 select throws_ok($$select public.admin_get_competition_schedule(null)$$,'42501',null,'anon cannot read summary RPC');
 reset role;
 set constraints all immediate;
