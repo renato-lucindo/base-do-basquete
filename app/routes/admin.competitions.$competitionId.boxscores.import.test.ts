@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapImportError,
   parseEligibilityPlayers,
+  parseManualGameCreation,
   parsePlayerResolution,
   parseTeamResolution,
 } from "./admin.competitions.$competitionId.boxscores.import";
@@ -74,5 +75,26 @@ describe("boxscore import eligibility decisions", () => {
       message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
       status: 409,
     });
+  });
+
+  it("accepts only a UUID and two different registrations when creating the game", () => {
+    const form = new FormData();
+    form.set("manualMatchupRequestId", "40dde5c7-46b2-4241-995d-4e42223bbdf2");
+    form.set("homeRegistrationId", "189");
+    form.set("awayRegistrationId", "190");
+
+    expect(parseManualGameCreation(form)).toEqual({
+      ok: true,
+      input: {
+        requestId: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+        homeRegistrationId: 189,
+        awayRegistrationId: 190,
+      },
+    });
+
+    form.set("awayRegistrationId", "189");
+    expect(parseManualGameCreation(form)).toMatchObject({ ok: false });
+    form.set("manualMatchupRequestId", "not-a-uuid");
+    expect(parseManualGameCreation(form)).toMatchObject({ ok: false });
   });
 });

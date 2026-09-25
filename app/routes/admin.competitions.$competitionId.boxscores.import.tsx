@@ -13,6 +13,7 @@ import { suggestPlayerMatch } from "../modules/boxscore/matching";
 import { validateParsedBoxscore } from "../modules/boxscore/parser";
 import { BoxscoreReviewEditor } from "../modules/boxscore/review-editor";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
+import { schedulingError } from "../modules/competition/scheduling";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
@@ -21,6 +22,25 @@ import type { Route } from "./+types/admin.competitions.$competitionId.boxscores
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+export function parseManualGameCreation(formData: FormData) {
+  const requestId = formData.get("manualMatchupRequestId");
+  const homeRegistrationId = parseId(formData.get("homeRegistrationId"));
+  const awayRegistrationId = parseId(formData.get("awayRegistrationId"));
+  const validRequestId =
+    typeof requestId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId);
+  if (!validRequestId || !homeRegistrationId || !awayRegistrationId) {
+    return { ok: false as const, error: "Recarregue a página e escolha a equipe mandante." };
+  }
+  if (homeRegistrationId === awayRegistrationId) {
+    return { ok: false as const, error: "Mandante e visitante precisam ser equipes diferentes." };
+  }
+  return {
+    ok: true as const,
+    input: { requestId, homeRegistrationId, awayRegistrationId },
+  };
 }
 
 type PlayerResolution =
@@ -434,6 +454,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       games,
       review,
       refreshedGameId: parseId(url.searchParams.get("refreshed")),
+      createdGameId: parseId(url.searchParams.get("gameCreated")),
+      manualMatchupRequestId: crypto.randomUUID(),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -514,6 +536,100 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     });
     throw redirect(
       `/admin/competitions/${competitionId}/boxscores/import?import=${importId}&teamsResolved=1`,
+      { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+    );
+  }
+
+  if (mode === "create-game") {
+    const importId = parseId(formData.get("importId"));
+    const parsed = parseManualGameCreation(formData);
+    if (!importId || !parsed.ok) {
+      return data({ error: parsed.ok ? "Importação inválida." : parsed.error }, { status: 400 });
+    }
+    const [importResult, resolutionResult] = await Promise.all([
+      auth.client
+        .from("boxscore_imports")
+        .select("id,status")
+        .eq("id", importId)
+        .eq("competition_id", competitionId)
+        .single(),
+      auth.client
+        .from("boxscore_team_resolutions")
+        .select("registration_1_id,registration_2_id")
+        .eq("import_id", importId)
+        .eq("competition_id", competitionId)
+        .single(),
+    ]);
+    if (importResult.error || importResult.data.status !== "review" || resolutionResult.error) {
+      return data({ error: "Importação não disponível para revisão." }, { status: 404 });
+    }
+    const submittedRegistrations = new Set([
+      parsed.input.homeRegistrationId,
+      parsed.input.awayRegistrationId,
+    ]);
+    const resolvedRegistrations = [
+      resolutionResult.data.registration_1_id,
+      resolutionResult.data.registration_2_id,
+    ];
+    if (
+      submittedRegistrations.size !== 2 ||
+      !resolvedRegistrations.every((registrationId) => submittedRegistrations.has(registrationId))
+    ) {
+      return data(
+        { error: "A resolução das equipes mudou. Recarregue a importação." },
+        { status: 409 },
+      );
+    }
+    const created = await auth.client.rpc("admin_create_manual_matchup", {
+      p_request_id: parsed.input.requestId,
+      p_competition_id: competitionId,
+      p_round_id: null,
+      p_home_registration_id: parsed.input.homeRegistrationId,
+      p_away_registration_id: parsed.input.awayRegistrationId,
+      // PostgreSQL aceita null; o typegen do Supabase não representa a nulabilidade dos parâmetros.
+      p_scheduled_at: null as unknown as string,
+      p_venue: null as unknown as string,
+    });
+    if (created.error) {
+      const status = created.error.code === "BD401" ? 403 : 409;
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.create_game",
+        outcome: "blocked",
+        status,
+        context: { competitionId, entityId: importId, errorCode: created.error.code },
+      });
+      return data({ error: schedulingError(created.error.code) }, { status });
+    }
+    const createdPayload = created.data as { gameId?: unknown } | null;
+    const gameId = parseId(
+      typeof createdPayload?.gameId === "number" ? String(createdPayload.gameId) : null,
+    );
+    if (!gameId) {
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.create_game",
+        outcome: "failure",
+        status: 502,
+        context: { competitionId, entityId: importId },
+      });
+      return data(
+        { error: "O jogo foi criado sem uma resposta válida. Recarregue a página." },
+        { status: 502 },
+      );
+    }
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "boxscore.create_game",
+      outcome: "success",
+      status: 303,
+      context: { competitionId, entityId: gameId },
+    });
+    throw redirect(
+      `/admin/competitions/${competitionId}/boxscores/import?import=${importId}&gameCreated=${gameId}`,
       { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
     );
   }
@@ -890,6 +1006,8 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
             competitionId={loaderData.competition.id}
             competitionGender={loaderData.competition.gender_division}
             csrfToken={loaderData.csrfToken}
+            manualMatchupRequestId={loaderData.manualMatchupRequestId}
+            preferredGameId={loaderData.createdGameId}
             review={review}
             games={loaderData.games}
             registrations={loaderData.registrations}

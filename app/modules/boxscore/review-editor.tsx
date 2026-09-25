@@ -66,6 +66,8 @@ interface BoxscoreReviewEditorProps {
   competitionGender: string | null;
   csrfToken: string;
   games: ReviewGame[];
+  manualMatchupRequestId: string;
+  preferredGameId: number | null;
   review: {
     id: number;
     parsed: ParsedBoxscore;
@@ -100,6 +102,8 @@ export function BoxscoreReviewEditor({
   competitionGender,
   csrfToken,
   games,
+  manualMatchupRequestId,
+  preferredGameId,
   review,
   registrations,
   teamCandidates,
@@ -160,6 +164,7 @@ export function BoxscoreReviewEditor({
         })
       : [];
   const initialGame =
+    eligibleGames.find((game) => game.id === preferredGameId) ??
     eligibleGames.find((game) => game.gameNumber === review.parsed.gameNumber) ??
     eligibleGames[0] ??
     null;
@@ -205,6 +210,9 @@ export function BoxscoreReviewEditor({
   );
   const [step, setStep] = useState(2);
   const [gameId, setGameId] = useState(initialGame?.id ?? 0);
+  const [manualHomeRegistrationId, setManualHomeRegistrationId] = useState(
+    resolvedRegistrationIds[0] ?? 0,
+  );
   const [teamRegistrations, setTeamRegistrations] =
     useState<Record<number, number>>(initialRegistrations);
   const [teamResolutionChoices, setTeamResolutionChoices] = useState<Record<number, string>>(
@@ -268,6 +276,12 @@ export function BoxscoreReviewEditor({
     (_, index) => !teamRegistrations[index] && !teamResolutionChoices[index],
   ).length;
   const hasEligibleGame = eligibleGames.length > 0;
+  const manualAwayRegistrationId =
+    resolvedRegistrationIds.find((registrationId) => registrationId !== manualHomeRegistrationId) ??
+    0;
+  const manualAwayRegistration = registrations.find(
+    (registration) => registration.id === manualAwayRegistrationId,
+  );
   const hasTransientPrivateSelection = Object.values(newPlayerEligibility).some(Boolean);
   const editionGenderLabel =
     competitionGender === "male"
@@ -356,6 +370,7 @@ export function BoxscoreReviewEditor({
         <input type="hidden" name="gameId" value={gameId} />
         <input type="hidden" name="teamCount" value="2" />
         <input type="hidden" name="playerCount" value={players.length} />
+        <input type="hidden" name="manualMatchupRequestId" value={manualMatchupRequestId} />
         <section hidden={step !== 2}>
           <h2>Revisar jogo extraído</h2>
           <p>
@@ -500,18 +515,59 @@ export function BoxscoreReviewEditor({
                 </select>
               </label>
             ) : (
-              <div className="admin-note" role="status">
+              <div className="admin-note">
                 <p>
                   As equipes estão prontas, mas ainda não existe um jogo estrutural elegível entre
-                  elas. Crie ou prepare o confronto em Estrutura e agenda e depois volte a esta
-                  importação; o rascunho continuará disponível.
+                  elas. Defina o mando para criar o jogo em rascunho e continuar a revisão.
                 </p>
-                <Link
-                  className="button button-secondary"
-                  to={`/admin/competitions/${competitionId}/schedule`}
-                >
-                  Ir para Estrutura e agenda
-                </Link>
+                <label>
+                  Equipe mandante
+                  <select
+                    name="homeRegistrationId"
+                    value={manualHomeRegistrationId}
+                    required
+                    onChange={(event) =>
+                      setManualHomeRegistrationId(Number(event.currentTarget.value))
+                    }
+                  >
+                    {resolvedRegistrationIds.map((registrationId) => {
+                      const registration = registrations.find(
+                        (candidate) => candidate.id === registrationId,
+                      );
+                      return registration ? (
+                        <option key={registration.id} value={registration.id}>
+                          {registration.teamName}
+                          {registration.abbreviation ? ` (${registration.abbreviation})` : ""}
+                        </option>
+                      ) : null;
+                    })}
+                  </select>
+                </label>
+                <input type="hidden" name="awayRegistrationId" value={manualAwayRegistrationId} />
+                <p>
+                  Visitante:{" "}
+                  <strong>{manualAwayRegistration?.teamName ?? "Equipe a definir"}</strong>
+                </p>
+                <div className="wizard-actions">
+                  <button
+                    className="button button-primary"
+                    type="submit"
+                    formAction="?mode=create-game"
+                    formNoValidate
+                    disabled={!manualAwayRegistrationId || navigation.state !== "idle"}
+                  >
+                    {navigation.state === "submitting" &&
+                    navigation.formAction?.includes("mode=create-game")
+                      ? "Criando jogo…"
+                      : "Criar jogo e continuar"}
+                  </button>
+                  <Link
+                    className="button button-secondary"
+                    to={`/admin/competitions/${competitionId}/schedule`}
+                  >
+                    Abrir agenda completa
+                  </Link>
+                </div>
               </div>
             )
           ) : (
