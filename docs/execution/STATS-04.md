@@ -35,3 +35,14 @@ Após login/MFA, o responsável confirmou a versão 2 pelo fluxo administrativo.
 3. obter autorização explícita para aplicar a migration no Supabase compartilhado;
 4. regenerar tipos a partir do schema aplicado e validar a interface nova com FIBA/Genius, Basketball Site, cobertura parcial, teclado, acessibilidade e larguras 320, 390, 768 e 1440 px;
 5. manter a PR draft e não integrar nem publicar produção sem autorização explícita.
+
+
+## Atualização de fechamento — 25/09/2026
+
+A branch da PR #53 foi reconciliada sem reescrita de histórico com `origin/main@c09e72a` no commit `3760a4f`. A reconciliação incorporou a correção da PR #57 e a migration Basketball Site já aplicada no compartilhado como `20260925180553_basketball_site_boxscore`; a migration STATS continua a mesma já persistida como `20260922161633_stats_public_player_snapshot` e não foi reaplicada.
+
+Gate local no estado reconciliado: `git diff --check`, `npm ci` com zero vulnerabilidades, `npm run check` com 51 arquivos/373 Vitest, TypeScript, cinco runbooks, build e scan de 637 arquivos; lint sem erros e 237 warnings. O E2E Playwright+axe passou 1/1 em Chromium. No mesmo HEAD funcional, GitHub aprovou `gate`, `database`, `accessibility`, preview/upload e CodeQL.
+
+O preview `pr-53-base-do-basquete-preview` passou o smoke público. A rota `/2026/copa-es-ouro/fixture-fiba/masculino/jogadores?scope=all&mode=total` renderizou o `boxscore-v2` em 320, 390, 768 e 1440 px com HTTP 200, 20 linhas na primeira página, sem overflow global, sem erro de console, filtro `<details>/<summary>` operável por teclado e Escape e comparação abrindo/fechando corretamente. O aviso de cobertura informou dois jogos sem fase definida, coerente com o snapshot publicado.
+
+O bloqueio anterior da migration Basketball Site está resolvido pela reconciliação da PR #57. Permanecem obrigatórios, antes de qualquer merge, pareceres independentes de `database-security-reviewer` e `qa-reviewer` no mesmo HEAD. A tentativa desta sessão de iniciar um reviewer separado via executor local foi recusada pela política do executor antes de qualquer revisão; nenhum parecer foi simulado. A PR permanece draft, sem merge e sem deploy de produção.
