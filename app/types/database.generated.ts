@@ -4223,6 +4223,10 @@ export type Database = {
         Args: { p_import_id: number; p_resolution: Json };
         Returns: number;
       };
+      admin_resolve_boxscore_team_registrations: {
+        Args: { p_import_id: number; p_resolution: Json };
+        Returns: Json;
+      };
       admin_confirm_final_placement: {
         Args: {
           p_placement?: number;

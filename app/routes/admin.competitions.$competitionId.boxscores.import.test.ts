@@ -4,6 +4,7 @@ import {
   mapImportError,
   parseEligibilityPlayers,
   parsePlayerResolution,
+  parseTeamResolution,
 } from "./admin.competitions.$competitionId.boxscores.import";
 
 describe("boxscore import eligibility decisions", () => {
@@ -45,6 +46,29 @@ describe("boxscore import eligibility decisions", () => {
     expect(mapImportError("BD602", "not-json")).toEqual({
       message: "Atleta não elegível para o naipe desta edição.",
       status: 400,
+    });
+  });
+
+  it("parses only explicit team-resolution actions", () => {
+    expect(parseTeamResolution("registration:41")).toEqual({
+      action: "existing_registration",
+      registrationId: 41,
+    });
+    expect(parseTeamResolution("team:52")).toEqual({
+      action: "register_existing_team",
+      teamId: 52,
+    });
+    expect(parseTeamResolution("new")).toEqual({ action: "create_team" });
+    expect(parseTeamResolution("team:0")).toBeNull();
+    expect(parseTeamResolution("registration:any")).toBeNull();
+  });
+
+  it("maps team-resolution conflicts to reviewable messages", () => {
+    expect(mapImportError("BD315").status).toBe(409);
+    expect(mapImportError("BD316").status).toBe(409);
+    expect(mapImportError("BD317")).toEqual({
+      message: "A equipe selecionada não corresponde ao nome ou à sigla do boxscore.",
+      status: 409,
     });
   });
 });
