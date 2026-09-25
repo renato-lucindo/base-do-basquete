@@ -80,10 +80,20 @@ function parseShooting(value: string | undefined, code: string): ShootingLine {
 }
 
 function itemIn(row: TextRow, minimum: number, maximum: number): string | undefined {
-  return row.items
-    .filter((item) => item.x >= minimum && item.x < maximum)
-    .map((item) => compact(item.str))
-    .find(Boolean);
+  for (const item of row.items) {
+    const source = item.str;
+    const matches = [...source.matchAll(/\S+/g)];
+    if (!matches.length) continue;
+    const unitWidth = item.width > 0 && source.length > 0 ? item.width / source.length : 0;
+    for (const match of matches) {
+      const text = compact(match[0]);
+      if (!text) continue;
+      const offset = match.index ?? 0;
+      const center = unitWidth ? item.x + (offset + match[0].length / 2) * unitWidth : item.x;
+      if (center >= minimum && center < maximum) return text;
+    }
+  }
+  return undefined;
 }
 
 function parseMinutes(value: string | undefined): number {

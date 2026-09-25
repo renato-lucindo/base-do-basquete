@@ -96,6 +96,46 @@ describe("FIBA/Genius Sports parser", () => {
     expect(validateParsedBoxscore(parsed).valid).toBe(true);
   });
 
+  it("parses SAL x SAN from the supported FIBA/Genius variation", async () => {
+    const parsed = await parseFixture("Box Score FIBA SAL vs SAN 09 maio.pdf");
+    expect(parsed.gameNumber).toBe("5205816");
+    expect(parsed.scheduledLocal).toBe("2026-05-09T15:00");
+    expect(
+      parsed.teams.map((team) => [team.abbreviation, team.score, team.players.length]),
+    ).toEqual([
+      ["SAL", 59, 12],
+      ["SAN", 40, 11],
+    ]);
+    expect(parsed.teams[0].players[0]).toMatchObject({
+      jerseyNumber: "0",
+      name: "Arthur Ferreira Cock",
+      didNotPlay: true,
+    });
+    expect(parsed.teams[0].teamStatistics).toMatchObject({
+      pointsFromTurnovers: 19,
+      pointsInPaint: 28,
+      pointsInPaintMade: 14,
+      pointsInPaintAttempted: 23,
+      secondChancePoints: 7,
+      fastBreakPoints: 12,
+      fastBreakPointsFromTurnovers: 3,
+      benchPoints: 16,
+      largestLead: 19,
+      largestScoringRun: 11,
+      pointsPerPossession: 0.79,
+      timeLeadingSeconds: 2357,
+    });
+    expect(parsed.teams[1].teamStatistics).toMatchObject({
+      pointsFromTurnovers: 16,
+      pointsInPaint: 24,
+      pointsInPaintMade: 12,
+      pointsInPaintAttempted: 37,
+      timeLeadingSeconds: 0,
+    });
+    expect(parsed.gameStatistics).toEqual({ leadChanges: 1, timesTied: 1 });
+    expect(validateParsedBoxscore(parsed).valid).toBe(true);
+  });
+
   it("rejects a PDF without a text layer before interpretation", async () => {
     await expect(extractFibaGeniusBoxscore(new Uint8Array([37, 80, 68, 70, 45]))).rejects.toThrow();
   });
