@@ -28,7 +28,7 @@ function query(result: unknown) {
 function actionArgs(fields: Record<string, string>) {
   return {
     request: new Request(
-      "https://example.test/admin/competitions/20/boxscores/import?mode=create-game",
+      "https://example.test/admin/competitions/20/boxscores/import?import=24&mode=create-game",
       {
         method: "POST",
         headers: { Origin: "https://example.test" },
@@ -104,5 +104,27 @@ describe("boxscore manual game creation", () => {
     expect(result).toMatchObject({ init: { status: 409 } });
     expect(JSON.stringify(result)).toContain("resolução das equipes mudou");
     expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("reports a missing manual-matchup RPC as temporary environment unavailability", async () => {
+    rpc.mockResolvedValueOnce({
+      data: null,
+      error: { code: "PGRST202", message: "Could not find the function in the schema cache" },
+    });
+
+    const result = await action(actionArgs({}));
+
+    expect(result).toMatchObject({ init: { status: 503 } });
+    expect(JSON.stringify(result)).toContain("temporariamente indisponível neste ambiente");
+    expect(JSON.stringify(result)).not.toContain("Recarregue e tente novamente");
+  });
+
+  it("keeps known scheduling conflicts as reviewable business errors", async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { code: "BR023", message: "registration" } });
+
+    const result = await action(actionArgs({}));
+
+    expect(result).toMatchObject({ init: { status: 409 } });
+    expect(JSON.stringify(result)).toContain("Confirme a inscrição da equipe antes de continuar");
   });
 });

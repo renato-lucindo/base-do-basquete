@@ -591,7 +591,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       p_venue: null as unknown as string,
     });
     if (created.error) {
-      const status = created.error.code === "BD401" ? 403 : 409;
+      const isBusinessError =
+        created.error.code === "BD404" || created.error.code?.startsWith("BR");
+      const status = created.error.code === "BD401" ? 403 : isBusinessError ? 409 : 503;
+      const message =
+        status === 503
+          ? "A criação de jogos está temporariamente indisponível neste ambiente. Tente novamente após a atualização do sistema."
+          : schedulingError(created.error.code);
       logOperationalEvent({
         correlationId,
         durationMs: Date.now() - startedAt,
@@ -600,7 +606,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         status,
         context: { competitionId, entityId: importId, errorCode: created.error.code },
       });
-      return data({ error: schedulingError(created.error.code) }, { status });
+      return data({ error: message }, { status });
     }
     const createdPayload = created.data as { gameId?: unknown } | null;
     const gameId = parseId(
@@ -851,7 +857,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const importId = parseId(formData.get("importId"));
     const gameId = parseId(formData.get("gameId"));
     if (!importId) return data({ error: "Importação inválida." }, { status: 400 });
-    if (!gameId) return data({ error: "Selecione um jogo estrutural válido." }, { status: 400 });
+    if (!gameId) return data({ error: "Selecione um jogo válido desta edição." }, { status: 400 });
     const teamCount = Number(formData.get("teamCount"));
     const playerCount = Number(formData.get("playerCount"));
     if (formData.get("confirmImport") !== "yes") {
@@ -969,7 +975,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           {loaderData.competition.display_name}. Aceita exclusivamente os modelos documentados, com
           camada de texto; limite de 10 MiB.
         </p>
-        {actionData?.error ? (
+        {actionData?.error && !review ? (
           <p className="form-error" role="alert">
             {actionData.error}
           </p>

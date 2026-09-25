@@ -227,6 +227,8 @@ export function BoxscoreReviewEditor({
   const [pendingDraft, setPendingDraft] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
+  const reviewAction = (mode: "confirm" | "resolve-teams" | "create-game") =>
+    `?import=${review.id}&mode=${mode}`;
 
   useEffect(() => {
     const result = readAdminDraft<ReviewDraftData>({
@@ -363,7 +365,7 @@ export function BoxscoreReviewEditor({
         <AdminDraftNotice savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />
       ) : null}
       {restoreMessage ? <output className="admin-note">{restoreMessage}</output> : null}
-      <Form method="post" action="?mode=confirm" onSubmit={() => setAttempted(true)}>
+      <Form method="post" action={reviewAction("confirm")} onSubmit={() => setAttempted(true)}>
         <UnsavedChangesGuard active={pendingDraft || hasTransientPrivateSelection} />
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="importId" value={review.id} />
@@ -378,6 +380,11 @@ export function BoxscoreReviewEditor({
             {review.parsed.teams[0].score} × {review.parsed.teams[1].score}{" "}
             {review.parsed.teams[1].name}
           </p>
+          {actionError ? (
+            <p className="form-error" role="alert">
+              {actionError}
+            </p>
+          ) : null}
           <h3>Equipes da edição</h3>
           <p>
             Confirme cada equipe antes de avançar. Uma equipe ausente pode ser inscrita a partir de
@@ -476,7 +483,7 @@ export function BoxscoreReviewEditor({
               <button
                 className="button button-primary"
                 type="submit"
-                formAction="?mode=resolve-teams"
+                formAction={reviewAction("resolve-teams")}
                 formNoValidate
                 disabled={unresolvedTeamChoices > 0 || navigation.state !== "idle"}
               >
@@ -490,7 +497,7 @@ export function BoxscoreReviewEditor({
           {missingTeams === 0 ? (
             hasEligibleGame ? (
               <label>
-                Jogo estrutural
+                Jogo da edição
                 <select
                   value={gameId}
                   required
@@ -517,8 +524,8 @@ export function BoxscoreReviewEditor({
             ) : (
               <div className="admin-note">
                 <p>
-                  As equipes estão prontas, mas ainda não existe um jogo estrutural elegível entre
-                  elas. Defina o mando para criar o jogo em rascunho e continuar a revisão.
+                  As equipes estão prontas, mas ainda não existe um jogo desta edição entre elas.
+                  Defina o mando para criar o jogo em rascunho e continuar a revisão.
                 </p>
                 <label>
                   Equipe mandante
@@ -552,7 +559,7 @@ export function BoxscoreReviewEditor({
                   <button
                     className="button button-primary"
                     type="submit"
-                    formAction="?mode=create-game"
+                    formAction={reviewAction("create-game")}
                     formNoValidate
                     disabled={!manualAwayRegistrationId || navigation.state !== "idle"}
                   >
@@ -572,7 +579,7 @@ export function BoxscoreReviewEditor({
             )
           ) : (
             <p className="admin-note">
-              Resolva as duas equipes antes de escolher o jogo estrutural.
+              Resolva as duas equipes antes de escolher o jogo da edição.
             </p>
           )}
           <div className="wizard-actions">
@@ -773,7 +780,11 @@ export function BoxscoreReviewEditor({
             Serão confirmadas 2 equipes e {players.length} associações. O commit permanece atômico e
             o PDF continua privado.
           </p>
-          {actionError ? <p className="form-error">{actionError}</p> : null}
+          {actionError ? (
+            <p className="form-error" role="alert">
+              {actionError}
+            </p>
+          ) : null}
           <label className="confirmation-check">
             <input type="checkbox" name="confirmImport" value="yes" required />
             Confirmo que revisei as equipes, atletas e correspondências sugeridas.
