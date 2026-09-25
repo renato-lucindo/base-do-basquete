@@ -38,7 +38,7 @@ export async function validatePdfUpload(file: File): Promise<ValidatedPdf> {
 }
 
 export async function extractSupportedBoxscore(bytes: Uint8Array) {
-  const pdf = await getDocumentProxy(bytes, {
+  const pdf = await getDocumentProxy(Uint8Array.from(bytes), {
     maxImageSize: 16_777_216,
     stopAtErrors: true,
   });

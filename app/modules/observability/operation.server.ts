@@ -6,6 +6,7 @@ export type OperationalName =
   | "boxscore"
   | "boxscore.commit"
   | "boxscore.refresh_stats"
+  | "boxscore.resolve_teams"
   | "boxscore.upload"
   | "health"
   | "player.create"

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, useNavigation } from "react-router";
+import { Form, Link, useNavigation } from "react-router";
 
 import { AdminDraftNotice } from "../../components/admin/admin-draft-notice";
 import { AdminPlayerSearch } from "../../components/admin/admin-player-search";
@@ -51,14 +51,29 @@ interface ReviewGame {
   isLateFallback: boolean;
 }
 
+interface ReviewTeamCandidate {
+  teamId: number;
+  teamName: string;
+  abbreviation: string | null;
+  isActive: boolean;
+  registrationId: number | null;
+  registrationStatus: string | null;
+}
+
 interface BoxscoreReviewEditorProps {
   actionError?: string;
   competitionId: number;
   competitionGender: string | null;
   csrfToken: string;
   games: ReviewGame[];
-  review: { id: number; parsed: ParsedBoxscore; matches: ReviewMatch[] };
+  review: {
+    id: number;
+    parsed: ParsedBoxscore;
+    resolvedTeams: Array<{ sourceTeamName: string; registrationId: number }>;
+    matches: ReviewMatch[];
+  };
   registrations: ReviewRegistration[];
+  teamCandidates: ReviewTeamCandidate[];
 }
 
 interface ReviewDraftData {
@@ -87,6 +102,7 @@ export function BoxscoreReviewEditor({
   games,
   review,
   registrations,
+  teamCandidates,
 }: BoxscoreReviewEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
@@ -104,23 +120,68 @@ export function BoxscoreReviewEditor({
     () => review.parsed.teams.flatMap((team) => team.players.map((player) => ({ team, player }))),
     [review.parsed.teams],
   );
-  const matchedRegistration = (team: ParsedBoxscore["teams"][number]) =>
-    registrations.find(
-      (registration) =>
-        normalizeTeam(registration.teamName) === normalizeTeam(team.name) ||
-        registration.abbreviation?.toUpperCase() === team.abbreviation,
+  const candidatesForTeam = (team: ParsedBoxscore["teams"][number]) =>
+    teamCandidates.filter(
+      (candidate) =>
+        normalizeTeam(candidate.teamName) === normalizeTeam(team.name) ||
+        candidate.abbreviation?.toUpperCase() === team.abbreviation,
     );
+  const matchedRegistration = (team: ParsedBoxscore["teams"][number]) => {
+    const audited = review.resolvedTeams.find(
+      (resolved) => normalizeTeam(resolved.sourceTeamName) === normalizeTeam(team.name),
+    );
+    if (audited) {
+      return registrations.find((registration) => registration.id === audited.registrationId);
+    }
+    const candidates = candidatesForTeam(team);
+    if (candidates.length !== 1) return undefined;
+    const candidate = candidates[0];
+    if (!candidate) return undefined;
+    if (!candidate.isActive || candidate.registrationStatus !== "confirmed") return undefined;
+    return registrations.find((registration) => registration.id === candidate.registrationId);
+  };
   const rosteredPlayerIds = useMemo(
     () => new Set(registrations.flatMap((item) => item.roster.map((entry) => entry.playerId))),
     [registrations],
   );
+  const initialRegistrations = Object.fromEntries(
+    review.parsed.teams.map((team, index) => [index, matchedRegistration(team)?.id ?? 0]),
+  );
+  const resolvedRegistrationIds = review.parsed.teams
+    .map((team) => matchedRegistration(team)?.id ?? 0)
+    .filter((id) => id > 0);
+  const eligibleGames =
+    resolvedRegistrationIds.length === 2 && new Set(resolvedRegistrationIds).size === 2
+      ? games.filter((game) => {
+          const participants = new Set([game.homeRegistrationId, game.awayRegistrationId]);
+          return resolvedRegistrationIds.every((registrationId) =>
+            participants.has(registrationId),
+          );
+        })
+      : [];
   const initialGame =
-    games.find((game) => game.gameNumber === review.parsed.gameNumber) ?? games[0] ?? null;
-  const initialRegistrations = initialGame
-    ? { 0: initialGame.homeRegistrationId, 1: initialGame.awayRegistrationId }
-    : Object.fromEntries(
-        review.parsed.teams.map((team, index) => [index, matchedRegistration(team)?.id ?? 0]),
-      );
+    eligibleGames.find((game) => game.gameNumber === review.parsed.gameNumber) ??
+    eligibleGames[0] ??
+    null;
+  const initialTeamResolutionChoices = Object.fromEntries(
+    review.parsed.teams.map((team, index) => {
+      const resolved = matchedRegistration(team);
+      if (resolved) return [index, `registration:${resolved.id}`];
+      const candidates = candidatesForTeam(team);
+      if (candidates.length === 0) return [index, "new"];
+      if (candidates.length !== 1) return [index, ""];
+      const candidate = candidates[0];
+      if (!candidate) return [index, ""];
+      if (!candidate.isActive) return [index, ""];
+      if (candidate.registrationStatus === "confirmed" && candidate.registrationId) {
+        return [index, `registration:${candidate.registrationId}`];
+      }
+      if (candidate.registrationStatus === null || candidate.registrationStatus === "draft") {
+        return [index, `team:${candidate.teamId}`];
+      }
+      return [index, ""];
+    }),
+  );
   const initialResolutions = Object.fromEntries(
     players.map(({ team, player }, index) => {
       const match = matches.get(`${team.name}\u0000${player.name}`);
@@ -146,6 +207,9 @@ export function BoxscoreReviewEditor({
   const [gameId, setGameId] = useState(initialGame?.id ?? 0);
   const [teamRegistrations, setTeamRegistrations] =
     useState<Record<number, number>>(initialRegistrations);
+  const [teamResolutionChoices, setTeamResolutionChoices] = useState<Record<number, string>>(
+    initialTeamResolutionChoices,
+  );
   const [resolutions, setResolutions] = useState<Record<number, string>>(initialResolutions);
   const [newPlayerEligibility, setNewPlayerEligibility] = useState<
     Record<number, NewPlayerEligibilitySex>
@@ -200,6 +264,10 @@ export function BoxscoreReviewEditor({
       !resolutions[index] || (resolutions[index] === "new" && !newPlayerEligibility[index]),
   ).length;
   const missingTeams = review.parsed.teams.filter((_, index) => !teamRegistrations[index]).length;
+  const unresolvedTeamChoices = review.parsed.teams.filter(
+    (_, index) => !teamRegistrations[index] && !teamResolutionChoices[index],
+  ).length;
+  const hasEligibleGame = eligibleGames.length > 0;
   const hasTransientPrivateSelection = Object.values(newPlayerEligibility).some(Boolean);
   const editionGenderLabel =
     competitionGender === "male"
@@ -220,8 +288,10 @@ export function BoxscoreReviewEditor({
       setRestoreMessage("O rascunho incompatível foi descartado.");
       return;
     }
-    const restoredGame = games.find((game) => game.id === draft.data.gameId);
-    if (!restoredGame) {
+    const restoredGame = draft.data.gameId
+      ? eligibleGames.find((game) => game.id === draft.data.gameId)
+      : null;
+    if (draft.data.gameId && !restoredGame) {
       discard();
       setRestoreMessage("O jogo estrutural do rascunho não está mais disponível.");
       return;
@@ -244,12 +314,10 @@ export function BoxscoreReviewEditor({
         return [index, ""];
       }),
     );
-    setStep(Math.min(4, Math.max(2, draft.data.step)));
-    setGameId(restoredGame.id);
-    setTeamRegistrations({
-      0: restoredGame.homeRegistrationId,
-      1: restoredGame.awayRegistrationId,
-    });
+    const restoredStep = Math.min(4, Math.max(2, draft.data.step));
+    setStep(missingTeams > 0 || !restoredGame ? 2 : restoredStep);
+    setGameId(restoredGame?.id ?? 0);
+    setTeamRegistrations(initialRegistrations);
     setResolutions(restoredResolutions);
     setSavedAt(draft.savedAt);
     setDraft(null);
@@ -268,7 +336,15 @@ export function BoxscoreReviewEditor({
 
   return (
     <section className="admin-panel boxscore-review">
-      <AdminWizardSteps current={step} labels={importSteps} onSelect={setStep} />
+      <AdminWizardSteps
+        current={step}
+        labels={importSteps}
+        onSelect={(nextStep) => {
+          if (nextStep > 2 && (missingTeams > 0 || !gameId)) return;
+          if (nextStep > 3 && pending > 0) return;
+          setStep(nextStep);
+        }}
+      />
       {draft ? (
         <AdminDraftNotice savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />
       ) : null}
@@ -287,69 +363,167 @@ export function BoxscoreReviewEditor({
             {review.parsed.teams[0].score} × {review.parsed.teams[1].score}{" "}
             {review.parsed.teams[1].name}
           </p>
-          <label>
-            Jogo estrutural
-            <select
-              value={gameId}
-              required
-              onChange={(event) => {
-                const selectedId = Number(event.currentTarget.value);
-                const game = games.find((candidate) => candidate.id === selectedId);
-                if (!game) return;
-                setGameId(game.id);
-                setTeamRegistrations({
-                  0: game.homeRegistrationId,
-                  1: game.awayRegistrationId,
-                });
-                setResolutions({});
-                change();
-              }}
-            >
-              <option value="" disabled>
-                Selecione o jogo
-              </option>
-              {games.map((game) => (
-                <option key={game.id} value={game.id}>
-                  {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`} ·{" "}
-                  {game.homeTeamName} × {game.awayTeamName}
-                  {game.isLateFallback ? " · fallback aguardando PDF" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          <h3>Equipes da edição</h3>
+          <p>
+            Confirme cada equipe antes de avançar. Uma equipe ausente pode ser inscrita a partir de
+            um cadastro existente ou criada explicitamente com o nome e a sigla extraídos do PDF.
+          </p>
           <div className="boxscore-team-resolution">
-            {review.parsed.teams.map((team, index) => (
-              <label key={team.name}>
-                {team.name} ({team.abbreviation})
-                <input type="hidden" name={`teamName-${index}`} value={team.name} />
-                <select value={teamRegistrations[index] || ""} disabled>
+            {review.parsed.teams.map((team, index) => {
+              const candidates = candidatesForTeam(team);
+              const resolvedRegistration = registrations.find(
+                (registration) => registration.id === teamRegistrations[index],
+              );
+              return (
+                <label key={team.name}>
+                  {team.name} ({team.abbreviation})
+                  <input type="hidden" name={`teamName-${index}`} value={team.name} />
+                  {resolvedRegistration ? (
+                    <>
+                      <output>
+                        Inscrição confirmada: {resolvedRegistration.teamName}
+                        {resolvedRegistration.abbreviation
+                          ? ` (${resolvedRegistration.abbreviation})`
+                          : ""}
+                      </output>
+                      <input
+                        type="hidden"
+                        name={`teamResolution-${index}`}
+                        value={`registration:${resolvedRegistration.id}`}
+                      />
+                    </>
+                  ) : (
+                    <select
+                      name={`teamResolution-${index}`}
+                      value={teamResolutionChoices[index] ?? ""}
+                      required
+                      aria-invalid={(attempted && !teamResolutionChoices[index]) || undefined}
+                      onChange={(event) => {
+                        setTeamResolutionChoices((current) => ({
+                          ...current,
+                          [index]: event.currentTarget.value,
+                        }));
+                      }}
+                    >
+                      <option value="" disabled>
+                        Selecione como resolver
+                      </option>
+                      {candidates.map((candidate) => {
+                        const unavailable =
+                          !candidate.isActive ||
+                          (candidate.registrationStatus !== null &&
+                            candidate.registrationStatus !== "draft" &&
+                            candidate.registrationStatus !== "confirmed");
+                        const value =
+                          candidate.registrationId && candidate.registrationStatus === "confirmed"
+                            ? `registration:${candidate.registrationId}`
+                            : `team:${candidate.teamId}`;
+                        const label = !candidate.isActive
+                          ? `${candidate.teamName} · equipe inativa`
+                          : candidate.registrationStatus === "confirmed"
+                            ? `${candidate.teamName} · usar inscrição confirmada`
+                            : candidate.registrationStatus === "draft"
+                              ? `${candidate.teamName} · confirmar inscrição existente`
+                              : candidate.registrationStatus === null
+                                ? `${candidate.teamName} · inscrever equipe existente`
+                                : `${candidate.teamName} · inscrição ${candidate.registrationStatus}`;
+                        return (
+                          <option key={candidate.teamId} value={value} disabled={unavailable}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                      {candidates.length === 0 ? (
+                        <option value="new">
+                          Criar equipe “{team.name}” ({team.abbreviation}) e confirmar inscrição
+                        </option>
+                      ) : null}
+                    </select>
+                  )}
+                  <input
+                    type="hidden"
+                    name={`registration-${index}`}
+                    value={teamRegistrations[index] || ""}
+                  />
+                  <InlineFieldError
+                    message={
+                      attempted && !teamRegistrations[index] && !teamResolutionChoices[index]
+                        ? "Escolha como resolver esta equipe."
+                        : null
+                    }
+                  />
+                </label>
+              );
+            })}
+          </div>
+          {missingTeams > 0 ? (
+            <div className="wizard-actions">
+              <button
+                className="button button-primary"
+                type="submit"
+                formAction="?mode=resolve-teams"
+                formNoValidate
+                disabled={unresolvedTeamChoices > 0 || navigation.state !== "idle"}
+              >
+                {navigation.state !== "idle" ? "Resolvendo equipes…" : "Resolver equipes"}
+              </button>
+            </div>
+          ) : (
+            <output className="admin-note">As duas equipes possuem inscrição confirmada.</output>
+          )}
+
+          {missingTeams === 0 ? (
+            hasEligibleGame ? (
+              <label>
+                Jogo estrutural
+                <select
+                  value={gameId}
+                  required
+                  onChange={(event) => {
+                    const selectedId = Number(event.currentTarget.value);
+                    const game = eligibleGames.find((candidate) => candidate.id === selectedId);
+                    if (!game) return;
+                    setGameId(game.id);
+                    change();
+                  }}
+                >
                   <option value="" disabled>
-                    Selecione a inscrição
+                    Selecione o jogo
                   </option>
-                  {registrations.map((registration) => (
-                    <option key={registration.id} value={registration.id}>
-                      {registration.teamName}
+                  {eligibleGames.map((game) => (
+                    <option key={game.id} value={game.id}>
+                      {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`} ·{" "}
+                      {game.homeTeamName} × {game.awayTeamName}
+                      {game.isLateFallback ? " · fallback aguardando PDF" : ""}
                     </option>
                   ))}
                 </select>
-                <input
-                  type="hidden"
-                  name={`registration-${index}`}
-                  value={teamRegistrations[index] || ""}
-                />
-                <InlineFieldError
-                  message={
-                    attempted && !teamRegistrations[index] ? "Selecione uma inscrição." : null
-                  }
-                />
               </label>
-            ))}
-          </div>
+            ) : (
+              <div className="admin-note" role="status">
+                <p>
+                  As equipes estão prontas, mas ainda não existe um jogo estrutural elegível entre
+                  elas. Crie ou prepare o confronto em Estrutura e agenda e depois volte a esta
+                  importação; o rascunho continuará disponível.
+                </p>
+                <Link
+                  className="button button-secondary"
+                  to={`/admin/competitions/${competitionId}/schedule`}
+                >
+                  Ir para Estrutura e agenda
+                </Link>
+              </div>
+            )
+          ) : (
+            <p className="admin-note">
+              Resolva as duas equipes antes de escolher o jogo estrutural.
+            </p>
+          )}
           <div className="wizard-actions">
             <button
               className="button button-primary"
               type="button"
-              disabled={missingTeams > 0}
+              disabled={missingTeams > 0 || !gameId}
               onClick={() => {
                 setStep(3);
                 change();
@@ -582,7 +756,9 @@ export function BoxscoreReviewEditor({
             <button
               className="button button-primary"
               type="button"
-              disabled={(step === 2 && missingTeams > 0) || (step === 3 && pending > 0)}
+              disabled={
+                (step === 2 && (missingTeams > 0 || !gameId)) || (step === 3 && pending > 0)
+              }
               onClick={() => {
                 setStep(Math.min(4, step + 1));
                 change();
