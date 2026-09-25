@@ -138,6 +138,11 @@ export function mapImportError(
         message: "A equipe selecionada não corresponde ao nome ou à sigla do boxscore.",
         status: 409,
       };
+    case "BD318":
+      return {
+        message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
+        status: 409,
+      };
     case "BD505":
       return { message: "Revise o naipe da edição antes de confirmar a importação.", status: 409 };
     case "BD501":
@@ -371,7 +376,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     }>;
   } = null;
   if (importId) {
-    const [importResult, matchResult, teamResolutionAuditResult] = await Promise.all([
+    const [importResult, matchResult, teamResolutionResult] = await Promise.all([
       auth.client
         .from("boxscore_imports")
         .select("id,status,parsed_payload")
@@ -386,27 +391,22 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         .eq("import_id", importId)
         .order("id"),
       auth.client
-        .from("admin_mutation_audit")
-        .select("metadata")
-        .eq("action", "boxscore_team_registrations_resolved")
-        .eq("entity_type", "boxscore_import")
-        .eq("entity_id", importId)
-        .order("id", { ascending: false })
+        .from("boxscore_team_resolutions")
+        .select("results")
+        .eq("import_id", importId)
         .limit(1),
     ]);
     if (
       importResult.error ||
       matchResult.error ||
-      teamResolutionAuditResult.error ||
+      teamResolutionResult.error ||
       importResult.data.status !== "review"
     ) {
       throw new Response("Importação não disponível para revisão", { status: 404 });
     }
-    const teamResolutionMetadata = teamResolutionAuditResult.data[0]?.metadata as
-      | { results?: unknown }
-      | undefined;
-    const resolvedTeams = Array.isArray(teamResolutionMetadata?.results)
-      ? teamResolutionMetadata.results.flatMap((item) => {
+    const teamResolutionResults = teamResolutionResult.data[0]?.results;
+    const resolvedTeams = Array.isArray(teamResolutionResults)
+      ? teamResolutionResults.flatMap((item) => {
           if (!item || typeof item !== "object") return [];
           const sourceTeamName = "sourceTeamName" in item ? String(item.sourceTeamName) : "";
           const registrationId =

@@ -70,5 +70,9 @@ describe("boxscore import eligibility decisions", () => {
       message: "A equipe selecionada não corresponde ao nome ou à sigla do boxscore.",
       status: 409,
     });
+    expect(mapImportError("BD318")).toEqual({
+      message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
+      status: 409,
+    });
   });
 });

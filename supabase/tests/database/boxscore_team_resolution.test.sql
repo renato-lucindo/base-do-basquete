@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(31);
 set constraints all deferred;
 
 insert into auth.users (
@@ -180,6 +180,21 @@ select set_config(
 );
 set local role authenticated;
 
+select ok(
+  not has_table_privilege('authenticated', 'public.boxscore_team_resolutions', 'INSERT'),
+  'authenticated cannot write the authoritative team-resolution state directly'
+);
+select throws_ok(
+  $$insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
+    values (
+      'boxscore_team_registrations_resolved', 'boxscore_import', 94701,
+      '{"results":[{"sourceTeamName":"forged","registrationId":1},{"sourceTeamName":"forged-2","registrationId":2}]}'::jsonb
+    )$$,
+  '42501',
+  'new row violates row-level security policy for table "admin_mutation_audit"',
+  'aal2 admin cannot forge a completed team resolution through the audit table'
+);
+
 select throws_ok(
   $$select public.admin_resolve_boxscore_team_registrations(
     94707,
@@ -244,6 +259,18 @@ select lives_ok(
     '{"teams":[{"sourceTeamName":"Equipe Confirmada","action":"existing_registration","registrationId":9471},{"sourceTeamName":"Equipe Nova","action":"create_team"}]}'::jsonb
   )$$,
   'retry of the same resolved import is idempotent'
+);
+select is(
+  (select count(*)::integer from public.boxscore_team_resolutions where import_id = 94702),
+  1, 'resolved import has exactly one authoritative resolution row'
+);
+select throws_ok(
+  $$select public.admin_resolve_boxscore_team_registrations(
+    94702,
+    '{"teams":[{"sourceTeamName":"Equipe Confirmada","action":"existing_registration","registrationId":9471},{"sourceTeamName":"Equipe Nova","action":"register_existing_team","teamId":9472}]}'::jsonb
+  )$$,
+  'BD318', 'BDB_PDF_TEAM_RESOLUTION_CONFLICT',
+  'retry with a different canonical decision is rejected as a conflict'
 );
 select is(
   (select count(*)::integer from public.teams where name = 'Equipe Nova' and abbreviation = 'ENV'),

@@ -264,6 +264,67 @@ export type Database = {
           },
         ];
       };
+      boxscore_team_resolutions: {
+        Row: {
+          competition_id: number;
+          import_id: number;
+          registration_1_id: number;
+          registration_2_id: number;
+          request_payload: Json;
+          resolved_at: string;
+          resolved_by: string;
+          results: Json;
+          source_team_1_name: string;
+          source_team_2_name: string;
+        };
+        Insert: {
+          competition_id: number;
+          import_id: number;
+          registration_1_id: number;
+          registration_2_id: number;
+          request_payload: Json;
+          resolved_at?: string;
+          resolved_by?: string;
+          results: Json;
+          source_team_1_name: string;
+          source_team_2_name: string;
+        };
+        Update: {
+          competition_id?: number;
+          import_id?: number;
+          registration_1_id?: number;
+          registration_2_id?: number;
+          request_payload?: Json;
+          resolved_at?: string;
+          resolved_by?: string;
+          results?: Json;
+          source_team_1_name?: string;
+          source_team_2_name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "boxscore_team_resolutions_import_competition_fkey";
+            columns: ["import_id", "competition_id"];
+            isOneToOne: true;
+            referencedRelation: "boxscore_imports";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "boxscore_team_resolutions_registration_1_competition_fkey";
+            columns: ["registration_1_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+          {
+            foreignKeyName: "boxscore_team_resolutions_registration_2_competition_fkey";
+            columns: ["registration_2_id", "competition_id"];
+            isOneToOne: false;
+            referencedRelation: "team_registrations";
+            referencedColumns: ["id", "competition_id"];
+          },
+        ];
+      };
       categories: {
         Row: {
           created_at: string;

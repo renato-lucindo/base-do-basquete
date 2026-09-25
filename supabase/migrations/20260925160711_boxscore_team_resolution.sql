@@ -13,6 +13,61 @@ alter table public.admin_mutation_audit
     'ruleset_amended','boxscore_team_registrations_resolved'
   ));
 
+drop policy admin_mutation_audit_admin_insert on public.admin_mutation_audit;
+create policy admin_mutation_audit_admin_insert
+on public.admin_mutation_audit for insert to authenticated
+with check (
+  (select public.is_current_admin_aal2())
+  and user_id = (select auth.uid())
+  and action <> 'boxscore_team_registrations_resolved'
+);
+
+create table public.boxscore_team_resolutions (
+  import_id bigint primary key,
+  competition_id bigint not null,
+  source_team_1_name text not null check (
+    source_team_1_name = btrim(source_team_1_name)
+    and char_length(source_team_1_name) between 2 and 120
+  ),
+  registration_1_id bigint not null,
+  source_team_2_name text not null check (
+    source_team_2_name = btrim(source_team_2_name)
+    and char_length(source_team_2_name) between 2 and 120
+  ),
+  registration_2_id bigint not null,
+  request_payload jsonb not null check (jsonb_typeof(request_payload) = 'object'),
+  results jsonb not null check (
+    jsonb_typeof(results) = 'array' and jsonb_array_length(results) = 2
+  ),
+  resolved_by uuid not null default auth.uid() references auth.users(id) on delete restrict
+    deferrable initially immediate,
+  resolved_at timestamptz not null default now(),
+  constraint boxscore_team_resolutions_import_competition_fkey
+    foreign key (import_id, competition_id)
+    references public.boxscore_imports(id, competition_id) on delete restrict,
+  constraint boxscore_team_resolutions_registration_1_competition_fkey
+    foreign key (registration_1_id, competition_id)
+    references public.team_registrations(id, competition_id) on delete restrict,
+  constraint boxscore_team_resolutions_registration_2_competition_fkey
+    foreign key (registration_2_id, competition_id)
+    references public.team_registrations(id, competition_id) on delete restrict,
+  constraint boxscore_team_resolutions_distinct_registrations check (
+    registration_1_id <> registration_2_id
+  )
+);
+
+alter table public.boxscore_team_resolutions enable row level security;
+alter table public.boxscore_team_resolutions force row level security;
+revoke all on public.boxscore_team_resolutions from public, anon, authenticated;
+grant select on public.boxscore_team_resolutions to authenticated;
+
+create policy boxscore_team_resolutions_admin_select
+on public.boxscore_team_resolutions for select to authenticated
+using (
+  (select public.is_current_admin_aal2())
+  and resolved_by = (select auth.uid())
+);
+
 create function private.normalize_team_name(value text)
 returns text
 language sql
@@ -87,7 +142,8 @@ declare
   created_registration boolean;
   transitioned_registration boolean;
   results jsonb := '[]'::jsonb;
-  prior_results jsonb;
+  canonical_resolution jsonb;
+  prior_resolution public.boxscore_team_resolutions;
   resolved_team_ids bigint[] := '{}'::bigint[];
   resolved_registration_ids bigint[] := '{}'::bigint[];
 begin
@@ -104,6 +160,20 @@ begin
   then
     raise exception using errcode = 'BD305', message = 'BDB_PDF_TEAM_RESOLUTION_INVALID';
   end if;
+
+  select jsonb_build_object(
+    'teams',
+    jsonb_agg(
+      jsonb_strip_nulls(jsonb_build_object(
+        'sourceTeamName', btrim(coalesce(team_resolution.value ->> 'sourceTeamName', '')),
+        'action', coalesce(team_resolution.value ->> 'action', ''),
+        'registrationId', nullif(btrim(coalesce(team_resolution.value ->> 'registrationId', '')), ''),
+        'teamId', nullif(btrim(coalesce(team_resolution.value ->> 'teamId', '')), '')
+      ))
+      order by btrim(coalesce(team_resolution.value ->> 'sourceTeamName', ''))
+    )
+  ) into canonical_resolution
+  from jsonb_array_elements(p_resolution -> 'teams') as team_resolution(value);
 
   select import_item.* into import_record
   from public.boxscore_imports import_item
@@ -123,16 +193,14 @@ begin
     raise exception using errcode = 'BD305', message = 'BDB_PDF_TEAM_RESOLUTION_INVALID';
   end if;
 
-  select audit.metadata -> 'results' into prior_results
-  from public.admin_mutation_audit audit
-  where audit.action = 'boxscore_team_registrations_resolved'
-    and audit.entity_type = 'boxscore_import'
-    and audit.entity_id = p_import_id
-    and jsonb_typeof(audit.metadata -> 'results') = 'array'
-  order by audit.id desc
-  limit 1;
-  if prior_results is not null and jsonb_array_length(prior_results) = 2 then
-    return jsonb_build_object('teams', prior_results, 'idempotent', true);
+  select resolution.* into prior_resolution
+  from public.boxscore_team_resolutions resolution
+  where resolution.import_id = p_import_id;
+  if found then
+    if prior_resolution.request_payload <> canonical_resolution then
+      raise exception using errcode = 'BD318', message = 'BDB_PDF_TEAM_RESOLUTION_CONFLICT';
+    end if;
+    return jsonb_build_object('teams', prior_resolution.results, 'idempotent', true);
   end if;
 
   for source_team in
@@ -338,10 +406,32 @@ begin
     raise exception using errcode = 'BD305', message = 'BDB_PDF_TEAM_RESOLUTION_INVALID';
   end if;
 
+  insert into public.boxscore_team_resolutions(
+    import_id,
+    competition_id,
+    source_team_1_name,
+    registration_1_id,
+    source_team_2_name,
+    registration_2_id,
+    request_payload,
+    results,
+    resolved_by
+  ) values (
+    p_import_id,
+    import_record.competition_id,
+    results -> 0 ->> 'sourceTeamName',
+    (results -> 0 ->> 'registrationId')::bigint,
+    results -> 1 ->> 'sourceTeamName',
+    (results -> 1 ->> 'registrationId')::bigint,
+    canonical_resolution,
+    results,
+    auth.uid()
+  );
+
   insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
   values (
     'boxscore_team_registrations_resolved', 'boxscore_import', p_import_id,
-    jsonb_build_object('results', results)
+    jsonb_build_object('results', results, 'requestPayload', canonical_resolution)
   );
 
   return jsonb_build_object('teams', results, 'idempotent', false);
