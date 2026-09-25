@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { extractTextItems, getDocumentProxy } from "unpdf";
 import { describe, expect, it } from "vitest";
 
-import { extractFibaGeniusBoxscore } from "./extract.server";
+import { createPdfStorageBody, extractFibaGeniusBoxscore } from "./extract.server";
 import { parseFibaGeniusBoxscore, validateParsedBoxscore } from "./parser";
 import type { PositionedTextItem } from "./types";
 
@@ -67,6 +67,19 @@ function mergeRowItems(
 }
 
 describe("FIBA/Genius Sports parser", () => {
+  it("preserves the caller PDF bytes after extraction for later storage", async () => {
+    const bytes = new Uint8Array(
+      await readFile(`${fixtures}Box Score FIBA SAL vs SAN 09 maio.pdf`),
+    );
+    const originalByteLength = bytes.byteLength;
+
+    const parsed = await extractFibaGeniusBoxscore(bytes);
+
+    expect(parsed.gameNumber).toBe("5205816");
+    expect(bytes.byteLength).toBe(originalByteLength);
+    expect(createPdfStorageBody(bytes).size).toBe(originalByteLength);
+  });
+
   it("parses ALC x AVA from the supported fixture", async () => {
     const parsed = await parseFixture("Box Score FIBA ALC vs AVA 09 maio.pdf");
     expect(parsed.gameNumber).toBe("5205808");
