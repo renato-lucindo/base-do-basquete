@@ -8,6 +8,13 @@ O projeto está sendo construído como um monólito modular em TypeScript para C
 
 Execução greenfield em andamento por pacotes verticais. Consulte [HANDOFF.md](HANDOFF.md) para o estado atual, [docs/plan/README.md](docs/plan/README.md) para o plano normativo, [docs/PAINEL-ADMINISTRATIVO.md](docs/PAINEL-ADMINISTRATIVO.md) para a visão funcional do painel administrativo e [docs/ACESSIBILIDADE.md](docs/ACESSIBILIDADE.md) para a baseline obrigatória de acessibilidade.
 
+## Contribuição e governança
+
+- [Como contribuir](CONTRIBUTING.md)
+- [Perfil de aplicação das referências](docs/governance/STANDARDS-PROFILE.md)
+- [Catálogo documental](docs/governance/DOCUMENT-CATALOG.md)
+- [Política de segurança](SECURITY.md)
+
 ## Segurança
 
 - Nenhum segredo é versionado.

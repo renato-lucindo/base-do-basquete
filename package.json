@@ -14,6 +14,7 @@
     "deploy:preview": "npm run build && wrangler deploy --env preview",
     "deploy:production": "npm run build && wrangler deploy --env production",
     "dev": "npm run prepare:sienna && react-router dev",
+    "docs:inventory": "node scripts/document-inventory.mjs",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "lint": "biome lint .",

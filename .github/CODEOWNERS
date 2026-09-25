@@ -1,0 +1,9 @@
+# Responsável humano padrão pelo repositório privado.
+* @renato-lucindo
+
+# Áreas que alteram governança, entrega ou dados.
+/.github/ @renato-lucindo
+/.agents/ @renato-lucindo
+/AGENTS.md @renato-lucindo
+/docs/governance/ @renato-lucindo
+/supabase/ @renato-lucindo
