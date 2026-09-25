@@ -13,7 +13,8 @@ alter table public.admin_mutation_audit
     'manual_fallback_finalized','game_data_comparison_created','game_data_conflict_resolved',
     'fiba_candidate_staged','registration_removed','registration_withdrawn','ruleset_cloned',
     'ruleset_draft_edited','competition_group_closed','matchup_administratively_resolved',
-    'ruleset_amended','manual_matchup_created','manual_matchup_participants_updated'
+    'ruleset_amended','manual_matchup_created','manual_matchup_participants_updated',
+    'boxscore_team_registrations_resolved'
   ));
 
 create table private.manual_matchup_requests (
