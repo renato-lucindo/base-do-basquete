@@ -16,6 +16,8 @@
 ## Risco e validação
 
 - **Riscos conhecidos:**
+- **Referências/processos aplicáveis:**
+- **Informação de usuário afetada:** não
 - **Testes executados:**
 - **Evidências:**
 - **Ambiente validado:**
@@ -30,6 +32,8 @@
 - [ ] Não há secrets, tokens, cookies ou credenciais no diff.
 - [ ] Testes e gates proporcionais ao risco foram executados.
 - [ ] Mudanças de banco, segurança ou governança possuem os revisores exigidos.
+- [ ] Requisitos, arquitetura, manuais e runbooks afetados foram atualizados na mesma unidade ou possuem bloqueio explícito.
+- [ ] Nenhuma declaração de certificação ou conformidade normativa foi feita sem evidência formal.
 - [ ] Pareceres correspondem ao mesmo `HEAD_COMMIT`.
 - [ ] O próximo passo exato está registrado quando a unidade não terminou.
 

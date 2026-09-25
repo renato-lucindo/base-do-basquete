@@ -5,6 +5,8 @@
 **Responsável operacional:** `project-maintainer`
 **Aprovação necessária:** responsável pelo produto e `qa-reviewer`
 
+**Referências:** ISO/IEC/IEEE 15289:2019, ISO/IEC/IEEE 12207:2026, ISO/IEC/IEEE 26514:2022 e GitHub Community Standards, conforme perfil em `docs/governance/STANDARDS-PROFILE.md`.
+
 ## 1. Objetivo
 
 Estabelecer uma única forma de localizar, interpretar, atualizar e substituir documentos do projeto, reduzindo duplicação e conflito sem concentrar toda a especificação em um `spec.md` monolítico.
@@ -37,6 +39,7 @@ Ao final da implantação:
 - **Preservação antes de limpeza:** nenhuma duplicata é removida até que origem, autoridade, referências e diferenças sejam verificadas.
 - **Git como fonte da verdade:** documento essencial precisa estar versionado e indexado.
 - **Sem `spec.md` global por padrão:** especificações permanecem modulares. Um `SPEC-*.md` só é criado para um contrato ou unidade delimitada que não esteja coberta pelas fontes existentes.
+- **Alinhamento demonstrável:** referências externas são traduzidas em artefatos e evidências; o projeto não declara certificação ou conformidade integral sem avaliação formal.
 
 ## 4. Classes documentais
 
@@ -151,6 +154,7 @@ Somente o índice declara qual plano está ativo. Documentos podem descrever sua
 - PR/unidade: alteração delimitada, aceite e evidências do delta.
 - `HANDOFF.md`: somente estado corrente, riscos, divergências, mudanças não commitadas e próximo passo exato.
 - `docs/execution/`: registro fechado do que aconteceu; não serve como backlog.
+- `docs/governance/STANDARDS-PROFILE.md`: edições adotadas, aplicação proporcional, dispensas e lacunas das referências externas.
 
 ## 10. Política específica do `HANDOFF.md`
 
@@ -324,6 +328,7 @@ Entregas:
 - correção do baseline;
 - ativação gradual das regras bloqueantes;
 - revisão trimestral ou ao fechar cada ciclo de produto;
+- revisão anual das edições normativas e imediata quando uma nova edição aplicável for publicada;
 - relatório curto de documentos sem revisão recente.
 
 Aceite:
@@ -392,6 +397,7 @@ A governança estará implantada quando:
 - documentos normativos tiverem metadados mínimos;
 - o gate documental bloquear regressões já saneadas;
 - a documentação permitir a retomada sem contexto da conversa.
+- o perfil de referências possuir matriz de aplicação, evidência e não aplicabilidade atualizada.
 
 ## 20. Escopo negativo
 

@@ -17,6 +17,8 @@ Implementação inicial preparada em branch isolada, aguardando revisão de gove
 - catálogo inicial de fontes e conflitos de autoridade;
 - inventário Markdown reproduzível e somente leitura;
 - template de PR alinhado ao `REVIEW_PACKET` dos agentes;
+- perfil proporcional para ISO/IEC/IEEE 15289:2019, 12207:2026 e 26514:2022 e práticas GitHub;
+- guia `CONTRIBUTING.md` e ownership humano das áreas sensíveis;
 - exclusão de `tmp/` do Git e do alcance do Biome;
 - exclusão de protótipos documentais do gate global do Biome;
 - entrada explícita da proposta no índice do plano.
@@ -34,13 +36,13 @@ Implementação inicial preparada em branch isolada, aguardando revisão de gove
 - `node scripts/document-inventory.mjs`: aprovado;
 - `npm run docs:inventory --silent`: aprovado;
 - Biome focal em `biome.json`, `package.json` e `scripts/document-inventory.mjs`: aprovado;
-- `node scripts/scan-secrets.mjs`: aprovado em 607 arquivos rastreados;
+- `node scripts/scan-secrets.mjs`: aprovado em 611 arquivos rastreados após a ampliação do perfil;
 - `git diff --check origin/main...HEAD`: aprovado após normalização do EOF;
 - Biome global: executado e bloqueado por 19 erros e 146 avisos preexistentes fora do escopo, principalmente ordenação de imports e especificidade do CSS; nenhum arquivo apontado pertence ao delta desta unidade.
 
 ## Revisão necessária
 
-`qa-reviewer` é obrigatório porque a unidade altera governança, template de PR e alcance do lint. Não há impacto de banco ou segurança de dados que exija `database-security-reviewer`.
+`qa-reviewer` é obrigatório porque a unidade altera governança, template de PR, ownership e alcance do lint. Não há impacto de banco ou segurança de dados que exija `database-security-reviewer`.
 
 ## Próximo passo exato
 
@@ -48,6 +50,6 @@ Implementação inicial preparada em branch isolada, aguardando revisão de gove
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: qa-reviewer
 ARQUIVO_OU_SERVICO: diff da branch codex/doc-gov-01 contra origin/main
-ACAO: validar precedência, catálogo, template de PR, exclusões do Biome e reprodutibilidade do inventário
-CRITERIO_DE_CONCLUSAO: parecer vinculado ao HEAD da branch, sem conflito de autoridade novo e sem redução indevida dos gates funcionais
+ACAO: validar precedência, perfil das referências, catálogo, template de PR, CODEOWNERS, exclusões do Biome e reprodutibilidade do inventário
+CRITERIO_DE_CONCLUSAO: parecer vinculado ao HEAD da branch, sem alegação normativa indevida, conflito de autoridade novo ou redução dos gates funcionais
 ```

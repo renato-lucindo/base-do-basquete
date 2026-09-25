@@ -2,7 +2,7 @@
 
 **Estado:** rascunho de auditoria
 **Unidade:** `DOC-GOV-01`
-**Atualizado em:** 2026-09-24
+**Atualizado em:** 2026-09-25
 
 ## Finalidade
 
@@ -14,6 +14,8 @@ Este catálogo identifica as fontes principais do repositório e os conflitos qu
 | --- | --- | --- | --- |
 | Regras permanentes do repositório | `AGENTS.md` | Segurança, execução, Git, acessibilidade e continuidade | vigente |
 | Coordenação dos agentes | `.agents/agent-contract.md` | Write lock, review packet e validade dos pareceres | vigente |
+| Perfil de referências | `docs/governance/STANDARDS-PROFILE.md` | Aplicação proporcional de ISO/IEC/IEEE 15289, 12207 e 26514 e práticas GitHub | proposta |
+| Contribuição | `CONTRIBUTING.md` | Entrada operacional para colaboradores | proposta nesta unidade |
 | Estado operacional | `HANDOFF.md` | Estado corrente, evidências e próximo passo | vigente; requer redução |
 | Entrada do plano | `docs/plan/README.md` | Ordem de leitura e encaminhamento aos planos | vigente; requer consolidação |
 | Requisitos de produto | `docs/plan/REQUISITOS-FUNCIONAIS.md` | Baseline funcional consolidada | vigente |
@@ -64,6 +66,7 @@ Os dois últimos itens pertencem ao workspace original e não foram copiados, mo
 4. Não usar arquivo não rastreado como fonte normativa.
 5. Registrar conflitos sem resolvê-los por inferência.
 6. Preservar PDFs, migrations, evidências e ADRs fechadas.
+7. Avaliar alinhamento pelas edições registradas no perfil; não declarar certificação sem auditoria formal.
 
 ## Próximo passo exato
 
