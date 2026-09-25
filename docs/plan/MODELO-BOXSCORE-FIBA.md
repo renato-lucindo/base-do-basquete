@@ -2,16 +2,17 @@
 
 ## Escopo
 
-Este contrato cobre exclusivamente o modelo **Box Score FIBA / Genius Sports** representado pelos dois PDFs incluídos em `referencias/modelos-boxscore/`. Outros formatos aceitos devem possuir contrato, versão, fixture e testes próprios.
+Este contrato cobre exclusivamente o modelo **Box Score FIBA / Genius Sports** representado pelos PDFs incluídos em `referencias/modelos-boxscore/`. Outros formatos aceitos devem possuir contrato, versão, fixture e testes próprios.
 
 Fixtures oficiais:
 
 - `Box Score FIBA IVV vs CAC 06 maio.pdf`
 - `Box Score FIBA ALC vs AVA 09 maio.pdf`
+- `Box Score FIBA SAL vs SAN 09 maio.pdf`
 
 ## Orientações
 
-- Considerar os dois PDFs variações válidas do mesmo layout.
+- Considerar os três PDFs variações válidas do mesmo layout.
 - Não criar parser genérico para outros modelos de boxscore.
 - Não ampliar o escopo para súmula oficial completa.
 - Não implementar OCR no plano atual.
@@ -40,7 +41,8 @@ Fixtures oficiais:
 - quantidade diferente de jogadores;
 - campos de arbitragem ou comissão técnica ausentes;
 - titular e capitão combinados ao nome ou número.
+- células numéricas adjacentes que a camada de texto do PDF entregue unidas em um único item, mantendo suas posições visuais de coluna.
 
 ## Aceite
 
-O mesmo parser deve extrair os dois PDFs, produzir um contrato normalizado comum e reconciliar placar, pontos e totais antes da revisão administrativa.
+O mesmo parser deve extrair os três PDFs, produzir um contrato normalizado comum e reconciliar placar, pontos e totais antes da revisão administrativa.

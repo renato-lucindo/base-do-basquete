@@ -28,6 +28,22 @@ type PlayerResolution =
   | { action: "add_existing"; playerId: number }
   | { action: "create_new"; eligibilitySex: "male" | "female" };
 
+type TeamResolution =
+  | { action: "existing_registration"; registrationId: number }
+  | { action: "register_existing_team"; teamId: number }
+  | { action: "create_team" };
+
+export function parseTeamResolution(value: FormDataEntryValue | null): TeamResolution | null {
+  const text = typeof value === "string" ? value : "";
+  if (text === "new") return { action: "create_team" };
+  const match = text.match(/^(registration|team):([1-9][0-9]*)$/);
+  if (!match) return null;
+  const id = Number(match[2]);
+  return match[1] === "registration"
+    ? { action: "existing_registration", registrationId: id }
+    : { action: "register_existing_team", teamId: id };
+}
+
 export function parsePlayerResolution(
   value: FormDataEntryValue | null,
   eligibilitySexValue?: FormDataEntryValue | null,
@@ -106,6 +122,27 @@ export function mapImportError(
       return { message: "A extração excedeu o tempo seguro permitido.", status: 408 };
     case "BD305":
       return { message: "Revise todas as associações de equipe e atleta.", status: 400 };
+    case "BD315":
+      return {
+        message:
+          "Já existe uma equipe compatível. Associe o cadastro existente antes de continuar.",
+        status: 409,
+      };
+    case "BD316":
+      return {
+        message: "A inscrição encontrada não pode ser confirmada neste fluxo.",
+        status: 409,
+      };
+    case "BD317":
+      return {
+        message: "A equipe selecionada não corresponde ao nome ou à sigla do boxscore.",
+        status: 409,
+      };
+    case "BD318":
+      return {
+        message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
+        status: 409,
+      };
     case "BD505":
       return { message: "Revise o naipe da edição antes de confirmar a importação.", status: 409 };
     case "BD501":
@@ -198,9 +235,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .from("team_registrations")
       .select("id,team_id,status")
       .eq("competition_id", competitionId)
-      .eq("status", "confirmed")
       .order("id"),
-    auth.client.from("teams").select("id,name,abbreviation").order("name"),
+    auth.client.from("teams").select("id,name,abbreviation,is_active").order("name"),
     auth.client
       .from("roster_entries")
       .select("id,registration_id,player_id,jersey_number")
@@ -238,7 +274,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
   const playerById = new Map(playersResult.data.map((player) => [player.id, player.full_name]));
-  const registrations = registrationsResult.data.map((registration) => ({
+  const confirmedRegistrations = registrationsResult.data.filter(
+    (registration) => registration.status === "confirmed",
+  );
+  const registrations = confirmedRegistrations.map((registration) => ({
     id: registration.id,
     teamId: registration.team_id,
     teamName: teamById.get(registration.team_id)?.name ?? "Equipe indisponível",
@@ -252,6 +291,20 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         jerseyNumber: entry.jersey_number,
       })),
   }));
+  const registrationByTeamId = new Map(
+    registrationsResult.data.map((registration) => [registration.team_id, registration]),
+  );
+  const teamCandidates = teamsResult.data.map((team) => {
+    const registration = registrationByTeamId.get(team.id);
+    return {
+      teamId: team.id,
+      teamName: team.name,
+      abbreviation: team.abbreviation,
+      isActive: team.is_active,
+      registrationId: registration?.id ?? null,
+      registrationStatus: registration?.status ?? null,
+    };
+  });
   const gameIds = gamesResult.data.map((game) => game.id);
   const [participantsResult, fallbackResult] = gameIds.length
     ? await Promise.all([
@@ -310,6 +363,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   let review: null | {
     id: number;
     parsed: ParsedBoxscore;
+    resolvedTeams: Array<{ sourceTeamName: string; registrationId: number }>;
     matches: Array<{
       source_team_name: string;
       source_player_name: string;
@@ -322,7 +376,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     }>;
   } = null;
   if (importId) {
-    const [importResult, matchResult] = await Promise.all([
+    const [importResult, matchResult, teamResolutionResult] = await Promise.all([
       auth.client
         .from("boxscore_imports")
         .select("id,status,parsed_payload")
@@ -336,13 +390,36 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         )
         .eq("import_id", importId)
         .order("id"),
+      auth.client
+        .from("boxscore_team_resolutions")
+        .select("results")
+        .eq("import_id", importId)
+        .limit(1),
     ]);
-    if (importResult.error || matchResult.error || importResult.data.status !== "review") {
+    if (
+      importResult.error ||
+      matchResult.error ||
+      teamResolutionResult.error ||
+      importResult.data.status !== "review"
+    ) {
       throw new Response("Importação não disponível para revisão", { status: 404 });
     }
+    const teamResolutionResults = teamResolutionResult.data[0]?.results;
+    const resolvedTeams = Array.isArray(teamResolutionResults)
+      ? teamResolutionResults.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const sourceTeamName = "sourceTeamName" in item ? String(item.sourceTeamName) : "";
+          const registrationId =
+            "registrationId" in item && Number.isInteger(Number(item.registrationId))
+              ? Number(item.registrationId)
+              : 0;
+          return sourceTeamName && registrationId > 0 ? [{ sourceTeamName, registrationId }] : [];
+        })
+      : [];
     review = {
       id: importId,
       parsed: importResult.data.parsed_payload as unknown as ParsedBoxscore,
+      resolvedTeams,
       matches: matchResult.data,
     };
   }
@@ -353,6 +430,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       csrfToken: auth.payload.csrfToken,
       imports: importsResult.data,
       registrations,
+      teamCandidates,
       games,
       review,
       refreshedGameId: parseId(url.searchParams.get("refreshed")),
@@ -393,6 +471,52 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
+
+  if (mode === "resolve-teams") {
+    const importId = parseId(formData.get("importId"));
+    const teamCount = Number(formData.get("teamCount"));
+    if (!importId || teamCount !== 2) {
+      return data({ error: "Revisão de equipes incompleta." }, { status: 400 });
+    }
+    const teams = Array.from({ length: teamCount }, (_, index) => {
+      const resolution = parseTeamResolution(formData.get(`teamResolution-${index}`));
+      return {
+        sourceTeamName: String(formData.get(`teamName-${index}`) ?? ""),
+        ...(resolution ?? { action: null }),
+      };
+    });
+    if (teams.some((team) => !team.sourceTeamName || !team.action)) {
+      return data({ error: "Revise a resolução das duas equipes." }, { status: 400 });
+    }
+    const resolved = await auth.client.rpc("admin_resolve_boxscore_team_registrations", {
+      p_import_id: importId,
+      p_resolution: { teams },
+    });
+    if (resolved.error) {
+      const mapped = mapImportError(resolved.error.code, resolved.error.details);
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "boxscore.resolve_teams",
+        outcome: mapped.status < 500 ? "blocked" : "failure",
+        status: mapped.status,
+        context: { competitionId, entityId: importId, errorCode: resolved.error.code },
+      });
+      return data({ error: mapped.message }, { status: mapped.status });
+    }
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "boxscore.resolve_teams",
+      outcome: "success",
+      status: 303,
+      context: { competitionId, entityId: importId },
+    });
+    throw redirect(
+      `/admin/competitions/${competitionId}/boxscores/import?import=${importId}&teamsResolved=1`,
+      { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+    );
+  }
 
   if (mode === "refresh-stats") {
     const importId = parseId(formData.get("importId"));
@@ -761,6 +885,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
 
         {review ? (
           <BoxscoreReviewEditor
+            key={`${review.id}:${loaderData.registrations.map((item) => item.id).join(",")}`}
             actionError={actionData?.error}
             competitionId={loaderData.competition.id}
             competitionGender={loaderData.competition.gender_division}
@@ -768,6 +893,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
             review={review}
             games={loaderData.games}
             registrations={loaderData.registrations}
+            teamCandidates={loaderData.teamCandidates}
           />
         ) : null}
 

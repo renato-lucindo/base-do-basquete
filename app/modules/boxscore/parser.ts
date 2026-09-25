@@ -16,6 +16,60 @@ interface TextRow {
   items: PositionedTextItem[];
 }
 
+type PlayerStatKey =
+  | "participation"
+  | "fieldGoals"
+  | "twoPoints"
+  | "threePoints"
+  | "freeThrows"
+  | "offensiveRebounds"
+  | "defensiveRebounds"
+  | "rebounds"
+  | "assists"
+  | "turnovers"
+  | "steals"
+  | "blocks"
+  | "foulsCommitted"
+  | "foulsReceived"
+  | "plusMinus"
+  | "efficiency"
+  | "points";
+
+interface PlayerStatSlot {
+  key?: PlayerStatKey;
+  minimum: number;
+  maximum: number;
+}
+
+const PLAYER_STAT_SLOTS: PlayerStatSlot[] = [
+  { key: "participation", minimum: 158, maximum: 184 },
+  { key: "fieldGoals", minimum: 184, maximum: 215 },
+  // Percentage-only slots stay in the layout so fused PDF items keep their column alignment.
+  { minimum: 215, maximum: 234 },
+  { key: "twoPoints", minimum: 234, maximum: 264 },
+  { minimum: 264, maximum: 283 },
+  { key: "threePoints", minimum: 283, maximum: 311 },
+  { minimum: 311, maximum: 330 },
+  { key: "freeThrows", minimum: 330, maximum: 356 },
+  { minimum: 356, maximum: 383 },
+  { key: "offensiveRebounds", minimum: 383, maximum: 400 },
+  { key: "defensiveRebounds", minimum: 400, maximum: 414 },
+  { key: "rebounds", minimum: 414, maximum: 429 },
+  { key: "assists", minimum: 429, maximum: 442 },
+  { key: "turnovers", minimum: 442, maximum: 456 },
+  { key: "steals", minimum: 456, maximum: 470 },
+  { key: "blocks", minimum: 470, maximum: 484 },
+  { key: "foulsCommitted", minimum: 484, maximum: 498 },
+  { key: "foulsReceived", minimum: 498, maximum: 513 },
+  { key: "plusMinus", minimum: 513, maximum: 527 },
+  { key: "efficiency", minimum: 527, maximum: 543 },
+  { key: "points", minimum: 543, maximum: 560 },
+];
+
+const PLAYER_STAT_MINIMUM = 158;
+const PLAYER_STAT_MAXIMUM = 560;
+const MIN_PLAYER_SLOT_OVERLAP = 0.5;
+
 const MONTHS: Record<string, string> = {
   jan: "01",
   fev: "02",
@@ -84,6 +138,51 @@ function itemIn(row: TextRow, minimum: number, maximum: number): string | undefi
     .filter((item) => item.x >= minimum && item.x < maximum)
     .map((item) => compact(item.str))
     .find(Boolean);
+}
+
+function horizontalOverlap(item: PositionedTextItem, slot: PlayerStatSlot): number {
+  const itemEnd = item.x + Math.max(item.width, 0);
+  return Math.max(0, Math.min(itemEnd, slot.maximum) - Math.max(item.x, slot.minimum));
+}
+
+function slotWindowForItem(item: PositionedTextItem, tokenCount: number): PlayerStatSlot[] {
+  if (tokenCount < 1 || tokenCount > PLAYER_STAT_SLOTS.length) {
+    throw new Error("BDB_PDF_PLAYER_GEOMETRY");
+  }
+
+  let best: { score: number; slots: PlayerStatSlot[] } | undefined;
+  for (let index = 0; index <= PLAYER_STAT_SLOTS.length - tokenCount; index += 1) {
+    const slots = PLAYER_STAT_SLOTS.slice(index, index + tokenCount);
+    const overlaps = slots.map((slot) => horizontalOverlap(item, slot));
+    if (overlaps.some((overlap) => overlap < MIN_PLAYER_SLOT_OVERLAP)) continue;
+    const score = overlaps.reduce((total, overlap) => total + overlap, 0);
+    if (!best || score > best.score) best = { score, slots };
+  }
+
+  if (!best) throw new Error("BDB_PDF_PLAYER_GEOMETRY");
+  return best.slots;
+}
+
+function playerStatCells(row: TextRow): Partial<Record<PlayerStatKey, string>> {
+  const cells: Partial<Record<PlayerStatKey, string>> = {};
+  for (const item of row.items) {
+    const tokens = compact(item.str).split(/\s+/).filter(Boolean);
+    if (!tokens.length) continue;
+    const itemEnd = item.x + Math.max(item.width, 0);
+    if (itemEnd <= PLAYER_STAT_MINIMUM || item.x >= PLAYER_STAT_MAXIMUM) {
+      continue;
+    }
+
+    const slots = slotWindowForItem(item, tokens.length);
+    for (let index = 0; index < tokens.length; index += 1) {
+      const key = slots[index]?.key;
+      const token = tokens[index];
+      if (!key || !token) continue;
+      if (cells[key] !== undefined) throw new Error("BDB_PDF_PLAYER_GEOMETRY");
+      cells[key] = token;
+    }
+  }
+  return cells;
 }
 
 function parseMinutes(value: string | undefined): number {
@@ -283,17 +382,16 @@ function parseName(rows: TextRow[], rowIndex: number): { name: string; captain: 
 
 function isPlayerRow(row: TextRow): boolean {
   const jersey = itemIn(row, 29, 48);
-  const participation = itemIn(row, 158, 181);
-  return (
-    /^\*?(?:0|00|[1-9]\d?)$/.test(jersey ?? "") &&
-    (/^\d{1,3}:\d{2}$/.test(participation ?? "") || participation === "NJ")
-  );
+  if (!/^\*?(?:0|00|[1-9]\d?)$/.test(jersey ?? "")) return false;
+  const participation = playerStatCells(row).participation;
+  return /^\d{1,3}:\d{2}$/.test(participation ?? "") || participation === "NJ";
 }
 
 function parsePlayer(rows: TextRow[], rowIndex: number): ParsedBoxscorePlayer {
   const row = requireValue(rows[rowIndex], "BDB_PDF_PLAYER_ROW");
   const rawJersey = itemIn(row, 29, 48) ?? "";
-  const participation = itemIn(row, 158, 181);
+  const cells = playerStatCells(row);
+  const participation = cells.participation;
   const { name, captain } = parseName(rows, rowIndex);
   const didNotPlay = participation === "NJ";
   const empty = { made: 0, attempted: 0 };
@@ -330,22 +428,22 @@ function parsePlayer(rows: TextRow[], rowIndex: number): ParsedBoxscorePlayer {
     captain,
     didNotPlay: false,
     secondsPlayed: parseMinutes(participation),
-    fieldGoals: parseShooting(itemIn(row, 184, 215), "BDB_PDF_PLAYER_FIELD_GOALS"),
-    twoPoints: parseShooting(itemIn(row, 234, 264), "BDB_PDF_PLAYER_TWO_POINTS"),
-    threePoints: parseShooting(itemIn(row, 282, 311), "BDB_PDF_PLAYER_THREE_POINTS"),
-    freeThrows: parseShooting(itemIn(row, 326, 356), "BDB_PDF_PLAYER_FREE_THROWS"),
-    offensiveRebounds: parseInteger(itemIn(row, 383, 400), "BDB_PDF_PLAYER_REBOUNDS"),
-    defensiveRebounds: parseInteger(itemIn(row, 400, 414), "BDB_PDF_PLAYER_REBOUNDS"),
-    rebounds: parseInteger(itemIn(row, 414, 429), "BDB_PDF_PLAYER_REBOUNDS"),
-    assists: parseInteger(itemIn(row, 429, 442), "BDB_PDF_PLAYER_ASSISTS"),
-    turnovers: parseInteger(itemIn(row, 442, 456), "BDB_PDF_PLAYER_TURNOVERS"),
-    steals: parseInteger(itemIn(row, 456, 470), "BDB_PDF_PLAYER_STEALS"),
-    blocks: parseInteger(itemIn(row, 470, 484), "BDB_PDF_PLAYER_BLOCKS"),
-    foulsCommitted: parseInteger(itemIn(row, 484, 498), "BDB_PDF_PLAYER_FOULS"),
-    foulsReceived: parseInteger(itemIn(row, 498, 513), "BDB_PDF_PLAYER_FOULS"),
-    plusMinus: parseInteger(itemIn(row, 513, 527), "BDB_PDF_PLAYER_PLUS_MINUS"),
-    efficiency: parseInteger(itemIn(row, 527, 543), "BDB_PDF_PLAYER_EFFICIENCY"),
-    points: parseInteger(itemIn(row, 543, 560), "BDB_PDF_PLAYER_POINTS"),
+    fieldGoals: parseShooting(cells.fieldGoals, "BDB_PDF_PLAYER_FIELD_GOALS"),
+    twoPoints: parseShooting(cells.twoPoints, "BDB_PDF_PLAYER_TWO_POINTS"),
+    threePoints: parseShooting(cells.threePoints, "BDB_PDF_PLAYER_THREE_POINTS"),
+    freeThrows: parseShooting(cells.freeThrows, "BDB_PDF_PLAYER_FREE_THROWS"),
+    offensiveRebounds: parseInteger(cells.offensiveRebounds, "BDB_PDF_PLAYER_REBOUNDS"),
+    defensiveRebounds: parseInteger(cells.defensiveRebounds, "BDB_PDF_PLAYER_REBOUNDS"),
+    rebounds: parseInteger(cells.rebounds, "BDB_PDF_PLAYER_REBOUNDS"),
+    assists: parseInteger(cells.assists, "BDB_PDF_PLAYER_ASSISTS"),
+    turnovers: parseInteger(cells.turnovers, "BDB_PDF_PLAYER_TURNOVERS"),
+    steals: parseInteger(cells.steals, "BDB_PDF_PLAYER_STEALS"),
+    blocks: parseInteger(cells.blocks, "BDB_PDF_PLAYER_BLOCKS"),
+    foulsCommitted: parseInteger(cells.foulsCommitted, "BDB_PDF_PLAYER_FOULS"),
+    foulsReceived: parseInteger(cells.foulsReceived, "BDB_PDF_PLAYER_FOULS"),
+    plusMinus: parseInteger(cells.plusMinus, "BDB_PDF_PLAYER_PLUS_MINUS"),
+    efficiency: parseInteger(cells.efficiency, "BDB_PDF_PLAYER_EFFICIENCY"),
+    points: parseInteger(cells.points, "BDB_PDF_PLAYER_POINTS"),
   };
 }
 
