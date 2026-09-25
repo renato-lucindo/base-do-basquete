@@ -210,7 +210,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
             <Link to={`/admin/competitions/${edition.id}`}>Revisar equipes no hub</Link>.
           </p>
         ) : null}
-        <Form method="post" className="admin-form">
+        <Form method="post" className="admin-manual-matchup-form">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="intent" value="create-manual" />
           <input type="hidden" name="requestId" value={requestId} />
