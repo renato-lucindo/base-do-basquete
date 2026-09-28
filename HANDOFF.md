@@ -13,9 +13,30 @@ Construir do zero e publicar a **Base do Basquete**, aplicação web de dados e 
 - Linha anterior preservada: WP-00 a WP-14 concluídos e publicados; WP-15 a WP-20 prontos para revisão; WP-22 consolidou o contrato UI/UX; WP-23 implementou os fluxos administrativos que formam a base da PR #35.
 - Repositório GitHub: privado em `renato-lucindo/base-do-basquete`.
 - Unidade atual: `AGENT-SKILLS-FOUNDATION` na branch `codex/agent-skills`, derivada de `origin/main@c09e72a` em worktree isolada. Escopo: converter os papéis documentais em sete subagents nativos read-only, criar sete skills locais, validação determinística e casos de ativação; sem mudança funcional, migration, Supabase, Cloudflare, merge ou produção.
-- `WRITE_LOCK`: `OWNER=project-maintainer`; `WORK_UNIT=AGENT-SKILLS-FOUNDATION`; `BRANCH=codex/agent-skills`; `BASE_COMMIT=c09e72a`; `HEAD_COMMIT=working-tree`; `SCOPE=subagents, skills e validação da governança de agentes`; `STATUS=ACTIVE` até estabilizar, revisar e publicar a PR.
+- `WRITE_LOCK`: `OWNER=project-maintainer`; `WORK_UNIT=AGENT-SKILLS-FOUNDATION`; `BRANCH=codex/agent-skills`; `BASE_COMMIT=c09e72a`; `HEAD_COMMIT_FUNCIONAL=edc848b`; `SCOPE=subagents, skills e validação da governança de agentes`; `STATUS=ACTIVE` durante a publicação da PR e validação remota. Qualquer commit posterior desta unidade deve ser somente evidência/handoff ou exigir nova revisão proporcional.
 - Implementação local da unidade: sete perfis nativos em `.codex/agents/`, todos `read-only`; sete skills descobertas em sessão nova; 21 cenários de ativação de skills e 21 de roteamento de subagents; contrato v2 com roteamento proporcional, resultado de skill e spawn customizado sem full-history fork. `project-maintainer` permanece o único escritor.
 - Evidência local: `quick_validate.py` aprovou 7/7 skills; `codex debug prompt-input` listou 7/7 skills do projeto; `codex doctor` carregou a configuração; delegação real sem full-history fork retornou `CUSTOM_AGENT_OK`; `npm run check` passou com 45 arquivos/333 Vitest, build, cinco runbooks e scan de 645 arquivos, mantendo 146 avisos de lint preexistentes. Após adicionar a matriz de roteamento, formatação, lint focal, validação 7/7 + 42 cenários e scan de 646 arquivos passaram; build e código da aplicação não mudaram.
+- Primeiro parecer `qa_reviewer` para `edc848b`: `REQUEST_CHANGES` processual, sem achado funcional nos agentes/skills. P2: reconciliar o handoff com o commit funcional e completar o pacote; P2: obter CI/CodeQL após publicar a branch. O reviewer confirmou 7 subagents read-only/não recursivos, 7 skills, 42 cenários e `project-maintainer` como único escritor.
+
+```text
+REVIEW_PACKET:
+WORK_UNIT: AGENT-SKILLS-FOUNDATION
+BRANCH: codex/agent-skills
+BASE_COMMIT: c09e72af9bd8ffc351cc691209961ccea992e9af
+HEAD_COMMIT: edc848be85b349b42ff88255ffcdcdd05551c3dc
+OBJETIVO: ativar sete subagents read-only e sete skills locais com validação e roteamento verificáveis
+CRITERIOS_DE_ACEITE: 7/7 perfis e skills descobertos; reviewers read-only e não recursivos; maintainer único escritor; gate local/CI/CodeQL verdes
+ESCOPO: .agents, .codex, validador de configuração, casos de ativação/roteamento e integração no npm run check
+ESCOPO_NEGATIVO: aplicação, dependências, migrations, Supabase, Cloudflare, merge e produção
+ARQUIVOS_ALTERADOS: 38 arquivos; governança, 7 TOMLs, 7 skills/recursos, 2 matrizes TSV, 2 validadores Node, package.json e handoff
+MIGRATIONS: nenhuma
+RISCOS_CONHECIDOS: seleção de agents/skills é probabilística; matrizes validam cobertura estrutural e o piloto real validou um perfil; 146 avisos de lint históricos permanecem fora do delta
+TESTES_EXECUTADOS: quick_validate 7/7; check:agents 7/7/21/21; npm run check com 333 Vitest/build/runbooks/scan; lint focal; descoberta de skills; spawn customizado real
+EVIDENCIAS: CUSTOM_AGENT_OK; skill root do projeto exibido por codex debug prompt-input; gate local e scan de 646 arquivos verdes
+AMBIENTE_VALIDADO: Windows, Node 24, Codex CLI 0.158.0-alpha.2.1, worktree isolada; nenhum serviço remoto alterado
+REQUIRED_REVIEWERS: qa-reviewer
+WRITE_LOCK_OWNER: project-maintainer
+```
 - Branch de fechamento desta unidade documental: `codex/close-pr58-handoff`, derivada de `origin/main@5e24e90` somente para reconciliar o `HANDOFF.md` após o merge da PR #58; os quatro itens não rastreados preexistentes continuam preservados e fora deste delta.
 - PR documental #58 (`docs: registrar recuperação da release da PR #57`) integrada por squash em `5e24e90`. O HEAD final `3485456` passou `gate`, `database`, preview/smokes e CodeQL antes do merge; na `main@5e24e90`, CI `36187665468` e CodeQL `36187665458` também passaram. Revisores especializados foram dispensados por ser alteração exclusivamente documental, sem mudança de comportamento, segurança, governança ou release.
 - `WRITE_LOCK`: `OWNER=project-maintainer`; `WORK_UNIT=RECORD-PR57-RELEASE-RECOVERY`; `BRANCH_FINAL=codex/close-pr58-handoff`; `BASE_COMMIT=3ae5334`; `HEAD_COMMIT_PR58=3485456`; `MERGE_COMMIT_PR58=5e24e90`; `SCOPE=registrar o fechamento e a recuperação da release da PR #57, integrar a PR documental #58 e reconciliar o HANDOFF após o merge; sem código, migration, Supabase ou produção`; `STATUS=RELEASED` após integração deste closeout documental, com CI e CodeQL pós-merge verdes.
@@ -107,7 +128,7 @@ O smoke administrativo final confirmou sessão `aal2`, dashboard, hub protegido,
 
 **Estado vigente em 14/09:** MVP-01 a MVP-05 `DONE`. A candidata `cc9cece2-e4e9-49c2-a444-c04cfb154ca0` foi preservada sem tráfego; a release final saiu da `main` `f8dcb87` pelo workflow verde `34845342461`, versão Cloudflare `f3505b09-a831-4e0a-a2a7-5f0960b17d7b`, tag `v1.1.0`. Os smokes de saúde, segurança, navegação, privacidade e dados públicos passaram. Não reverter banco nem republicar migrations já aplicadas.
 
-**Próximo passo atual:** criar o commit estável da unidade `AGENT-SKILLS-FOUNDATION`, executar `qa_reviewer` read-only no mesmo HEAD, publicar a branch e abrir a PR com `REVIEW_PACKET` e evidências. A investigação do benchmark permanece como primeira unidade real para exercitar `performance_investigator` depois da integração, sem medir produção nesta unidade.
+**Próximo passo atual:** publicar `codex/agent-skills`, abrir a PR com o `REVIEW_PACKET`, obter CI e CodeQL no HEAD final e solicitar nova revisão `qa_reviewer`. A investigação do benchmark permanece como primeira unidade real para exercitar `performance_investigator` depois da integração, sem medir produção nesta unidade.
 
 **Evidência AAL2 do POST-02:** sessão real confirmou AAL2; a fixture privada 100 gerou o draft 187, clonou 5 vagas e 4 confrontos sem equipes/jogos/resultados/publicação e passou duas edições CAS com restauração do nome original (`editor_revision=3`). A inscrição 15 exibiu retirada com preservação de histórico, sem executar a ação. Reconciliação: 5 edições, 9 jogos, 12 inscrições, 6 revisões, 1 draft, 1 clone request, 2 edit requests, zero vagas órfãs e zero origens indefinidas. `/health` respondeu 200; acesso anônimo ao admin respondeu 302 para login com cabeçalhos seguros. Gate local: 290 Vitest, build e scan de 563 arquivos. As quatro tabelas auxiliares legadas no schema `private` com RLS desligada não concedem nenhum privilégio de tabela a `anon`/`authenticated` e `anon` não possui `USAGE` no schema; hardening de defesa em profundidade fica no POST-04, sem exposição atual.
 
