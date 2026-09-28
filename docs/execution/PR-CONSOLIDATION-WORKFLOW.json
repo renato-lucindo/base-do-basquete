@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-28T16:41:00-03:00",
+  "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
+  "source_of_truth": {
+    "repository": "renato-lucindo/base-do-basquete",
+    "main_commit_at_start": "94f738da20e9e13dfb9d9fd68d62bedd9ec0fb2b",
+    "required_documents": [
+      "AGENTS.md",
+      "HANDOFF.md",
+      ".agents/agent-contract.md",
+      "docs/plan/README.md"
+    ]
+  },
+  "execution_policy": {
+    "writer": "project-maintainer",
+    "single_write_lock": true,
+    "reviewers_are_read_only": true,
+    "fixed_head_during_review": true,
+    "material_change_expires_reviews": true,
+    "persist_checkpoint_in_handoff": true,
+    "do_not_reapply_persisted_migrations": true,
+    "production_from_main_only": true
+  },
+  "resume_policy": {
+    "inspect_command": "node .codex/skills/managing-base-work-unit/scripts/inspect-work-unit.mjs",
+    "resume_from": "HANDOFF.md#6-proximo-passo-exato",
+    "before_action": [
+      "fetch remote state",
+      "compare branch and PR heads",
+      "verify checks and reviewer validity",
+      "verify migration state without mutation",
+      "preserve pre-existing local changes"
+    ],
+    "usage_window": {
+      "duration_minutes": 300,
+      "next_reset_at": "2026-09-28T20:37:20-03:00",
+      "resume_at": "2026-09-28T20:38:20-03:00",
+      "recurrence": "recalculate from the current five-hour reset on every resumed run"
+    }
+  },
+  "pull_request_chain": [
+    {
+      "number": 53,
+      "branch": "codex/stats-player-statistics",
+      "base": "main",
+      "work_unit": "PR53-RECONCILIATION-2026-09-28",
+      "status": "local_gate_green",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "statistics-domain-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "required_skills": [
+        "managing-base-work-unit",
+        "reviewing-supabase-changes",
+        "validating-basketball-statistics",
+        "validating-accessibility-ui",
+        "running-release-gate"
+      ],
+      "migration_policy": {
+        "file": "supabase/migrations/20260922141453_stats_public_player_snapshot.sql",
+        "remote_version": "20260922161633_stats_public_player_snapshot",
+        "action": "verify_only_do_not_reapply"
+      },
+      "completion": [
+        "branch reconciled with current main",
+        "local consolidated gate green",
+        "database from zero and complete pgTAP green",
+        "Playwright and axe green",
+        "preview QA for supported boxscore formats green",
+        "all required opinions valid on the same HEAD",
+        "PR ready for final merge authorization"
+      ]
+    },
+    {
+      "number": 54,
+      "branch": "codex/admin-ux-01",
+      "base": "codex/stats-player-statistics",
+      "work_unit": "PR54-STACK-RECONCILIATION",
+      "status": "waiting_for_pr53",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "migration_policy": {
+        "file": "supabase/migrations/20260924152000_admin_ux_01_readiness.sql",
+        "action": "apply_schema_first_after_merge_authorization"
+      }
+    },
+    {
+      "number": 55,
+      "branch": "codex/admin-ux-02",
+      "base": "codex/admin-ux-01",
+      "work_unit": "PR55-STACK-RECONCILIATION",
+      "status": "waiting_for_pr54",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "boxscore-domain-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "required_skills": [
+        "managing-base-work-unit",
+        "reviewing-supabase-changes",
+        "validating-boxscore-ingestion",
+        "validating-accessibility-ui",
+        "running-release-gate"
+      ],
+      "pending_migrations": [
+        "20260924153000_admin_ux_02_operations.sql",
+        "20260924194303_admin_manual_schedule_flow.sql",
+        "20260925190000_admin_audit_manual_matchup_compat.sql"
+      ],
+      "already_applied_migrations": ["20260925160711_boxscore_team_resolution.sql"]
+    }
+  ],
+  "gate_order": [
+    "focal tests while resolving the unit",
+    "npm run check once on the stable HEAD",
+    "database from zero and complete pgTAP",
+    "domain and browser checks selected by risk",
+    "push and remote CI, database, accessibility, preview and CodeQL",
+    "publish one review packet",
+    "run required read-only subagents in parallel on the fixed HEAD",
+    "resolve findings under a new write phase and renew expired opinions",
+    "request final merge or release authorization only when review gate is ready"
+  ],
+  "next_exact_step": {
+    "responsible": "project-maintainer",
+    "workspace": "codex/stats-player-statistics",
+    "action": "commit and push the reconciliation, then wait for the five remote checks before fixing the HEAD for specialist review",
+    "completion_criterion": "gate, database, accessibility, preview and CodeQL green on the same remote HEAD"
+  }
+}
