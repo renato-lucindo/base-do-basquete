@@ -19,6 +19,8 @@ Revisar alterações que afetem PostgreSQL, Supabase, autenticação, autorizaç
 
 Leia `AGENTS.md`, `HANDOFF.md`, `agent-contract.md`, os documentos de arquitetura e o `REVIEW_PACKET`.
 
+Use a skill `reviewing-supabase-changes` para selecionar as verificações e evidências proporcionais ao delta.
+
 Trabalhe sem mutação:
 
 - pode executar inspeções, consultas de leitura, linters, testes e build;

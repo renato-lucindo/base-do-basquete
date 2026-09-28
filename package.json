@@ -9,7 +9,8 @@
   "scripts": {
     "benchmark:public": "node scripts/benchmark-public.mjs",
     "build": "npm run prepare:sienna && react-router build",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run check:runbooks && npm run build && npm run scan:secrets",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run check:runbooks && npm run check:agents && npm run build && npm run scan:secrets",
+    "check:agents": "node scripts/check-agent-configuration.mjs",
     "check:runbooks": "node scripts/check-runbooks.mjs",
     "deploy:preview": "npm run build && wrangler deploy --env preview",
     "deploy:production": "npm run build && wrangler deploy --env production",
