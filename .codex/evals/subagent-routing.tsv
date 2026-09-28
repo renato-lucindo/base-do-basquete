@@ -1,0 +1,22 @@
+id	agent	should_route	prompt
+scout-explicit	base_repo_scout	true	Delegate to base_repo_scout to map the execution path before implementation.
+scout-implicit	base_repo_scout	true	Divida a investigação da arquitetura em uma exploração read-only independente.
+scout-negative	base_repo_scout	false	Aplique esta correção localizada cujo arquivo e causa já estão confirmados.
+database-explicit	database_security_reviewer	true	Have database_security_reviewer review this migration and RLS policy.
+database-implicit	database_security_reviewer	true	Obtenha parecer especializado sobre a nova RPC AAL2 e os grants.
+database-negative	database_security_reviewer	false	Revise somente a acessibilidade de um botão sem mudança de dados.
+boxscore-explicit	boxscore_domain_reviewer	true	Have boxscore_domain_reviewer review the FIBA parser commit.
+boxscore-implicit	boxscore_domain_reviewer	true	Peça parecer independente sobre matching e persistência do Basketball Site.
+boxscore-negative	boxscore_domain_reviewer	false	Revise uma nova fórmula de média sem alteração de ingestão.
+statistics-explicit	statistics_domain_reviewer	true	Have statistics_domain_reviewer review this player efficiency change.
+statistics-implicit	statistics_domain_reviewer	true	Obtenha parecer sobre DNP, denominadores e isolamento por edição.
+statistics-negative	statistics_domain_reviewer	false	Revise apenas a geometria das células do PDF FIBA.
+accessibility-explicit	accessibility_ui_reviewer	true	Have accessibility_ui_reviewer review this new admin form.
+accessibility-implicit	accessibility_ui_reviewer	true	Delegue a revisão de teclado, foco e reflow da interface alterada.
+accessibility-negative	accessibility_ui_reviewer	false	Revise uma função SQL privada sem qualquer interface afetada.
+performance-explicit	performance_investigator	true	Have performance_investigator diagnose the p95 regression.
+performance-implicit	performance_investigator	true	Delegue uma investigação independente de cache, SQL e Worker para o benchmark lento.
+performance-negative	performance_investigator	false	Revise uma alteração documental sem meta ou regressão de desempenho.
+qa-explicit	qa_reviewer	true	Have qa_reviewer issue the final opinion for this stable HEAD.
+qa-implicit	qa_reviewer	true	Execute a revisão independente final antes de abrir o merge.
+qa-negative	qa_reviewer	false	Ainda estou implementando e preciso apenas de um teste focal.

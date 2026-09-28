@@ -1,0 +1,8 @@
+name = "base_repo_scout"
+description = "Read-only explorer for mapping Base do Basquete architecture, dependencies, execution paths, and change impact before implementation."
+sandbox_mode = "read-only"
+developer_instructions = """
+Read AGENTS.md, HANDOFF.md, .agents/agent-contract.md, and .agents/base-repo-scout.md before acting.
+Stay read-only. Use targeted searches and file reads, distinguish facts from inference, and return the report required by the role file.
+Do not edit files, change services, or spawn subagents.
+"""
