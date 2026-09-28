@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T16:41:00-03:00",
+  "updated_at": "2026-09-28T16:49:00-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -37,7 +37,8 @@
       "next_reset_at": "2026-09-28T20:37:20-03:00",
       "resume_at": "2026-09-28T20:38:20-03:00",
       "recurrence": "recalculate from the current five-hour reset on every resumed run"
-    }
+    },
+    "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
   },
   "pull_request_chain": [
     {
@@ -45,7 +46,7 @@
       "branch": "codex/stats-player-statistics",
       "base": "main",
       "work_unit": "PR53-RECONCILIATION-2026-09-28",
-      "status": "local_gate_green",
+      "status": "remote_gates_green_reviews_pending",
       "required_reviewers": [
         "database-security-reviewer",
         "statistics-domain-reviewer",
@@ -124,14 +125,14 @@
     "domain and browser checks selected by risk",
     "push and remote CI, database, accessibility, preview and CodeQL",
     "publish one review packet",
-    "run required read-only subagents in parallel on the fixed HEAD",
+    "run required read-only specialist subagents on the fixed HEAD with usage-aware concurrency",
     "resolve findings under a new write phase and renew expired opinions",
     "request final merge or release authorization only when review gate is ready"
   ],
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/stats-player-statistics",
-    "action": "commit and push the reconciliation, then wait for the five remote checks before fixing the HEAD for specialist review",
-    "completion_criterion": "gate, database, accessibility, preview and CodeQL green on the same remote HEAD"
+    "action": "after the five-hour reset, run database, statistics and accessibility reviewers sequentially, publish valid opinions, then run QA",
+    "completion_criterion": "all four required opinions valid on the same HEAD with no blocking finding"
   }
 }
