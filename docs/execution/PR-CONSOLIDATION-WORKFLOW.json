@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T09:01:00-03:00",
+  "updated_at": "2026-09-29T09:52:00-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -46,7 +46,8 @@
       "branch": "codex/stats-player-statistics",
       "base": "main",
       "work_unit": "PR53-RECONCILIATION-2026-09-28",
-      "status": "ready_for_final_merge_authorization",
+      "status": "merged",
+      "merge_commit": "5600f53c96e809d7cf5b9aca0519ac427e4bd540",
       "required_reviewers": [
         "database-security-reviewer",
         "statistics-domain-reviewer",
@@ -119,9 +120,9 @@
     {
       "number": 54,
       "branch": "codex/admin-ux-01",
-      "base": "codex/stats-player-statistics",
-      "work_unit": "PR54-STACK-RECONCILIATION",
-      "status": "waiting_for_pr53",
+      "base": "main",
+      "work_unit": "PR54-RECONCILIATION-2026-09-29",
+      "status": "specialist_review_in_progress_ci_billing_blocked",
       "required_reviewers": [
         "database-security-reviewer",
         "accessibility-ui-reviewer",
@@ -129,8 +130,18 @@
       ],
       "migration_policy": {
         "file": "supabase/migrations/20260924152000_admin_ux_01_readiness.sql",
-        "action": "apply_schema_first_after_merge_authorization"
-      }
+        "remote_version": "20260929124948_admin_ux_01_readiness",
+        "action": "applied_verify_only_do_not_reapply"
+      },
+      "functional_head": "1285b6ccd2645a0059640c1bcb5758984ff6bc15",
+      "review_results": {
+        "database-security-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "1285b6ccd2645a0059640c1bcb5758984ff6bc15",
+          "evidence": "pgTAP persistente 24/24; grants e advisors reconciliados"
+        }
+      },
+      "external_blocker": "GitHub Actions runners recusados antes de qualquer etapa por billing ou limite de gastos"
     },
     {
       "number": 55,
@@ -172,8 +183,8 @@
   ],
   "next_exact_step": {
     "responsible": "project-maintainer",
-    "workspace": "codex/stats-player-statistics",
-    "action": "request explicit final authorization to merge PR 53; after authorization recheck HEAD and checks, merge without reapplying persisted migrations, reconcile main, then start PR 54",
-    "completion_criterion": "PR 53 merged by explicit authorization, main reconciled, and PR 54 work unit started from the resulting main"
+    "workspace": "codex/admin-ux-01",
+    "action": "publish PR54 rollout and database opinion, obtain accessibility then QA, renew GitHub checks after billing recovery, merge PR54, and start PR55 reconciliation",
+    "completion_criterion": "PR54 merged with valid checks and three opinions, without reapplying migration 20260929124948, and PR55 work unit started"
   }
 }
