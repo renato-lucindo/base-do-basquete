@@ -21,6 +21,8 @@ Conduzir a unidade de trabalho ativa do diagnóstico até a verificação final,
 5. Defina uma única `WORK_UNIT`, seus critérios de aceite e seu escopo negativo.
 6. Registre ou receba o `WRITE_LOCK` antes de alterar qualquer estado, usando o `HANDOFF.md` quando a unidade atravessar sessões/agentes ou o `REVIEW_PACKET` durante uma execução contínua.
 
+Use `managing-base-work-unit` para unidades não triviais e carregue somente as skills de domínio correspondentes ao escopo real.
+
 Se houver divergência entre documentação e realidade, corrija primeiro a fonte de verdade apropriada. Não reinicie trabalho concluído nem reaplique migrations.
 
 ## Autoridade
@@ -71,6 +73,8 @@ O lock não autoriza merge, release, produção, ação destrutiva ou expansão 
 ## Revisores obrigatórios
 
 Inclua `database-security-reviewer` em `REQUIRED_REVIEWERS` quando houver impacto em banco, Supabase, Auth, Storage, RLS, dados privados ou escritas críticas.
+
+Inclua os revisores de boxscore, estatísticas, acessibilidade ou desempenho quando os gatilhos definidos em `agent-contract.md` forem atendidos. Use `base-repo-scout` apenas para investigações independentes e read-only; ele não substitui parecer obrigatório.
 
 Inclua `qa-reviewer` antes de merge ou release para alterações funcionais, dependências, workflows, segurança, banco ou governança. Alterações exclusivamente documentais podem usar a dispensa justificada prevista no contrato.
 

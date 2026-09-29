@@ -42,3 +42,10 @@ jobs:
         run: node scripts/smoke-public-context.mjs "$PREVIEW_URL"
       - name: Smoke MVP security and privacy
         run: npm run smoke:mvp -- "$PREVIEW_URL" preview
+      - name: Install Chromium for preview accessibility
+        run: npx playwright install --with-deps chromium
+      - name: Verify public statistics accessibility and 200 percent reflow
+        run: npx playwright test e2e/accessibility.spec.ts --project=chromium --grep "public statistics"
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ env.PREVIEW_URL }}
+          PLAYWRIGHT_PUBLIC_STATS: "true"

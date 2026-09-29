@@ -1,0 +1,22 @@
+id	skill	should_trigger	prompt
+work-unit-explicit	managing-base-work-unit	true	Use $managing-base-work-unit to resume the active work unit and reconcile HANDOFF with Git.
+work-unit-implicit	managing-base-work-unit	true	Retome esta unidade na branch atual, confira o write lock e prepare o review packet.
+work-unit-negative	managing-base-work-unit	false	Explique em uma frase o que significa git rebase.
+supabase-explicit	reviewing-supabase-changes	true	Use $reviewing-supabase-changes to review this RLS migration and its rollout evidence.
+supabase-implicit	reviewing-supabase-changes	true	Revise os grants e a idempotência desta nova RPC Supabase.
+supabase-negative	reviewing-supabase-changes	false	Ajuste o espaçamento de um cartão React sem mudar dados.
+boxscore-explicit	validating-boxscore-ingestion	true	Use $validating-boxscore-ingestion to validate the FIBA parser change against every fixture.
+boxscore-implicit	validating-boxscore-ingestion	true	Corrija o matching de nomes abreviados do Basketball Site sem aceitar associação ambígua.
+boxscore-negative	validating-boxscore-ingestion	false	Extraia o texto de um PDF genérico sem relação com basquete.
+statistics-explicit	validating-basketball-statistics	true	Use $validating-basketball-statistics to review the player efficiency formula.
+statistics-implicit	validating-basketball-statistics	true	Valide se DNP e prorrogação entram corretamente nas médias por jogo.
+statistics-negative	validating-basketball-statistics	false	Mude apenas a ordem visual das colunas sem alterar cálculos.
+accessibility-explicit	validating-accessibility-ui	true	Use $validating-accessibility-ui to review this new administrative form.
+accessibility-implicit	validating-accessibility-ui	true	Verifique teclado, foco e reflow de 200% deste menu responsivo.
+accessibility-negative	validating-accessibility-ui	false	Revise uma migration SQL que não muda nenhuma interface.
+performance-explicit	investigating-base-performance	true	Use $investigating-base-performance to diagnose why public p95 exceeded its target.
+performance-implicit	investigating-base-performance	true	Compare o benchmark antes e depois e descubra se o atraso vem de redirect, cache ou SQL.
+performance-negative	investigating-base-performance	false	Implemente um texto estático sem qualquer sinal ou meta de desempenho.
+release-explicit	running-release-gate	true	Use $running-release-gate to decide whether this reviewed commit is ready to merge.
+release-implicit	running-release-gate	true	Prepare a candidata de produção com CI, smokes, rollback e identidade do artefato.
+release-negative	running-release-gate	false	Execute somente o teste focal do módulo que ainda está em desenvolvimento.

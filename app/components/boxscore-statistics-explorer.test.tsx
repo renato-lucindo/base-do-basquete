@@ -260,6 +260,8 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Atleta Azul</strong><span>×</span><strong>Atleta Verde");
     expect(html).toContain('data-tone="better"');
     expect(html).toContain('data-tone="worse"');
+    expect(html).toContain('<span class="sr-only">Melhor valor: </span>');
+    expect(html).toContain('<span class="sr-only">Pior valor: </span>');
     expect(html).toContain("quanto menor, melhor");
   });
 

@@ -263,6 +263,11 @@ function comparisonTone(
   return better ? "better" : "worse";
 }
 
+function comparisonToneLabel(tone: ReturnType<typeof comparisonTone>): string | null {
+  if (!tone) return null;
+  return tone === "better" ? "Melhor valor: " : "Pior valor: ";
+}
+
 function playerPath(
   context: CompetitionContext,
   row: BoxscoreStatisticsPlayerRow,
@@ -813,16 +818,24 @@ export function BoxscoreStatisticsExplorer({
                     BoxscoreMetricCell,
                   ];
                   const pair = pairedMetrics[metric];
+                  const leftTone = comparisonTone(metric, cells, 0);
+                  const rightTone = comparisonTone(metric, cells, 1);
                   return (
                     <tr key={metric}>
-                      <td data-tone={comparisonTone(metric, cells, 0)}>
+                      <td data-tone={leftTone}>
+                        {leftTone ? (
+                          <span className="sr-only">{comparisonToneLabel(leftTone)}</span>
+                        ) : null}
                         {displayMetric(cells[0], metric, data.mode)}
                         {pair && availableColumns.includes(pair)
                           ? `/${displayMetric(leftPlayer.metrics[pair], pair, data.mode)}`
                           : ""}
                       </td>
                       <th scope="row">{metricLabel(metric, availableColumns)}</th>
-                      <td data-tone={comparisonTone(metric, cells, 1)}>
+                      <td data-tone={rightTone}>
+                        {rightTone ? (
+                          <span className="sr-only">{comparisonToneLabel(rightTone)}</span>
+                        ) : null}
                         {displayMetric(cells[1], metric, data.mode)}
                         {pair && availableColumns.includes(pair)
                           ? `/${displayMetric(rightPlayer.metrics[pair], pair, data.mode)}`

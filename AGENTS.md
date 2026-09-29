@@ -12,8 +12,15 @@ As definições operacionais ficam em `.agents/`:
 
 - `.agents/agent-contract.md`: contrato compartilhado, write lock, review packet e validade dos pareceres;
 - `.agents/project-maintainer.md`: único agente escritor da unidade ativa;
+- `.agents/base-repo-scout.md`: exploração read-only de arquitetura, impacto e caminhos de execução;
 - `.agents/database-security-reviewer.md`: revisão especializada de banco e segurança, sem mutação;
+- `.agents/boxscore-domain-reviewer.md`: revisão dos contratos FIBA/Basketball Site e da ingestão, sem mutação;
+- `.agents/statistics-domain-reviewer.md`: revisão de fórmulas, agregações e isolamento estatístico, sem mutação;
+- `.agents/accessibility-ui-reviewer.md`: revisão de acessibilidade e responsividade da interface, sem mutação;
+- `.agents/performance-investigator.md`: investigação read-only de benchmark, consultas, cache e Worker;
 - `.agents/qa-reviewer.md`: revisão independente de qualidade e release, sem mutação.
+
+Os perfis executáveis do Codex ficam em `.codex/agents/` e as skills reutilizáveis do projeto ficam em `.codex/skills/`. Esses arquivos ativam os papéis e procedimentos definidos em `.agents/`; não criam uma segunda fonte de governança.
 
 Todo agente especializado deve obedecer primeiro a este `AGENTS.md` e ao `HANDOFF.md`. As instruções de `.agents/` complementam estas regras sem substituí-las.
 

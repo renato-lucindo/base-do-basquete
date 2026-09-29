@@ -1,14 +1,14 @@
 ---
 name: agent-contract
 description: Contrato operacional compartilhado pelos agentes da Base do Basquete.
-version: 1
+version: 2
 ---
 
 # Contrato Operacional dos Agentes
 
 ## Finalidade
 
-Este documento define o protocolo comum de coordenação entre `project-maintainer`, `database-security-reviewer` e `qa-reviewer`. As instruções específicas de cada agente complementam este contrato, mas não podem enfraquecê-lo.
+Este documento define o protocolo comum de coordenação entre `project-maintainer`, os agentes de investigação e os revisores especializados. As instruções específicas de cada agente complementam este contrato, mas não podem enfraquecê-lo.
 
 O objetivo é garantir que apenas um agente altere o projeto por vez, que todos os revisores analisem o mesmo estado e que nenhuma aprovação permaneça válida depois de uma mudança relevante.
 
@@ -76,6 +76,10 @@ Revisores não podem:
 
 O revisor deve registrar `git status` antes e depois dos comandos. Se uma ferramenta modificar arquivos versionados inesperadamente, deve interromper a revisão, preservar o estado e relatar a ocorrência sem executar limpeza destrutiva.
 
+Subagents não podem criar outros subagents. O agente principal controla fan-out, dependências, espera e consolidação dos resultados.
+
+Ao acionar um agent type customizado, inicie-o sem fork do histórico completo e forneça um prompt focal com `WORK_UNIT`, commit, pergunta ou `REVIEW_PACKET` e formato de retorno. O contexto compartilhado vem dos arquivos autoritativos do repositório; não copie a conversa inteira para o subagent.
+
 ## Review packet
 
 O `project-maintainer` deve entregar o seguinte pacote antes de solicitar revisão:
@@ -109,7 +113,13 @@ O `REVIEW_PACKET` deve ser publicado na descrição ou em comentário da PR. Se 
 Use apenas os revisores exigidos pelo risco:
 
 - `database-security-reviewer`: obrigatório para migrations, schema, RLS, grants, RPCs, Auth, Storage, auditoria, dados privados, idempotência ou escrita crítica.
+- `boxscore-domain-reviewer`: obrigatório para mudanças nos contratos, extração, parsing, matching, revisão ou persistência de boxscores FIBA/Basketball Site.
+- `statistics-domain-reviewer`: obrigatório para mudanças em fórmulas, agregações, read models ou isolamento de estatísticas.
+- `accessibility-ui-reviewer`: obrigatório para mudanças materiais de interface, formulários, navegação ou responsividade.
+- `performance-investigator`: obrigatório quando a unidade altera metas, benchmark, cache, consultas ou caminhos de execução por causa de regressão de desempenho.
 - `qa-reviewer`: obrigatório antes de merge ou release para mudanças funcionais, dependências, workflows, segurança, banco ou governança.
+
+O `base-repo-scout` não emite parecer e não integra `REQUIRED_REVIEWERS`. Use-o somente quando explorações independentes puderem reduzir incerteza ou ruído no contexto principal.
 
 Alterações exclusivamente documentais, sem mudança de comportamento, segurança, governança ou processo de release, podem dispensar revisor especializado. A dispensa e sua justificativa devem constar na PR; o gate normal continua obrigatório.
 
@@ -168,6 +178,28 @@ Quando houver parecer especializado válido, o `qa-reviewer` não repete integra
 - revisar riscos adicionais fora do domínio especializado.
 
 O QA não deve confiar em parecer vencido, incompleto ou referente a outro commit.
+
+## Skills e resultado operacional
+
+As skills em `.codex/skills/` codificam procedimentos reutilizáveis. Elas não concedem permissão, não transferem `WRITE_LOCK`, não substituem o arquivo do agente e não autorizam merge, migration compartilhada ou produção.
+
+Quando uma skill produzir evidência para uma revisão ou gate, use:
+
+```text
+SKILL_RESULT:
+SKILL:
+STATUS: PASS | CHANGES_REQUIRED | BLOCKED | NOT_APPLICABLE
+SCOPE:
+HEAD_COMMIT:
+EVIDENCE:
+GATES_RUN:
+GATES_OMITTED:
+FINDINGS:
+RESIDUAL_RISKS:
+NEXT_ACTION:
+```
+
+O resultado deve refletir execução real. Não declare gate, ambiente ou evidência que não tenha sido verificado.
 
 ## Gates
 
