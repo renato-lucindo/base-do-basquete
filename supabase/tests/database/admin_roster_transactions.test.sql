@@ -2,8 +2,17 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(24);
 set constraints all deferred;
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.admin_confirm_team_registrations(bigint,bigint[])',
+    'execute'
+  ),
+  'anonymous clients cannot execute bulk registration confirmation'
+);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
@@ -43,6 +52,11 @@ select throws_ok(
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'a non-admin at aal2 cannot create registrations'
 );
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot confirm registrations in bulk'
+);
 
 reset role;
 select set_config(
@@ -55,6 +69,11 @@ select throws_ok(
   $$select public.admin_create_team_registration(9201, 9201)$$,
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'the administrator at aal1 cannot create registrations'
+);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the administrator at aal1 cannot confirm registrations in bulk'
 );
 
 reset role;
@@ -153,7 +172,14 @@ select lives_ok(
   'the same player can represent another team in another edition'
 );
 select is(
-  (select count(*) from public.admin_mutation_audit where entity_type = 'team_registration'),
+  (select count(*)
+   from public.admin_mutation_audit
+   where entity_type = 'team_registration'
+     and entity_id in (
+       select id
+       from public.team_registrations
+       where competition_id in (9201, 9202)
+     )),
   6::bigint,
   'successful administrative mutations are audited once'
 );
