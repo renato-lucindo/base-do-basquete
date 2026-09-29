@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
@@ -38,6 +39,10 @@ interface Schedule {
       resolvedAt: string;
     } | null;
   }[];
+}
+
+export function scheduleFieldAccessibleName(field: string, matchupLabel: string) {
+  return `${field} — ${matchupLabel}`;
 }
 
 interface ScheduleRegistration {
@@ -116,6 +121,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   assertCsrfToken(form, auth.payload.csrfToken);
   const headers = auth.cookie ? { "Set-Cookie": auth.cookie } : undefined;
   let code: string | undefined;
+  let affectedMatchupId: number | null = null;
   if (form.get("intent") === "assign") {
     const entryId = scheduleId(form.get("entryId"));
     const registrationId = scheduleId(form.get("registrationId"));
@@ -138,8 +144,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       })
     ).error?.code;
   } else if (form.get("intent") === "prepare") {
+    affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateSchedule(form);
-    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    if (!parsed.ok)
+      return data({ error: parsed.error, matchupId: affectedMatchupId }, { status: 400, headers });
     const m = await auth.client
       .from("matchups")
       .select("id")
@@ -158,8 +166,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       })
     ).error?.code;
   } else if (form.get("intent") === "resolve") {
+    affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateResolution(form);
-    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    if (!parsed.ok)
+      return data({ error: parsed.error, matchupId: affectedMatchupId }, { status: 400, headers });
     const matchup = await auth.client
       .from("matchups")
       .select("id")
@@ -175,12 +185,25 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       })
     ).error?.code;
   } else throw new Response("Ação inválida", { status: 400 });
-  if (code) return data({ error: schedulingError(code) }, { status: 400, headers });
+  if (code)
+    return data(
+      { error: schedulingError(code), matchupId: affectedMatchupId },
+      { status: 400, headers },
+    );
   return redirect(`/admin/competitions/${id}/schedule?saved=1`, { headers });
 }
 export default function SchedulePage({ loaderData, actionData }: Route.ComponentProps) {
   const { edition, schedule, registrations, csrfToken } = loaderData;
   const busy = useNavigation().state !== "idle";
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
+  const errorMatchupId =
+    actionData && "matchupId" in actionData && typeof actionData.matchupId === "number"
+      ? actionData.matchupId
+      : null;
+  const errorMatchupLabel = schedule.matchups.find(({ id }) => id === errorMatchupId)?.label;
+  useEffect(() => {
+    if (actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData?.error]);
   const confirmedRegistrations = registrations.filter(
     (registration) => registration.status === "confirmed",
   );
@@ -195,7 +218,12 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
         Atribua as equipes às posições explicitamente. Preparar ou agendar não publica a edição.
         Atribuições confirmadas não podem ser trocadas neste fluxo.
       </p>
-      {actionData?.error ? <p role="alert">{actionData.error}</p> : null}
+      {actionData?.error ? (
+        <p id="schedule-action-error" ref={actionErrorRef} role="alert" tabIndex={-1}>
+          {errorMatchupLabel ? `${errorMatchupLabel}: ` : ""}
+          {actionData.error}
+        </p>
+      ) : null}
       {schedule.entries.length > 0 && confirmedRegistrations.length === 0 ? (
         <SchedulePrerequisiteNotice
           competitionId={edition.id}
@@ -301,7 +329,12 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                 Este confronto ainda depende da definição das duas equipes nas posições anteriores.
               </p>
             ) : null}
-            <Form method="post" className="admin-form" aria-label={`Preparar ${m.label}`}>
+            <Form
+              method="post"
+              className="admin-form"
+              aria-label={`Preparar ${m.label}`}
+              aria-describedby={errorMatchupId === m.id ? "schedule-action-error" : undefined}
+            >
               <input type="hidden" name="csrfToken" value={csrfToken} />
               <input type="hidden" name="intent" value="prepare" />
               <input type="hidden" name="matchupId" value={m.id} />
@@ -309,6 +342,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
               <label>
                 Data (opcional)
                 <input
+                  aria-label={scheduleFieldAccessibleName("Data (opcional)", m.label)}
                   name="scheduledDate"
                   type="date"
                   defaultValue={localSchedule.date}
@@ -318,6 +352,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
               <label>
                 Horário (opcional)
                 <input
+                  aria-label={scheduleFieldAccessibleName("Horário (opcional)", m.label)}
                   name="scheduledTime"
                   type="time"
                   defaultValue={localSchedule.time}
@@ -332,6 +367,7 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
               <label>
                 Local (opcional)
                 <input
+                  aria-label={scheduleFieldAccessibleName("Local (opcional)", m.label)}
                   name="venue"
                   maxLength={160}
                   defaultValue={m.venue ?? ""}

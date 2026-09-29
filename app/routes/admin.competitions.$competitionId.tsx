@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type Ref, useEffect, useRef, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminNavigation } from "../components/admin/admin-area";
 import { RegistrationAccordion } from "../components/admin/registration-accordion";
@@ -18,6 +18,41 @@ import type { Route } from "./+types/admin.competitions.$competitionId";
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+export function DraftRegistrationSelector({
+  error,
+  errorRef,
+  registrations,
+}: {
+  error?: string | null;
+  errorRef?: Ref<HTMLParagraphElement>;
+  registrations: Array<{ id: number; teamName: string }>;
+}) {
+  return (
+    <>
+      <fieldset aria-describedby={error ? "confirm-registrations-error" : undefined}>
+        <legend>Inscrições em rascunho</legend>
+        {registrations.map((registration) => (
+          <label className="checkbox-label" key={registration.id}>
+            <input type="checkbox" name="registrationId" value={registration.id} defaultChecked />
+            {registration.teamName}
+          </label>
+        ))}
+      </fieldset>
+      {error ? (
+        <p
+          className="form-error"
+          id="confirm-registrations-error"
+          ref={errorRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 type CompetitionPrimarySource = "manual_scoresheet" | "fiba_boxscore" | null;
@@ -457,7 +492,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       registrationIds.length === 0 ||
       registrationIds.some((registrationId) => registrationId === null)
     ) {
-      return data({ error: "Selecione ao menos uma inscrição em rascunho." }, { status: 400 });
+      return data(
+        {
+          error: "Selecione ao menos uma inscrição em rascunho.",
+          intent: "confirm-registrations",
+        },
+        { status: 400 },
+      );
     }
     const validIds = registrationIds as number[];
     const bulkResult = await auth.client.rpc("admin_confirm_team_registrations", {
@@ -572,6 +613,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return data(
       {
         error: rosterFailure?.message ?? mapped.message,
+        intent: typeof intent === "string" ? intent : null,
         registrationId:
           intent === "remove-registration" ? parseId(formData.get("registrationId")) : null,
       },
@@ -605,6 +647,13 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   const { competition } = loaderData;
   const navigation = useNavigation();
   const isSubmitting = navigation.state !== "idle";
+  const actionIntent =
+    actionData && "intent" in actionData && typeof actionData.intent === "string"
+      ? actionData.intent
+      : null;
+  const batchConfirmationError =
+    actionIntent === "confirm-registrations" ? actionData?.error : null;
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
   const failedRegistrationId =
     actionData && "registrationId" in actionData && typeof actionData.registrationId === "number"
       ? actionData.registrationId
@@ -615,6 +664,9 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   useEffect(() => {
     if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
   }, [loaderData.savedRosterId]);
+  useEffect(() => {
+    if (actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData?.error]);
   const draftRegistrations = loaderData.registrations.filter(
     (registration) => registration.status === "draft",
   );
@@ -638,7 +690,11 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           {competition.seriesName} · {competition.year} · {competition.categoryName} ·{" "}
           {competition.status}
         </p>
-        {actionData?.error ? <p className="form-error">{actionData.error}</p> : null}
+        {actionData?.error && !batchConfirmationError ? (
+          <p className="form-error" ref={actionErrorRef} role="alert" tabIndex={-1}>
+            {actionData.error}
+          </p>
+        ) : null}
         {loaderData.registrationOutcome === "removed" ? (
           <p className="form-success">
             A inscrição provisória foi removida. A equipe global foi preservada.
@@ -728,20 +784,11 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             <Form method="post" className="admin-form">
               <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
               <input type="hidden" name="intent" value="confirm-registrations" />
-              <fieldset>
-                <legend>Inscrições em rascunho</legend>
-                {draftRegistrations.map((registration) => (
-                  <label className="checkbox-label" key={registration.id}>
-                    <input
-                      type="checkbox"
-                      name="registrationId"
-                      value={registration.id}
-                      defaultChecked
-                    />
-                    {registration.teamName}
-                  </label>
-                ))}
-              </fieldset>
+              <DraftRegistrationSelector
+                error={batchConfirmationError}
+                errorRef={actionErrorRef}
+                registrations={draftRegistrations}
+              />
               <button className="button button-primary" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Confirmando…" : "Confirmar selecionadas"}
               </button>

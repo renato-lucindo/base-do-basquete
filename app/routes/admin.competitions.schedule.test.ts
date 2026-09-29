@@ -9,6 +9,7 @@ import {
   getAssignableRegistrations,
   loader,
   SchedulePrerequisiteNotice,
+  scheduleFieldAccessibleName,
 } from "./admin.competitions.$competitionId.schedule";
 
 vi.mock("../modules/auth/authorization.server", () => ({ requireAdminAal2: vi.fn() }));
@@ -122,6 +123,15 @@ describe("private schedule boundary", () => {
 });
 
 describe("schedule local date and time", () => {
+  it("includes the matchup in repeated field names", () => {
+    expect(scheduleFieldAccessibleName("Data (opcional)", "Semifinal · confronto 1")).toBe(
+      "Data (opcional) — Semifinal · confronto 1",
+    );
+    expect(scheduleFieldAccessibleName("Local (opcional)", "Final · confronto 1")).toBe(
+      "Local (opcional) — Final · confronto 1",
+    );
+  });
+
   it("converts Sao Paulo wall time to the canonical instant", () => {
     expect(scheduleLocalToIso("2026-09-15", "19:30")).toBe("2026-09-15T22:30:00.000Z");
     expect(scheduleLocalParts("2026-09-15T22:30:00.000Z")).toEqual({
