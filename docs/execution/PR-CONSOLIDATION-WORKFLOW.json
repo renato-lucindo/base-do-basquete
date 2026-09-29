@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T23:46:00-03:00",
+  "updated_at": "2026-09-29T08:47:00-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -34,8 +34,8 @@
     ],
     "usage_window": {
       "duration_minutes": 300,
-      "next_reset_at": "2026-09-29T03:23:33-03:00",
-      "resume_at": "2026-09-29T03:24:33-03:00",
+      "next_reset_at": "2026-09-29T13:30:05-03:00",
+      "resume_at": "2026-09-29T13:31:05-03:00",
       "recurrence": "recalculate from the current five-hour reset on every resumed run"
     },
     "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
@@ -46,7 +46,7 @@
       "branch": "codex/stats-player-statistics",
       "base": "main",
       "work_unit": "PR53-RECONCILIATION-2026-09-28",
-      "status": "waiting_reset_accessibility_then_qa",
+      "status": "qa_blocked_accessibility_remediation",
       "required_reviewers": [
         "database-security-reviewer",
         "statistics-domain-reviewer",
@@ -77,11 +77,32 @@
           "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882669876"
         },
         "accessibility-ui-reviewer": {
-          "status": "pending"
+          "status": "EXPIRED_AFTER_MATERIAL_ACCESSIBILITY_FIX",
+          "commit": "a27246d09a3e5661b572b954c9db0ea5d2f4dcbf",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889435937"
         },
         "qa-reviewer": {
-          "status": "pending_after_specialists"
+          "status": "BLOCK_RELEASE",
+          "commit": "a27246d09a3e5661b572b954c9db0ea5d2f4dcbf",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889517344"
         }
+      },
+      "active_remediation": {
+        "findings": [
+          "comparison cells need per-cell textual better/worse indication",
+          "public statistics need recorded 200 percent zoom/reflow evidence",
+          "axe automation should cover the public statistics preview"
+        ],
+        "implementation": [
+          "screen-reader text added to comparison cells and covered by a focal unit test",
+          "preview workflow runs axe and 720 CSS px reflow check against the published statistics fixture",
+          "STATS-02 trailing whitespace fixed"
+        ],
+        "required_after_push": [
+          "all five remote checks green on the remediation HEAD",
+          "renew accessibility-ui-reviewer",
+          "renew qa-reviewer"
+        ]
       },
       "completion": [
         "branch reconciled with current main",
@@ -150,7 +171,7 @@
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/stats-player-statistics",
-    "action": "one minute after the five-hour reset, validate the documentation-only checkpoint, run accessibility-ui-reviewer, publish the opinion, then run QA over all three specialist opinions",
-    "completion_criterion": "all four required opinions valid on the same HEAD with no blocking finding"
+    "action": "complete the accessibility remediation, run the consolidated gate, push, require the preview axe and 200 percent reflow test, then renew accessibility and QA opinions",
+    "completion_criterion": "all five remote checks green and all four required opinions valid on the remediation HEAD with no blocking finding"
   }
 }

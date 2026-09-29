@@ -46,3 +46,9 @@ Gate local no estado reconciliado: `git diff --check`, `npm ci` com zero vulnera
 O preview `pr-53-base-do-basquete-preview` passou o smoke público. A rota `/2026/copa-es-ouro/fixture-fiba/masculino/jogadores?scope=all&mode=total` renderizou o `boxscore-v2` em 320, 390, 768 e 1440 px com HTTP 200, 20 linhas na primeira página, sem overflow global, sem erro de console, filtro `<details>/<summary>` operável por teclado e Escape e comparação abrindo/fechando corretamente. O aviso de cobertura informou dois jogos sem fase definida, coerente com o snapshot publicado.
 
 O bloqueio anterior da migration Basketball Site está resolvido pela reconciliação da PR #57. Permanecem obrigatórios, antes de qualquer merge, pareceres independentes de `database-security-reviewer` e `qa-reviewer` no mesmo HEAD. A tentativa desta sessão de iniciar um reviewer separado via executor local foi recusada pela política do executor antes de qualquer revisão; nenhum parecer foi simulado. A PR permanece draft, sem merge e sem deploy de produção.
+
+## Remediação do gate de acessibilidade — 29/09/2026
+
+No HEAD `a27246d`, o parecer de acessibilidade foi `APPROVE_WITH_NON_BLOCKING_NOTES`, mas o QA bloqueou o release por dois requisitos ainda sem fechamento: a comparação indicava melhor/pior somente por cor e não havia evidência de reflow a 200%. O parecer QA foi publicado no comentário `5889517344` da PR #53.
+
+A remediação adiciona indicação textual por célula para leitores de tela e cobertura unitária. O workflow de preview também passa a executar Playwright+axe na rota estatística publicada, em viewport de 720 CSS px, equivalente a uma janela de 1440 px sob zoom de 200%, exigindo ausência de overflow global e de violações axe serious/critical. Uma execução focal contra o alias atual passou; a evidência definitiva depende do preview/upload verde no novo HEAD. O parecer de acessibilidade deve ser renovado e, depois, o QA deve reavaliar o gate.

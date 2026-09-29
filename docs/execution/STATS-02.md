@@ -16,4 +16,3 @@ O domínio implementa `per-game`, `total` e `per-30`, preserva percentuais e sal
 - `FR` indisponível permanece `null`;
 - líderes antes da paginação e comparados fora da página;
 - súmula, legado e perfil divergente recusados antes da leitura das linhas.
-
