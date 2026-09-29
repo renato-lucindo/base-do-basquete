@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-28T16:49:00-03:00",
+  "updated_at": "2026-09-28T23:46:00-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -34,8 +34,8 @@
     ],
     "usage_window": {
       "duration_minutes": 300,
-      "next_reset_at": "2026-09-28T20:37:20-03:00",
-      "resume_at": "2026-09-28T20:38:20-03:00",
+      "next_reset_at": "2026-09-29T03:23:33-03:00",
+      "resume_at": "2026-09-29T03:24:33-03:00",
       "recurrence": "recalculate from the current five-hour reset on every resumed run"
     },
     "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
@@ -46,7 +46,7 @@
       "branch": "codex/stats-player-statistics",
       "base": "main",
       "work_unit": "PR53-RECONCILIATION-2026-09-28",
-      "status": "remote_gates_green_reviews_pending",
+      "status": "waiting_reset_accessibility_then_qa",
       "required_reviewers": [
         "database-security-reviewer",
         "statistics-domain-reviewer",
@@ -64,6 +64,24 @@
         "file": "supabase/migrations/20260922141453_stats_public_player_snapshot.sql",
         "remote_version": "20260922161633_stats_public_player_snapshot",
         "action": "verify_only_do_not_reapply"
+      },
+      "review_results": {
+        "database-security-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "094016d8300da15212a34af822e4712c8731c52e",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882612146"
+        },
+        "statistics-domain-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "094016d8300da15212a34af822e4712c8731c52e",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882669876"
+        },
+        "accessibility-ui-reviewer": {
+          "status": "pending"
+        },
+        "qa-reviewer": {
+          "status": "pending_after_specialists"
+        }
       },
       "completion": [
         "branch reconciled with current main",
@@ -132,7 +150,7 @@
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/stats-player-statistics",
-    "action": "after the five-hour reset, run database, statistics and accessibility reviewers sequentially, publish valid opinions, then run QA",
+    "action": "one minute after the five-hour reset, validate the documentation-only checkpoint, run accessibility-ui-reviewer, publish the opinion, then run QA over all three specialist opinions",
     "completion_criterion": "all four required opinions valid on the same HEAD with no blocking finding"
   }
 }
