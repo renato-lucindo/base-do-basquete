@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T09:52:00-03:00",
+  "updated_at": "2026-09-29T16:07:08-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -122,7 +122,7 @@
       "branch": "codex/admin-ux-01",
       "base": "main",
       "work_unit": "PR54-RECONCILIATION-2026-09-29",
-      "status": "specialist_review_in_progress_ci_billing_blocked",
+      "status": "artifact_ready_release_blocked_by_github_billing_and_preview_qa",
       "required_reviewers": [
         "database-security-reviewer",
         "accessibility-ui-reviewer",
@@ -133,15 +133,34 @@
         "remote_version": "20260929124948_admin_ux_01_readiness",
         "action": "applied_verify_only_do_not_reapply"
       },
-      "functional_head": "1285b6ccd2645a0059640c1bcb5758984ff6bc15",
+      "functional_head": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
       "review_results": {
         "database-security-reviewer": {
           "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
-          "commit": "1285b6ccd2645a0059640c1bcb5758984ff6bc15",
-          "evidence": "pgTAP persistente 24/24; grants e advisors reconciliados"
+          "commit": "cfbf5c262e4e34895c2d77e2e19b9756bb9a7bf1",
+          "evidence": "pgTAP persistente 24/24; grants e advisors reconciliados; nenhum delta de banco posterior"
+        },
+        "accessibility-ui-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/54#issuecomment-5896710504",
+          "evidence": "tres achados P2 resolvidos; nenhum achado P0-P3 no delta final"
+        },
+        "qa-reviewer": {
+          "status": "BLOCK_RELEASE",
+          "artifact_quality": "READY_WITH_NON_BLOCKING_NOTES",
+          "commit": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
+          "evidence": "focal independente 53/53; gate local 384 Vitest; bloqueio apenas em checks e preview QA ausentes"
         }
       },
-      "external_blocker": "GitHub Actions runners recusados antes de qualquer etapa por billing ou limite de gastos"
+      "external_blocker": "GitHub Actions runners recusados antes de qualquer etapa por billing ou limite de gastos",
+      "release_requirements_remaining": [
+        "regularizar GitHub Billing & plans",
+        "renovar gate, database, accessibility, upload e analyze no mesmo OID",
+        "produzir preview do OID revisado",
+        "executar QA AAL2 de teclado, foco, celular, desktop e zoom ou reflow de 200 por cento",
+        "renovar parecer final de QA antes do merge"
+      ]
     },
     {
       "number": 55,
@@ -184,7 +203,7 @@
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/admin-ux-01",
-    "action": "publish PR54 rollout and database opinion, obtain accessibility then QA, renew GitHub checks after billing recovery, merge PR54, and start PR55 reconciliation",
-    "completion_criterion": "PR54 merged with valid checks and three opinions, without reapplying migration 20260929124948, and PR55 work unit started"
+    "action": "regularize GitHub billing, renew all five PR54 jobs on the documented HEAD, run authenticated preview QA, renew final QA, merge PR54, and start PR55 reconciliation",
+    "completion_criterion": "PR54 merged with five executed green checks, authenticated preview QA and three valid opinions, without reapplying migration 20260929124948, and PR55 work unit started"
   }
 }
