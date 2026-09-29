@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-29T08:47:00-03:00",
+  "updated_at": "2026-09-29T09:01:00-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -46,7 +46,7 @@
       "branch": "codex/stats-player-statistics",
       "base": "main",
       "work_unit": "PR53-RECONCILIATION-2026-09-28",
-      "status": "qa_blocked_accessibility_remediation",
+      "status": "ready_for_final_merge_authorization",
       "required_reviewers": [
         "database-security-reviewer",
         "statistics-domain-reviewer",
@@ -77,17 +77,19 @@
           "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882669876"
         },
         "accessibility-ui-reviewer": {
-          "status": "EXPIRED_AFTER_MATERIAL_ACCESSIBILITY_FIX",
-          "commit": "a27246d09a3e5661b572b954c9db0ea5d2f4dcbf",
-          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889435937"
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889734155"
         },
         "qa-reviewer": {
-          "status": "BLOCK_RELEASE",
-          "commit": "a27246d09a3e5661b572b954c9db0ea5d2f4dcbf",
-          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889517344"
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889811708",
+          "release_gate": "READY"
         }
       },
       "active_remediation": {
+        "status": "resolved_at_6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
         "findings": [
           "comparison cells need per-cell textual better/worse indication",
           "public statistics need recorded 200 percent zoom/reflow evidence",
@@ -171,7 +173,7 @@
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/stats-player-statistics",
-    "action": "complete the accessibility remediation, run the consolidated gate, push, require the preview axe and 200 percent reflow test, then renew accessibility and QA opinions",
-    "completion_criterion": "all five remote checks green and all four required opinions valid on the remediation HEAD with no blocking finding"
+    "action": "request explicit final authorization to merge PR 53; after authorization recheck HEAD and checks, merge without reapplying persisted migrations, reconcile main, then start PR 54",
+    "completion_criterion": "PR 53 merged by explicit authorization, main reconciled, and PR 54 work unit started from the resulting main"
   }
 }
