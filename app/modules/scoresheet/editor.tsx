@@ -774,24 +774,26 @@ export function ManualScoresheetEditor({
             </div>
           </div>
 
-          <div className="scoresheet-submit" hidden={step !== 4}>
-            <p>O jogo será encerrado como final. Empate exige OT e é recusado pelo banco.</p>
-            {requiresFallbackReason ? (
-              <label>
-                Motivo do fallback emergencial
-                <textarea
-                  name="fallbackReason"
-                  required
-                  minLength={10}
-                  maxLength={500}
-                  placeholder="Explique por que o boxscore principal ainda não está disponível."
-                />
-              </label>
-            ) : null}
-            <button className="button button-ghost" type="button" onClick={() => setStep(3)}>
-              Voltar aos lançamentos
-            </button>
-          </div>
+          {step === 4 ? (
+            <div className="scoresheet-submit">
+              <p>O jogo será encerrado como final. Empate exige OT e é recusado pelo banco.</p>
+              {requiresFallbackReason ? (
+                <label>
+                  Motivo do fallback emergencial
+                  <textarea
+                    name="fallbackReason"
+                    required
+                    minLength={10}
+                    maxLength={500}
+                    placeholder="Explique por que o boxscore principal ainda não está disponível."
+                  />
+                </label>
+              ) : null}
+              <button className="button button-ghost" type="button" onClick={() => setStep(3)}>
+                Voltar aos lançamentos
+              </button>
+            </div>
+          ) : null}
 
           <StickyActionSummary
             title="Resumo da súmula"

@@ -3,6 +3,11 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import type { CompetitionContext } from "../modules/competition/context";
+import { BOXSCORE_METRIC_KEYS } from "../modules/statistics/boxscore-metrics";
+import type {
+  BoxscoreMetricCell,
+  BoxscoreStatisticsPlayerRow,
+} from "../modules/statistics/boxscore-statistics-domain";
 import type { PublicPlayerProfileDto } from "../modules/statistics/player-profile.server";
 import { emptyPlayerTotals } from "../modules/statistics/player-profile-domain";
 import { PlayerProfile } from "./player-profile";
@@ -26,36 +31,62 @@ const profile: PublicPlayerProfileDto = {
   birthYear: 2011,
   bio: null,
   heightCm: null,
-  weightKg: null,
   mainPosition: null,
   hand: null,
-  homeCity: null,
-  homeState: null,
   current: null,
+  selection: { mode: "per-game", scope: "regular" },
+  currentBoxscore: null,
   competitions: [],
   achievements: [],
   honors: [],
   games: [],
 };
 
+function snapshotRow(values: Partial<Record<(typeof BOXSCORE_METRIC_KEYS)[number], number>>) {
+  const unavailable: BoxscoreMetricCell = { status: "unavailable", value: null };
+  return {
+    playerId: 1,
+    playerName: "Atleta Teste",
+    playerSlug: "atleta-teste",
+    registrationId: 1,
+    teamId: 1,
+    teamName: "Dourada",
+    teamSlug: "dourada",
+    teamAbbreviation: "DOU",
+    jersey: "10",
+    metrics: Object.fromEntries(
+      BOXSCORE_METRIC_KEYS.map((metric) => [
+        metric,
+        values[metric] === undefined
+          ? unavailable
+          : ({ status: "available", value: values[metric] } satisfies BoxscoreMetricCell),
+      ]),
+    ) as BoxscoreStatisticsPlayerRow["metrics"],
+  } satisfies BoxscoreStatisticsPlayerRow;
+}
+
 describe("PlayerProfile", () => {
-  it("renders only the three primary sections and the honest empty-game state", () => {
+  it("renders the five ordered sections and an honest empty state", () => {
     const html = renderToStaticMarkup(
       <MemoryRouter>
         <PlayerProfile achievements={[]} context={context} profile={profile} />
       </MemoryRouter>,
     );
 
-    expect(html).toContain('href="#resumo"');
-    expect(html).toContain('id="estatisticas"');
-    expect(html).toContain('id="jogos"');
-    expect(html).not.toContain('href="#conquistas-honrarias"');
-    expect(html).not.toContain('href="#historico"');
+    for (const id of ["resumo", "estatisticas", "conquistas", "jogos", "historico"]) {
+      expect(html).toContain(`href="#${id}"`);
+    }
+    expect(html.indexOf('id="resumo"')).toBeLessThan(html.indexOf('id="estatisticas"'));
+    expect(html.indexOf('id="estatisticas"')).toBeLessThan(html.indexOf('id="conquistas"'));
+    expect(html.indexOf('id="conquistas"')).toBeLessThan(html.indexOf('id="jogos"'));
+    expect(html.indexOf('id="jogos"')).toBeLessThan(html.indexOf('id="historico"'));
     expect(html).toContain("Nenhum jogo publicado");
     expect(html).not.toContain("0,0");
+    expect(html).not.toContain("boxscore");
+    expect(html).not.toContain("súmula");
   });
 
-  it("renders published statistics, honors and games", () => {
+  it("renders identity, selected statistics, achievements, honors and games", () => {
     const totals = {
       ...emptyPlayerTotals,
       games: 3,
@@ -74,40 +105,39 @@ describe("PlayerProfile", () => {
       blocks: 1,
       plusMinus: 4,
     };
+    const summary = {
+      kind: "boxscore" as const,
+      context,
+      teamName: "Dourada",
+      teamSlug: "dourada",
+      teamAbbreviation: "DOU",
+      jerseyNumber: "10",
+      position: "Ala",
+      starterAppearances: 2,
+      games: totals.games,
+      advancedGames: totals.games,
+      officialPoints: totals.points,
+      fouls: totals.fouls,
+      advancedTotals: totals,
+    };
     const richProfile: PublicPlayerProfileDto = {
       ...profile,
-      current: {
-        kind: "boxscore",
-        context,
-        teamName: "Dourada",
-        teamSlug: "dourada",
-        teamAbbreviation: "DOU",
-        jerseyNumber: "10",
-        position: "Ala",
-        starterAppearances: 2,
-        games: totals.games,
-        advancedGames: totals.games,
-        officialPoints: totals.points,
-        fouls: totals.fouls,
-        advancedTotals: totals,
+      heightCm: 178,
+      hand: "Destro",
+      current: summary,
+      competitions: [summary],
+      currentBoxscore: {
+        row: snapshotRow({
+          games: 3,
+          minutes: 10,
+          points: 4.3,
+          rebounds: 3.3,
+          assists: 1,
+          fieldGoalPercentage: 50,
+        }),
+        per30MinimumSeconds: 600,
+        coverage: { regularGames: 3, playoffGames: 0, unclassifiedGames: 0 },
       },
-      competitions: [
-        {
-          kind: "boxscore",
-          context,
-          teamName: "Dourada",
-          teamSlug: "dourada",
-          teamAbbreviation: "DOU",
-          jerseyNumber: "10",
-          position: "Ala",
-          starterAppearances: 2,
-          games: totals.games,
-          advancedGames: totals.games,
-          officialPoints: totals.points,
-          fouls: totals.fouls,
-          advancedTotals: totals,
-        },
-      ],
       honors: [
         {
           id: 1,
@@ -143,6 +173,20 @@ describe("PlayerProfile", () => {
         <PlayerProfile
           achievements={[
             {
+              competitionId: 2,
+              competitionDisplayName: "Liga 2025 Sub-15",
+              seriesName: context.series.name,
+              seriesSlug: context.series.slug,
+              year: 2025,
+              categoryName: context.category.name,
+              categorySlug: context.category.slug,
+              genderDivision: null,
+              placement: 1,
+              resultLabel: null,
+              teamName: "Dourada",
+              teamSlug: "dourada",
+            },
+            {
               competitionId: 1,
               competitionDisplayName: context.displayName,
               seriesName: context.series.name,
@@ -163,12 +207,59 @@ describe("PlayerProfile", () => {
       </MemoryRouter>,
     );
 
+    expect(html).toContain('aria-label="Camisa 10"');
+    expect(html).not.toContain("<img");
+    expect(html).toContain("1,78 m");
     expect(html).toContain("Destaque");
+    expect(html).toContain("Primeiro lugar");
+    expect(html).toContain("Sub-15 — 2025, 2026");
     expect(html).toContain("Azul");
     expect(html).toContain("4,3");
+    expect(html).toContain("Vitória 70 × 62");
   });
 
-  it("keeps a scoresheet profile limited to confirmed scoresheet fields", () => {
+  it("hides minutes in the per-30 recorte and explains the minimum sample", () => {
+    const totals = { ...emptyPlayerTotals, games: 1, secondsPlayed: 600, points: 10 };
+    const summary = {
+      kind: "boxscore" as const,
+      context,
+      teamName: "Dourada",
+      teamSlug: "dourada",
+      teamAbbreviation: "DOU",
+      jerseyNumber: "10",
+      position: null,
+      starterAppearances: 1,
+      games: 1,
+      advancedGames: 1,
+      officialPoints: 10,
+      fouls: 1,
+      advancedTotals: totals,
+    };
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/?mode=per-30"]}>
+        <PlayerProfile
+          achievements={[]}
+          context={context}
+          profile={{
+            ...profile,
+            current: summary,
+            competitions: [summary],
+            selection: { mode: "per-30", scope: "regular" },
+            currentBoxscore: {
+              row: snapshotRow({ games: 1, points: 30 }),
+              per30MinimumSeconds: 600,
+              coverage: { regularGames: 1, playoffGames: 0, unclassifiedGames: 0 },
+            },
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("mínimo de 10 minutos totais");
+    expect(html).not.toContain(">MIN<");
+  });
+
+  it("keeps a basic profile limited to confirmed fields", () => {
     const scoresheetContext: CompetitionContext = {
       ...context,
       dataProfile: { id: 2, primarySource: "manual_scoresheet", version: 1 },
@@ -226,11 +317,14 @@ describe("PlayerProfile", () => {
       </MemoryRouter>,
     );
 
-    expect(html).toContain("Dados registrados por súmula");
+    expect(html).toContain(
+      "Nesta edição estão disponíveis jogos, pontos, cestas convertidas, lances livres e faltas.",
+    );
     expect(html).toContain("PTS/J");
-    expect(html).toContain("DNP");
+    expect(html).toContain("Não jogou");
     expect(html).not.toContain("Comparar jogador");
-    expect(html).not.toContain("Detalhamento avançado");
+    expect(html).not.toContain("Exibição");
     expect(html).not.toContain("AP%");
+    expect(html).not.toContain("súmula");
   });
 });

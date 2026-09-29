@@ -54,7 +54,8 @@ export function ScrollableTable({ children, label }: { children: ReactNode; labe
       <div aria-hidden="true" className="scrollable-table-top" ref={topRef} tabIndex={-1}>
         <div style={{ width: scrollWidth }} />
       </div>
-      <section aria-label={label} className="statistics-table-wrap" ref={viewportRef}>
+      {/* biome-ignore lint/a11y/noNoninteractiveTabindex: overflow regions must be keyboard-focusable */}
+      <section aria-label={label} className="statistics-table-wrap" ref={viewportRef} tabIndex={0}>
         {children}
       </section>
     </div>

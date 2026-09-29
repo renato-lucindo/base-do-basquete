@@ -1,5 +1,5 @@
 import { data } from "react-router";
-
+import { BoxscoreStatisticsExplorer } from "../components/boxscore-statistics-explorer";
 import { PublicBreadcrumb, PublicHeader, resourceLabel } from "../components/public-navigation";
 import { PublicSportsCore } from "../components/public-sports-core";
 import { StatisticsExplorer } from "../components/statistics-explorer";
@@ -49,12 +49,22 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     return notFound();
   }
 
-  return data(await loadPublicContextPayload(client, resolvedContext, params.resource), {
-    headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) },
-  });
+  return data(
+    await loadPublicContextPayload(
+      client,
+      resolvedContext,
+      params.resource,
+      undefined,
+      new URL(request.url).searchParams,
+    ),
+    {
+      headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) },
+    },
+  );
 }
 
 export function PublicContextContent({
+  boxscoreStatistics,
   context,
   contexts,
   playerStatistics,
@@ -76,7 +86,13 @@ export function PublicContextContent({
           </>
         )}
 
-        {resource === "jogadores" && playerStatistics ? (
+        {resource === "jogadores" && boxscoreStatistics ? (
+          <BoxscoreStatisticsExplorer
+            context={context}
+            data={boxscoreStatistics}
+            key={`${context.competitionId}:${boxscoreStatistics.mode}:${boxscoreStatistics.scope}`}
+          />
+        ) : resource === "jogadores" && playerStatistics ? (
           <StatisticsExplorer
             context={context}
             key={context.competitionId}

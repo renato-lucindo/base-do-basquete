@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../types/database.generated";
+import { loadBoxscoreStatisticsPage } from "../statistics/boxscore-statistics.server";
 import { loadPublicPlayerProfile } from "../statistics/player-profile.server";
 import { loadPublicSportsCore } from "../statistics/public-sports.server";
 import {
@@ -16,18 +17,24 @@ export async function loadPublicContextPayload(
   resolvedContext: CompetitionContext,
   resource: PublicResource,
   knownContexts?: CompetitionContext[],
+  searchParams = new URLSearchParams(),
 ) {
-  const [contexts, playerStatistics, sportsCore] = await Promise.all([
+  const [contexts, boxscoreStatistics, sportsCore] = await Promise.all([
     knownContexts ?? listPublicContexts(client),
     resource === "jogadores"
-      ? loadCompetitionStatistics(client, resolvedContext)
+      ? loadBoxscoreStatisticsPage(client, resolvedContext, searchParams)
       : Promise.resolve(null),
     resource === "jogadores"
       ? Promise.resolve(null)
       : loadPublicSportsCore(client, resolvedContext),
   ]);
+  const playerStatistics =
+    resource === "jogadores" && boxscoreStatistics === null
+      ? await loadCompetitionStatistics(client, resolvedContext)
+      : null;
 
   return {
+    boxscoreStatistics,
     context: resolvedContext,
     contexts,
     playerStatistics,
@@ -44,6 +51,7 @@ export async function loadPublicDetailPayload(
   resource: DetailResource,
   detailReference: string,
   knownContexts?: CompetitionContext[],
+  searchParams = new URLSearchParams(),
 ) {
   const contexts = knownContexts ?? (await listPublicContexts(client));
   const [loadedDetail, game, playerProfile] = await Promise.all([
@@ -54,7 +62,7 @@ export async function loadPublicDetailPayload(
       ? loadPublicGameDetail(client, resolvedContext, detailReference)
       : Promise.resolve(null),
     resource === "jogadores"
-      ? loadPublicPlayerProfile(client, resolvedContext, contexts, detailReference)
+      ? loadPublicPlayerProfile(client, resolvedContext, contexts, detailReference, searchParams)
       : Promise.resolve(null),
   ]);
   const detail = playerProfile

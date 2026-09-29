@@ -45,4 +45,24 @@ describe("administrative draft schema", () => {
       }).status,
     ).toBe("incompatible");
   });
+
+  it("discards malformed draft envelopes before using their data", () => {
+    expect(
+      parseAdminDraft(
+        JSON.stringify({
+          schemaVersion: 1,
+          flow: "roster",
+          competitionId: "20",
+          savedAt: "2026-08-01T00:00:00.000Z",
+          expiresAt: "2026-08-02T00:00:00.000Z",
+          data: {},
+        }),
+        {
+          flow: "roster",
+          competitionId: 20,
+          now: new Date("2026-08-01T12:00:00.000Z"),
+        },
+      ).status,
+    ).toBe("incompatible");
+  });
 });

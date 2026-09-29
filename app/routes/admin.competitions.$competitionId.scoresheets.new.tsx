@@ -1,4 +1,4 @@
-import { data, redirect } from "react-router";
+import { data, Link, redirect } from "react-router";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
@@ -42,6 +42,64 @@ function saoPauloLocalInput(instant: string | null): string {
   }).formatToParts(new Date(instant));
   const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${value.year}-${value.month}-${value.day}T${value.hour}:${value.minute}`;
+}
+
+export interface ScoresheetUnavailableIssue {
+  action: "hub" | "schedule";
+  message: string;
+}
+
+export function describeScoresheetUnavailability({
+  hasStructuralGames,
+  hasMinimumConfirmedRegistrations,
+  hasMinimumRegistrationsWithRoster,
+  hasIncompleteParticipants,
+  hasUnconfirmedParticipant,
+  hasParticipantWithoutRoster,
+}: {
+  hasStructuralGames: boolean;
+  hasMinimumConfirmedRegistrations: boolean;
+  hasMinimumRegistrationsWithRoster: boolean;
+  hasIncompleteParticipants: boolean;
+  hasUnconfirmedParticipant: boolean;
+  hasParticipantWithoutRoster: boolean;
+}): ScoresheetUnavailableIssue {
+  if (!hasMinimumConfirmedRegistrations) {
+    return {
+      action: "hub",
+      message: "Confirme pelo menos duas equipes antes de preencher uma súmula.",
+    };
+  }
+  if (!hasMinimumRegistrationsWithRoster) {
+    return {
+      action: "hub",
+      message: "Adicione atletas ao elenco de pelo menos duas equipes confirmadas.",
+    };
+  }
+  if (!hasStructuralGames) {
+    return {
+      action: "schedule",
+      message: "Organize um confronto na agenda antes de preencher a súmula.",
+    };
+  }
+  if (hasUnconfirmedParticipant) {
+    return {
+      action: "hub",
+      message: "Confirme as equipes do confronto antes de preencher a súmula.",
+    };
+  }
+  if (hasParticipantWithoutRoster) {
+    return {
+      action: "hub",
+      message: "Adicione atletas aos elencos das equipes do confronto.",
+    };
+  }
+  return {
+    action: "schedule",
+    message: hasIncompleteParticipants
+      ? "Defina mandante e visitante para o confronto na agenda."
+      : "Revise na agenda as equipes e o confronto dos jogos que ainda estão em andamento.",
+  };
 }
 
 function mapScoresheetError(code: string | undefined): string {
@@ -234,9 +292,42 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     })
     .filter((game): game is NonNullable<typeof game> => game !== null);
 
-  if (games.length === 0) {
-    throw new Response("Não há jogo estrutural disponível para receber a súmula.", { status: 409 });
-  }
+  const confirmedRegistrationIds = new Set(
+    registrationsResult.data.map((registration) => registration.id),
+  );
+  const registrationsWithRosterIds = new Set(registrations.map((registration) => registration.id));
+  const structuralGameIds = new Set(gamesResult.data.map((game) => game.id));
+  const structuralParticipants = participantsResult.data.filter((participant) =>
+    structuralGameIds.has(participant.game_id),
+  );
+  const hasIncompleteParticipants = gamesResult.data.some((game) => {
+    const participants = structuralParticipants.filter(
+      (participant) => participant.game_id === game.id,
+    );
+    return (
+      !participants.some((participant) => participant.side === "home") ||
+      !participants.some((participant) => participant.side === "away")
+    );
+  });
+  const hasUnconfirmedParticipant = structuralParticipants.some(
+    (participant) => !confirmedRegistrationIds.has(participant.registration_id),
+  );
+  const hasParticipantWithoutRoster = structuralParticipants.some(
+    (participant) =>
+      confirmedRegistrationIds.has(participant.registration_id) &&
+      !registrationsWithRosterIds.has(participant.registration_id),
+  );
+  const unavailableIssue =
+    games.length === 0
+      ? describeScoresheetUnavailability({
+          hasStructuralGames: gamesResult.data.length > 0,
+          hasMinimumConfirmedRegistrations: registrationsResult.data.length >= 2,
+          hasMinimumRegistrationsWithRoster: registrations.length >= 2,
+          hasIncompleteParticipants,
+          hasUnconfirmedParticipant,
+          hasParticipantWithoutRoster,
+        })
+      : null;
 
   return data(
     {
@@ -246,6 +337,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       games,
       registrations,
       requiresFallbackReason,
+      unavailableIssue,
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -466,7 +558,66 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   );
 }
 
+export function ScoresheetUnavailableState({
+  competitionId,
+  issue,
+  requiresFallbackReason,
+}: {
+  competitionId: number;
+  issue: ScoresheetUnavailableIssue;
+  requiresFallbackReason: boolean;
+}) {
+  const hubPath = `/admin/competitions/${competitionId}`;
+  const primaryPath = issue.action === "schedule" ? `${hubPath}/schedule` : hubPath;
+  const primaryLabel = issue.action === "schedule" ? "Abrir agenda" : "Revisar equipes e elencos";
+  return (
+    <main className="admin-shell">
+      <header className="site-header admin-header">
+        <Link className="brand" to={hubPath}>
+          <span className="brand-mark">B</span>
+          <span>Voltar ao hub</span>
+        </Link>
+        <span className="environment-pill">
+          <span className="status-dot" />
+          AAL2
+        </span>
+      </header>
+      <section className="admin-welcome">
+        <p className="eyebrow">{requiresFallbackReason ? "Súmula emergencial" : "Súmula manual"}</p>
+        <h1>Nenhum jogo disponível</h1>
+        <p>{issue.message}</p>
+        {requiresFallbackReason ? (
+          <p className="admin-note">
+            Nesta edição, a súmula manual é usada somente como fallback auditado enquanto o boxscore
+            principal não está disponível.
+          </p>
+        ) : null}
+        <div className="wizard-actions">
+          <Link className="button button-primary" to={primaryPath}>
+            {primaryLabel}
+          </Link>
+          {issue.action === "schedule" ? (
+            <Link className="button button-ghost" to={hubPath}>
+              Voltar ao hub
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export default function NewManualScoresheet({ loaderData, actionData }: Route.ComponentProps) {
+  if (loaderData.unavailableIssue) {
+    return (
+      <ScoresheetUnavailableState
+        competitionId={loaderData.competition.id}
+        issue={loaderData.unavailableIssue}
+        requiresFallbackReason={loaderData.requiresFallbackReason}
+      />
+    );
+  }
+
   return (
     <ManualScoresheetEditor
       actionError={actionData?.error}

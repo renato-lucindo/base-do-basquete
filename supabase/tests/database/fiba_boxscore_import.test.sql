@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(29);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -126,7 +126,7 @@ with players as (
       'steals', 0,
       'blocks', 0,
       'foulsCommitted', case when number = 1 then 2 else 0 end,
-      'foulsReceived', 0,
+      'foulsReceived', case when number = 1 then 1 else 0 end,
       'plusMinus', 0,
       'efficiency', 0,
       'points', case when number = 1 then 1 else 0 end
@@ -250,6 +250,71 @@ select is((select count(*)::integer from public.game_periods where game_id = (se
 select is((select count(*)::integer from public.game_roster_slots where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 10, 'all roster slots are committed');
 select is((select count(*)::integer from public.player_period_stats where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)) and stat_scope = 'game_total'), 10, 'all imported game totals are explicit');
 select is((select count(*)::integer from public.foul_events where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data))), 2, 'reported committed fouls are preserved');
+select is((select fouls_received from public.player_period_stats stat join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id where stat.game_id=94001 and slot.roster_entry_id=9401),1::smallint,'reported received fouls are persisted canonically');
+
+reset role;
+insert into public.player_period_stats (
+  game_roster_slot_id, game_id, period_number, stat_scope, fouls_received
+)
+select id, game_id, 2, 'period', 7
+from public.game_roster_slots
+where game_id=94001 and roster_entry_id=9401;
+insert into storage.objects (id, bucket_id, name)
+values (
+  '94010000-0000-4000-8000-000000000002',
+  'boxscore-pdfs',
+  '9401/' || repeat('b',64) || '.pdf'
+);
+insert into public.game_data_submissions (
+  id, game_id, submission_version, source_type, role, status, parser_version,
+  payload_hash, storage_object_id, idempotency_key, submitted_by,
+  validated_by, validated_at
+)
+overriding system value values (
+  94002, 94001, 2, 'fiba_boxscore', 'primary', 'active', 'basketball-site-v1',
+  repeat('b',64), '94010000-0000-4000-8000-000000000002',
+  'stats-authority-without-fr',
+  (select user_id from private.admin_accounts),
+  (select user_id from private.admin_accounts), now()
+);
+
+set local role authenticated;
+select lives_ok($$
+  select public.admin_activate_game_data_authority(
+    94001,
+    'player_advanced',
+    94002,
+    (select submission_id from public.game_data_domain_authority
+      where game_id=94001 and domain='player_advanced'),
+    'Fixture sem cobertura de faltas recebidas'
+  )
+$$,'switching to a source without received-foul coverage succeeds');
+select is((select fouls_received from public.player_period_stats stat
+  join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id
+  where stat.game_id=94001 and slot.roster_entry_id=9401
+    and stat.stat_scope='game_total'),null::smallint,
+  'authority without FR clears the previous canonical game total');
+select is((select fouls_received from public.player_period_stats stat
+  join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id
+  where stat.game_id=94001 and slot.roster_entry_id=9401
+    and stat.stat_scope='period'),7::smallint,
+  'authority reprojection does not overwrite period-level rows');
+select lives_ok($$
+  select public.admin_activate_game_data_authority(
+    94001,
+    'player_advanced',
+    (select id from public.game_data_submissions
+      where idempotency_key='boxscore-import:' ||
+        (select import_id::text from boxscore_test_data)),
+    94002,
+    'Restaurar fixture FIBA com cobertura de FR'
+  )
+$$,'restoring the authoritative FIBA submission succeeds');
+select is((select fouls_received from public.player_period_stats stat
+  join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id
+  where stat.game_id=94001 and slot.roster_entry_id=9401
+    and stat.stat_scope='game_total'),1::smallint,
+  'restoring FIBA authority reprojects received fouls');
 select is((select score from public.game_scores where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)) and side = 'home'), 1, 'home score is derived from imported periods');
 select is((select count(*)::integer from public.admin_mutation_audit where action = 'boxscore_import_confirmed' and entity_id = (select import_id from boxscore_test_data)), 1, 'confirmation has one append-only audit record');
 select is(public.admin_commit_boxscore_import((select import_id from boxscore_test_data), (select resolution from boxscore_test_data)), (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'commit retry is idempotent');

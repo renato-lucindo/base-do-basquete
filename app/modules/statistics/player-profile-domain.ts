@@ -1,3 +1,5 @@
+import type { PublicAchievement } from "../competition/public-data.server";
+
 export interface PlayerTotals {
   games: number;
   secondsPlayed: number;
@@ -40,6 +42,50 @@ export const emptyPlayerTotals: PlayerTotals = {
 
 export function perGame(total: number, games: number): number | null {
   return games === 0 ? null : Math.round((total / games) * 10) / 10;
+}
+
+export interface PlayerAchievementGroup {
+  competitionName: string;
+  entries: Array<{
+    placement: number;
+    categoryName: string;
+    years: number[];
+  }>;
+}
+
+export function groupPlayerAchievements(
+  achievements: PublicAchievement[],
+): PlayerAchievementGroup[] {
+  const byCompetition = new Map<
+    string,
+    Map<string, { placement: number; categoryName: string; years: Set<number> }>
+  >();
+  for (const achievement of achievements) {
+    const competition =
+      byCompetition.get(achievement.seriesName) ??
+      new Map<string, { placement: number; categoryName: string; years: Set<number> }>();
+    const key = `${achievement.placement}:${achievement.categorySlug}`;
+    const entry = competition.get(key) ?? {
+      placement: achievement.placement,
+      categoryName: achievement.categoryName,
+      years: new Set<number>(),
+    };
+    entry.years.add(achievement.year);
+    competition.set(key, entry);
+    byCompetition.set(achievement.seriesName, competition);
+  }
+  return [...byCompetition.entries()].map(([competitionName, entries]) => ({
+    competitionName,
+    entries: [...entries.values()]
+      .map((entry) => ({
+        ...entry,
+        years: [...entry.years].sort((left, right) => left - right),
+      }))
+      .sort(
+        (left, right) =>
+          left.placement - right.placement || left.categoryName.localeCompare(right.categoryName),
+      ),
+  }));
 }
 
 export function addPlayerTotals(rows: PlayerTotals[]): PlayerTotals {
