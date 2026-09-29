@@ -90,7 +90,7 @@ export function ScoresheetStep({
   const headingId = scoresheetStepHeadingId(stepNumber);
   return (
     <section className="scoresheet-step" hidden={!active} aria-labelledby={headingId}>
-      <h2 className="sr-only" id={headingId} ref={headingRef} tabIndex={-1}>
+      <h2 className="scoresheet-step-heading" id={headingId} ref={headingRef} tabIndex={-1}>
         {label}
       </h2>
       {children}
@@ -115,7 +115,7 @@ export function ManualScoresheetEditor({
   const navigation = useNavigation();
   const submitted = useRef(false);
   const stepHeadingRefs = useRef<Array<HTMLHeadingElement | null>>([]);
-  const focusStepAfterChange = useRef(false);
+  const [stepFocusRequest, setStepFocusRequest] = useState(0);
   const [periodCount, setPeriodCount] = useState(4);
   const [step, setStep] = useState(1);
   const [viewMode, setViewMode] = useState<"cards" | "compact">("cards");
@@ -160,10 +160,9 @@ export function ManualScoresheetEditor({
   }, [navigation.state]);
 
   useEffect(() => {
-    if (!focusStepAfterChange.current) return;
+    if (stepFocusRequest === 0) return;
     stepHeadingRefs.current[step - 1]?.focus();
-    focusStepAfterChange.current = false;
-  }, [step]);
+  }, [step, stepFocusRequest]);
 
   useEffect(
     () => () => {
@@ -214,8 +213,8 @@ export function ManualScoresheetEditor({
   const markChanged = () => setPendingDraft(true);
 
   const moveToStep = (nextStep: number, markDraftChanged = false) => {
-    focusStepAfterChange.current = true;
     setStep(nextStep);
+    setStepFocusRequest((request) => request + 1);
     if (markDraftChanged) markChanged();
   };
 
@@ -276,8 +275,8 @@ export function ManualScoresheetEditor({
     setGameNumber(restoredGame.gameNumber ?? "");
     setScheduledLocal(restoredGame.scheduledLocal);
     setVenue(restoredGame.venue);
-    focusStepAfterChange.current = true;
     setStep(Math.min(4, Math.max(1, draft.data.step)));
+    setStepFocusRequest((request) => request + 1);
     setViewMode(draft.data.viewMode);
     setActivePeriod(Math.min(draft.data.periodCount, Math.max(1, draft.data.activePeriod)));
     setSavedAt(draft.savedAt);
@@ -833,7 +832,7 @@ export function ManualScoresheetEditor({
           {step === 4 ? (
             <section className="scoresheet-submit" aria-labelledby={scoresheetStepHeadingId(4)}>
               <h2
-                className="sr-only"
+                className="scoresheet-step-heading"
                 id={scoresheetStepHeadingId(4)}
                 ref={(node) => {
                   stepHeadingRefs.current[3] = node;

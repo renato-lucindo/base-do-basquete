@@ -1028,6 +1028,15 @@ a {
   display: none;
 }
 
+.scoresheet-step-heading {
+  scroll-margin-top: 24px;
+}
+
+.scoresheet-step-heading:focus {
+  outline: 3px solid var(--green);
+  outline-offset: 6px;
+}
+
 .scoresheet-form fieldset {
   min-width: 0;
   border: 1px solid var(--line);

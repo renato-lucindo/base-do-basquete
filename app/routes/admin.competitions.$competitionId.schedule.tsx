@@ -45,6 +45,17 @@ export function scheduleFieldAccessibleName(field: string, matchupLabel: string)
   return `${field} — ${matchupLabel}`;
 }
 
+export function scheduleErrorDescriptionId(
+  actionIntent: string | null,
+  errorMatchupId: number | null,
+  formIntent: "prepare" | "resolve",
+  matchupId: number,
+) {
+  return actionIntent === formIntent && errorMatchupId === matchupId
+    ? "schedule-action-error"
+    : undefined;
+}
+
 interface ScheduleRegistration {
   id: number;
   status: string;
@@ -120,14 +131,15 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const form = await request.formData();
   assertCsrfToken(form, auth.payload.csrfToken);
   const headers = auth.cookie ? { "Set-Cookie": auth.cookie } : undefined;
+  const intent = form.get("intent");
   let code: string | undefined;
   let affectedMatchupId: number | null = null;
-  if (form.get("intent") === "assign") {
+  if (intent === "assign") {
     const entryId = scheduleId(form.get("entryId"));
     const registrationId = scheduleId(form.get("registrationId"));
     if (!entryId || !registrationId)
       return data(
-        { error: "Escolha explicitamente uma equipe confirmada." },
+        { error: "Escolha explicitamente uma equipe confirmada.", intent },
         { status: 400, headers },
       );
     const entry = await auth.client
@@ -143,11 +155,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_registration_id: registrationId,
       })
     ).error?.code;
-  } else if (form.get("intent") === "prepare") {
+  } else if (intent === "prepare") {
     affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateSchedule(form);
     if (!parsed.ok)
-      return data({ error: parsed.error, matchupId: affectedMatchupId }, { status: 400, headers });
+      return data(
+        { error: parsed.error, intent, matchupId: affectedMatchupId },
+        { status: 400, headers },
+      );
     const m = await auth.client
       .from("matchups")
       .select("id")
@@ -165,11 +180,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_venue: parsed.input.venue as string,
       })
     ).error?.code;
-  } else if (form.get("intent") === "resolve") {
+  } else if (intent === "resolve") {
     affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateResolution(form);
     if (!parsed.ok)
-      return data({ error: parsed.error, matchupId: affectedMatchupId }, { status: 400, headers });
+      return data(
+        { error: parsed.error, intent, matchupId: affectedMatchupId },
+        { status: 400, headers },
+      );
     const matchup = await auth.client
       .from("matchups")
       .select("id")
@@ -187,23 +205,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   } else throw new Response("Ação inválida", { status: 400 });
   if (code)
     return data(
-      { error: schedulingError(code), matchupId: affectedMatchupId },
+      { error: schedulingError(code), intent, matchupId: affectedMatchupId },
       { status: 400, headers },
     );
   return redirect(`/admin/competitions/${id}/schedule?saved=1`, { headers });
 }
 export default function SchedulePage({ loaderData, actionData }: Route.ComponentProps) {
   const { edition, schedule, registrations, csrfToken } = loaderData;
-  const busy = useNavigation().state !== "idle";
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
   const actionErrorRef = useRef<HTMLParagraphElement>(null);
+  const actionIntent =
+    actionData && "intent" in actionData && typeof actionData.intent === "string"
+      ? actionData.intent
+      : null;
   const errorMatchupId =
     actionData && "matchupId" in actionData && typeof actionData.matchupId === "number"
       ? actionData.matchupId
       : null;
   const errorMatchupLabel = schedule.matchups.find(({ id }) => id === errorMatchupId)?.label;
   useEffect(() => {
-    if (actionData?.error) actionErrorRef.current?.focus();
-  }, [actionData?.error]);
+    if (navigation.state === "idle" && actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData, navigation.state]);
   const confirmedRegistrations = registrations.filter(
     (registration) => registration.status === "confirmed",
   );
@@ -302,7 +325,16 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
                 Classificado: {name(m.resolution.winnerRegistrationId)}.
               </p>
             ) : m.readyToResolve && m.officialResultSubmissionId ? (
-              <Form method="post" className="admin-form">
+              <Form
+                method="post"
+                className="admin-form"
+                aria-describedby={scheduleErrorDescriptionId(
+                  actionIntent,
+                  errorMatchupId,
+                  "resolve",
+                  m.id,
+                )}
+              >
                 <input type="hidden" name="csrfToken" value={csrfToken} />
                 <input type="hidden" name="intent" value="resolve" />
                 <input type="hidden" name="matchupId" value={m.id} />
@@ -333,7 +365,12 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
               method="post"
               className="admin-form"
               aria-label={`Preparar ${m.label}`}
-              aria-describedby={errorMatchupId === m.id ? "schedule-action-error" : undefined}
+              aria-describedby={scheduleErrorDescriptionId(
+                actionIntent,
+                errorMatchupId,
+                "prepare",
+                m.id,
+              )}
             >
               <input type="hidden" name="csrfToken" value={csrfToken} />
               <input type="hidden" name="intent" value="prepare" />

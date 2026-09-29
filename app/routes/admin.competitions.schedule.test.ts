@@ -9,6 +9,7 @@ import {
   getAssignableRegistrations,
   loader,
   SchedulePrerequisiteNotice,
+  scheduleErrorDescriptionId,
   scheduleFieldAccessibleName,
 } from "./admin.competitions.$competitionId.schedule";
 
@@ -116,13 +117,22 @@ describe("private schedule boundary", () => {
     });
   });
   it("rejects a forged result id before querying", async () => {
-    await action(post({ intent: "resolve", officialResultSubmissionId: "0" }));
+    const result = (await action(
+      post({ intent: "resolve", officialResultSubmissionId: "0" }),
+    )) as unknown as { data: { intent: string; matchupId: number } };
+    expect(result.data).toMatchObject({ intent: "resolve", matchupId: 12 });
     expect(client.from).not.toHaveBeenCalled();
     expect(client.rpc).not.toHaveBeenCalled();
   });
 });
 
 describe("schedule local date and time", () => {
+  it("associates a matchup error only with the form that submitted it", () => {
+    expect(scheduleErrorDescriptionId("resolve", 12, "resolve", 12)).toBe("schedule-action-error");
+    expect(scheduleErrorDescriptionId("resolve", 12, "prepare", 12)).toBeUndefined();
+    expect(scheduleErrorDescriptionId("prepare", 12, "prepare", 13)).toBeUndefined();
+  });
+
   it("includes the matchup in repeated field names", () => {
     expect(scheduleFieldAccessibleName("Data (opcional)", "Semifinal · confronto 1")).toBe(
       "Data (opcional) — Semifinal · confronto 1",

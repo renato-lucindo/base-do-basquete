@@ -181,6 +181,7 @@ describe("manual scoresheet step isolation", () => {
     expect(hidden).toContain('aria-labelledby="scoresheet-step-4-heading"');
     expect(active).not.toContain("hidden");
     expect(active).toContain('id="scoresheet-step-1-heading"');
+    expect(active).toContain('class="scoresheet-step-heading"');
     expect(active).toContain('tabindex="-1"');
   });
 });

@@ -665,8 +665,8 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
     if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
   }, [loaderData.savedRosterId]);
   useEffect(() => {
-    if (actionData?.error) actionErrorRef.current?.focus();
-  }, [actionData?.error]);
+    if (navigation.state === "idle" && actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData, navigation.state]);
   const draftRegistrations = loaderData.registrations.filter(
     (registration) => registration.status === "draft",
   );
