@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-30T01:41:53-03:00",
+  "updated_at": "2026-09-30T06:43:28-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -34,11 +34,11 @@
     ],
     "usage_window": {
       "duration_minutes": 300,
-      "next_reset_at": "2026-09-30T06:41:22-03:00",
-      "resume_at": "2026-09-30T06:42:22-03:00",
+      "next_reset_at": "2026-09-30T11:43:08-03:00",
+      "resume_at": "2026-09-30T11:44:08-03:00",
       "recurrence": "recalculate from the current five-hour reset on every resumed run",
       "automation_id": "retomar-consolida-o-das-prs",
-      "automation_rrule": "RRULE:FREQ=HOURLY;INTERVAL=5;BYMINUTE=42;BYSECOND=22"
+      "automation_rrule": "RRULE:FREQ=HOURLY;INTERVAL=5;BYMINUTE=44;BYSECOND=8"
     },
     "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
   },
