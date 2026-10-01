@@ -57,7 +57,10 @@ export function TeamProfile({
           <h1>{team.name}</h1>
           {team.abbreviation ? <p className="team-abbreviation">{team.abbreviation}</p> : null}
         </div>
-        <Link className="team-classification-link" to={contextPath(context, "classificacao")}>
+        <Link
+          className="button button-primary team-classification-link"
+          to={contextPath(context, "classificacao")}
+        >
           Ver classificação
         </Link>
       </header>

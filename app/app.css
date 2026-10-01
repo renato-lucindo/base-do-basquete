@@ -2567,7 +2567,7 @@ a {
 }
 
 .standings-legend summary {
-  color: var(--paper);
+  color: var(--ink);
   font-weight: 800;
   cursor: pointer;
 }
@@ -2895,20 +2895,18 @@ a {
 }
 
 .team-profile {
-  display: grid;
-  gap: clamp(32px, 5vw, 64px);
+  display: block;
   min-width: 0;
 }
 
 .team-profile-header {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: clamp(24px, 5vw, 48px);
-  border-radius: 16px;
-  background: var(--ink);
-  color: var(--paper);
+  padding: 28px 0 30px;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
 }
 
 .team-profile-header h1,
@@ -2920,12 +2918,13 @@ a {
 
 .team-profile-header h1 {
   margin-top: 8px;
-  font-size: clamp(2.2rem, 7vw, 5.6rem);
-  line-height: 0.94;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  letter-spacing: -0.045em;
+  line-height: 1;
 }
 
 .team-profile-header .team-abbreviation {
-  margin-top: 14px;
+  margin-top: 9px;
   color: var(--muted);
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -2934,19 +2933,19 @@ a {
 
 .team-classification-link {
   flex: 0 0 auto;
-  border: 1px solid var(--green);
-  border-radius: 999px;
-  padding: 11px 16px;
-  color: var(--green);
-  font-size: 0.76rem;
-  font-weight: 850;
-  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .team-profile-section {
   display: grid;
   gap: 18px;
   min-width: 0;
+  padding: 46px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.team-profile-section:last-child {
+  border-bottom: 0;
 }
 
 .team-section-heading {
@@ -2957,23 +2956,21 @@ a {
 .team-summary-grid,
 .team-performance-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1px;
   overflow: hidden;
   margin: 0;
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  padding: 1px;
+  border-radius: 10px;
   background: var(--line);
-}
-
-.team-performance-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .team-summary-grid > div,
 .team-performance-grid > div {
-  padding: 18px;
-  background: var(--ink);
+  min-height: 88px;
+  align-content: center;
+  padding: 15px 17px;
+  background: var(--paper);
 }
 
 .team-summary-grid dt,
@@ -2987,9 +2984,9 @@ a {
 
 .team-summary-grid dd,
 .team-performance-grid dd {
-  margin: 8px 0 0;
-  color: var(--paper);
-  font-size: clamp(1.4rem, 3vw, 2rem);
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
   font-weight: 850;
 }
 
@@ -3134,6 +3131,10 @@ a {
 
   .team-performance-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-performance-grid > div:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
 }
 
