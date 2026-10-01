@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-09-30T06:43:28-03:00",
+  "updated_at": "2026-09-30T22:01:13-03:00",
   "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
   "source_of_truth": {
     "repository": "renato-lucindo/base-do-basquete",
@@ -34,11 +34,11 @@
     ],
     "usage_window": {
       "duration_minutes": 300,
-      "next_reset_at": "2026-09-30T11:43:08-03:00",
-      "resume_at": "2026-09-30T11:44:08-03:00",
+      "next_reset_at": "2026-10-01T02:55:48-03:00",
+      "resume_at": "2026-10-01T02:56:48-03:00",
       "recurrence": "recalculate from the current five-hour reset on every resumed run",
       "automation_id": "retomar-consolida-o-das-prs",
-      "automation_rrule": "RRULE:FREQ=HOURLY;INTERVAL=5;BYMINUTE=44;BYSECOND=8"
+      "automation_rrule": "RRULE:FREQ=HOURLY;INTERVAL=5;BYMINUTE=56;BYSECOND=48"
     },
     "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
   },
@@ -124,7 +124,7 @@
       "branch": "codex/admin-ux-01",
       "base": "main",
       "work_unit": "PR54-RECONCILIATION-2026-09-29",
-      "status": "artifact_ready_release_blocked_by_github_billing_and_preview_qa",
+      "status": "checks_green_waiting_for_authenticated_preview_qa",
       "required_reviewers": [
         "database-security-reviewer",
         "accessibility-ui-reviewer",
@@ -155,11 +155,8 @@
           "evidence": "focal independente 53/53; gate local 384 Vitest; bloqueio apenas em checks e preview QA ausentes"
         }
       },
-      "external_blocker": "GitHub Actions runners recusados antes de qualquer etapa por billing ou limite de gastos",
+      "remote_gate": "gate, database, accessibility, upload and analyze passed on fbe3d89cefa0fc6ed64df81eb2afa73b42c41b77 after billing recovery",
       "release_requirements_remaining": [
-        "regularizar GitHub Billing & plans",
-        "renovar gate, database, accessibility, upload e analyze no mesmo OID",
-        "produzir preview do OID revisado",
         "executar QA AAL2 de teclado, foco, celular, desktop e zoom ou reflow de 200 por cento",
         "renovar parecer final de QA antes do merge"
       ]
@@ -205,7 +202,7 @@
   "next_exact_step": {
     "responsible": "project-maintainer",
     "workspace": "codex/admin-ux-01",
-    "action": "regularize GitHub billing, renew all five PR54 jobs on the documented HEAD, run authenticated preview QA, renew final QA, merge PR54, and start PR55 reconciliation",
+    "action": "run authenticated preview QA on fbe3d89cefa0fc6ed64df81eb2afa73b42c41b77, renew final QA, merge PR54, and start PR55 reconciliation",
     "completion_criterion": "PR54 merged with five executed green checks, authenticated preview QA and three valid opinions, without reapplying migration 20260929124948, and PR55 work unit started"
   }
 }
