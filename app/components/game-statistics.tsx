@@ -106,8 +106,10 @@ function TeamBoxscore({
     .map((player, index) => ({ player, index }))
     .sort((left, right) => {
       if (order === "official") return left.index - right.index;
+      if (left.player.officialPoints === null) return right.player.officialPoints === null ? 0 : 1;
+      if (right.player.officialPoints === null) return -1;
       const direction = order === "points-desc" ? -1 : 1;
-      const points = (left.player.officialPoints ?? -1) - (right.player.officialPoints ?? -1);
+      const points = left.player.officialPoints - right.player.officialPoints;
       return points === 0
         ? left.player.playerName.localeCompare(right.player.playerName, "pt-BR")
         : points * direction;

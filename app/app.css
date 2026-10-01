@@ -1345,36 +1345,6 @@ a {
   text-transform: uppercase;
 }
 
-.public-scoreboard {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 18px;
-  padding: clamp(20px, 4vw, 38px);
-  border-radius: 16px;
-  background: var(--ink);
-  color: var(--surface);
-}
-
-.public-scoreboard > div {
-  display: grid;
-  gap: 10px;
-  text-align: center;
-}
-
-.public-scoreboard a {
-  color: inherit;
-  font-weight: 780;
-}
-
-.public-scoreboard strong {
-  font-size: clamp(2.6rem, 7vw, 5.4rem);
-}
-
-.public-scoreboard > span {
-  opacity: 0.55;
-}
-
 .boxscore-review {
   display: grid;
   gap: 20px;
@@ -1607,11 +1577,6 @@ a {
   .resource-card:nth-child(2n),
   .resource-card:nth-child(3n) {
     border-right: 0;
-  }
-
-  .public-scoreboard {
-    gap: 8px;
-    padding-inline: 12px;
   }
 }
 
@@ -2929,6 +2894,177 @@ a {
   font-size: 0.78rem;
 }
 
+.team-profile {
+  display: grid;
+  gap: clamp(32px, 5vw, 64px);
+  min-width: 0;
+}
+
+.team-profile-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(24px, 5vw, 48px);
+  border-radius: 16px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.team-profile-header h1,
+.team-profile-header p,
+.team-section-heading h2,
+.team-section-heading p {
+  margin: 0;
+}
+
+.team-profile-header h1 {
+  margin-top: 8px;
+  font-size: clamp(2.2rem, 7vw, 5.6rem);
+  line-height: 0.94;
+}
+
+.team-profile-header .team-abbreviation {
+  margin-top: 14px;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.team-classification-link {
+  flex: 0 0 auto;
+  border: 1px solid var(--green);
+  border-radius: 999px;
+  padding: 11px 16px;
+  color: var(--green);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.team-profile-section {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.team-section-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.team-summary-grid,
+.team-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--line);
+}
+
+.team-performance-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-summary-grid > div,
+.team-performance-grid > div {
+  padding: 18px;
+  background: var(--ink);
+}
+
+.team-summary-grid dt,
+.team-performance-grid dt {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.team-summary-grid dd,
+.team-performance-grid dd {
+  margin: 8px 0 0;
+  color: var(--paper);
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 850;
+}
+
+.team-game-list,
+.team-achievement-list {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0;
+  background: var(--line);
+  list-style: none;
+}
+
+.team-game-list li,
+.team-achievement-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 20px;
+  background: var(--ink);
+}
+
+.team-game-list li > div:first-child,
+.team-achievement-list li {
+  min-width: 0;
+}
+
+.team-game-list span,
+.team-achievement-list span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+}
+
+.team-game-list p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.team-game-action {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 5px;
+  text-align: right;
+}
+
+.team-game-action > strong {
+  color: var(--paper);
+  font-size: 1.25rem;
+}
+
+.team-game-action a,
+.team-achievement-list a {
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.team-achievement-list li {
+  display: grid;
+  grid-template-columns: minmax(100px, auto) minmax(0, 1fr) auto;
+}
+
+.team-empty-copy {
+  margin: 0;
+  color: var(--muted);
+}
+
 .game-boxscore-table tfoot {
   border-top: 2px solid var(--green);
   font-weight: 850;
@@ -2994,6 +3130,35 @@ a {
   .game-boxscores-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .team-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .team-profile-header,
+  .team-game-list li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .team-classification-link {
+    width: max-content;
+  }
+
+  .team-summary-grid,
+  .team-performance-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-game-action {
+    text-align: left;
+  }
+
+  .team-achievement-list li {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

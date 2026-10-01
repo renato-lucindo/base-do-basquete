@@ -3,6 +3,7 @@ import { data, Link } from "react-router";
 import { GameStatistics } from "../components/game-statistics";
 import { PlayerProfile } from "../components/player-profile";
 import { PublicBreadcrumb, PublicFooter, PublicHeader } from "../components/public-navigation";
+import { TeamProfile } from "../components/team-profile";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
@@ -83,6 +84,7 @@ export function PublicDetailContent({
   game,
   playerProfile,
   resource,
+  teamProfile,
 }: PublicDetailPayload) {
   return (
     <div className="public-shell">
@@ -107,6 +109,8 @@ export function PublicDetailContent({
             context={context}
             profile={playerProfile}
           />
+        ) : resource === "equipes" && teamProfile ? (
+          <TeamProfile achievements={detail.achievements} context={context} profile={teamProfile} />
         ) : (
           <>
             <article className="detail-card">
