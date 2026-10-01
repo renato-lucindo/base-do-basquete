@@ -6,6 +6,8 @@ export const PUBLIC_RESOURCES = [
   "jogadores",
 ] as const;
 
+export const PUBLIC_NAV_RESOURCES = ["classificacao", "jogos", "equipes", "jogadores"] as const;
+
 export type PublicResource = (typeof PUBLIC_RESOURCES)[number];
 export type DetailResource = Exclude<PublicResource, "classificacao" | "visao-geral">;
 export type GenderDivision = "male" | "female";
@@ -96,6 +98,10 @@ export function isPublicResource(value: string | undefined): value is PublicReso
 
 export function isDetailResource(value: PublicResource): value is DetailResource {
   return value !== "classificacao" && value !== "visao-geral";
+}
+
+export function canonicalPublicResource(resource: PublicResource): PublicResource {
+  return resource === "visao-geral" ? "classificacao" : resource;
 }
 
 export function parsePublicYear(value: string | undefined): number | null {

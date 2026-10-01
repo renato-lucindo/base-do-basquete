@@ -59,6 +59,9 @@ describe("StatisticsExplorer", () => {
     expect(html).not.toContain("Comparar jogadores");
     expect(html).not.toContain("MIN");
     expect(html).not.toContain("REB");
+    expect(html).toContain("1 atleta encontrado");
+    expect(html).not.toContain('class="statistics-table-heading"');
+    expect(html).not.toContain("atletas com participação");
   });
 
   it("warns when boxscore advanced coverage has a smaller denominator", () => {

@@ -1010,7 +1010,6 @@ export function StatisticsExplorer({
               <h1>Jogadores</h1>
               <p>Dados registrados por súmula</p>
             </div>
-            <strong>{statistics.players.length} atletas com participação</strong>
           </header>
           <div className="scoresheet-controls">
             <label>
@@ -1293,20 +1292,10 @@ export function StatisticsExplorer({
         </output>
       ) : null}
 
-      <header className="statistics-table-heading">
-        <div>
-          <h2 aria-live="polite">{allPlayers.length} atletas</h2>
-          <p>
-            {statistics.kind === "scoresheet"
-              ? "Totais e média por participação"
-              : mode === "totals"
-                ? "Total"
-                : "Por jogo"}{" "}
-            · somente jogos finalizados
-          </p>
-        </div>
-        <span className="statistics-scroll-hint">↔ Deslize para ver mais</span>
-      </header>
+      <output className="sr-only" aria-live="polite">
+        {allPlayers.length} {allPlayers.length === 1 ? "atleta encontrado" : "atletas encontrados"}.
+      </output>
+      <span className="statistics-scroll-hint">↔ Deslize para ver mais</span>
 
       {allPlayers.length ? (
         statistics.kind === "scoresheet" ? (

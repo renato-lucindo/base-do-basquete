@@ -2,7 +2,7 @@ import { data, Link } from "react-router";
 
 import { GameStatistics } from "../components/game-statistics";
 import { PlayerProfile } from "../components/player-profile";
-import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
+import { PublicBreadcrumb, PublicFooter, PublicHeader } from "../components/public-navigation";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
@@ -85,14 +85,14 @@ export function PublicDetailContent({
   resource,
 }: PublicDetailPayload) {
   return (
-    <main className="public-shell">
+    <div className="public-shell">
       <PublicHeader
         context={context}
         contexts={contexts}
         detailLabel={detail.label}
         resource={resource}
       />
-      <div className="public-content">
+      <main className="public-content">
         <PublicBreadcrumb
           context={context}
           contexts={contexts}
@@ -148,8 +148,9 @@ export function PublicDetailContent({
             </section>
           </>
         )}
-      </div>
-    </main>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }
 

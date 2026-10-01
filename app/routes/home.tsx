@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 
+import { PublicFooter } from "../components/public-navigation";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import { contextPath, matchingLegacyContexts } from "../modules/competition/context";
@@ -34,7 +35,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         ? matches[0]
         : undefined;
     if (preferredContext) {
-      throw redirect(contextPath(preferredContext, "visao-geral"));
+      throw redirect(contextPath(preferredContext, "classificacao"));
     }
     if (matches.length > 1) {
       throw redirect(
@@ -45,7 +46,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const recentContext = contexts[0] ?? null;
   if (recentContext) {
-    throw redirect(contextPath(recentContext, "visao-geral"));
+    throw redirect(contextPath(recentContext, "classificacao"));
   }
 
   return { empty: true };
@@ -53,15 +54,18 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
 export default function Home() {
   return (
-    <main className="empty-public-shell">
-      <div className="error-card">
-        <span className="eyebrow">Base do Basquete</span>
-        <h1>A próxima temporada está sendo preparada.</h1>
-        <p>Nenhuma edição pública está disponível neste momento.</p>
-        <a className="button button-ghost" href="/admin">
-          Administração
-        </a>
-      </div>
-    </main>
+    <div className="public-shell empty-public-page">
+      <main className="empty-public-shell">
+        <div className="error-card">
+          <span className="eyebrow">Base do Basquete</span>
+          <h1>A próxima temporada está sendo preparada.</h1>
+          <p>Nenhuma edição pública está disponível neste momento.</p>
+          <a className="button button-ghost" href="/admin">
+            Administração
+          </a>
+        </div>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }

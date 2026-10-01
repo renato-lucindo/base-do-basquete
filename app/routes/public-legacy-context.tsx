@@ -4,6 +4,7 @@ import { PublicGenderSelection } from "../components/public-gender-selection";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
+  canonicalPublicResource,
   contextPath,
   isPublicResource,
   matchingLegacyContexts,
@@ -25,6 +26,7 @@ export function meta() {
 export async function loader({ params, context }: Route.LoaderArgs) {
   const year = parsePublicYear(params.year);
   if (!year || !isPublicResource(params.resource)) return notFound();
+  const resource = canonicalPublicResource(params.resource);
 
   const { env } = context.get(cloudflareContext);
   const client = createAnonymousSupabaseClient(env);
@@ -38,20 +40,23 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   if (matches.length === 0) return notFound();
   const onlyMatch = matches[0];
   if (matches.length === 1 && onlyMatch?.genderDivision) {
-    throw redirect(contextPath(onlyMatch, params.resource), 308);
+    throw redirect(contextPath(onlyMatch, resource), 308);
+  }
+  if (params.resource === "visao-geral") {
+    throw redirect(`/${year}/${params.competition}/${params.category}/classificacao`, 308);
   }
 
   if (matches.length === 1 && onlyMatch) {
     return data(
       {
         kind: "context" as const,
-        payload: await loadPublicContextPayload(client, onlyMatch, params.resource, contexts),
+        payload: await loadPublicContextPayload(client, onlyMatch, resource, contexts),
       },
       { headers: { "Set-Cookie": contextPreferenceCookie(onlyMatch) } },
     );
   }
 
-  return { kind: "selection" as const, contexts: matches, resource: params.resource };
+  return { kind: "selection" as const, contexts: matches, resource };
 }
 
 export default function PublicLegacyContextPage({ loaderData }: Route.ComponentProps) {

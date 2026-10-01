@@ -64,6 +64,7 @@ describe("GameStatistics", () => {
           jerseyNumber: "7",
           didNotPlay: false,
           isStarter: true,
+          isCaptain: true,
           officialPoints: null,
           fouls: null,
           advancedTotals: null,
@@ -78,8 +79,16 @@ describe("GameStatistics", () => {
     );
 
     expect(html).toContain("Atleta Um");
+    expect(html).toContain("*7");
+    expect(html).toContain("(C)");
+    expect(html).toContain("Ordem oficial");
+    expect(html).toContain("* Titular · (C) Capitão · NJ Não jogou");
     expect(html).toContain("<td>—</td><td>—</td>");
     expect(html).not.toContain("MIN");
     expect(html).not.toContain(">0<");
+    expect(html).not.toContain("public-scoreboard");
+    expect(html.indexOf("Estatísticas dos atletas")).toBeLessThan(
+      html.indexOf("métricas avançadas não se aplicam"),
+    );
   });
 });

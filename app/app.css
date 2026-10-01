@@ -2542,7 +2542,7 @@ a {
 
 .public-game-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -2573,6 +2573,11 @@ a {
 
 .game-list-matchup span:last-child {
   text-align: right;
+}
+
+.game-list-matchup .is-winner {
+  color: var(--green);
+  font-weight: 850;
 }
 
 .public-game-list p {
@@ -2822,7 +2827,6 @@ a {
   text-underline-offset: 5px;
 }
 
-.game-boxscore-table .starter-mark,
 .game-boxscore-table .dnp-mark {
   display: inline-flex;
   margin-left: 8px;
@@ -2834,11 +2838,6 @@ a {
   text-transform: uppercase;
 }
 
-.game-boxscore-table .starter-mark {
-  background: rgba(38, 217, 128, 0.16);
-  color: var(--green);
-}
-
 .game-boxscore-table .dnp-mark {
   background: rgba(255, 107, 44, 0.15);
   color: var(--orange);
@@ -2846,6 +2845,88 @@ a {
 
 .game-boxscore-table .is-starter th {
   box-shadow: inset 3px 0 var(--green);
+}
+
+.captain-mark {
+  color: var(--green);
+  font-weight: 850;
+}
+
+.game-match-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--line);
+}
+
+.game-match-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  background: var(--ink);
+}
+
+.game-match-summary a {
+  color: var(--paper);
+  font-weight: 800;
+}
+
+.game-match-summary strong {
+  color: var(--green);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+
+.game-boxscores {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.game-boxscores-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.game-boxscores-header h2,
+.game-boxscores-header p {
+  margin: 0;
+}
+
+.game-boxscores-header label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.game-boxscores-header select {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.game-boxscores-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  min-width: 0;
+}
+
+.game-boxscore-legend {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .game-boxscore-table tfoot {
@@ -2897,11 +2978,22 @@ a {
 }
 
 @media (max-width: 540px) {
-  .game-boxscore-table .starter-mark,
   .game-boxscore-table .dnp-mark {
     display: flex;
     width: max-content;
     margin: 6px 0 0;
+  }
+}
+
+@media (max-width: 960px) {
+  .game-boxscores-grid,
+  .game-match-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .game-boxscores-header {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
@@ -4151,7 +4243,66 @@ a {
 }
 
 .public-content {
+  flex: 1;
   padding-bottom: 72px;
+}
+
+.public-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.public-page-heading {
+  padding: 28px 0 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.public-page-heading .eyebrow,
+.public-page-heading h1 {
+  margin: 0;
+}
+
+.public-page-heading .eyebrow {
+  margin-bottom: 7px;
+  color: var(--green);
+}
+
+.public-page-heading h1 {
+  color: var(--ink);
+  font-size: clamp(2rem, 5vw, 3.9rem);
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.public-footer {
+  width: min(1280px, calc(100% - 48px));
+  display: flex;
+  justify-content: space-between;
+  gap: 16px 32px;
+  margin: 0 auto;
+  padding: 24px 0 30px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.public-footer p {
+  margin: 0;
+}
+
+.public-selection-content {
+  display: grid;
+  min-height: 70vh;
+  place-items: center;
+  padding-top: 48px;
+}
+
+.public-error-page .error-shell,
+.empty-public-page .empty-public-shell {
+  min-height: 0;
+  flex: 1;
 }
 
 .statistics-explorer {
@@ -4175,16 +4326,6 @@ a {
 
 .scoresheet-players-header h1 {
   margin-block: 3px;
-}
-
-.scoresheet-players-header > strong {
-  padding: 7px 10px;
-  border: 1px solid #b8d8ff;
-  border-radius: 999px;
-  color: #084f98;
-  background: #eaf4ff;
-  font-size: 0.78rem;
-  white-space: nowrap;
 }
 
 .scoresheet-controls {
@@ -4305,29 +4446,6 @@ a {
   box-shadow: 0 8px 24px rgba(23, 32, 51, 0.08);
 }
 
-.statistics-table-heading {
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-bottom: 0;
-  background: var(--surface-muted);
-}
-
-.statistics-table-heading h2,
-.statistics-table-heading p {
-  margin: 0;
-}
-
-.statistics-table-heading h2 {
-  font-size: 1rem;
-  font-weight: 800;
-}
-
-.statistics-table-heading p,
 .statistics-scroll-hint {
   color: var(--muted);
   font-size: 0.76rem;
@@ -4336,13 +4454,6 @@ a {
 .statistics-scroll-hint {
   display: none;
   white-space: nowrap;
-}
-
-.statistics-table-heading + .scrollable-table .scrollable-table-top {
-  height: 14px;
-  margin: 0;
-  border: 1px solid var(--line);
-  border-bottom: 0;
 }
 
 .statistics-table-wrap {
@@ -4579,10 +4690,6 @@ a {
     display: inline;
   }
 
-  .statistics-table-heading + .scrollable-table .scrollable-table-top {
-    display: none;
-  }
-
   .statistics-table th,
   .statistics-table td {
     height: 42px;
@@ -4602,11 +4709,6 @@ a {
 @media (max-width: 390px) {
   .statistics-toolbar > .toolbar-button {
     grid-column: 1 / -1;
-  }
-
-  .statistics-table-heading {
-    align-items: flex-start;
-    flex-direction: column;
   }
 
   .statistics-pagination > div > span:first-child {
@@ -6631,6 +6733,17 @@ body {
   .statistics-filter-editor > *,
   .statistics-comparison-controls > * {
     width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .public-footer {
+    width: min(100% - 28px, 1280px);
+    flex-direction: column;
+  }
+
+  .public-page-heading {
+    padding-block: 22px 18px;
   }
 }
 

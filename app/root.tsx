@@ -5,9 +5,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { PublicFooter } from "./components/public-navigation";
 import { SiennaAccessibility } from "./components/sienna-accessibility";
 import "./app.css";
 
@@ -43,6 +45,7 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+  const location = useLocation();
   let title = "Algo saiu do compasso";
   let detail = "Não foi possível concluir esta jogada.";
 
@@ -54,7 +57,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         : error.statusText || detail;
   }
 
-  return (
+  const content = (
     <main className="error-shell">
       <div className="error-card">
         <span className="eyebrow">Base do Basquete</span>
@@ -65,5 +68,16 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
         </a>
       </div>
     </main>
+  );
+
+  if (location.pathname.startsWith("/admin") || location.pathname.startsWith("/api/")) {
+    return content;
+  }
+
+  return (
+    <div className="public-shell public-error-page">
+      {content}
+      <PublicFooter />
+    </div>
   );
 }
