@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-09-30T22:01:13-03:00",
+  "objective": "Reconciliar a main e concluir, em ordem, as PRs #53, #54 e #55 com gates, revisoes especializadas, migrations e release coerentes.",
+  "source_of_truth": {
+    "repository": "renato-lucindo/base-do-basquete",
+    "main_commit_at_start": "94f738da20e9e13dfb9d9fd68d62bedd9ec0fb2b",
+    "required_documents": [
+      "AGENTS.md",
+      "HANDOFF.md",
+      ".agents/agent-contract.md",
+      "docs/plan/README.md"
+    ]
+  },
+  "execution_policy": {
+    "writer": "project-maintainer",
+    "single_write_lock": true,
+    "reviewers_are_read_only": true,
+    "fixed_head_during_review": true,
+    "material_change_expires_reviews": true,
+    "persist_checkpoint_in_handoff": true,
+    "do_not_reapply_persisted_migrations": true,
+    "production_from_main_only": true
+  },
+  "resume_policy": {
+    "inspect_command": "node .codex/skills/managing-base-work-unit/scripts/inspect-work-unit.mjs",
+    "resume_from": "HANDOFF.md#6-proximo-passo-exato",
+    "before_action": [
+      "fetch remote state",
+      "compare branch and PR heads",
+      "verify checks and reviewer validity",
+      "verify migration state without mutation",
+      "preserve pre-existing local changes"
+    ],
+    "usage_window": {
+      "duration_minutes": 300,
+      "next_reset_at": "2026-10-01T02:55:48-03:00",
+      "resume_at": "2026-10-01T02:56:48-03:00",
+      "recurrence": "recalculate from the current five-hour reset on every resumed run",
+      "automation_id": "retomar-consolida-o-das-prs",
+      "automation_rrule": "RRULE:FREQ=HOURLY;INTERVAL=5;BYMINUTE=56;BYSECOND=48"
+    },
+    "review_concurrency": "sequential when the five-hour window is at or above 50 percent; QA always runs after specialist opinions"
+  },
+  "pull_request_chain": [
+    {
+      "number": 53,
+      "branch": "codex/stats-player-statistics",
+      "base": "main",
+      "work_unit": "PR53-RECONCILIATION-2026-09-28",
+      "status": "merged",
+      "merge_commit": "5600f53c96e809d7cf5b9aca0519ac427e4bd540",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "statistics-domain-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "required_skills": [
+        "managing-base-work-unit",
+        "reviewing-supabase-changes",
+        "validating-basketball-statistics",
+        "validating-accessibility-ui",
+        "running-release-gate"
+      ],
+      "migration_policy": {
+        "file": "supabase/migrations/20260922141453_stats_public_player_snapshot.sql",
+        "remote_version": "20260922161633_stats_public_player_snapshot",
+        "action": "verify_only_do_not_reapply"
+      },
+      "review_results": {
+        "database-security-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "094016d8300da15212a34af822e4712c8731c52e",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882612146"
+        },
+        "statistics-domain-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "094016d8300da15212a34af822e4712c8731c52e",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5882669876"
+        },
+        "accessibility-ui-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889734155"
+        },
+        "qa-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/53#issuecomment-5889811708",
+          "release_gate": "READY"
+        }
+      },
+      "active_remediation": {
+        "status": "resolved_at_6f9e98e1b8dcfb9a6c95a33ca73eff872cbb09e5",
+        "findings": [
+          "comparison cells need per-cell textual better/worse indication",
+          "public statistics need recorded 200 percent zoom/reflow evidence",
+          "axe automation should cover the public statistics preview"
+        ],
+        "implementation": [
+          "screen-reader text added to comparison cells and covered by a focal unit test",
+          "preview workflow runs axe and 720 CSS px reflow check against the published statistics fixture",
+          "STATS-02 trailing whitespace fixed"
+        ],
+        "required_after_push": [
+          "all five remote checks green on the remediation HEAD",
+          "renew accessibility-ui-reviewer",
+          "renew qa-reviewer"
+        ]
+      },
+      "completion": [
+        "branch reconciled with current main",
+        "local consolidated gate green",
+        "database from zero and complete pgTAP green",
+        "Playwright and axe green",
+        "preview QA for supported boxscore formats green",
+        "all required opinions valid on the same HEAD",
+        "PR ready for final merge authorization"
+      ]
+    },
+    {
+      "number": 54,
+      "branch": "codex/admin-ux-01",
+      "base": "main",
+      "work_unit": "PR54-RECONCILIATION-2026-09-29",
+      "status": "checks_green_waiting_for_authenticated_preview_qa",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "migration_policy": {
+        "file": "supabase/migrations/20260924152000_admin_ux_01_readiness.sql",
+        "remote_version": "20260929124948_admin_ux_01_readiness",
+        "action": "applied_verify_only_do_not_reapply"
+      },
+      "functional_head": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
+      "review_results": {
+        "database-security-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "cfbf5c262e4e34895c2d77e2e19b9756bb9a7bf1",
+          "evidence": "pgTAP persistente 24/24; grants e advisors reconciliados; nenhum delta de banco posterior"
+        },
+        "accessibility-ui-reviewer": {
+          "status": "APPROVE_WITH_NON_BLOCKING_NOTES",
+          "commit": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
+          "url": "https://github.com/renato-lucindo/base-do-basquete/pull/54#issuecomment-5896710504",
+          "evidence": "tres achados P2 resolvidos; nenhum achado P0-P3 no delta final"
+        },
+        "qa-reviewer": {
+          "status": "BLOCK_RELEASE",
+          "artifact_quality": "READY_WITH_NON_BLOCKING_NOTES",
+          "commit": "ba9159d6a44cc7e70d25e18c091aa6b69f325884",
+          "evidence": "focal independente 53/53; gate local 384 Vitest; bloqueio apenas em checks e preview QA ausentes"
+        }
+      },
+      "remote_gate": "gate, database, accessibility, upload and analyze passed on fbe3d89cefa0fc6ed64df81eb2afa73b42c41b77 after billing recovery",
+      "release_requirements_remaining": [
+        "executar QA AAL2 de teclado, foco, celular, desktop e zoom ou reflow de 200 por cento",
+        "renovar parecer final de QA antes do merge"
+      ]
+    },
+    {
+      "number": 55,
+      "branch": "codex/admin-ux-02",
+      "base": "codex/admin-ux-01",
+      "work_unit": "PR55-STACK-RECONCILIATION",
+      "status": "waiting_for_pr54",
+      "required_reviewers": [
+        "database-security-reviewer",
+        "boxscore-domain-reviewer",
+        "accessibility-ui-reviewer",
+        "qa-reviewer"
+      ],
+      "required_skills": [
+        "managing-base-work-unit",
+        "reviewing-supabase-changes",
+        "validating-boxscore-ingestion",
+        "validating-accessibility-ui",
+        "running-release-gate"
+      ],
+      "pending_migrations": [
+        "20260924153000_admin_ux_02_operations.sql",
+        "20260924194303_admin_manual_schedule_flow.sql",
+        "20260925190000_admin_audit_manual_matchup_compat.sql"
+      ],
+      "already_applied_migrations": ["20260925160711_boxscore_team_resolution.sql"]
+    }
+  ],
+  "gate_order": [
+    "focal tests while resolving the unit",
+    "npm run check once on the stable HEAD",
+    "database from zero and complete pgTAP",
+    "domain and browser checks selected by risk",
+    "push and remote CI, database, accessibility, preview and CodeQL",
+    "publish one review packet",
+    "run required read-only specialist subagents on the fixed HEAD with usage-aware concurrency",
+    "resolve findings under a new write phase and renew expired opinions",
+    "request final merge or release authorization only when review gate is ready"
+  ],
+  "next_exact_step": {
+    "responsible": "project-maintainer",
+    "workspace": "codex/admin-ux-01",
+    "action": "run authenticated preview QA on fbe3d89cefa0fc6ed64df81eb2afa73b42c41b77, renew final QA, merge PR54, and start PR55 reconciliation",
+    "completion_criterion": "PR54 merged with five executed green checks, authenticated preview QA and three valid opinions, without reapplying migration 20260929124948, and PR55 work unit started"
+  }
+}

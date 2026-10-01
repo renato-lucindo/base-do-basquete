@@ -19,6 +19,8 @@ Emitir parecer independente sobre a prontidão de uma alteração para merge ou 
 
 Leia `AGENTS.md`, `HANDOFF.md`, `agent-contract.md`, o escopo ativo e o `REVIEW_PACKET`.
 
+Use a skill `running-release-gate` no gate final. Quando houver interface alterada, use também `validating-accessibility-ui` sem repetir integralmente o parecer especializado válido.
+
 Trabalhe sem mutação:
 
 - pode executar inspeções, linters, typecheck, testes e build;

@@ -1,11 +1,30 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { normalizeRegistrationRemoval } from "../modules/competition/admin-domain";
 import {
+  DraftRegistrationSelector,
   mapRosterActionFailure,
   parseRegistrationRemovalDecision,
   parseRosterActionEntries,
   resolveCompetitionDataActions,
 } from "./admin.competitions.$competitionId";
+
+describe("bulk registration accessibility", () => {
+  it("associates and announces the batch error", () => {
+    const html = renderToStaticMarkup(
+      createElement(DraftRegistrationSelector, {
+        error: "Selecione ao menos uma inscrição em rascunho.",
+        registrations: [{ id: 41, teamName: "Equipe teste" }],
+      }),
+    );
+
+    expect(html).toContain('aria-describedby="confirm-registrations-error"');
+    expect(html).toContain('id="confirm-registrations-error"');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('tabindex="-1"');
+  });
+});
 
 describe("admin competition roster action", () => {
   it("parses only player identifiers and normalized jersey values", () => {

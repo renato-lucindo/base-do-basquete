@@ -162,14 +162,26 @@ describe("manual scoresheet availability guidance", () => {
 describe("manual scoresheet step isolation", () => {
   it("marks inactive step content as hidden with a dedicated class", () => {
     const hidden = renderToStaticMarkup(
-      createElement(ScoresheetStep, { active: false }, createElement("p", null, "Revisão")),
+      createElement(
+        ScoresheetStep,
+        { active: false, label: "Revisão", stepNumber: 4 },
+        createElement("p", null, "Revisão"),
+      ),
     );
     const active = renderToStaticMarkup(
-      createElement(ScoresheetStep, { active: true }, createElement("p", null, "Jogo")),
+      createElement(
+        ScoresheetStep,
+        { active: true, label: "Jogo", stepNumber: 1 },
+        createElement("p", null, "Jogo"),
+      ),
     );
 
     expect(hidden).toContain('class="scoresheet-step"');
     expect(hidden).toContain("hidden");
+    expect(hidden).toContain('aria-labelledby="scoresheet-step-4-heading"');
     expect(active).not.toContain("hidden");
+    expect(active).toContain('id="scoresheet-step-1-heading"');
+    expect(active).toContain('class="scoresheet-step-heading"');
+    expect(active).toContain('tabindex="-1"');
   });
 });

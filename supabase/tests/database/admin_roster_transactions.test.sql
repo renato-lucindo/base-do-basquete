@@ -2,8 +2,17 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(40);
 set constraints all deferred;
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.admin_confirm_team_registrations(bigint,bigint[])',
+    'execute'
+  ),
+  'anonymous clients cannot execute bulk registration confirmation'
+);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
@@ -58,6 +67,11 @@ select throws_ok(
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'the private team resolver also rejects a non-admin at aal2'
 );
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot confirm registrations in bulk'
+);
 
 reset role;
 select set_config(
@@ -80,6 +94,11 @@ select throws_ok(
   $$select private.admin_resolve_team('Equipe sem MFA', 'ESM')$$,
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'the private team resolver also requires administrator aal2'
+);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the administrator at aal1 cannot confirm registrations in bulk'
 );
 
 reset role;

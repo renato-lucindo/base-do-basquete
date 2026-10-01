@@ -70,11 +70,31 @@ interface ScoresheetDraftData {
   activePeriod: number;
 }
 
-export function ScoresheetStep({ active, children }: { active: boolean; children?: ReactNode }) {
+export function scoresheetStepHeadingId(stepNumber: number) {
+  return `scoresheet-step-${stepNumber}-heading`;
+}
+
+export function ScoresheetStep({
+  active,
+  children,
+  headingRef,
+  label,
+  stepNumber,
+}: {
+  active: boolean;
+  children?: ReactNode;
+  headingRef?: (node: HTMLHeadingElement | null) => void;
+  label: string;
+  stepNumber: number;
+}) {
+  const headingId = scoresheetStepHeadingId(stepNumber);
   return (
-    <div className="scoresheet-step" hidden={!active}>
+    <section className="scoresheet-step" hidden={!active} aria-labelledby={headingId}>
+      <h2 className="scoresheet-step-heading" id={headingId} ref={headingRef} tabIndex={-1}>
+        {label}
+      </h2>
       {children}
-    </div>
+    </section>
   );
 }
 
@@ -94,6 +114,8 @@ export function ManualScoresheetEditor({
 }: ManualScoresheetEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
+  const stepHeadingRefs = useRef<Array<HTMLHeadingElement | null>>([]);
+  const [stepFocusRequest, setStepFocusRequest] = useState(0);
   const [periodCount, setPeriodCount] = useState(4);
   const [step, setStep] = useState(1);
   const [viewMode, setViewMode] = useState<"cards" | "compact">("cards");
@@ -136,6 +158,11 @@ export function ManualScoresheetEditor({
   useEffect(() => {
     if (navigation.state === "submitting") submitted.current = true;
   }, [navigation.state]);
+
+  useEffect(() => {
+    if (stepFocusRequest === 0) return;
+    stepHeadingRefs.current[step - 1]?.focus();
+  }, [step, stepFocusRequest]);
 
   useEffect(
     () => () => {
@@ -184,6 +211,12 @@ export function ManualScoresheetEditor({
   ]);
 
   const markChanged = () => setPendingDraft(true);
+
+  const moveToStep = (nextStep: number, markDraftChanged = false) => {
+    setStep(nextStep);
+    setStepFocusRequest((request) => request + 1);
+    if (markDraftChanged) markChanged();
+  };
 
   const restoreDraft = () => {
     if (!draft) return;
@@ -243,6 +276,7 @@ export function ManualScoresheetEditor({
     setScheduledLocal(restoredGame.scheduledLocal);
     setVenue(restoredGame.venue);
     setStep(Math.min(4, Math.max(1, draft.data.step)));
+    setStepFocusRequest((request) => request + 1);
     setViewMode(draft.data.viewMode);
     setActivePeriod(Math.min(draft.data.periodCount, Math.max(1, draft.data.activePeriod)));
     setSavedAt(draft.savedAt);
@@ -388,7 +422,7 @@ export function ManualScoresheetEditor({
             {actionError}
           </p>
         ) : null}
-        <AdminWizardSteps current={step} labels={scoresheetSteps} onSelect={setStep} />
+        <AdminWizardSteps current={step} labels={scoresheetSteps} onSelect={moveToStep} />
         {draft ? (
           <AdminDraftNotice
             savedAt={draft.savedAt}
@@ -405,7 +439,14 @@ export function ManualScoresheetEditor({
           <input type="hidden" name="periodCount" value={periodCount} />
           <input type="hidden" name="gameId" value={gameId} />
 
-          <ScoresheetStep active={step === 1}>
+          <ScoresheetStep
+            active={step === 1}
+            headingRef={(node) => {
+              stepHeadingRefs.current[0] = node;
+            }}
+            label={scoresheetSteps[0]}
+            stepNumber={1}
+          >
             <fieldset className="scoresheet-header-grid">
               <legend>Cabeçalho do jogo</legend>
               <label>
@@ -443,8 +484,7 @@ export function ManualScoresheetEditor({
                 type="button"
                 disabled={!scheduledLocal || !venue.trim()}
                 onClick={() => {
-                  setStep(2);
-                  markChanged();
+                  moveToStep(2, true);
                 }}
               >
                 Continuar para equipes
@@ -452,7 +492,14 @@ export function ManualScoresheetEditor({
             </div>
           </ScoresheetStep>
 
-          <ScoresheetStep active={step === 2}>
+          <ScoresheetStep
+            active={step === 2}
+            headingRef={(node) => {
+              stepHeadingRefs.current[1] = node;
+            }}
+            label={scoresheetSteps[1]}
+            stepNumber={2}
+          >
             <section className="participant-grid">
               {sides.map((side) => {
                 const opposite = side === "home" ? "away" : "home";
@@ -553,7 +600,7 @@ export function ManualScoresheetEditor({
               <p className="form-error">Há camisas duplicadas dentro da mesma equipe.</p>
             ) : null}
             <div className="wizard-actions">
-              <button className="button button-ghost" type="button" onClick={() => setStep(1)}>
+              <button className="button button-ghost" type="button" onClick={() => moveToStep(1)}>
                 Voltar
               </button>
               <button
@@ -561,8 +608,7 @@ export function ManualScoresheetEditor({
                 type="button"
                 disabled={invalidParticipants || hasDuplicateJersey || activePlayers === 0}
                 onClick={() => {
-                  setStep(3);
-                  markChanged();
+                  moveToStep(3, true);
                 }}
               >
                 Continuar para lançamentos
@@ -570,7 +616,14 @@ export function ManualScoresheetEditor({
             </div>
           </ScoresheetStep>
 
-          <ScoresheetStep active={step === 3}>
+          <ScoresheetStep
+            active={step === 3}
+            headingRef={(node) => {
+              stepHeadingRefs.current[2] = node;
+            }}
+            label={scoresheetSteps[2]}
+            stepNumber={3}
+          >
             <section className="scoresheet-scoreboard" aria-live="polite">
               <div>
                 <span>{registrationById.get(registrationIds.home)?.teamName ?? "Mandante"}</span>
@@ -761,15 +814,14 @@ export function ManualScoresheetEditor({
                   />
                 ))}
             <div className="wizard-actions">
-              <button className="button button-ghost" type="button" onClick={() => setStep(2)}>
+              <button className="button button-ghost" type="button" onClick={() => moveToStep(2)}>
                 Voltar
               </button>
               <button
                 className="button button-primary"
                 type="button"
                 onClick={() => {
-                  setStep(4);
-                  markChanged();
+                  moveToStep(4, true);
                 }}
               >
                 Revisar súmula
@@ -778,7 +830,17 @@ export function ManualScoresheetEditor({
           </ScoresheetStep>
 
           {step === 4 ? (
-            <div className="scoresheet-submit">
+            <section className="scoresheet-submit" aria-labelledby={scoresheetStepHeadingId(4)}>
+              <h2
+                className="scoresheet-step-heading"
+                id={scoresheetStepHeadingId(4)}
+                ref={(node) => {
+                  stepHeadingRefs.current[3] = node;
+                }}
+                tabIndex={-1}
+              >
+                {scoresheetSteps[3]}
+              </h2>
               <p>O jogo será encerrado como final. Empate exige OT e é recusado pelo banco.</p>
               {requiresFallbackReason ? (
                 <label>
@@ -792,10 +854,10 @@ export function ManualScoresheetEditor({
                   />
                 </label>
               ) : null}
-              <button className="button button-ghost" type="button" onClick={() => setStep(3)}>
+              <button className="button button-ghost" type="button" onClick={() => moveToStep(3)}>
                 Voltar aos lançamentos
               </button>
-            </div>
+            </section>
           ) : null}
 
           {step === 4 ? (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type Ref, useEffect, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminNavigation } from "../components/admin/admin-area";
 import { RegistrationAccordion } from "../components/admin/registration-accordion";
@@ -26,6 +26,41 @@ import type { Route } from "./+types/admin.competitions.$competitionId";
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+export function DraftRegistrationSelector({
+  error,
+  errorRef,
+  registrations,
+}: {
+  error?: string | null;
+  errorRef?: Ref<HTMLParagraphElement>;
+  registrations: Array<{ id: number; teamName: string }>;
+}) {
+  return (
+    <>
+      <fieldset aria-describedby={error ? "confirm-registrations-error" : undefined}>
+        <legend>Inscrições em rascunho</legend>
+        {registrations.map((registration) => (
+          <label className="checkbox-label" key={registration.id}>
+            <input type="checkbox" name="registrationId" value={registration.id} defaultChecked />
+            {registration.teamName}
+          </label>
+        ))}
+      </fieldset>
+      {error ? (
+        <p
+          className="form-error"
+          id="confirm-registrations-error"
+          ref={errorRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
 }
 
 interface CompetitionDataAction {

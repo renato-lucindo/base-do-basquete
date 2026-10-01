@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
@@ -180,7 +181,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 }
 export default function SchedulePage({ loaderData, actionData }: Route.ComponentProps) {
   const { edition, schedule, registrations, requestId, csrfToken } = loaderData;
-  const busy = useNavigation().state !== "idle";
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (navigation.state === "idle" && actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData, navigation.state]);
   const confirmedRegistrations = registrations.filter(
     (registration) => registration.status === "confirmed",
   );
@@ -195,7 +201,11 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
         Crie os jogos manualmente e, se quiser, já informe data, horário e local. Classificação e
         posições não são pré-requisitos para a agenda.
       </p>
-      {actionData?.error ? <p role="alert">{actionData.error}</p> : null}
+      {actionData?.error ? (
+        <p id="schedule-action-error" ref={actionErrorRef} role="alert" tabIndex={-1}>
+          {actionData.error}
+        </p>
+      ) : null}
 
       <section className="admin-panel" aria-labelledby="manual-matchup-title">
         <p className="eyebrow">Fluxo padrão</p>

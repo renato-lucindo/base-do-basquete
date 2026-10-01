@@ -46,5 +46,9 @@ describe("manual scoresheet editor", () => {
     expect(html).not.toContain("O jogo será encerrado como final");
     expect(html).not.toContain("Voltar aos lançamentos");
     expect(html).toContain("Continuar para equipes");
+    expect(html).toContain('aria-labelledby="scoresheet-step-1-heading"');
+    expect(html).toContain('id="scoresheet-step-1-heading"');
+    expect(html).toContain('class="scoresheet-step-heading"');
+    expect(html).toContain('tabindex="-1"');
   });
 });

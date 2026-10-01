@@ -35,3 +35,22 @@ Após login/MFA, o responsável confirmou a versão 2 pelo fluxo administrativo.
 3. obter autorização explícita para aplicar a migration no Supabase compartilhado;
 4. regenerar tipos a partir do schema aplicado e validar a interface nova com FIBA/Genius, Basketball Site, cobertura parcial, teclado, acessibilidade e larguras 320, 390, 768 e 1440 px;
 5. manter a PR draft e não integrar nem publicar produção sem autorização explícita.
+
+
+## Atualização de fechamento — 25/09/2026
+
+A branch da PR #53 foi reconciliada sem reescrita de histórico com `origin/main@c09e72a` no commit `3760a4f`. A reconciliação incorporou a correção da PR #57 e a migration Basketball Site já aplicada no compartilhado como `20260925180553_basketball_site_boxscore`; a migration STATS continua a mesma já persistida como `20260922161633_stats_public_player_snapshot` e não foi reaplicada.
+
+Gate local no estado reconciliado: `git diff --check`, `npm ci` com zero vulnerabilidades, `npm run check` com 51 arquivos/373 Vitest, TypeScript, cinco runbooks, build e scan de 637 arquivos; lint sem erros e 237 warnings. O E2E Playwright+axe passou 1/1 em Chromium. No mesmo HEAD funcional, GitHub aprovou `gate`, `database`, `accessibility`, preview/upload e CodeQL.
+
+O preview `pr-53-base-do-basquete-preview` passou o smoke público. A rota `/2026/copa-es-ouro/fixture-fiba/masculino/jogadores?scope=all&mode=total` renderizou o `boxscore-v2` em 320, 390, 768 e 1440 px com HTTP 200, 20 linhas na primeira página, sem overflow global, sem erro de console, filtro `<details>/<summary>` operável por teclado e Escape e comparação abrindo/fechando corretamente. O aviso de cobertura informou dois jogos sem fase definida, coerente com o snapshot publicado.
+
+O bloqueio anterior da migration Basketball Site está resolvido pela reconciliação da PR #57. Permanecem obrigatórios, antes de qualquer merge, pareceres independentes de `database-security-reviewer` e `qa-reviewer` no mesmo HEAD. A tentativa desta sessão de iniciar um reviewer separado via executor local foi recusada pela política do executor antes de qualquer revisão; nenhum parecer foi simulado. A PR permanece draft, sem merge e sem deploy de produção.
+
+## Remediação do gate de acessibilidade — 29/09/2026
+
+No HEAD `a27246d`, o parecer de acessibilidade foi `APPROVE_WITH_NON_BLOCKING_NOTES`, mas o QA bloqueou o release por dois requisitos ainda sem fechamento: a comparação indicava melhor/pior somente por cor e não havia evidência de reflow a 200%. O parecer QA foi publicado no comentário `5889517344` da PR #53.
+
+A remediação adiciona indicação textual por célula para leitores de tela e cobertura unitária. O workflow de preview também passa a executar Playwright+axe na rota estatística publicada, em viewport de 720 CSS px, equivalente a uma janela de 1440 px sob zoom de 200%, exigindo ausência de overflow global e de violações axe serious/critical. Uma execução focal contra o alias atual passou; a evidência definitiva depende do preview/upload verde no novo HEAD. O parecer de acessibilidade deve ser renovado e, depois, o QA deve reavaliar o gate.
+
+Fechamento: no HEAD `6f9e98e`, o teste focal passou 9/9 e os cinco checks remotos ficaram verdes. O workflow de preview `36563939986` executou com sucesso a verificação de acessibilidade/reflow após publicar o alias. O parecer renovado de acessibilidade foi `APPROVE_WITH_NON_BLOCKING_NOTES` (`5889734155`), e o QA final foi `APPROVE_WITH_NON_BLOCKING_NOTES` com `running-release-gate=READY` (`5889811708`). A PR está pronta para solicitar autorização explícita de merge; continua draft e sem deploy de produção.
