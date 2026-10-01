@@ -95,17 +95,17 @@ describe("boxscore review editor", () => {
     expect(resolvedHtml).toContain(
       'action="/admin/competitions/20/boxscores/import?import=26&amp;mode=confirm"',
     );
-    expect(resolvedHtml).toContain('formAction="?import=26&amp;mode=create-game"');
+    expect(resolvedHtml).toContain('name="targetMode" value="create"');
+    expect(resolvedHtml).not.toContain("mode=create-game");
     expect(unresolvedHtml).toContain('formAction="?import=26&amp;mode=resolve-teams"');
   });
 
-  it("shows a create-game failure beside the active review controls with plain terminology", () => {
-    const error = "A criação de jogos está temporariamente indisponível neste ambiente.";
+  it("shows a final-commit failure beside the active review controls", () => {
+    const error = "O jogo permaneceu em revisão.";
     const html = renderEditor(true, error);
 
     expect(html.indexOf(error)).toBeGreaterThan(-1);
-    expect(html.indexOf(error)).toBeLessThan(html.indexOf("Criar jogo e continuar"));
-    expect(html).toContain("ainda não existe um jogo desta edição entre elas");
-    expect(html).not.toContain("jogo estrutural elegível");
+    expect(html.indexOf(error)).toBeLessThan(html.indexOf("Ele será criado"));
+    expect(html).toContain("Ele será criado somente quando a importação for confirmada");
   });
 });

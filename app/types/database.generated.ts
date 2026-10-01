@@ -4553,6 +4553,20 @@ export type Database = {
         }[];
       };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
+      admin_begin_boxscore_import: {
+        Args: {
+          p_competition_id: number;
+          p_file_size_bytes: number;
+          p_matches: Json;
+          p_parsed_payload: Json;
+          p_parser_version: string;
+          p_sha256: string;
+          p_source_filename: string;
+          p_storage_path: string;
+          p_validation_payload: Json;
+        };
+        Returns: Json;
+      };
       admin_clone_competition_ruleset: {
         Args: {
           p_allow_gender_recompile?: boolean;
@@ -4575,6 +4589,14 @@ export type Database = {
       };
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };
+        Returns: number;
+      };
+      admin_commit_boxscore_import_v2: {
+        Args: { p_import_id: number; p_resolution: Json; p_target: Json };
+        Returns: number;
+      };
+      admin_mark_boxscore_import_ready: {
+        Args: { p_import_id: number };
         Returns: number;
       };
       admin_resolve_boxscore_team_registrations: {

@@ -4,42 +4,42 @@ import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { action } from "./admin.competitions.$competitionId.boxscores.import";
 
 vi.mock("../modules/auth/authorization.server", () => ({ requireAdminAal2: vi.fn() }));
-vi.mock("../modules/observability/operation.server", () => ({
-  logOperationalEvent: vi.fn(),
-}));
+vi.mock("../modules/observability/operation.server", () => ({ logOperationalEvent: vi.fn() }));
 
 const auth = vi.mocked(requireAdminAal2);
 const rpc = vi.fn();
-const from = vi.fn();
-const client = { from, rpc };
 
-function query(result: unknown) {
-  const builder = {
-    select: vi.fn(),
-    eq: vi.fn(),
-    single: vi.fn(),
+function actionArgs(fields: Record<string, string> = {}) {
+  const body: Record<string, string> = {
+    csrfToken: "test-csrf",
+    importId: "24",
+    targetMode: "create",
+    manualMatchupRequestId: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+    homeRegistrationId: "189",
+    scheduledDate: "2026-05-09",
+    scheduledTime: "19:00",
+    venue: "Ginásio",
+    teamCount: "2",
+    playerCount: "10",
+    confirmImport: "yes",
+    "teamName-0": "Equipe A",
+    "registration-0": "189",
+    "teamName-1": "Equipe B",
+    "registration-1": "190",
+    ...fields,
   };
-  builder.select.mockReturnValue(builder);
-  builder.eq.mockReturnValue(builder);
-  builder.single.mockResolvedValue(result);
-  return builder;
-}
-
-function actionArgs(fields: Record<string, string>) {
+  for (let index = 0; index < 10; index += 1) {
+    body[`playerTeam-${index}`] = index < 5 ? "Equipe A" : "Equipe B";
+    body[`playerName-${index}`] = `Atleta ${index + 1}`;
+    body[`playerResolution-${index}`] = `roster:${100 + index}`;
+  }
   return {
     request: new Request(
-      "https://example.test/admin/competitions/20/boxscores/import?import=24&mode=create-game",
+      "https://example.test/admin/competitions/20/boxscores/import?import=24&mode=confirm",
       {
         method: "POST",
         headers: { Origin: "https://example.test" },
-        body: new URLSearchParams({
-          csrfToken: "test-csrf",
-          importId: "24",
-          manualMatchupRequestId: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
-          homeRegistrationId: "189",
-          awayRegistrationId: "190",
-          ...fields,
-        }),
+        body: new URLSearchParams(body),
       },
     ),
     params: { competitionId: "20" },
@@ -50,81 +50,52 @@ function actionArgs(fields: Record<string, string>) {
 beforeEach(() => {
   vi.clearAllMocks();
   auth.mockResolvedValue({
-    client,
+    client: { rpc },
     payload: { csrfToken: "test-csrf" },
     cookie: null,
   } as unknown as Awaited<ReturnType<typeof requireAdminAal2>>);
-  from.mockImplementation((table: string) => {
-    if (table === "boxscore_imports") {
-      return query({ data: { id: 24, status: "review" }, error: null });
-    }
-    if (table === "boxscore_team_resolutions") {
-      return query({
-        data: { registration_1_id: 189, registration_2_id: 190 },
-        error: null,
-      });
-    }
-    throw new Error(`Unexpected table: ${table}`);
-  });
-  rpc.mockResolvedValue({ data: { matchupId: 10, gameId: 64 }, error: null });
+  rpc.mockResolvedValue({ data: null, error: { code: "BD713", message: "conflict" } });
 });
 
-describe("boxscore manual game creation", () => {
-  it("creates the resolved pair through the transactional manual-matchup RPC", async () => {
-    await expect(action(actionArgs({}))).rejects.toMatchObject({ status: 302 });
-
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("admin_create_manual_matchup", {
-      p_request_id: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
-      p_competition_id: 20,
-      p_round_id: null,
-      p_home_registration_id: 189,
-      p_away_registration_id: 190,
-      p_scheduled_at: null,
-      p_venue: null,
+describe("atomic boxscore target", () => {
+  it("sends new-game creation only to the final transactional commit", async () => {
+    const result = await action(actionArgs());
+    expect(result).toMatchObject({ init: { status: 409 } });
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("admin_commit_boxscore_import_v2", {
+      p_import_id: 24,
+      p_resolution: expect.objectContaining({
+        teams: expect.any(Array),
+        players: expect.any(Array),
+      }),
+      p_target: {
+        mode: "create",
+        requestId: "40dde5c7-46b2-4241-995d-4e42223bbdf2",
+        homeRegistrationId: 189,
+        scheduledAt: "2026-05-09T22:00:00.000Z",
+        venue: "Ginásio",
+      },
     });
   });
 
-  it("preserves the explicit home-team choice", async () => {
-    await expect(
-      action(actionArgs({ homeRegistrationId: "190", awayRegistrationId: "189" })),
-    ).rejects.toMatchObject({ status: 302 });
-
-    expect(rpc).toHaveBeenCalledExactlyOnceWith(
-      "admin_create_manual_matchup",
+  it("requires explicit approval before replacing metadata on an existing game", async () => {
+    await action(
+      actionArgs({ targetMode: "existing", gameId: "64", applyReviewedMetadata: "yes" }),
+    );
+    expect(rpc).toHaveBeenCalledWith(
+      "admin_commit_boxscore_import_v2",
       expect.objectContaining({
-        p_home_registration_id: 190,
-        p_away_registration_id: 189,
+        p_target: expect.objectContaining({
+          mode: "existing",
+          gameId: 64,
+          applyReviewedMetadata: true,
+        }),
       }),
     );
   });
 
-  it("rejects participants outside the audited team resolution", async () => {
-    const result = await action(actionArgs({ awayRegistrationId: "191" }));
-
-    expect(result).toMatchObject({ init: { status: 409 } });
-    expect(JSON.stringify(result)).toContain("resolução das equipes mudou");
+  it("keeps the review when schedule metadata is invalid", async () => {
+    const result = await action(actionArgs({ scheduledDate: "2026-02-30" }));
+    expect(result).toMatchObject({ init: { status: 400 } });
     expect(rpc).not.toHaveBeenCalled();
-  });
-
-  it("reports a missing manual-matchup RPC as temporary environment unavailability", async () => {
-    rpc.mockResolvedValueOnce({
-      data: null,
-      error: { code: "PGRST202", message: "Could not find the function in the schema cache" },
-    });
-
-    const result = await action(actionArgs({}));
-
-    expect(result).toMatchObject({ init: { status: 503 } });
-    expect(JSON.stringify(result)).toContain("temporariamente indisponível neste ambiente");
-    expect(JSON.stringify(result)).not.toContain("Recarregue e tente novamente");
-  });
-
-  it("keeps known scheduling conflicts as reviewable business errors", async () => {
-    rpc.mockResolvedValueOnce({ data: null, error: { code: "BR023", message: "registration" } });
-
-    const result = await action(actionArgs({}));
-
-    expect(result).toMatchObject({ init: { status: 409 } });
-    expect(JSON.stringify(result)).toContain("Confirme a inscrição da equipe antes de continuar");
   });
 });
