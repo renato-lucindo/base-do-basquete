@@ -379,7 +379,7 @@ $$, 'BR098', 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT', 'confirmed retry cannot rewr
 select is((select scheduled_at from public.games where id=94001), '2026-05-09T20:00:00Z'::timestamptz, 'divergent retry preserves confirmed metadata');
 
 reset role;
-insert into storage.objects (id, bucket_id, name)
+insert into storage.objects (id, bucket_id, name, metadata)
 values (
   '94010000-0000-4000-8000-000000000003',
   'boxscore-pdfs',
