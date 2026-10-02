@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(51);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -87,11 +87,12 @@ insert into public.game_participants
 values
   (94001, 9401, 9401, 'home'),
   (94001, 9401, 9402, 'away');
-insert into storage.objects (id, bucket_id, name)
+insert into storage.objects (id, bucket_id, name, metadata)
 values (
   '94010000-0000-4000-8000-000000000001',
   'boxscore-pdfs',
-  '9401/' || repeat('a', 64) || '.pdf'
+  '9401/' || repeat('a', 64) || '.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
 );
 
 create temp table boxscore_test_data (
@@ -190,6 +191,24 @@ from teams, matches, resolution;
 select has_function('public', 'admin_claim_boxscore_upload', array[]::text[], 'rate-limit RPC exists');
 select has_function('public', 'admin_create_boxscore_import_draft', array['bigint','text','text','text','integer','text','jsonb','jsonb','jsonb'], 'draft RPC exists');
 select has_function('public', 'admin_commit_boxscore_import', array['bigint','jsonb'], 'commit RPC exists');
+select has_function('public', 'admin_begin_boxscore_import', array['bigint','text','text','text','integer','text','jsonb','jsonb','jsonb'], 'recoverable begin RPC exists');
+select has_function('public', 'admin_mark_boxscore_import_ready', array['bigint','text','integer'], 'ready transition RPC exists');
+select has_function('public', 'admin_commit_boxscore_import_v2', array['bigint','jsonb','jsonb'], 'atomic target commit RPC exists');
+select ok(
+  has_function_privilege('authenticated', 'public.admin_begin_boxscore_import(bigint,text,text,text,integer,text,jsonb,jsonb,jsonb)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.admin_begin_boxscore_import(bigint,text,text,text,integer,text,jsonb,jsonb,jsonb)', 'EXECUTE'),
+  'begin RPC is restricted to authenticated callers'
+);
+select ok(
+  has_function_privilege('authenticated', 'public.admin_mark_boxscore_import_ready(bigint,text,integer)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.admin_mark_boxscore_import_ready(bigint,text,integer)', 'EXECUTE'),
+  'ready RPC is restricted to authenticated callers'
+);
+select ok(
+  has_function_privilege('authenticated', 'public.admin_commit_boxscore_import_v2(bigint,jsonb,jsonb)', 'EXECUTE')
+  and not has_function_privilege('anon', 'public.admin_commit_boxscore_import_v2(bigint,jsonb,jsonb)', 'EXECUTE'),
+  'commit v2 RPC is restricted to authenticated callers'
+);
 select ok(not has_table_privilege('authenticated', 'public.boxscore_imports', 'INSERT'), 'direct import inserts are revoked');
 select ok(not has_table_privilege('authenticated', 'public.boxscore_imports', 'UPDATE'), 'direct import updates are revoked');
 select ok(not has_table_privilege('authenticated', 'private.boxscore_upload_attempts', 'SELECT'), 'rate-limit keys are private');
@@ -210,6 +229,11 @@ select throws_ok(
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'aal1 cannot claim an upload slot'
 );
+select throws_ok(
+  $$select public.admin_mark_boxscore_import_ready(1,repeat('a',64),1)$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'aal1 cannot advance a recoverable import'
+);
 
 reset role;
 select set_config(
@@ -225,7 +249,7 @@ set local role authenticated;
 select lives_ok($$select public.admin_claim_boxscore_upload()$$, 'aal2 admin can claim an upload slot');
 select lives_ok($$
   update boxscore_test_data
-  set import_id = public.admin_create_boxscore_import_draft(
+  set import_id = (public.admin_begin_boxscore_import(
     9401,
     repeat('a', 64),
     '9401/' || repeat('a', 64) || '.pdf',
@@ -235,13 +259,29 @@ select lives_ok($$
     parsed,
     '{"valid":true,"issues":[]}'::jsonb,
     matches
-  )
-$$, 'a validated draft is created');
+  ) ->> 'importId')::bigint
+$$, 'a validated recoverable import is reserved');
 
-select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'review', 'draft waits for review');
+select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'uploaded', 'reserved import waits for its private object');
+select throws_ok($$
+  select public.admin_mark_boxscore_import_ready(import_id,repeat('f',64),104676)
+  from boxscore_test_data
+$$, 'BD309', 'BDB_PDF_STORAGE_OBJECT_MISMATCH', 'ready transition rejects divergent object evidence');
+select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'uploaded', 'object mismatch preserves the recoverable state');
+select lives_ok($$
+  select public.admin_mark_boxscore_import_ready(import_id,repeat('a',64),104676) from boxscore_test_data
+$$, 'the exact private object moves the import to review');
+select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'review', 'ready import waits for review');
 select is((select count(*)::integer from public.boxscore_import_player_matches where import_id = (select import_id from boxscore_test_data)), 10, 'every source player has a persisted match');
 select lives_ok($$
-  select public.admin_commit_boxscore_import(import_id, resolution) from boxscore_test_data
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    resolution - 'gameId',
+    jsonb_build_object(
+      'mode','existing','gameId',94001,'applyReviewedMetadata',false,
+      'scheduledAt','2026-05-09T20:00:00Z','venue','Ginasio PDF'
+    )
+  ) from boxscore_test_data
 $$, 'reviewed import commits atomically');
 select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'confirmed', 'import is confirmed');
 select is((select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 94001::bigint, 'the pre-created structural game is reused');
@@ -259,11 +299,12 @@ insert into public.player_period_stats (
 select id, game_id, 2, 'period', 7
 from public.game_roster_slots
 where game_id=94001 and roster_entry_id=9401;
-insert into storage.objects (id, bucket_id, name)
+insert into storage.objects (id, bucket_id, name, metadata)
 values (
   '94010000-0000-4000-8000-000000000002',
   'boxscore-pdfs',
-  '9401/' || repeat('b',64) || '.pdf'
+  '9401/' || repeat('b',64) || '.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
 );
 insert into public.game_data_submissions (
   id, game_id, submission_version, source_type, role, status, parser_version,
@@ -317,7 +358,91 @@ select is((select fouls_received from public.player_period_stats stat
   'restoring FIBA authority reprojects received fouls');
 select is((select score from public.game_scores where game_id = (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)) and side = 'home'), 1, 'home score is derived from imported periods');
 select is((select count(*)::integer from public.admin_mutation_audit where action = 'boxscore_import_confirmed' and entity_id = (select import_id from boxscore_test_data)), 1, 'confirmation has one append-only audit record');
-select is(public.admin_commit_boxscore_import((select import_id from boxscore_test_data), (select resolution from boxscore_test_data)), (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'commit retry is idempotent');
+select is(public.admin_commit_boxscore_import_v2(
+  (select import_id from boxscore_test_data),
+  (select resolution - 'gameId' from boxscore_test_data),
+  jsonb_build_object(
+    'mode','existing','gameId',94001,'applyReviewedMetadata',false,
+    'scheduledAt','2026-05-09T20:00:00Z','venue','Ginasio PDF'
+  )
+), (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'commit retry is idempotent');
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    (select import_id from boxscore_test_data),
+    (select resolution - 'gameId' from boxscore_test_data),
+    jsonb_build_object(
+      'mode','existing','gameId',94001,'applyReviewedMetadata',true,
+      'scheduledAt','2026-05-09T21:00:00Z','venue','Local divergente'
+    )
+  )
+$$, 'BR098', 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT', 'confirmed retry cannot rewrite reviewed metadata');
+select is((select scheduled_at from public.games where id=94001), '2026-05-09T20:00:00Z'::timestamptz, 'divergent retry preserves confirmed metadata');
+
+reset role;
+insert into storage.objects (id, bucket_id, name, metadata)
+values (
+  '94010000-0000-4000-8000-000000000003',
+  'boxscore-pdfs',
+  '9401/' || repeat('c',64) || '.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
+);
+update boxscore_test_data
+set parsed = jsonb_set(parsed, '{gameNumber}', '"PDF-ATOMIC-02"'::jsonb);
+set local role authenticated;
+select lives_ok($$
+  update boxscore_test_data
+  set import_id = (public.admin_begin_boxscore_import(
+    9401, repeat('c',64), '9401/' || repeat('c',64) || '.pdf', 'atomic-create.pdf',
+    104676, 'fiba-genius-v1', parsed, '{"valid":true,"issues":[]}'::jsonb, matches
+  ) ->> 'importId')::bigint
+$$, 'a second import is reserved for atomic game creation');
+select lives_ok($$
+  select public.admin_mark_boxscore_import_ready(import_id,repeat('c',64),104676) from boxscore_test_data
+$$, 'the second import reaches review');
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    jsonb_set(resolution - 'gameId', '{players}', '[]'::jsonb),
+    jsonb_build_object(
+      'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+      'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Ginasio PDF'
+    )
+  ) from boxscore_test_data
+$$, 'BD305', 'BDB_PDF_RESOLUTION_INVALID', 'an invalid final resolution aborts atomic game creation');
+select is((select count(*)::integer from public.games where game_number='PDF-ATOMIC-02'), 0, 'failed confirmation leaves no game');
+reset role;
+select is((select count(*)::integer from private.manual_matchup_requests where request_id='94010000-0000-4000-8000-000000000099'), 0, 'failed confirmation rolls back its request key');
+set local role authenticated;
+select lives_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    resolution - 'gameId',
+    jsonb_build_object(
+      'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+      'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Ginasio PDF'
+    )
+  ) from boxscore_test_data
+$$, 'valid confirmation creates and imports the game in one transaction');
+select is((select count(*)::integer from public.games where game_number='PDF-ATOMIC-02' and status='final'), 1, 'atomic creation finishes exactly one game');
+select is(public.admin_commit_boxscore_import_v2(
+  (select import_id from boxscore_test_data),
+  (select resolution-'gameId' from boxscore_test_data),
+  jsonb_build_object(
+    'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+    'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Ginasio PDF'
+  )
+), (select game_id from public.boxscore_imports where id=(select import_id from boxscore_test_data)), 'confirmed create retry is idempotent');
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    (select import_id from boxscore_test_data),
+    (select resolution-'gameId' from boxscore_test_data),
+    jsonb_build_object(
+      'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+      'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Local divergente'
+    )
+  )
+$$, 'BR098', 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT', 'confirmed create retry rejects divergent metadata');
+
 select throws_ok($$
   select public.admin_create_boxscore_import_draft(
     9401, repeat('a', 64), '9401/' || repeat('a', 64) || '.pdf', 'fixture.pdf', 104676,
