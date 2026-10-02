@@ -52,7 +52,7 @@ jobs:
         run: npx --no-install supabase db start
       - name: Verify season and division upgrade compatibility
         run: |
-          npx --no-install supabase db reset --local --version 20261001185013 --sql-paths tests/legacy-rollout/season_division_upgrade.sql
+          npx --no-install supabase db reset --local --version 20261001185013 --sql-paths legacy-rollout-tests/season_division_upgrade.sql
           npx --no-install supabase migration up --local
           node scripts/verify-season-division-upgrade.mjs
           npx --no-install supabase db reset --local

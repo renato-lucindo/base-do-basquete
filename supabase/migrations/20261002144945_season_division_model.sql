@@ -173,9 +173,9 @@ begin
   end if;
 
   if new.gender_division is null then
-    raise exception using
-      errcode = 'BD501',
-      message = 'BDB_COMPETITION_SEASON_CONTEXT_INVALID';
+    -- Preserve the preexisting NOT NULL contract and SQLSTATE for callers that
+    -- omit the legacy competition gender field.
+    return new;
   end if;
 
   perform pg_advisory_xact_lock(

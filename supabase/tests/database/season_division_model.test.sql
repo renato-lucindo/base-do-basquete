@@ -68,9 +68,11 @@ select has_index(
 );
 select is(
   (
-    select connullsnotdistinct
-    from pg_constraint
-    where conname = 'competitions_dispute_unique'
+    select index_definition.indnullsnotdistinct
+    from pg_index index_definition
+    join pg_class index_relation on index_relation.oid = index_definition.indexrelid
+    where index_definition.indrelid = 'public.competitions'::regclass
+      and index_relation.relname = 'competitions_dispute_unique'
   ),
   true,
   'dispute uniqueness treats a missing division as one value'
