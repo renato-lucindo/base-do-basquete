@@ -100,7 +100,6 @@ set search_path = ''
 as $$
 declare
   import_record public.boxscore_imports;
-  request_record private.manual_matchup_requests;
 begin
   if not private.is_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -152,6 +151,7 @@ as $$
 #variable_conflict use_variable
 declare
   import_record public.boxscore_imports;
+  request_record private.manual_matchup_requests;
   target_mode text;
   target_game_id bigint;
   target_request_id uuid;

@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(47);
+select plan(49);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -414,6 +414,24 @@ select lives_ok($$
   ) from boxscore_test_data
 $$, 'valid confirmation creates and imports the game in one transaction');
 select is((select count(*)::integer from public.games where game_number='PDF-ATOMIC-02' and status='final'), 1, 'atomic creation finishes exactly one game');
+select is(public.admin_commit_boxscore_import_v2(
+  (select import_id from boxscore_test_data),
+  (select resolution-'gameId' from boxscore_test_data),
+  jsonb_build_object(
+    'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+    'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Ginasio PDF'
+  )
+), (select game_id from public.boxscore_imports where id=(select import_id from boxscore_test_data)), 'confirmed create retry is idempotent');
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    (select import_id from boxscore_test_data),
+    (select resolution-'gameId' from boxscore_test_data),
+    jsonb_build_object(
+      'mode','create','requestId','94010000-0000-4000-8000-000000000099',
+      'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Local divergente'
+    )
+  )
+$$, 'BR098', 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT', 'confirmed create retry rejects divergent metadata');
 
 select throws_ok($$
   select public.admin_create_boxscore_import_draft(
