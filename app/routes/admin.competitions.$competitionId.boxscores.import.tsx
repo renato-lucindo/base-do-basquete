@@ -13,6 +13,7 @@ import { suggestPlayerMatch } from "../modules/boxscore/matching";
 import { validateParsedBoxscore } from "../modules/boxscore/parser";
 import { BoxscoreReviewEditor } from "../modules/boxscore/review-editor";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
+import { scheduleLocalToIso } from "../modules/competition/scheduling";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
@@ -72,6 +73,52 @@ function normalizeTeam(value: string): string {
     .trim();
 }
 
+interface MatchingRegistration {
+  id: number;
+  teamName: string;
+  roster: Array<{
+    rosterEntryId: number;
+    playerId: number;
+    playerName: string;
+    jerseyNumber: string | null;
+  }>;
+}
+
+export function buildTeamRestrictedMatches(
+  parsed: ParsedBoxscore,
+  registrations: MatchingRegistration[],
+  resolvedTeams: Array<{ sourceTeamName: string; registrationId: number }>,
+) {
+  return parsed.teams.flatMap((team) => {
+    const resolution = resolvedTeams.find(
+      (item) => normalizeTeam(item.sourceTeamName) === normalizeTeam(team.name),
+    );
+    const registration = resolution
+      ? registrations.find((item) => item.id === resolution.registrationId)
+      : undefined;
+    const candidates = (registration?.roster ?? []).map((player) => ({
+      playerId: player.playerId,
+      rosterEntryId: player.rosterEntryId,
+      registrationId: registration?.id ?? null,
+      playerName: player.playerName,
+      jerseyNumber: player.jerseyNumber,
+      // A equipe já foi resolvida explicitamente; o nome extraído mantém a
+      // regra única de equipe + camisa + nome abreviado do Basketball Site.
+      teamName: team.name,
+    }));
+    return team.players.map((player) => ({
+      sourceTeamName: team.name,
+      sourcePlayerName: player.name,
+      ...suggestPlayerMatch(
+        player.name,
+        player.jerseyNumber,
+        candidates,
+        parsed.format === "BASKETBALL_SITE" ? team.name : undefined,
+      ),
+    }));
+  });
+}
+
 export function parseEligibilityPlayers(details: string | undefined): string[] {
   if (!details) return [];
   try {
@@ -116,6 +163,11 @@ export function mapImportError(
     case "BDB_PDF_NO_TEXT":
       return {
         message: "O PDF não possui camada de texto. Use a súmula manual; OCR não está habilitado.",
+        status: 422,
+      };
+    case "BDB_PDF_UNSUPPORTED_FORMAT":
+      return {
+        message: "O PDF não corresponde aos modelos FIBA/Genius Sports ou Basketball Site.",
         status: 422,
       };
     case "BDB_PDF_TIMEOUT":
@@ -186,6 +238,10 @@ export function mapImportError(
       return { message: "O PDF diverge do jogo selecionado e permaneceu em revisão.", status: 409 };
     case "BD714":
       return { message: "Este jogo já possui uma confirmação principal.", status: 409 };
+    case "BR025":
+      return { message: "Revise a data, o horário e o local do jogo.", status: 400 };
+    case "BR098":
+      return { message: "Esta solicitação de criação diverge da tentativa anterior.", status: 409 };
     default:
       return { message: "Não foi possível processar este modelo de boxscore.", status: 400 };
   }
@@ -416,11 +472,25 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
           return sourceTeamName && registrationId > 0 ? [{ sourceTeamName, registrationId }] : [];
         })
       : [];
+    const parsed = importResult.data.parsed_payload as unknown as ParsedBoxscore;
+    const recalculatedMatches =
+      resolvedTeams.length === 2
+        ? buildTeamRestrictedMatches(parsed, registrations, resolvedTeams).map((match) => ({
+            source_team_name: match.sourceTeamName,
+            source_player_name: match.sourcePlayerName,
+            source_jersey_number: match.sourceJersey,
+            roster_entry_id: match.rosterEntryId,
+            suggested_player_id: match.playerId,
+            suggestion_payload: match.alternatives as unknown as Json,
+            suggestion_kind: match.kind,
+            similarity_score: match.score,
+          }))
+        : matchResult.data;
     review = {
       id: importId,
-      parsed: importResult.data.parsed_payload as unknown as ParsedBoxscore,
+      parsed,
       resolvedTeams,
-      matches: matchResult.data,
+      matches: recalculatedMatches,
     };
   }
 
@@ -434,6 +504,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       games,
       review,
       refreshedGameId: parseId(url.searchParams.get("refreshed")),
+      manualMatchupRequestId: crypto.randomUUID(),
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -454,19 +525,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (contentLength > MAX_PDF_BYTES + 65_536) {
       return data({ error: "O arquivo excede o limite de 10 MiB." }, { status: 413 });
     }
-    const claim = await auth.client.rpc("admin_claim_boxscore_upload");
-    if (claim.error) {
-      const mapped = mapImportError(claim.error.code);
-      logOperationalEvent({
-        correlationId,
-        durationMs: Date.now() - startedAt,
-        operation: "boxscore.upload",
-        outcome: mapped.status < 500 ? "blocked" : "failure",
-        status: mapped.status,
-        context: { competitionId, errorCode: claim.error.code },
-      });
-      return data({ error: mapped.message }, { status: mapped.status });
-    }
   }
 
   const formData = await request.formData();
@@ -476,7 +534,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const importId = parseId(formData.get("importId"));
     const teamCount = Number(formData.get("teamCount"));
     if (!importId || teamCount !== 2) {
-      return data({ error: "Revisão de equipes incompleta." }, { status: 400 });
+      return data(
+        { error: "Revisão de equipes incompleta.", reviewStep: 2 as const },
+        { status: 400 },
+      );
     }
     const teams = Array.from({ length: teamCount }, (_, index) => {
       const resolution = parseTeamResolution(formData.get(`teamResolution-${index}`));
@@ -486,7 +547,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       };
     });
     if (teams.some((team) => !team.sourceTeamName || !team.action)) {
-      return data({ error: "Revise a resolução das duas equipes." }, { status: 400 });
+      return data(
+        { error: "Revise a resolução das duas equipes.", reviewStep: 2 as const },
+        { status: 400 },
+      );
     }
     const resolved = await auth.client.rpc("admin_resolve_boxscore_team_registrations", {
       p_import_id: importId,
@@ -502,7 +566,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         status: mapped.status,
         context: { competitionId, entityId: importId, errorCode: resolved.error.code },
       });
-      return data({ error: mapped.message }, { status: mapped.status });
+      return data({ error: mapped.message, reviewStep: 2 as const }, { status: mapped.status });
     }
     logOperationalEvent({
       correlationId,
@@ -621,9 +685,6 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const playerNames = new Map(
         playersResult.data.map((player) => [player.id, player.full_name]),
       );
-      const activeRosterByPlayer = new Map(
-        rosterResult.data.map((entry) => [entry.player_id, entry]),
-      );
       const matches = parsed.teams.flatMap((team) => {
         const selectedTeam = teamsResult.data.find(
           (candidate) =>
@@ -633,23 +694,21 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         const registration = selectedTeam
           ? registrationsResult.data.find((candidate) => candidate.team_id === selectedTeam.id)
           : undefined;
-        const candidates = playersResult.data.map((candidate) => {
-          const activeRoster = activeRosterByPlayer.get(candidate.id);
-          const activeRegistration = activeRoster
-            ? registrationsResult.data.find((item) => item.id === activeRoster.registration_id)
-            : undefined;
-          const activeTeam = activeRegistration
-            ? teamsResult.data.find((item) => item.id === activeRegistration.team_id)
-            : undefined;
-          return {
-            playerId: candidate.id,
-            rosterEntryId: activeRoster?.id ?? null,
-            registrationId: activeRoster?.registration_id ?? null,
-            playerName: playerNames.get(candidate.id) ?? "",
-            jerseyNumber: activeRoster?.jersey_number ?? null,
-            teamName: activeTeam?.name ?? null,
-          };
-        });
+        const candidates = rosterResult.data
+          .filter((entry) => entry.registration_id === registration?.id)
+          .map((activeRoster) => {
+            const candidate = playersResult.data.find(
+              (player) => player.id === activeRoster.player_id,
+            );
+            return {
+              playerId: activeRoster.player_id,
+              rosterEntryId: activeRoster.id,
+              registrationId: activeRoster.registration_id,
+              playerName: candidate ? (playerNames.get(candidate.id) ?? "") : "",
+              jerseyNumber: activeRoster.jersey_number,
+              teamName: team.name,
+            };
+          });
         return team.players.map((player) => ({
           sourceTeamName: team.name,
           sourcePlayerName: player.name,
@@ -662,24 +721,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         }));
       });
       const storagePath = `${competitionId}/${validated.sha256}.pdf`;
-      const storage = await auth.client.storage
-        .from("boxscore-pdfs")
-        .upload(storagePath, createPdfStorageBody(validated.bytes), {
-          contentType: "application/pdf",
-          upsert: false,
-        });
-      if (storage.error) {
-        const duplicate = /already exists|duplicate/i.test(storage.error.message);
-        return data(
-          {
-            error: duplicate
-              ? "Este PDF já foi enviado anteriormente."
-              : "Falha ao guardar o PDF privado.",
-          },
-          { status: duplicate ? 409 : 502 },
-        );
-      }
-      const draft = await auth.client.rpc("admin_create_boxscore_import_draft", {
+      const begun = await auth.client.rpc("admin_begin_boxscore_import", {
         p_competition_id: competitionId,
         p_sha256: validated.sha256,
         p_storage_path: storagePath,
@@ -690,15 +732,67 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_validation_payload: validation as unknown as Json,
         p_matches: matches as unknown as Json,
       });
-      if (draft.error) {
-        const mapped = mapImportError(draft.error.code);
+      if (begun.error) {
+        const mapped = mapImportError(begun.error.code);
+        return data({ error: mapped.message }, { status: mapped.status });
+      }
+      const begunPayload = begun.data as {
+        importId?: unknown;
+        status?: unknown;
+        storagePath?: unknown;
+        gameId?: unknown;
+      } | null;
+      const importId = parseId(
+        typeof begunPayload?.importId === "number" ? String(begunPayload.importId) : null,
+      );
+      if (!importId || begunPayload?.storagePath !== storagePath) {
+        throw new Error("BDB_PDF_IMPORT_STATE_INVALID");
+      }
+      if (begunPayload.status === "review") {
+        throw redirect(`/admin/competitions/${competitionId}/boxscores/import?import=${importId}`, {
+          headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+        });
+      }
+      if (begunPayload.status === "confirmed") {
+        return data(
+          { error: `Este PDF já foi confirmado no jogo ${String(begunPayload.gameId ?? "")}.` },
+          { status: 409 },
+        );
+      }
+      const storage = await auth.client.storage
+        .from("boxscore-pdfs")
+        .upload(storagePath, createPdfStorageBody(validated.bytes), {
+          contentType: "application/pdf",
+          upsert: false,
+        });
+      if (storage.error) {
+        const duplicate = /already exists|duplicate/i.test(storage.error.message);
+        if (!duplicate) {
+          return data({ error: "Falha ao guardar o PDF privado." }, { status: 502 });
+        }
+      }
+      const stored = await auth.client.storage.from("boxscore-pdfs").download(storagePath);
+      if (stored.error)
+        return data({ error: "Falha ao verificar o PDF privado." }, { status: 502 });
+      const storedBytes = new Uint8Array(await stored.data.arrayBuffer());
+      const observedSha256 = await sha256Bytes(storedBytes);
+      if (storedBytes.length !== validated.bytes.length || observedSha256 !== validated.sha256) {
+        return data({ error: "O objeto armazenado diverge do PDF enviado." }, { status: 409 });
+      }
+      const ready = await auth.client.rpc("admin_mark_boxscore_import_ready", {
+        p_import_id: importId,
+        p_observed_file_size_bytes: storedBytes.length,
+        p_observed_sha256: observedSha256,
+      });
+      if (ready.error) {
+        const mapped = mapImportError(ready.error.code);
         logOperationalEvent({
           correlationId,
           durationMs: Date.now() - startedAt,
           operation: "boxscore.upload",
           outcome: mapped.status < 500 ? "blocked" : "failure",
           status: mapped.status,
-          context: { competitionId, errorCode: draft.error.code },
+          context: { competitionId, entityId: importId, errorCode: ready.error.code },
         });
         return data({ error: mapped.message }, { status: mapped.status });
       }
@@ -708,9 +802,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         operation: "boxscore.upload",
         outcome: "success",
         status: 303,
-        context: { competitionId, entityId: draft.data },
+        context: { competitionId, entityId: importId },
       });
-      throw redirect(`/admin/competitions/${competitionId}/boxscores/import?import=${draft.data}`, {
+      throw redirect(`/admin/competitions/${competitionId}/boxscores/import?import=${importId}`, {
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
       });
     } catch (error) {
@@ -733,19 +827,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   if (mode === "confirm") {
     const importId = parseId(formData.get("importId"));
-    const gameId = parseId(formData.get("gameId"));
     if (!importId) return data({ error: "Importação inválida." }, { status: 400 });
-    if (!gameId) return data({ error: "Selecione um jogo estrutural válido." }, { status: 400 });
+    const targetMode = formData.get("targetMode");
+    const scheduledDate = String(formData.get("scheduledDate") ?? "");
+    const scheduledTime = String(formData.get("scheduledTime") ?? "");
+    const venue = String(formData.get("venue") ?? "").trim();
+    const scheduledAt = scheduleLocalToIso(scheduledDate, scheduledTime);
+    if (!scheduledAt || !venue || venue.length > 160) {
+      return data(
+        { error: "Revise a data, o horário e o local do jogo.", reviewStep: 2 as const },
+        { status: 400 },
+      );
+    }
     const teamCount = Number(formData.get("teamCount"));
     const playerCount = Number(formData.get("playerCount"));
     if (formData.get("confirmImport") !== "yes") {
       return data(
-        { error: "Confirme explicitamente a revisão antes de importar." },
+        { error: "Confirme explicitamente a revisão antes de importar.", reviewStep: 4 as const },
         { status: 400 },
       );
     }
     if (teamCount !== 2 || !Number.isInteger(playerCount) || playerCount < 10 || playerCount > 24) {
-      return data({ error: "Revisão incompleta." }, { status: 400 });
+      return data({ error: "Revisão incompleta.", reviewStep: 4 as const }, { status: 400 });
     }
     const teams = Array.from({ length: teamCount }, (_, index) => ({
       sourceTeamName: String(formData.get(`teamName-${index}`) ?? ""),
@@ -766,11 +869,52 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       teams.some((team) => !team.sourceTeamName || !team.registrationId) ||
       players.some((player) => !player.sourceTeamName || !player.sourcePlayerName || !player.action)
     ) {
-      return data({ error: "Associe todas as equipes e todos os atletas." }, { status: 400 });
+      return data(
+        { error: "Associe todas as equipes e todos os atletas.", reviewStep: 3 as const },
+        { status: 400 },
+      );
     }
-    const commit = await auth.client.rpc("admin_commit_boxscore_import", {
+    let target: Json;
+    if (targetMode === "existing") {
+      const gameId = parseId(formData.get("gameId"));
+      if (!gameId)
+        return data(
+          { error: "Selecione um jogo válido desta edição.", reviewStep: 2 as const },
+          { status: 400 },
+        );
+      target = {
+        mode: "existing",
+        gameId,
+        applyReviewedMetadata: formData.get("applyReviewedMetadata") === "yes",
+        scheduledAt,
+        venue,
+      };
+    } else if (targetMode === "create") {
+      const requestId = String(formData.get("manualMatchupRequestId") ?? "");
+      const homeRegistrationId = parseId(formData.get("homeRegistrationId"));
+      if (
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) ||
+        !homeRegistrationId
+      ) {
+        return data(
+          { error: "Recarregue a página e escolha a equipe mandante.", reviewStep: 2 as const },
+          { status: 400 },
+        );
+      }
+      target = { mode: "create", requestId, homeRegistrationId, scheduledAt, venue };
+    } else {
+      return data(
+        {
+          error: "Escolha usar um jogo existente ou criar um novo jogo.",
+          reviewStep: 2 as const,
+        },
+        { status: 400 },
+      );
+    }
+    const commit = await auth.client.rpc("admin_commit_boxscore_import_v2", {
       p_import_id: importId,
-      p_resolution: { gameId, teams, players },
+      p_resolution: { teams, players },
+      p_target: target,
     });
     if (commit.error) {
       const mapped = mapImportError(commit.error.code, commit.error.details);
@@ -782,7 +926,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         status: mapped.status,
         context: { competitionId, entityId: importId, errorCode: commit.error.code },
       });
-      return data({ error: mapped.message }, { status: mapped.status });
+      const playerErrorCodes = new Set(["BD104", "BD105", "BD308", "BD501", "BD601", "BD602"]);
+      const targetErrorCodes = new Set([
+        "BD306",
+        "BD710",
+        "BD711",
+        "BD712",
+        "BD713",
+        "BD714",
+        "BR025",
+        "BR098",
+      ]);
+      return data(
+        {
+          error: mapped.message,
+          reviewStep: playerErrorCodes.has(commit.error.code ?? "")
+            ? (3 as const)
+            : targetErrorCodes.has(commit.error.code ?? "")
+              ? (2 as const)
+              : (4 as const),
+        },
+        { status: mapped.status },
+      );
     }
     logOperationalEvent({
       correlationId,
@@ -833,6 +998,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
 export default function BoxscoreImport({ loaderData, actionData }: Route.ComponentProps) {
   const review = loaderData.review;
+  const actionStep =
+    actionData &&
+    "reviewStep" in actionData &&
+    (actionData.reviewStep === 2 || actionData.reviewStep === 3 || actionData.reviewStep === 4)
+      ? actionData.reviewStep
+      : undefined;
 
   return (
     <main className="admin-shell">
@@ -853,7 +1024,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           {loaderData.competition.display_name}. Aceita exclusivamente os modelos documentados, com
           camada de texto; limite de 10 MiB.
         </p>
-        {actionData?.error ? (
+        {actionData?.error && !review ? (
           <p className="form-error" role="alert">
             {actionData.error}
           </p>
@@ -887,9 +1058,12 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           <BoxscoreReviewEditor
             key={`${review.id}:${loaderData.registrations.map((item) => item.id).join(",")}`}
             actionError={actionData?.error}
+            actionStep={actionStep}
             competitionId={loaderData.competition.id}
             competitionGender={loaderData.competition.gender_division}
             csrfToken={loaderData.csrfToken}
+            manualMatchupRequestId={loaderData.manualMatchupRequestId}
+            preferredGameId={null}
             review={review}
             games={loaderData.games}
             registrations={loaderData.registrations}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Form, Link, useNavigation } from "react-router";
+import { Form, useNavigation } from "react-router";
 
 import { AdminDraftNotice } from "../../components/admin/admin-draft-notice";
 import { AdminPlayerSearch } from "../../components/admin/admin-player-search";
@@ -62,10 +62,13 @@ interface ReviewTeamCandidate {
 
 interface BoxscoreReviewEditorProps {
   actionError?: string;
+  actionStep?: 2 | 3 | 4;
   competitionId: number;
   competitionGender: string | null;
   csrfToken: string;
   games: ReviewGame[];
+  manualMatchupRequestId: string;
+  preferredGameId: number | null;
   review: {
     id: number;
     parsed: ParsedBoxscore;
@@ -77,10 +80,16 @@ interface BoxscoreReviewEditorProps {
 }
 
 interface ReviewDraftData {
+  applyReviewedMetadata: boolean;
   gameId: number;
+  manualHomeRegistrationId: number;
+  scheduledDate: string;
+  scheduledTime: string;
   step: number;
+  targetMode: "create" | "existing";
   registrations: Record<number, number>;
   resolutions: Record<number, string>;
+  venue: string;
 }
 
 type NewPlayerEligibilitySex = "" | "female" | "male";
@@ -96,16 +105,20 @@ function normalizeTeam(value: string): string {
 
 export function BoxscoreReviewEditor({
   actionError,
+  actionStep,
   competitionId,
   competitionGender,
   csrfToken,
   games,
+  manualMatchupRequestId,
+  preferredGameId,
   review,
   registrations,
   teamCandidates,
 }: BoxscoreReviewEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
   const matches = useMemo(
     () =>
       new Map(
@@ -160,6 +173,7 @@ export function BoxscoreReviewEditor({
         })
       : [];
   const initialGame =
+    eligibleGames.find((game) => game.id === preferredGameId) ??
     eligibleGames.find((game) => game.gameNumber === review.parsed.gameNumber) ??
     eligibleGames[0] ??
     null;
@@ -205,6 +219,20 @@ export function BoxscoreReviewEditor({
   );
   const [step, setStep] = useState(2);
   const [gameId, setGameId] = useState(initialGame?.id ?? 0);
+  const [targetMode, setTargetMode] = useState<"create" | "existing">(
+    initialGame ? "existing" : "create",
+  );
+  const [scheduledDate, setScheduledDate] = useState(
+    review.parsed.scheduledLocal?.slice(0, 10) ?? "",
+  );
+  const [scheduledTime, setScheduledTime] = useState(
+    review.parsed.scheduledLocal?.slice(11, 16) ?? "",
+  );
+  const [venue, setVenue] = useState(review.parsed.venue ?? "");
+  const [applyReviewedMetadata, setApplyReviewedMetadata] = useState(false);
+  const [manualHomeRegistrationId, setManualHomeRegistrationId] = useState(
+    resolvedRegistrationIds[0] ?? 0,
+  );
   const [teamRegistrations, setTeamRegistrations] =
     useState<Record<number, number>>(initialRegistrations);
   const [teamResolutionChoices, setTeamResolutionChoices] = useState<Record<number, string>>(
@@ -219,6 +247,7 @@ export function BoxscoreReviewEditor({
   const [pendingDraft, setPendingDraft] = useState(false);
   const [attempted, setAttempted] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState<string | null>(null);
+  const reviewAction = (mode: "confirm" | "resolve-teams") => `?import=${review.id}&mode=${mode}`;
 
   useEffect(() => {
     const result = readAdminDraft<ReviewDraftData>({
@@ -235,13 +264,44 @@ export function BoxscoreReviewEditor({
       setSavedAt(
         saveAdminDraft(
           { flow: "boxscore-review", competitionId, entityId: review.id },
-          { gameId, step, registrations: teamRegistrations, resolutions },
+          {
+            applyReviewedMetadata,
+            gameId,
+            manualHomeRegistrationId,
+            scheduledDate,
+            scheduledTime,
+            step,
+            targetMode,
+            registrations: teamRegistrations,
+            resolutions,
+            venue,
+          },
         ),
       );
       setPendingDraft(false);
     }, 450);
     return () => window.clearTimeout(timeout);
-  }, [competitionId, gameId, pendingDraft, resolutions, review.id, step, teamRegistrations]);
+  }, [
+    applyReviewedMetadata,
+    competitionId,
+    gameId,
+    manualHomeRegistrationId,
+    pendingDraft,
+    resolutions,
+    review.id,
+    scheduledDate,
+    scheduledTime,
+    step,
+    targetMode,
+    teamRegistrations,
+    venue,
+  ]);
+
+  useEffect(() => {
+    if (!actionError) return;
+    setStep(actionStep ?? 4);
+    actionErrorRef.current?.focus();
+  }, [actionError, actionStep]);
 
   useEffect(() => {
     if (navigation.state === "submitting" && navigation.formAction?.includes("mode=confirm")) {
@@ -268,6 +328,17 @@ export function BoxscoreReviewEditor({
     (_, index) => !teamRegistrations[index] && !teamResolutionChoices[index],
   ).length;
   const hasEligibleGame = eligibleGames.length > 0;
+  const manualAwayRegistrationId =
+    resolvedRegistrationIds.find((registrationId) => registrationId !== manualHomeRegistrationId) ??
+    0;
+  const manualAwayRegistration = registrations.find(
+    (registration) => registration.id === manualAwayRegistrationId,
+  );
+  const targetReady =
+    missingTeams === 0 &&
+    Boolean(scheduledDate && scheduledTime && venue.trim()) &&
+    ((targetMode === "existing" && gameId > 0) ||
+      (targetMode === "create" && manualHomeRegistrationId > 0 && manualAwayRegistrationId > 0));
   const hasTransientPrivateSelection = Object.values(newPlayerEligibility).some(Boolean);
   const editionGenderLabel =
     competitionGender === "male"
@@ -281,6 +352,12 @@ export function BoxscoreReviewEditor({
     if (
       !draft.data ||
       !Number.isInteger(draft.data.gameId) ||
+      !Number.isInteger(draft.data.manualHomeRegistrationId) ||
+      !["create", "existing"].includes(draft.data.targetMode) ||
+      typeof draft.data.scheduledDate !== "string" ||
+      typeof draft.data.scheduledTime !== "string" ||
+      typeof draft.data.venue !== "string" ||
+      typeof draft.data.applyReviewedMetadata !== "boolean" ||
       !draft.data.registrations ||
       !draft.data.resolutions
     ) {
@@ -291,7 +368,7 @@ export function BoxscoreReviewEditor({
     const restoredGame = draft.data.gameId
       ? eligibleGames.find((game) => game.id === draft.data.gameId)
       : null;
-    if (draft.data.gameId && !restoredGame) {
+    if (draft.data.targetMode === "existing" && draft.data.gameId && !restoredGame) {
       discard();
       setRestoreMessage("O jogo estrutural do rascunho não está mais disponível.");
       return;
@@ -315,8 +392,18 @@ export function BoxscoreReviewEditor({
       }),
     );
     const restoredStep = Math.min(4, Math.max(2, draft.data.step));
-    setStep(missingTeams > 0 || !restoredGame ? 2 : restoredStep);
+    const restoredTargetReady =
+      draft.data.targetMode === "existing"
+        ? Boolean(restoredGame)
+        : resolvedRegistrationIds.includes(draft.data.manualHomeRegistrationId);
+    setStep(missingTeams > 0 || !restoredTargetReady ? 2 : restoredStep);
     setGameId(restoredGame?.id ?? 0);
+    setTargetMode(draft.data.targetMode);
+    setManualHomeRegistrationId(draft.data.manualHomeRegistrationId);
+    setScheduledDate(draft.data.scheduledDate);
+    setScheduledTime(draft.data.scheduledTime);
+    setVenue(draft.data.venue);
+    setApplyReviewedMetadata(draft.data.applyReviewedMetadata);
     setTeamRegistrations(initialRegistrations);
     setResolutions(restoredResolutions);
     setSavedAt(draft.savedAt);
@@ -340,7 +427,7 @@ export function BoxscoreReviewEditor({
         current={step}
         labels={importSteps}
         onSelect={(nextStep) => {
-          if (nextStep > 2 && (missingTeams > 0 || !gameId)) return;
+          if (nextStep > 2 && !targetReady) return;
           if (nextStep > 3 && pending > 0) return;
           setStep(nextStep);
         }}
@@ -349,19 +436,30 @@ export function BoxscoreReviewEditor({
         <AdminDraftNotice savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />
       ) : null}
       {restoreMessage ? <output className="admin-note">{restoreMessage}</output> : null}
-      <Form method="post" action="?mode=confirm" onSubmit={() => setAttempted(true)}>
+      {actionError ? (
+        <p className="form-error" role="alert" tabIndex={-1} ref={actionErrorRef}>
+          {actionError}
+        </p>
+      ) : null}
+      <Form method="post" action={reviewAction("confirm")} onSubmit={() => setAttempted(true)}>
         <UnsavedChangesGuard active={pendingDraft || hasTransientPrivateSelection} />
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="importId" value={review.id} />
         <input type="hidden" name="gameId" value={gameId} />
+        <input type="hidden" name="targetMode" value={targetMode} />
+        <input type="hidden" name="homeRegistrationId" value={manualHomeRegistrationId} />
         <input type="hidden" name="teamCount" value="2" />
         <input type="hidden" name="playerCount" value={players.length} />
+        <input type="hidden" name="manualMatchupRequestId" value={manualMatchupRequestId} />
         <section hidden={step !== 2}>
           <h2>Revisar jogo extraído</h2>
           <p>
             <strong>Jogo {review.parsed.gameNumber}</strong> · {review.parsed.teams[0].name}{" "}
             {review.parsed.teams[0].score} × {review.parsed.teams[1].score}{" "}
             {review.parsed.teams[1].name}
+          </p>
+          <p>
+            Extraído do PDF: {review.parsed.scheduledLocal} · {review.parsed.venue}
           </p>
           <h3>Equipes da edição</h3>
           <p>
@@ -461,7 +559,7 @@ export function BoxscoreReviewEditor({
               <button
                 className="button button-primary"
                 type="submit"
-                formAction="?mode=resolve-teams"
+                formAction={reviewAction("resolve-teams")}
                 formNoValidate
                 disabled={unresolvedTeamChoices > 0 || navigation.state !== "idle"}
               >
@@ -473,57 +571,145 @@ export function BoxscoreReviewEditor({
           )}
 
           {missingTeams === 0 ? (
-            hasEligibleGame ? (
-              <label>
-                Jogo estrutural
-                <select
-                  value={gameId}
-                  required
-                  onChange={(event) => {
-                    const selectedId = Number(event.currentTarget.value);
-                    const game = eligibleGames.find((candidate) => candidate.id === selectedId);
-                    if (!game) return;
-                    setGameId(game.id);
-                    change();
-                  }}
-                >
-                  <option value="" disabled>
-                    Selecione o jogo
-                  </option>
-                  {eligibleGames.map((game) => (
-                    <option key={game.id} value={game.id}>
-                      {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`} ·{" "}
-                      {game.homeTeamName} × {game.awayTeamName}
-                      {game.isLateFallback ? " · fallback aguardando PDF" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <div className="admin-note" role="status">
+            <div className="admin-note">
+              {hasEligibleGame ? (
+                <label>
+                  Destino do boxscore
+                  <select
+                    value={targetMode}
+                    onChange={(event) => {
+                      setTargetMode(event.currentTarget.value as "create" | "existing");
+                      change();
+                    }}
+                  >
+                    <option value="existing">Usar jogo existente</option>
+                    <option value="create">Criar jogo na confirmação</option>
+                  </select>
+                </label>
+              ) : (
                 <p>
-                  As equipes estão prontas, mas ainda não existe um jogo estrutural elegível entre
-                  elas. Crie ou prepare o confronto em Estrutura e agenda e depois volte a esta
-                  importação; o rascunho continuará disponível.
+                  Ainda não existe um jogo entre estas equipes. Ele será criado somente quando a
+                  importação for confirmada.
                 </p>
-                <Link
-                  className="button button-secondary"
-                  to={`/admin/competitions/${competitionId}/schedule`}
-                >
-                  Ir para Estrutura e agenda
-                </Link>
+              )}
+              {targetMode === "existing" && hasEligibleGame ? (
+                <>
+                  <label>
+                    Jogo da edição
+                    <select
+                      value={gameId}
+                      required
+                      onChange={(event) => {
+                        setGameId(Number(event.currentTarget.value));
+                        change();
+                      }}
+                    >
+                      {eligibleGames.map((game) => (
+                        <option key={game.id} value={game.id}>
+                          {game.gameNumber ? `Jogo ${game.gameNumber}` : `Jogo #${game.id}`} ·{" "}
+                          {game.homeTeamName} × {game.awayTeamName}
+                          {game.scheduledAt ? ` · ${game.scheduledAt}` : ""}
+                          {game.venue ? ` · ${game.venue}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="confirmation-check">
+                    <input
+                      type="checkbox"
+                      name="applyReviewedMetadata"
+                      value="yes"
+                      checked={applyReviewedMetadata}
+                      onChange={(event) => {
+                        setApplyReviewedMetadata(event.currentTarget.checked);
+                        change();
+                      }}
+                    />
+                    Substituir data, horário e local do jogo pelos valores revisados abaixo.
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label>
+                    Equipe mandante
+                    <select
+                      value={manualHomeRegistrationId}
+                      required
+                      onChange={(event) => {
+                        setManualHomeRegistrationId(Number(event.currentTarget.value));
+                        change();
+                      }}
+                    >
+                      {resolvedRegistrationIds.map((registrationId) => {
+                        const registration = registrations.find(
+                          (candidate) => candidate.id === registrationId,
+                        );
+                        return registration ? (
+                          <option key={registration.id} value={registration.id}>
+                            {registration.teamName}
+                          </option>
+                        ) : null;
+                      })}
+                    </select>
+                  </label>
+                  <p>
+                    Visitante:{" "}
+                    <strong>{manualAwayRegistration?.teamName ?? "Equipe a definir"}</strong>
+                  </p>
+                </>
+              )}
+              <div className="schedule-grid">
+                <label>
+                  Data
+                  <input
+                    type="date"
+                    name="scheduledDate"
+                    value={scheduledDate}
+                    required
+                    onChange={(event) => {
+                      setScheduledDate(event.currentTarget.value);
+                      change();
+                    }}
+                  />
+                </label>
+                <label>
+                  Horário
+                  <input
+                    type="time"
+                    name="scheduledTime"
+                    value={scheduledTime}
+                    required
+                    onChange={(event) => {
+                      setScheduledTime(event.currentTarget.value);
+                      change();
+                    }}
+                  />
+                </label>
+                <label>
+                  Local
+                  <input
+                    name="venue"
+                    value={venue}
+                    maxLength={160}
+                    required
+                    onChange={(event) => {
+                      setVenue(event.currentTarget.value);
+                      change();
+                    }}
+                  />
+                </label>
               </div>
-            )
+            </div>
           ) : (
             <p className="admin-note">
-              Resolva as duas equipes antes de escolher o jogo estrutural.
+              Resolva as duas equipes antes de escolher o jogo da edição.
             </p>
           )}
           <div className="wizard-actions">
             <button
               className="button button-primary"
               type="button"
-              disabled={missingTeams > 0 || !gameId}
+              disabled={!targetReady}
               onClick={() => {
                 setStep(3);
                 change();
@@ -717,7 +903,6 @@ export function BoxscoreReviewEditor({
             Serão confirmadas 2 equipes e {players.length} associações. O commit permanece atômico e
             o PDF continua privado.
           </p>
-          {actionError ? <p className="form-error">{actionError}</p> : null}
           <label className="confirmation-check">
             <input type="checkbox" name="confirmImport" value="yes" required />
             Confirmo que revisei as equipes, atletas e correspondências sugeridas.
@@ -756,9 +941,7 @@ export function BoxscoreReviewEditor({
             <button
               className="button button-primary"
               type="button"
-              disabled={
-                (step === 2 && (missingTeams > 0 || !gameId)) || (step === 3 && pending > 0)
-              }
+              disabled={(step === 2 && !targetReady) || (step === 3 && pending > 0)}
               onClick={() => {
                 setStep(Math.min(4, step + 1));
                 change();

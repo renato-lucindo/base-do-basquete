@@ -3,9 +3,9 @@ import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
+import { normalizeTeamCreationInput } from "../modules/competition/team-creation";
 import type { Route } from "./+types/admin.teams";
 
-const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export function meta() {
   return [{ title: "Equipes — Administração" }];
 }
@@ -39,26 +39,23 @@ export async function action({ request, context }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent !== "create-team") throw new Response("Ação inválida", { status: 400 });
-  const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim();
-  if (name.length < 2 || !slugPattern.test(slug)) {
+  const normalized = normalizeTeamCreationInput(formData.get("name"), formData.get("abbreviation"));
+  if (!normalized.ok) {
     return data(
-      { error: "Informe um nome e um slug minúsculo válido." },
+      { error: normalized.error },
       { status: 400, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
     );
   }
-  const abbreviation = String(formData.get("abbreviation") ?? "")
-    .trim()
-    .toUpperCase();
-  const { error } = await auth.client.from("teams").insert({
-    name,
-    slug,
-    abbreviation: abbreviation || null,
-    is_public: false,
+  const { error } = await auth.client.rpc("admin_create_team", {
+    p_name: normalized.input.name,
+    p_abbreviation: normalized.input.abbreviation as string,
   });
   if (error) {
     return data(
-      { error: error.code === "23505" ? "Essa equipe já existe." : "Falha ao criar equipe." },
+      {
+        error:
+          error.code === "BD102" ? "Revise o nome e a sigla da equipe." : "Falha ao criar equipe.",
+      },
       { status: 400, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
     );
   }
@@ -85,37 +82,35 @@ export default function Teams({ loaderData, actionData }: Route.ComponentProps) 
         </button>
       </Form>
       <p>Até 50 equipes por busca.</p>
-      <ul>
+      <ul className="admin-team-list">
         {loaderData.teams.map((team) => (
           <li key={team.id}>
-            {team.name}
-            {team.abbreviation ? ` · ${team.abbreviation}` : ""}
+            <strong>{team.name}</strong>
+            {team.abbreviation ? <small>{team.abbreviation}</small> : null}
           </li>
         ))}
       </ul>
       {loaderData.teams.length === 0 ? <p>Nenhuma equipe encontrada.</p> : null}
-      <details open={Boolean(actionData?.error)}>
-        <summary>Criar equipe</summary>{" "}
+      <section className="admin-panel">
+        <h2>Cadastrar equipe</h2>
+        <p>Informe apenas os dados públicos. O endereço técnico é gerado no servidor.</p>
         <Form method="post" className="compact-admin-form">
           <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
           <input type="hidden" name="intent" value="create-team" />
           <label>
             Nome
-            <input required name="name" />
-          </label>
-          <label>
-            Slug
-            <input required name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" />
+            <input required name="name" minLength={2} maxLength={120} />
           </label>
           <label>
             Sigla
-            <input name="abbreviation" maxLength={8} />
+            <input name="abbreviation" maxLength={8} pattern="[A-Za-z0-9]{2,8}" />
           </label>
+          <p>O endereço técnico é gerado automaticamente e colisões são resolvidas no servidor.</p>
           <button className="button button-primary" type="submit">
             Criar equipe
           </button>
         </Form>
-      </details>
+      </section>
     </AdminArea>
   );
 }

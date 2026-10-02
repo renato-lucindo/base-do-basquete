@@ -4,7 +4,6 @@ export interface PublicationReview {
   nextVersion: number;
   confirmedTeams: number;
   eligibleGames: number;
-  unassignedEntries: number;
   invalidGames: number;
   startsOn: string | null;
   canPublish: boolean;
@@ -38,7 +37,6 @@ export function publicationBlocker(code: string): string {
     DATA_PROFILE_REVIEW_REQUIRED: "Conclua a revisão da fonte primária.",
     CONFIRMED_TEAMS_REQUIRED: "Confirme pelo menos duas equipes.",
     INVALID_PUBLIC_GAME: "Há jogo público sem exatamente dois participantes.",
-    UNASSIGNED_ENTRIES: "Atribua todas as posições do preset.",
   };
   return labels[code] ?? "Existe uma pendência editorial não reconhecida.";
 }

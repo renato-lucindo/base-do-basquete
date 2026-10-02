@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(13);
 
 select has_function(
   'private', 'admin_stage_late_fiba_candidate', array['bigint', 'jsonb'],
@@ -71,6 +71,15 @@ select ok(
       'private.admin_stage_late_fiba_candidate(bigint,jsonb)'::regprocedure
     ) like '%delete from public.games%',
   'temporary relational facts are removed before commit'
+);
+select ok(
+  pg_get_functiondef(
+    'public.admin_commit_boxscore_import_v2(bigint,jsonb,jsonb)'::regprocedure
+  ) like '%target_game_status <> ''final''%'
+    and pg_get_functiondef(
+      'public.admin_commit_boxscore_import_v2(bigint,jsonb,jsonb)'::regprocedure
+    ) like '%private.admin_commit_supported_boxscore_import_impl%',
+  'v2 stages late FIBA through the dispatcher without rewriting final-game metadata'
 );
 select ok(
   pg_get_functiondef(

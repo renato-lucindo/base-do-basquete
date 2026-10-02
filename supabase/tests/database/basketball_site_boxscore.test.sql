@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(39);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -106,9 +106,10 @@ insert into public.game_participants(game_id,competition_id,registration_id,side
 values
   (94101,9411,9411,'home'),(94101,9411,9412,'away'),
   (94102,9411,9411,'home'),(94102,9411,9412,'away');
-insert into storage.objects(id,bucket_id,name) values (
+insert into storage.objects(id,bucket_id,name,metadata) values (
   '94110000-0000-4000-8000-000000000001','boxscore-pdfs',
-  '9411/'||repeat('b',64)||'.pdf'
+  '9411/'||repeat('b',64)||'.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
 );
 
 create temp table site_boxscore_test_data(
@@ -185,22 +186,34 @@ select set_config('request.jwt.claims',jsonb_build_object(
 )::text,true);
 set local role authenticated;
 
-select lives_ok($$select public.admin_claim_boxscore_upload()$$,
-  'the AAL2 administrator can claim an upload slot');
 select lives_ok($$
-  update site_boxscore_test_data set import_id=public.admin_create_boxscore_import_draft(
+  update site_boxscore_test_data set import_id=(public.admin_begin_boxscore_import(
     9411,repeat('b',64),'9411/'||repeat('b',64)||'.pdf','boxscore-site.pdf',
     104676,'basketball-site-v1',parsed,
     '{"valid":true,"issues":[]}'::jsonb,matches
-  )
-$$,'a site-format draft is created');
+  )->>'importId')::bigint
+$$,'a site-format import is reserved');
+select is((select status from public.boxscore_imports
+  where id=(select import_id from site_boxscore_test_data)),
+  'uploaded','the site import waits for its private object');
+select lives_ok($$
+  select public.admin_mark_boxscore_import_ready(import_id,repeat('b',64),104676)
+  from site_boxscore_test_data
+$$,'the site import advances to review');
 select is((select parser_version from public.boxscore_imports
   where id=(select import_id from site_boxscore_test_data)),
   'basketball-site-v1','the draft retains the real parser version');
 select lives_ok($$
-  select public.admin_commit_boxscore_import(import_id,resolution)
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    resolution-'gameId',
+    jsonb_build_object(
+      'mode','existing','gameId',94101,'applyReviewedMetadata',false,
+      'scheduledAt','2026-05-13T23:30:00Z','venue','Sesport'
+    )
+  )
   from site_boxscore_test_data
-$$,'the site-format import commits atomically');
+$$,'the site-format import commits atomically through v2');
 select is((select status from public.boxscore_imports
   where id=(select import_id from site_boxscore_test_data)),
   'confirmed','the site import is confirmed');
@@ -250,9 +263,13 @@ select is((select count(*)::integer from public.game_data_submission_snapshots s
 select is((select parsed_payload->'teams'->0->'periodScores'
   from public.boxscore_imports where id=(select import_id from site_boxscore_test_data)),
   'null'::jsonb,'the original source payload is restored after compatibility ingestion');
-select is(public.admin_commit_boxscore_import(
+select is(public.admin_commit_boxscore_import_v2(
   (select import_id from site_boxscore_test_data),
-  (select resolution from site_boxscore_test_data)
+  (select resolution-'gameId' from site_boxscore_test_data),
+  jsonb_build_object(
+    'mode','existing','gameId',94101,'applyReviewedMetadata',false,
+    'scheduledAt','2026-05-13T23:30:00Z','venue','Sesport'
+  )
 ),94101::bigint,'commit retry is idempotent');
 select is((select count(*)::integer from public.admin_mutation_audit
   where action='boxscore_import_confirmed'
