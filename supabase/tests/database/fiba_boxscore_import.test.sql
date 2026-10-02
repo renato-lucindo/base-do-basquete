@@ -303,7 +303,8 @@ insert into storage.objects (id, bucket_id, name, metadata)
 values (
   '94010000-0000-4000-8000-000000000002',
   'boxscore-pdfs',
-  '9401/' || repeat('b',64) || '.pdf'
+  '9401/' || repeat('b',64) || '.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
 );
 insert into public.game_data_submissions (
   id, game_id, submission_version, source_type, role, status, parser_version,
