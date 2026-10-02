@@ -100,6 +100,7 @@ set search_path = ''
 as $$
 declare
   import_record public.boxscore_imports;
+  request_record private.manual_matchup_requests;
 begin
   if not private.is_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -239,19 +240,53 @@ begin
       raise exception using errcode = 'BD305', message = 'BDB_PDF_TEAM_RESOLUTION_INVALID';
     end if;
 
-    created_payload := public.admin_create_manual_matchup(
-      target_request_id,
-      import_record.competition_id,
-      null,
-      home_registration_id,
-      away_registration_id,
-      reviewed_scheduled_at,
-      reviewed_venue
-    );
-    target_game_id := (created_payload ->> 'gameId')::bigint;
+    if import_record.status = 'confirmed' then
+      select request_item.* into request_record
+      from private.manual_matchup_requests request_item
+      where request_item.request_id = target_request_id;
+      if not found
+        or request_record.actor_id <> auth.uid()
+        or request_record.competition_id <> import_record.competition_id
+        or request_record.round_id is not null
+        or request_record.home_registration_id <> home_registration_id
+        or request_record.away_registration_id <> away_registration_id
+        or request_record.scheduled_at is distinct from reviewed_scheduled_at
+        or request_record.venue is distinct from reviewed_venue
+        or request_record.game_id is null
+      then
+        raise exception using errcode = 'BR098', message = 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT';
+      end if;
+      target_game_id := request_record.game_id;
+    else
+      created_payload := public.admin_create_manual_matchup(
+        target_request_id,
+        import_record.competition_id,
+        null,
+        home_registration_id,
+        away_registration_id,
+        reviewed_scheduled_at,
+        reviewed_venue
+      );
+      target_game_id := (created_payload ->> 'gameId')::bigint;
+    end if;
     apply_reviewed_metadata := true;
   else
     raise exception using errcode = 'BD305', message = 'BDB_PDF_RESOLUTION_INVALID';
+  end if;
+
+  if import_record.status = 'confirmed' then
+    if target_game_id is distinct from import_record.game_id then
+      raise exception using errcode = 'BD713', message = 'BDB_GAME_DATA_CONFLICT';
+    end if;
+    if apply_reviewed_metadata and not exists (
+      select 1 from public.games game
+      where game.id = target_game_id
+        and game.scheduled_at is not distinct from reviewed_scheduled_at
+        and game.venue is not distinct from reviewed_venue
+    ) then
+      raise exception using errcode = 'BR098', message = 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT';
+    end if;
+    return target_game_id;
   end if;
 
   parsed_game_number := nullif(btrim(import_record.parsed_payload ->> 'gameNumber'), '');
@@ -279,7 +314,7 @@ begin
     where id = target_game_id and competition_id = import_record.competition_id;
   end if;
 
-  saved_game_id := private.admin_commit_boxscore_import_impl(
+  saved_game_id := private.admin_commit_supported_boxscore_import_impl(
     p_import_id,
     jsonb_set(p_resolution, '{gameId}', to_jsonb(target_game_id), true)
   );

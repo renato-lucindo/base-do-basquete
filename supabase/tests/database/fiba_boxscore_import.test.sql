@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(47);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -359,6 +359,17 @@ select is(public.admin_commit_boxscore_import_v2(
     'scheduledAt','2026-05-09T20:00:00Z','venue','Ginasio PDF'
   )
 ), (select game_id from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'commit retry is idempotent');
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    (select import_id from boxscore_test_data),
+    (select resolution - 'gameId' from boxscore_test_data),
+    jsonb_build_object(
+      'mode','existing','gameId',94001,'applyReviewedMetadata',true,
+      'scheduledAt','2026-05-09T21:00:00Z','venue','Local divergente'
+    )
+  )
+$$, 'BR098', 'BDB_MANUAL_MATCHUP_REQUEST_CONFLICT', 'confirmed retry cannot rewrite reviewed metadata');
+select is((select scheduled_at from public.games where id=94001), '2026-05-09T20:00:00Z'::timestamptz, 'divergent retry preserves confirmed metadata');
 
 reset role;
 insert into storage.objects (id, bucket_id, name)
