@@ -200,12 +200,12 @@ select lives_ok(
     set season_id = public.admin_create_competition_season(
       '11111111-1111-4111-8111-000000000001',
       series_id,
-      2031,
+      2027,
       'male',
-      'Copa Multidimensional 2031',
+      'Copa Multidimensional 2027',
       'Descrição compartilhada pela temporada.',
-      '2031-03-01',
-      '2031-11-30'
+      '2027-03-01',
+      '2027-11-30'
     )$$,
   'AAL2 creates a season through the authoritative RPC'
 );
@@ -213,19 +213,19 @@ select is(
   public.admin_create_competition_season(
     '11111111-1111-4111-8111-000000000001',
     series_id,
-    2031,
+    2027,
     'male',
-    'Copa Multidimensional 2031',
+    'Copa Multidimensional 2027',
     'Descrição compartilhada pela temporada.',
-    '2031-03-01',
-    '2031-11-30'
+    '2027-03-01',
+    '2027-11-30'
   ),
   season_id,
   'identical season retry returns the original row'
 ) from season_division_context;
 select throws_ok(
   $$select public.admin_create_competition_season(
-    '11111111-1111-4111-8111-000000000001', series_id, 2031, 'male',
+    '11111111-1111-4111-8111-000000000001', series_id, 2027, 'male',
     'Outro nome', null, null, null
   ) from season_division_context$$,
   'BD409',
@@ -234,7 +234,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select public.admin_create_competition_season(
-    gen_random_uuid(), series_id, 2031, 'male', 'Temporada duplicada', null, null, null
+    gen_random_uuid(), series_id, 2027, 'male', 'Temporada duplicada', null, null, null
   ) from season_division_context$$,
   'BD506',
   'BDB_COMPETITION_SEASON_CONFLICT',
@@ -244,10 +244,10 @@ select is(
   public.admin_update_competition_season(
     season_id,
     1,
-    'Copa Multidimensional 2031',
+    'Copa Multidimensional 2027',
     'Descrição compartilhada revisada.',
-    '2031-03-01',
-    '2031-12-07'
+    '2027-03-01',
+    '2027-12-07'
   ),
   2,
   'season shared information uses revisioned CAS'
@@ -367,7 +367,7 @@ with adult_profile as (
   select
     context.series_id,
     context.adult_category_id,
-    2031,
+    2027,
     'Adulto simples',
     'draft',
     'male',
@@ -392,7 +392,7 @@ select lives_ok(
       jsonb_build_object(
         'seriesId', context.series_id,
         'categoryId', context.youth_category_id,
-        'year', 2031,
+        'year', 2027,
         'name', 'Sub-15 Série Ouro',
         'gender', 'male',
         'source', 'manual_scoresheet',
