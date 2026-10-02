@@ -408,7 +408,7 @@ select throws_ok($$
       'homeRegistrationId',9401,'scheduledAt','2026-05-10T20:00:00Z','venue','Ginasio PDF'
     )
   ) from boxscore_test_data
-$$, 'an invalid final resolution aborts atomic game creation');
+$$, 'BD305', 'BDB_PDF_RESOLUTION_INVALID', 'an invalid final resolution aborts atomic game creation');
 select is((select count(*)::integer from public.games where game_number='PDF-ATOMIC-02'), 0, 'failed confirmation leaves no game');
 reset role;
 select is((select count(*)::integer from private.manual_matchup_requests where request_id='94010000-0000-4000-8000-000000000099'), 0, 'failed confirmation rolls back its request key');
