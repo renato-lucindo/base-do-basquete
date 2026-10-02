@@ -621,7 +621,9 @@ begin
 
   if p_request_id is null
     or p_series_id is null
+    or p_year is null
     or p_year not between 1900 and 2200
+    or p_gender_division is null
     or p_gender_division not in ('male', 'female')
     or char_length(clean_name) not between 2 and 160
     or (clean_description is not null and char_length(clean_description) > 2000)
@@ -836,6 +838,7 @@ begin
     or clean_type_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
     or char_length(clean_value_name) not between 1 and 80
     or clean_value_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+    or p_sort_order is null
     or p_sort_order not between 1 and 999
   then
     raise exception using errcode = 'BD501', message = 'BDB_COMPETITION_DIVISION_INPUT_INVALID';

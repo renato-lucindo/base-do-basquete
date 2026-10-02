@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(51);
+select plan(54);
 set constraints all deferred;
 
 select has_table('public', 'competition_seasons', 'season parent exists');
@@ -195,6 +195,22 @@ select series.id, adult.id, youth.id from series, adult, youth;
 grant select, update on season_division_context to authenticated;
 
 set local role authenticated;
+select throws_ok(
+  $$select public.admin_create_competition_season(
+    gen_random_uuid(), series_id, null, 'male', 'Ano ausente', null, null, null
+  ) from season_division_context$$,
+  'BD501',
+  'BDB_COMPETITION_SEASON_INPUT_INVALID',
+  'season creation rejects a missing year with the stable input error'
+);
+select throws_ok(
+  $$select public.admin_create_competition_season(
+    gen_random_uuid(), series_id, 2027, null, 'Naipe ausente', null, null, null
+  ) from season_division_context$$,
+  'BD501',
+  'BDB_COMPETITION_SEASON_INPUT_INVALID',
+  'season creation rejects a missing gender division with the stable input error'
+);
 select lives_ok(
   $$update season_division_context
     set season_id = public.admin_create_competition_season(
@@ -298,6 +314,14 @@ select lives_ok(
       2
     )$$,
   'the same season accepts another ordered value of the same type'
+);
+select throws_ok(
+  $$select public.admin_add_competitive_division_value(
+    gen_random_uuid(), season_id, 'Série', 'serie', 'Sem ordem', 'sem-ordem', null
+  ) from season_division_context$$,
+  'BD501',
+  'BDB_COMPETITION_DIVISION_INPUT_INVALID',
+  'division value creation rejects a missing sort order with the stable input error'
 );
 select throws_ok(
   $$select public.admin_add_competitive_division_value(
