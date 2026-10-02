@@ -92,7 +92,11 @@ grant execute on function public.admin_begin_boxscore_import(
   bigint, text, text, text, integer, text, jsonb, jsonb, jsonb
 ) to authenticated;
 
-create function public.admin_mark_boxscore_import_ready(p_import_id bigint)
+create function public.admin_mark_boxscore_import_ready(
+  p_import_id bigint,
+  p_observed_sha256 text,
+  p_observed_file_size_bytes integer
+)
 returns bigint
 language plpgsql
 security definer
@@ -118,11 +122,18 @@ begin
   if import_record.status <> 'uploaded' then
     raise exception using errcode = 'BD302', message = 'BDB_PDF_IMPORT_STATE_INVALID';
   end if;
+  if p_observed_sha256 is distinct from import_record.sha256
+    or p_observed_file_size_bytes is distinct from import_record.file_size_bytes
+  then
+    raise exception using errcode = 'BD309', message = 'BDB_PDF_STORAGE_OBJECT_MISMATCH';
+  end if;
   if not exists (
     select 1
     from storage.objects object
     where object.bucket_id = 'boxscore-pdfs'
       and object.name = import_record.storage_path
+      and nullif(object.metadata ->> 'size', '')::bigint = import_record.file_size_bytes
+      and lower(coalesce(object.metadata ->> 'mimetype', '')) = 'application/pdf'
   ) then
     raise exception using errcode = 'BD404', message = 'BDB_PDF_STORAGE_OBJECT_NOT_FOUND';
   end if;
@@ -134,9 +145,10 @@ begin
 end;
 $$;
 
-revoke all on function public.admin_mark_boxscore_import_ready(bigint)
+revoke all on function public.admin_mark_boxscore_import_ready(bigint, text, integer)
 from public, anon, authenticated;
-grant execute on function public.admin_mark_boxscore_import_ready(bigint) to authenticated;
+grant execute on function public.admin_mark_boxscore_import_ready(bigint, text, integer)
+to authenticated;
 
 create function public.admin_commit_boxscore_import_v2(
   p_import_id bigint,
@@ -154,6 +166,7 @@ declare
   request_record private.manual_matchup_requests;
   target_mode text;
   target_game_id bigint;
+  target_game_status text;
   target_request_id uuid;
   home_registration_id bigint;
   away_registration_id bigint;
@@ -289,8 +302,13 @@ begin
     return target_game_id;
   end if;
 
+  select game.status into target_game_status
+  from public.games game
+  where game.id = target_game_id
+    and game.competition_id = import_record.competition_id;
+
   parsed_game_number := nullif(btrim(import_record.parsed_payload ->> 'gameNumber'), '');
-  if parsed_game_number is not null then
+  if target_game_status <> 'final' and parsed_game_number is not null then
     begin
       update public.games
       set game_number = parsed_game_number
@@ -302,7 +320,9 @@ begin
     end;
   end if;
 
-  if apply_reviewed_metadata then
+  if target_game_status = 'final' then
+    null;
+  elsif apply_reviewed_metadata then
     update public.games
     set scheduled_at = reviewed_scheduled_at,
         venue = reviewed_venue
@@ -319,7 +339,7 @@ begin
     jsonb_set(p_resolution, '{gameId}', to_jsonb(target_game_id), true)
   );
 
-  if apply_reviewed_metadata then
+  if target_game_status <> 'final' and apply_reviewed_metadata then
     begin
       duration_seconds := nullif(import_record.parsed_payload ->> 'durationSeconds', '')::integer;
     exception when invalid_text_representation or numeric_value_out_of_range then
@@ -351,7 +371,7 @@ to authenticated;
 comment on function public.admin_begin_boxscore_import(
   bigint, text, text, text, integer, text, jsonb, jsonb, jsonb
 ) is 'Reserves one recoverable PDF import before the private Storage upload.';
-comment on function public.admin_mark_boxscore_import_ready(bigint)
+comment on function public.admin_mark_boxscore_import_ready(bigint, text, integer)
 is 'Moves a recoverable import to review after its exact private object exists.';
 comment on function public.admin_commit_boxscore_import_v2(bigint, jsonb, jsonb)
 is 'Confirms a reviewed PDF into an existing or transactionally created game.';

@@ -4596,7 +4596,11 @@ export type Database = {
         Returns: number;
       };
       admin_mark_boxscore_import_ready: {
-        Args: { p_import_id: number };
+        Args: {
+          p_import_id: number;
+          p_observed_file_size_bytes: number;
+          p_observed_sha256: string;
+        };
         Returns: number;
       };
       admin_resolve_boxscore_team_registrations: {

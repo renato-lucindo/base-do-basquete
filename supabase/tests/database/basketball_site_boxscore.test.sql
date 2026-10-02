@@ -106,9 +106,10 @@ insert into public.game_participants(game_id,competition_id,registration_id,side
 values
   (94101,9411,9411,'home'),(94101,9411,9412,'away'),
   (94102,9411,9411,'home'),(94102,9411,9412,'away');
-insert into storage.objects(id,bucket_id,name) values (
+insert into storage.objects(id,bucket_id,name,metadata) values (
   '94110000-0000-4000-8000-000000000001','boxscore-pdfs',
-  '9411/'||repeat('b',64)||'.pdf'
+  '9411/'||repeat('b',64)||'.pdf',
+  '{"size":104676,"mimetype":"application/pdf"}'::jsonb
 );
 
 create temp table site_boxscore_test_data(
@@ -196,7 +197,7 @@ select is((select status from public.boxscore_imports
   where id=(select import_id from site_boxscore_test_data)),
   'uploaded','the site import waits for its private object');
 select lives_ok($$
-  select public.admin_mark_boxscore_import_ready(import_id)
+  select public.admin_mark_boxscore_import_ready(import_id,repeat('b',64),104676)
   from site_boxscore_test_data
 $$,'the site import advances to review');
 select is((select parser_version from public.boxscore_imports

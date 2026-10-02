@@ -764,19 +764,19 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         if (!duplicate) {
           return data({ error: "Falha ao guardar o PDF privado." }, { status: 502 });
         }
-        const existing = await auth.client.storage.from("boxscore-pdfs").download(storagePath);
-        if (existing.error)
-          return data({ error: "Falha ao retomar o PDF privado." }, { status: 502 });
-        const existingBytes = new Uint8Array(await existing.data.arrayBuffer());
-        if (
-          existingBytes.length !== validated.bytes.length ||
-          (await sha256Bytes(existingBytes)) !== validated.sha256
-        ) {
-          return data({ error: "O objeto existente diverge do PDF enviado." }, { status: 409 });
-        }
+      }
+      const stored = await auth.client.storage.from("boxscore-pdfs").download(storagePath);
+      if (stored.error)
+        return data({ error: "Falha ao verificar o PDF privado." }, { status: 502 });
+      const storedBytes = new Uint8Array(await stored.data.arrayBuffer());
+      const observedSha256 = await sha256Bytes(storedBytes);
+      if (storedBytes.length !== validated.bytes.length || observedSha256 !== validated.sha256) {
+        return data({ error: "O objeto armazenado diverge do PDF enviado." }, { status: 409 });
       }
       const ready = await auth.client.rpc("admin_mark_boxscore_import_ready", {
         p_import_id: importId,
+        p_observed_file_size_bytes: storedBytes.length,
+        p_observed_sha256: observedSha256,
       });
       if (ready.error) {
         const mapped = mapImportError(ready.error.code);
