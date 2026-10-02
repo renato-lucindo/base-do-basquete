@@ -1391,6 +1391,16 @@ a {
   gap: 20px;
 }
 
+.boxscore-review .schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: 1rem;
+}
+
+.boxscore-review .schedule-grid label {
+  min-width: 0;
+}
+
 .boxscore-team-resolution {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

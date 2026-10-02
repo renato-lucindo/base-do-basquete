@@ -828,18 +828,21 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const venue = String(formData.get("venue") ?? "").trim();
     const scheduledAt = scheduleLocalToIso(scheduledDate, scheduledTime);
     if (!scheduledAt || !venue || venue.length > 160) {
-      return data({ error: "Revise a data, o horário e o local do jogo." }, { status: 400 });
+      return data(
+        { error: "Revise a data, o horário e o local do jogo.", reviewStep: 2 as const },
+        { status: 400 },
+      );
     }
     const teamCount = Number(formData.get("teamCount"));
     const playerCount = Number(formData.get("playerCount"));
     if (formData.get("confirmImport") !== "yes") {
       return data(
-        { error: "Confirme explicitamente a revisão antes de importar." },
+        { error: "Confirme explicitamente a revisão antes de importar.", reviewStep: 4 as const },
         { status: 400 },
       );
     }
     if (teamCount !== 2 || !Number.isInteger(playerCount) || playerCount < 10 || playerCount > 24) {
-      return data({ error: "Revisão incompleta." }, { status: 400 });
+      return data({ error: "Revisão incompleta.", reviewStep: 4 as const }, { status: 400 });
     }
     const teams = Array.from({ length: teamCount }, (_, index) => ({
       sourceTeamName: String(formData.get(`teamName-${index}`) ?? ""),
@@ -860,13 +863,19 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       teams.some((team) => !team.sourceTeamName || !team.registrationId) ||
       players.some((player) => !player.sourceTeamName || !player.sourcePlayerName || !player.action)
     ) {
-      return data({ error: "Associe todas as equipes e todos os atletas." }, { status: 400 });
+      return data(
+        { error: "Associe todas as equipes e todos os atletas.", reviewStep: 3 as const },
+        { status: 400 },
+      );
     }
     let target: Json;
     if (targetMode === "existing") {
       const gameId = parseId(formData.get("gameId"));
       if (!gameId)
-        return data({ error: "Selecione um jogo válido desta edição." }, { status: 400 });
+        return data(
+          { error: "Selecione um jogo válido desta edição.", reviewStep: 2 as const },
+          { status: 400 },
+        );
       target = {
         mode: "existing",
         gameId,
@@ -881,12 +890,18 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) ||
         !homeRegistrationId
       ) {
-        return data({ error: "Recarregue a página e escolha a equipe mandante." }, { status: 400 });
+        return data(
+          { error: "Recarregue a página e escolha a equipe mandante.", reviewStep: 2 as const },
+          { status: 400 },
+        );
       }
       target = { mode: "create", requestId, homeRegistrationId, scheduledAt, venue };
     } else {
       return data(
-        { error: "Escolha usar um jogo existente ou criar um novo jogo." },
+        {
+          error: "Escolha usar um jogo existente ou criar um novo jogo.",
+          reviewStep: 2 as const,
+        },
         { status: 400 },
       );
     }
@@ -905,7 +920,28 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         status: mapped.status,
         context: { competitionId, entityId: importId, errorCode: commit.error.code },
       });
-      return data({ error: mapped.message }, { status: mapped.status });
+      const playerErrorCodes = new Set(["BD104", "BD105", "BD308", "BD501", "BD601", "BD602"]);
+      const targetErrorCodes = new Set([
+        "BD306",
+        "BD710",
+        "BD711",
+        "BD712",
+        "BD713",
+        "BD714",
+        "BR025",
+        "BR098",
+      ]);
+      return data(
+        {
+          error: mapped.message,
+          reviewStep: playerErrorCodes.has(commit.error.code ?? "")
+            ? (3 as const)
+            : targetErrorCodes.has(commit.error.code ?? "")
+              ? (2 as const)
+              : (4 as const),
+        },
+        { status: mapped.status },
+      );
     }
     logOperationalEvent({
       correlationId,
@@ -956,6 +992,12 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
 export default function BoxscoreImport({ loaderData, actionData }: Route.ComponentProps) {
   const review = loaderData.review;
+  const actionStep =
+    actionData &&
+    "reviewStep" in actionData &&
+    (actionData.reviewStep === 2 || actionData.reviewStep === 3 || actionData.reviewStep === 4)
+      ? actionData.reviewStep
+      : undefined;
 
   return (
     <main className="admin-shell">
@@ -1010,6 +1052,7 @@ export default function BoxscoreImport({ loaderData, actionData }: Route.Compone
           <BoxscoreReviewEditor
             key={`${review.id}:${loaderData.registrations.map((item) => item.id).join(",")}`}
             actionError={actionData?.error}
+            actionStep={actionStep}
             competitionId={loaderData.competition.id}
             competitionGender={loaderData.competition.gender_division}
             csrfToken={loaderData.csrfToken}

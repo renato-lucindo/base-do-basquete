@@ -62,6 +62,7 @@ interface ReviewTeamCandidate {
 
 interface BoxscoreReviewEditorProps {
   actionError?: string;
+  actionStep?: 2 | 3 | 4;
   competitionId: number;
   competitionGender: string | null;
   csrfToken: string;
@@ -79,10 +80,16 @@ interface BoxscoreReviewEditorProps {
 }
 
 interface ReviewDraftData {
+  applyReviewedMetadata: boolean;
   gameId: number;
+  manualHomeRegistrationId: number;
+  scheduledDate: string;
+  scheduledTime: string;
   step: number;
+  targetMode: "create" | "existing";
   registrations: Record<number, number>;
   resolutions: Record<number, string>;
+  venue: string;
 }
 
 type NewPlayerEligibilitySex = "" | "female" | "male";
@@ -98,6 +105,7 @@ function normalizeTeam(value: string): string {
 
 export function BoxscoreReviewEditor({
   actionError,
+  actionStep,
   competitionId,
   competitionGender,
   csrfToken,
@@ -110,6 +118,7 @@ export function BoxscoreReviewEditor({
 }: BoxscoreReviewEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
   const matches = useMemo(
     () =>
       new Map(
@@ -255,13 +264,44 @@ export function BoxscoreReviewEditor({
       setSavedAt(
         saveAdminDraft(
           { flow: "boxscore-review", competitionId, entityId: review.id },
-          { gameId, step, registrations: teamRegistrations, resolutions },
+          {
+            applyReviewedMetadata,
+            gameId,
+            manualHomeRegistrationId,
+            scheduledDate,
+            scheduledTime,
+            step,
+            targetMode,
+            registrations: teamRegistrations,
+            resolutions,
+            venue,
+          },
         ),
       );
       setPendingDraft(false);
     }, 450);
     return () => window.clearTimeout(timeout);
-  }, [competitionId, gameId, pendingDraft, resolutions, review.id, step, teamRegistrations]);
+  }, [
+    applyReviewedMetadata,
+    competitionId,
+    gameId,
+    manualHomeRegistrationId,
+    pendingDraft,
+    resolutions,
+    review.id,
+    scheduledDate,
+    scheduledTime,
+    step,
+    targetMode,
+    teamRegistrations,
+    venue,
+  ]);
+
+  useEffect(() => {
+    if (!actionError) return;
+    setStep(actionStep ?? 4);
+    actionErrorRef.current?.focus();
+  }, [actionError, actionStep]);
 
   useEffect(() => {
     if (navigation.state === "submitting" && navigation.formAction?.includes("mode=confirm")) {
@@ -312,6 +352,12 @@ export function BoxscoreReviewEditor({
     if (
       !draft.data ||
       !Number.isInteger(draft.data.gameId) ||
+      !Number.isInteger(draft.data.manualHomeRegistrationId) ||
+      !["create", "existing"].includes(draft.data.targetMode) ||
+      typeof draft.data.scheduledDate !== "string" ||
+      typeof draft.data.scheduledTime !== "string" ||
+      typeof draft.data.venue !== "string" ||
+      typeof draft.data.applyReviewedMetadata !== "boolean" ||
       !draft.data.registrations ||
       !draft.data.resolutions
     ) {
@@ -322,7 +368,7 @@ export function BoxscoreReviewEditor({
     const restoredGame = draft.data.gameId
       ? eligibleGames.find((game) => game.id === draft.data.gameId)
       : null;
-    if (draft.data.gameId && !restoredGame) {
+    if (draft.data.targetMode === "existing" && draft.data.gameId && !restoredGame) {
       discard();
       setRestoreMessage("O jogo estrutural do rascunho não está mais disponível.");
       return;
@@ -346,8 +392,18 @@ export function BoxscoreReviewEditor({
       }),
     );
     const restoredStep = Math.min(4, Math.max(2, draft.data.step));
-    setStep(missingTeams > 0 || !restoredGame ? 2 : restoredStep);
+    const restoredTargetReady =
+      draft.data.targetMode === "existing"
+        ? Boolean(restoredGame)
+        : resolvedRegistrationIds.includes(draft.data.manualHomeRegistrationId);
+    setStep(missingTeams > 0 || !restoredTargetReady ? 2 : restoredStep);
     setGameId(restoredGame?.id ?? 0);
+    setTargetMode(draft.data.targetMode);
+    setManualHomeRegistrationId(draft.data.manualHomeRegistrationId);
+    setScheduledDate(draft.data.scheduledDate);
+    setScheduledTime(draft.data.scheduledTime);
+    setVenue(draft.data.venue);
+    setApplyReviewedMetadata(draft.data.applyReviewedMetadata);
     setTeamRegistrations(initialRegistrations);
     setResolutions(restoredResolutions);
     setSavedAt(draft.savedAt);
@@ -380,6 +436,11 @@ export function BoxscoreReviewEditor({
         <AdminDraftNotice savedAt={draft.savedAt} onRestore={restore} onDiscard={discard} />
       ) : null}
       {restoreMessage ? <output className="admin-note">{restoreMessage}</output> : null}
+      {actionError ? (
+        <p className="form-error" role="alert" tabIndex={-1} ref={actionErrorRef}>
+          {actionError}
+        </p>
+      ) : null}
       <Form method="post" action={reviewAction("confirm")} onSubmit={() => setAttempted(true)}>
         <UnsavedChangesGuard active={pendingDraft || hasTransientPrivateSelection} />
         <input type="hidden" name="csrfToken" value={csrfToken} />
@@ -400,11 +461,6 @@ export function BoxscoreReviewEditor({
           <p>
             Extraído do PDF: {review.parsed.scheduledLocal} · {review.parsed.venue}
           </p>
-          {actionError ? (
-            <p className="form-error" role="alert">
-              {actionError}
-            </p>
-          ) : null}
           <h3>Equipes da edição</h3>
           <p>
             Confirme cada equipe antes de avançar. Uma equipe ausente pode ser inscrita a partir de
@@ -847,11 +903,6 @@ export function BoxscoreReviewEditor({
             Serão confirmadas 2 equipes e {players.length} associações. O commit permanece atômico e
             o PDF continua privado.
           </p>
-          {actionError ? (
-            <p className="form-error" role="alert">
-              {actionError}
-            </p>
-          ) : null}
           <label className="confirmation-check">
             <input type="checkbox" name="confirmImport" value="yes" required />
             Confirmo que revisei as equipes, atletas e correspondências sugeridas.
