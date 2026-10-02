@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildPublicGamePath,
   buildPrefillSlots,
+  buildPublicGamePath,
   calculatePoints,
   deriveTeamScore,
   duplicateJerseys,
@@ -91,8 +91,11 @@ describe("manual scoresheet domain", () => {
   });
 
   it("builds the localized public game detail route", () => {
-    expect(buildPublicGamePath(2026, "liga-de-desenvolvimento", "sub-15", 40)).toBe(
-      "/2026/liga-de-desenvolvimento/sub-15/jogos/40",
+    expect(buildPublicGamePath(2026, "liga-de-desenvolvimento", "sub-15", "male", 40)).toBe(
+      "/2026/liga-de-desenvolvimento/sub-15/masculino/jogos/40",
+    );
+    expect(buildPublicGamePath(2026, "liga-de-desenvolvimento", "sub-15", "female", 41)).toBe(
+      "/2026/liga-de-desenvolvimento/sub-15/feminino/jogos/41",
     );
   });
 });

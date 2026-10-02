@@ -194,7 +194,9 @@ export function buildPublicGamePath(
   year: number,
   competitionSlug: string,
   categorySlug: string,
+  genderDivision: "male" | "female",
   gameId: number,
 ): string {
-  return `/${year}/${competitionSlug}/${categorySlug}/jogos/${gameId}`;
+  const genderSlug = genderDivision === "male" ? "masculino" : "feminino";
+  return `/${year}/${competitionSlug}/${categorySlug}/${genderSlug}/jogos/${gameId}`;
 }
