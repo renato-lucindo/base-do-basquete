@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(35);
+select plan(36);
 set constraints all deferred;
 insert into auth.users(id) values('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id) select '11111111-1111-4111-8111-111111111111'
@@ -26,6 +26,7 @@ select throws_ok($$insert into public.competitions(series_id,category_id,year,di
 '42501',null,'direct edition creation is denied');
 select throws_ok($$update public.competition_slots set origin_kind='entry'$$,'42501',null,'direct structural writes denied');
 select is((select status from public.competitions where id=(select competition_id from preset_context)),'draft','edition stays private draft');
+select is((select count(*) from public.competitions where id=(select competition_id from preset_context) and season_id is not null),1::bigint,'legacy creation RPC assigns the season parent');
 select is((select count(*) from public.games where competition_id=(select competition_id from preset_context)),0::bigint,'no games invented at creation');
 select is((select count(*) from public.matchups where competition_id=(select competition_id from preset_context)),3::bigint,'four entries compile three reserved matchups');
 select is((select count(*) from public.competition_slots where competition_id=(select competition_id from preset_context)),6::bigint,'two relational slots per matchup');

@@ -40,7 +40,7 @@ jobs:
 
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -50,6 +50,12 @@ jobs:
       - run: npm ci
       - name: Apply migrations and seed from zero
         run: npx --no-install supabase db start
+      - name: Verify season and division upgrade compatibility
+        run: |
+          npx --no-install supabase db reset --local --version 20261001185013 --sql-paths tests/legacy-rollout/season_division_upgrade.sql
+          npx --no-install supabase migration up --local
+          node scripts/verify-season-division-upgrade.mjs
+          npx --no-install supabase db reset --local
       - name: Verify manual scheduling upgrade compatibility
         run: node scripts/test-manual-scheduling-upgrade.mjs
       - name: Run pgTAP database tests
