@@ -82,6 +82,28 @@ describe("administrative area isolation", () => {
     expect(client.from).not.toHaveBeenCalled();
   });
 
+  it("creates teams through the server RPC without accepting a client slug", async () => {
+    client.rpc.mockResolvedValue({ data: { id: 51 }, error: null });
+    await expect(
+      teamsAction(
+        args(
+          post("teams", {
+            intent: "create-team",
+            csrfToken: "test-csrf",
+            name: "  Águias   do Sul ",
+            abbreviation: " ads ",
+            slug: "forged-client-slug",
+          }),
+        ),
+      ),
+    ).rejects.toMatchObject({ status: 302 });
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith("admin_create_team", {
+      p_name: "Águias do Sul",
+      p_abbreviation: "ADS",
+    });
+    expect(client.from).not.toHaveBeenCalled();
+  });
+
   it("preserves the private athlete creation RPC and redirects to its own area", async () => {
     client.rpc.mockResolvedValue({ data: { id: 42 }, error: null });
     await expect(

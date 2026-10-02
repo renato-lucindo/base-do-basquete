@@ -4553,6 +4553,20 @@ export type Database = {
         }[];
       };
       admin_claim_boxscore_upload: { Args: never; Returns: undefined };
+      admin_begin_boxscore_import: {
+        Args: {
+          p_competition_id: number;
+          p_file_size_bytes: number;
+          p_matches: Json;
+          p_parsed_payload: Json;
+          p_parser_version: string;
+          p_sha256: string;
+          p_source_filename: string;
+          p_storage_path: string;
+          p_validation_payload: Json;
+        };
+        Returns: Json;
+      };
       admin_clone_competition_ruleset: {
         Args: {
           p_allow_gender_recompile?: boolean;
@@ -4575,6 +4589,18 @@ export type Database = {
       };
       admin_commit_boxscore_import: {
         Args: { p_import_id: number; p_resolution: Json };
+        Returns: number;
+      };
+      admin_commit_boxscore_import_v2: {
+        Args: { p_import_id: number; p_resolution: Json; p_target: Json };
+        Returns: number;
+      };
+      admin_mark_boxscore_import_ready: {
+        Args: {
+          p_import_id: number;
+          p_observed_file_size_bytes: number;
+          p_observed_sha256: string;
+        };
         Returns: number;
       };
       admin_resolve_boxscore_team_registrations: {
@@ -4707,6 +4733,41 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_create_and_register_team: {
+        Args: { p_abbreviation: string; p_competition_id: number; p_name: string };
+        Returns: Json;
+      };
+      admin_create_manual_matchup: {
+        Args: {
+          p_away_registration_id: number;
+          p_competition_id: number;
+          p_home_registration_id: number;
+          p_request_id: string;
+          p_round_id: number | null;
+          p_scheduled_at: string;
+          p_venue: string;
+        };
+        Returns: Json;
+      };
+      admin_create_team: {
+        Args: { p_abbreviation: string; p_name: string };
+        Returns: {
+          abbreviation: string | null;
+          created_at: string;
+          id: number;
+          is_active: boolean;
+          is_public: boolean;
+          name: string;
+          slug: string;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "teams";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_create_team_registration: {
         Args: { p_competition_id: number; p_team_id: number };
         Returns: {
@@ -4818,6 +4879,20 @@ export type Database = {
           p_venue: string;
         };
         Returns: number;
+      };
+      admin_prepare_matchups_batch: {
+        Args: { p_competition_id: number; p_items: Json };
+        Returns: Json;
+      };
+      admin_update_manual_matchup_participants: {
+        Args: {
+          p_away_registration_id: number;
+          p_expected_away_registration_id: number;
+          p_expected_home_registration_id: number;
+          p_home_registration_id: number;
+          p_matchup_id: number;
+        };
+        Returns: Json;
       };
       admin_publish_competition: {
         Args: {

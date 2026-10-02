@@ -156,6 +156,74 @@ const counts = JSON.parse(
 assert.deepEqual(counts, { editions: 1, audits: 1, revisions: 1 });
 console.log("PASS: concurrent first-write idempotency, exactly one edition/revision/audit");
 
+const raceToken = runId.replaceAll("-", "").slice(0, 8);
+const manualFixture = JSON.parse(
+  await run(`begin; ${authContext}
+with teams as (
+  insert into public.teams(name,slug) values
+    ('Manual race home ${raceToken}','manual-race-home-${raceToken}'),
+    ('Manual race away ${raceToken}','manual-race-away-${raceToken}')
+  returning id
+), registrations as (
+  insert into public.team_registrations(competition_id,team_id,status,confirmed_at)
+  select ${created[0]},id,'confirmed',now() from teams
+  returning id
+)
+select jsonb_build_object('home',min(id),'away',max(id)) from registrations;
+commit;`),
+);
+const manualRequestId = randomUUID();
+const createManual = `set local role authenticated; select public.admin_create_manual_matchup('${manualRequestId}',${created[0]},null,${manualFixture.home},${manualFixture.away},null,'Concurrency court')`;
+const manualCreated = await race(
+  `select id from public.competitions where id=${created[0]} for update`,
+  [createManual, createManual],
+);
+assert.equal(
+  manualCreated[0],
+  manualCreated[1],
+  "simultaneous manual matchup retries return the same committed result",
+);
+const manualResult = JSON.parse(manualCreated[0]);
+const manualCounts = JSON.parse(
+  await run(`select jsonb_build_object(
+'requests',(select count(*) from private.manual_matchup_requests where request_id='${manualRequestId}'),
+'audits',(select count(*) from public.admin_mutation_audit where action='manual_matchup_created' and entity_id=${manualResult.matchupId}),
+'games',(select count(*) from public.games where id=${manualResult.gameId}))`),
+);
+assert.deepEqual(manualCounts, { requests: 1, audits: 1, games: 1 });
+console.log("PASS: concurrent manual matchup retry creates one request/matchup/game/audit");
+
+const sameTeamName = `Concurrent Wolves ${raceToken}`;
+const createSameTeam = `set local role authenticated; select (public.admin_create_team('${sameTeamName}',null)).id`;
+const sameTeam = await race(
+  `select pg_advisory_xact_lock(hashtextextended('team-name:${sameTeamName.toLowerCase()}',0))`,
+  [createSameTeam, createSameTeam],
+);
+assert.equal(
+  sameTeam[0],
+  sameTeam[1],
+  "same normalized team name resolves to one team under concurrency",
+);
+assert.equal(Number(await run(`select count(*) from public.teams where id=${sameTeam[0]}`)), 1);
+console.log("PASS: concurrent identical team creation resolves to one team");
+
+const slugNameOne = `Slug Race ${raceToken}`;
+const slugNameTwo = `Slug-Race ${raceToken}`;
+const slugBase = `slug-race-${raceToken}`;
+const slugTeams = await race(
+  `select pg_advisory_xact_lock(hashtextextended('team-slug:${slugBase}',0))`,
+  [
+    `set local role authenticated; select (public.admin_create_team('${slugNameOne}',null)).id`,
+    `set local role authenticated; select (public.admin_create_team('${slugNameTwo}',null)).id`,
+  ],
+);
+assert.notEqual(slugTeams[0], slugTeams[1], "distinct colliding names remain distinct teams");
+const slugValues = (
+  await run(`select slug from public.teams where id in (${slugTeams.join(",")}) order by slug`)
+).split("\n");
+assert.deepEqual(slugValues, [slugBase, `${slugBase}-2`]);
+console.log("PASS: concurrent slug collisions serialize and receive deterministic suffixes");
+
 const draft = JSON.parse(
   await run(`begin; ${authContext}
 create temporary table race_context(value jsonb);

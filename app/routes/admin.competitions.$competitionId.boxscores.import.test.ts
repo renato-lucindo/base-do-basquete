@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { ParsedBoxscore } from "../modules/boxscore/types";
 
 import {
+  buildTeamRestrictedMatches,
   mapImportError,
   parseEligibilityPlayers,
   parsePlayerResolution,
@@ -74,5 +76,82 @@ describe("boxscore import eligibility decisions", () => {
       message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
       status: 409,
     });
+  });
+
+  it("rejects PDFs outside the two explicit contracts", () => {
+    expect(mapImportError("BDB_PDF_UNSUPPORTED_FORMAT")).toEqual({
+      message: "O PDF não corresponde aos modelos FIBA/Genius Sports ou Basketball Site.",
+      status: 422,
+    });
+  });
+
+  it("recalculates suggestions only inside the resolved team roster", () => {
+    const parsed: ParsedBoxscore = {
+      format: "BASKETBALL_SITE" as const,
+      parserVersion: "basketball-site-v1",
+      competitionName: "Liga",
+      gameNumber: null,
+      scheduledLocal: "2026-05-09T19:00",
+      durationSeconds: null,
+      venue: "Ginásio",
+      warnings: [],
+      teams: [
+        {
+          name: "Equipe A",
+          abbreviation: "A",
+          score: 1,
+          periodScores: null,
+          players: [
+            {
+              name: "J. Silva",
+              jerseyNumber: "7",
+              starter: false,
+              captain: false,
+              didNotPlay: false,
+              secondsPlayed: 0,
+              fieldGoals: { made: 0, attempted: 0 },
+              twoPoints: { made: 0, attempted: 0 },
+              threePoints: { made: 0, attempted: 0 },
+              freeThrows: { made: 0, attempted: 0 },
+              offensiveRebounds: 0,
+              defensiveRebounds: 0,
+              rebounds: 0,
+              assists: 0,
+              turnovers: 0,
+              steals: 0,
+              blocks: 0,
+              foulsCommitted: 0,
+              foulsReceived: null,
+              plusMinus: null,
+              efficiency: 0,
+              points: 1,
+            },
+          ],
+        },
+        { name: "Equipe B", abbreviation: "B", score: 0, periodScores: null, players: [] },
+      ],
+    };
+    const matches = buildTeamRestrictedMatches(
+      parsed,
+      [
+        {
+          id: 1,
+          teamName: "Equipe A",
+          roster: [
+            { rosterEntryId: 11, playerId: 21, playerName: "João Silva", jerseyNumber: "7" },
+          ],
+        },
+        {
+          id: 2,
+          teamName: "Equipe B",
+          roster: [
+            { rosterEntryId: 12, playerId: 22, playerName: "José Silva", jerseyNumber: "7" },
+          ],
+        },
+      ],
+      [{ sourceTeamName: "Equipe A", registrationId: 1 }],
+    );
+    expect(matches[0]).toMatchObject({ kind: "exact", rosterEntryId: 11, playerId: 21 });
+    expect(matches[0]?.alternatives).toHaveLength(1);
   });
 });

@@ -50,6 +50,8 @@ jobs:
       - run: npm ci
       - name: Apply migrations and seed from zero
         run: npx --no-install supabase db start
+      - name: Verify manual scheduling upgrade compatibility
+        run: node scripts/test-manual-scheduling-upgrade.mjs
       - name: Run pgTAP database tests
         run: npx --no-install supabase test db --local
       - name: Verify preset concurrency on disposable database
