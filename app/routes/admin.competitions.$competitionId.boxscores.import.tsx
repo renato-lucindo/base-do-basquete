@@ -534,7 +534,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const importId = parseId(formData.get("importId"));
     const teamCount = Number(formData.get("teamCount"));
     if (!importId || teamCount !== 2) {
-      return data({ error: "Revisão de equipes incompleta." }, { status: 400 });
+      return data(
+        { error: "Revisão de equipes incompleta.", reviewStep: 2 as const },
+        { status: 400 },
+      );
     }
     const teams = Array.from({ length: teamCount }, (_, index) => {
       const resolution = parseTeamResolution(formData.get(`teamResolution-${index}`));
@@ -544,7 +547,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       };
     });
     if (teams.some((team) => !team.sourceTeamName || !team.action)) {
-      return data({ error: "Revise a resolução das duas equipes." }, { status: 400 });
+      return data(
+        { error: "Revise a resolução das duas equipes.", reviewStep: 2 as const },
+        { status: 400 },
+      );
     }
     const resolved = await auth.client.rpc("admin_resolve_boxscore_team_registrations", {
       p_import_id: importId,
@@ -560,7 +566,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         status: mapped.status,
         context: { competitionId, entityId: importId, errorCode: resolved.error.code },
       });
-      return data({ error: mapped.message }, { status: mapped.status });
+      return data({ error: mapped.message, reviewStep: 2 as const }, { status: mapped.status });
     }
     logOperationalEvent({
       correlationId,
