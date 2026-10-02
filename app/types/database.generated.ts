@@ -4725,6 +4725,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_confirm_team_registrations: {
+        Args: { p_competition_id: number; p_registration_ids: number[] };
+        Returns: Json;
+      };
       admin_fail_boxscore_import: {
         Args: { p_error_code: string; p_import_id: number };
         Returns: undefined;

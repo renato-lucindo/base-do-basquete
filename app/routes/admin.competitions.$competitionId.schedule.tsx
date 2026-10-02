@@ -1,10 +1,13 @@
+import { useEffect, useRef } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminArea } from "../components/admin/admin-area";
 import { cloudflareContext } from "../context";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import {
+  competitionTimeZone,
   scheduleId,
+  scheduleLocalParts,
   schedulingError,
   validateResolution,
   validateSchedule,
@@ -12,12 +15,13 @@ import {
 import type { Route } from "./+types/admin.competitions.$competitionId.schedule";
 
 interface Schedule {
-  entries: { id: number; seed: number; registrationId: number | null }[];
+  entries: { id: number; seed: number; registrationId: number | null; label: string }[];
   matchups: {
     id: number;
     code: string;
     round: string;
     order: number;
+    label: string;
     homeRegistrationId: number | null;
     awayRegistrationId: number | null;
     revision: number;
@@ -36,6 +40,63 @@ interface Schedule {
     } | null;
   }[];
 }
+
+export function scheduleFieldAccessibleName(field: string, matchupLabel: string) {
+  return `${field} — ${matchupLabel}`;
+}
+
+export function scheduleErrorDescriptionId(
+  actionIntent: string | null,
+  errorMatchupId: number | null,
+  formIntent: "prepare" | "resolve",
+  matchupId: number,
+) {
+  return actionIntent === formIntent && errorMatchupId === matchupId
+    ? "schedule-action-error"
+    : undefined;
+}
+
+interface ScheduleRegistration {
+  id: number;
+  status: string;
+}
+
+export function getAssignableRegistrations<T extends ScheduleRegistration>(
+  registrations: T[],
+  entries: Schedule["entries"],
+): T[] {
+  const assignedRegistrationIds = new Set(
+    entries.flatMap((entry) => (entry.registrationId ? [entry.registrationId] : [])),
+  );
+  return registrations.filter(
+    (registration) =>
+      registration.status === "confirmed" && !assignedRegistrationIds.has(registration.id),
+  );
+}
+
+export function SchedulePrerequisiteNotice({
+  competitionId,
+  pendingCount,
+}: {
+  competitionId: number;
+  pendingCount: number;
+}) {
+  return (
+    <section className="admin-note" aria-labelledby="schedule-prerequisite-title">
+      <h2 id="schedule-prerequisite-title">Confirme as equipes antes de ocupar as posições</h2>
+      <p>
+        {pendingCount === 1
+          ? "Há uma inscrição aguardando confirmação."
+          : `Há ${pendingCount} inscrições aguardando confirmação.`}{" "}
+        A agenda usa somente equipes confirmadas.
+      </p>
+      <Link className="button button-primary" to={`/admin/competitions/${competitionId}`}>
+        Revisar equipes
+      </Link>
+    </section>
+  );
+}
+
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const auth = await requireAdminAal2(request, context.get(cloudflareContext).env);
   const id = scheduleId(params.competitionId);
@@ -70,13 +131,15 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const form = await request.formData();
   assertCsrfToken(form, auth.payload.csrfToken);
   const headers = auth.cookie ? { "Set-Cookie": auth.cookie } : undefined;
+  const intent = form.get("intent");
   let code: string | undefined;
-  if (form.get("intent") === "assign") {
+  let affectedMatchupId: number | null = null;
+  if (intent === "assign") {
     const entryId = scheduleId(form.get("entryId"));
     const registrationId = scheduleId(form.get("registrationId"));
     if (!entryId || !registrationId)
       return data(
-        { error: "Escolha explicitamente uma equipe confirmada." },
+        { error: "Escolha explicitamente uma equipe confirmada.", intent },
         { status: 400, headers },
       );
     const entry = await auth.client
@@ -92,9 +155,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_registration_id: registrationId,
       })
     ).error?.code;
-  } else if (form.get("intent") === "prepare") {
+  } else if (intent === "prepare") {
+    affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateSchedule(form);
-    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    if (!parsed.ok)
+      return data(
+        { error: parsed.error, intent, matchupId: affectedMatchupId },
+        { status: 400, headers },
+      );
     const m = await auth.client
       .from("matchups")
       .select("id")
@@ -112,9 +180,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         p_venue: parsed.input.venue as string,
       })
     ).error?.code;
-  } else if (form.get("intent") === "resolve") {
+  } else if (intent === "resolve") {
+    affectedMatchupId = scheduleId(form.get("matchupId"));
     const parsed = validateResolution(form);
-    if (!parsed.ok) return data({ error: parsed.error }, { status: 400, headers });
+    if (!parsed.ok)
+      return data(
+        { error: parsed.error, intent, matchupId: affectedMatchupId },
+        { status: 400, headers },
+      );
     const matchup = await auth.client
       .from("matchups")
       .select("id")
@@ -130,12 +203,35 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       })
     ).error?.code;
   } else throw new Response("Ação inválida", { status: 400 });
-  if (code) return data({ error: schedulingError(code) }, { status: 400, headers });
+  if (code)
+    return data(
+      { error: schedulingError(code), intent, matchupId: affectedMatchupId },
+      { status: 400, headers },
+    );
   return redirect(`/admin/competitions/${id}/schedule?saved=1`, { headers });
 }
 export default function SchedulePage({ loaderData, actionData }: Route.ComponentProps) {
   const { edition, schedule, registrations, csrfToken } = loaderData;
-  const busy = useNavigation().state !== "idle";
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
+  const actionErrorRef = useRef<HTMLParagraphElement>(null);
+  const actionIntent =
+    actionData && "intent" in actionData && typeof actionData.intent === "string"
+      ? actionData.intent
+      : null;
+  const errorMatchupId =
+    actionData && "matchupId" in actionData && typeof actionData.matchupId === "number"
+      ? actionData.matchupId
+      : null;
+  const errorMatchupLabel = schedule.matchups.find(({ id }) => id === errorMatchupId)?.label;
+  useEffect(() => {
+    if (navigation.state === "idle" && actionData?.error) actionErrorRef.current?.focus();
+  }, [actionData, navigation.state]);
+  const confirmedRegistrations = registrations.filter(
+    (registration) => registration.status === "confirmed",
+  );
+  const pendingRegistrationCount = registrations.length - confirmedRegistrations.length;
+  const assignableRegistrations = getAssignableRegistrations(registrations, schedule.entries);
   const name = (id: number | null) =>
     registrations.find((r) => r.id === id)?.name ?? "Vaga pendente";
   return (
@@ -145,7 +241,18 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
         Atribua as equipes às posições explicitamente. Preparar ou agendar não publica a edição.
         Atribuições confirmadas não podem ser trocadas neste fluxo.
       </p>
-      {actionData?.error ? <p role="alert">{actionData.error}</p> : null}
+      {actionData?.error ? (
+        <p id="schedule-action-error" ref={actionErrorRef} role="alert" tabIndex={-1}>
+          {errorMatchupLabel ? `${errorMatchupLabel}: ` : ""}
+          {actionData.error}
+        </p>
+      ) : null}
+      {schedule.entries.length > 0 && confirmedRegistrations.length === 0 ? (
+        <SchedulePrerequisiteNotice
+          competitionId={edition.id}
+          pendingCount={pendingRegistrationCount}
+        />
+      ) : null}
       <h2>Posições de entrada</h2>
       {!schedule.entries.length ? (
         <p>Esta edição não possui preset operacional. O histórico foi preservado.</p>
@@ -157,33 +264,39 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
           <input type="hidden" name="entryId" value={entry.id} />
           {entry.registrationId ? (
             <p>
-              Posição {entry.seed}: {name(entry.registrationId)}
+              {entry.label}: {name(entry.registrationId)}
             </p>
           ) : (
             <>
               <label>
-                Posição {entry.seed}
-                <select name="registrationId" required defaultValue="">
+                {entry.label}
+                <select
+                  name="registrationId"
+                  required
+                  defaultValue=""
+                  disabled={assignableRegistrations.length === 0}
+                >
                   <option value="" disabled>
-                    Selecione a equipe
+                    {assignableRegistrations.length
+                      ? "Selecione a equipe"
+                      : "Nenhuma equipe confirmada disponível"}
                   </option>
-                  {registrations
-                    .filter(
-                      (r) =>
-                        r.status === "confirmed" &&
-                        !schedule.entries.some((e) => e.registrationId === r.id),
-                    )
-                    .map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
+                  {assignableRegistrations.map((registration) => (
+                    <option key={registration.id} value={registration.id}>
+                      {registration.name}
+                    </option>
+                  ))}
                 </select>
               </label>
+              {assignableRegistrations.length === 0 ? (
+                <p>Confirme outra equipe no hub para liberar esta posição.</p>
+              ) : null}
               <button
                 type="submit"
                 className="button button-primary"
-                disabled={busy || edition.status !== "draft"}
+                disabled={
+                  busy || edition.status !== "draft" || assignableRegistrations.length === 0
+                }
               >
                 Confirmar equipe nesta posição
               </button>
@@ -192,79 +305,123 @@ export default function SchedulePage({ loaderData, actionData }: Route.Component
         </Form>
       ))}
       <h2>Confrontos e preparação</h2>
-      {schedule.matchups.map((m) => (
-        <section key={m.id} className="admin-card">
-          <h3>
-            {m.round} — confronto {m.order}
-          </h3>
-          <p>
-            {name(m.homeRegistrationId)} × {name(m.awayRegistrationId)}
-          </p>
-          <p>
-            {m.gameId
-              ? `Jogo #${m.gameId} preparado`
-              : "Preparação privada; sem jogo até as duas vagas estarem resolvidas."}
-          </p>
-          {m.resolution ? (
+      {schedule.matchups.map((m) => {
+        const localSchedule = scheduleLocalParts(m.scheduledAt);
+        const canPrepare = m.readyToSchedule || m.gameId !== null;
+        return (
+          <section key={m.id} className="admin-card" aria-labelledby={`matchup-${m.id}`}>
+            <h3 id={`matchup-${m.id}`}>{m.label}</h3>
             <p>
-              Resultado confirmado: {m.resolution.homeScore} × {m.resolution.awayScore}.
-              Classificado: {name(m.resolution.winnerRegistrationId)}.
+              {name(m.homeRegistrationId)} × {name(m.awayRegistrationId)}
             </p>
-          ) : m.readyToResolve && m.officialResultSubmissionId ? (
-            <Form method="post" className="admin-form">
-              <input type="hidden" name="csrfToken" value={csrfToken} />
-              <input type="hidden" name="intent" value="resolve" />
-              <input type="hidden" name="matchupId" value={m.id} />
-              <input
-                type="hidden"
-                name="officialResultSubmissionId"
-                value={m.officialResultSubmissionId}
-              />
+            <p>
+              {m.gameId
+                ? `Jogo #${m.gameId} preparado`
+                : "Preparação privada; sem jogo até as duas vagas estarem resolvidas."}
+            </p>
+            {m.resolution ? (
               <p>
-                Há um resultado oficial principal ativo. A equipe classificada será calculada no
-                banco.
+                Resultado confirmado: {m.resolution.homeScore} × {m.resolution.awayScore}.
+                Classificado: {name(m.resolution.winnerRegistrationId)}.
               </p>
-              <button type="submit" className="button button-primary" disabled={busy}>
-                Confirmar progressão pelo resultado oficial
+            ) : m.readyToResolve && m.officialResultSubmissionId ? (
+              <Form
+                method="post"
+                className="admin-form"
+                aria-describedby={scheduleErrorDescriptionId(
+                  actionIntent,
+                  errorMatchupId,
+                  "resolve",
+                  m.id,
+                )}
+              >
+                <input type="hidden" name="csrfToken" value={csrfToken} />
+                <input type="hidden" name="intent" value="resolve" />
+                <input type="hidden" name="matchupId" value={m.id} />
+                <input
+                  type="hidden"
+                  name="officialResultSubmissionId"
+                  value={m.officialResultSubmissionId}
+                />
+                <p>
+                  Há um resultado oficial principal ativo. A equipe classificada será calculada no
+                  banco.
+                </p>
+                <button type="submit" className="button button-primary" disabled={busy}>
+                  Confirmar progressão pelo resultado oficial
+                </button>
+              </Form>
+            ) : m.gameId ? (
+              <p>
+                O confronto será liberado para progressão somente após o resultado oficial ativo.
+              </p>
+            ) : null}
+            {!canPrepare ? (
+              <p className="admin-note">
+                Este confronto ainda depende da definição das duas equipes nas posições anteriores.
+              </p>
+            ) : null}
+            <Form
+              method="post"
+              className="admin-form"
+              aria-label={`Preparar ${m.label}`}
+              aria-describedby={scheduleErrorDescriptionId(
+                actionIntent,
+                errorMatchupId,
+                "prepare",
+                m.id,
+              )}
+            >
+              <input type="hidden" name="csrfToken" value={csrfToken} />
+              <input type="hidden" name="intent" value="prepare" />
+              <input type="hidden" name="matchupId" value={m.id} />
+              <input type="hidden" name="expectedRevision" value={m.revision} />
+              <label>
+                Data (opcional)
+                <input
+                  aria-label={scheduleFieldAccessibleName("Data (opcional)", m.label)}
+                  name="scheduledDate"
+                  type="date"
+                  defaultValue={localSchedule.date}
+                  disabled={!canPrepare}
+                />
+              </label>
+              <label>
+                Horário (opcional)
+                <input
+                  aria-label={scheduleFieldAccessibleName("Horário (opcional)", m.label)}
+                  name="scheduledTime"
+                  type="time"
+                  defaultValue={localSchedule.time}
+                  disabled={!canPrepare}
+                  aria-describedby={`time-help-${m.id}`}
+                />
+              </label>
+              <p id={`time-help-${m.id}`}>
+                Horário oficial da competição: {competitionTimeZone}. O servidor converte a data e a
+                hora para o instante canônico.
+              </p>
+              <label>
+                Local (opcional)
+                <input
+                  aria-label={scheduleFieldAccessibleName("Local (opcional)", m.label)}
+                  name="venue"
+                  maxLength={160}
+                  defaultValue={m.venue ?? ""}
+                  disabled={!canPrepare}
+                />
+              </label>
+              <button
+                type="submit"
+                className="button button-primary"
+                disabled={busy || edition.status === "archived" || !canPrepare}
+              >
+                Salvar preparação
               </button>
             </Form>
-          ) : m.gameId ? (
-            <p>O confronto será liberado para progressão somente após o resultado oficial ativo.</p>
-          ) : null}
-          <Form method="post" className="admin-form">
-            <input type="hidden" name="csrfToken" value={csrfToken} />
-            <input type="hidden" name="intent" value="prepare" />
-            <input type="hidden" name="matchupId" value={m.id} />
-            <input type="hidden" name="expectedRevision" value={m.revision} />
-            <label>
-              Data e horário com fuso (opcional)
-              <input
-                name="scheduledAt"
-                defaultValue={
-                  m.scheduledAt ? `${new Date(m.scheduledAt).toISOString().slice(0, 16)}Z` : ""
-                }
-                placeholder="2026-09-15T19:30-03:00"
-                aria-describedby={`time-help-${m.id}`}
-              />
-            </label>
-            <p id={`time-help-${m.id}`}>
-              Informe o fuso explicitamente: -03:00 para São Paulo atual ou Z para UTC. O período é
-              validado no banco em America/Sao_Paulo.
-            </p>
-            <label>
-              Local (opcional)
-              <input name="venue" maxLength={160} defaultValue={m.venue ?? ""} />
-            </label>
-            <button
-              type="submit"
-              className="button button-primary"
-              disabled={busy || edition.status === "archived"}
-            >
-              Salvar preparação
-            </button>
-          </Form>
-        </section>
-      ))}
+          </section>
+        );
+      })}
     </AdminArea>
   );
 }

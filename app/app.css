@@ -1024,6 +1024,19 @@ a {
   gap: 24px;
 }
 
+.scoresheet-step[hidden] {
+  display: none;
+}
+
+.scoresheet-step-heading {
+  scroll-margin-top: 24px;
+}
+
+.scoresheet-step-heading:focus {
+  outline: 3px solid var(--green);
+  outline-offset: 6px;
+}
+
 .scoresheet-form fieldset {
   min-width: 0;
   border: 1px solid var(--line);
@@ -1147,9 +1160,7 @@ a {
 }
 
 .scoresheet-submit {
-  position: sticky;
-  bottom: 12px;
-  z-index: 2;
+  position: static;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -6245,9 +6256,7 @@ body {
 }
 
 .sticky-action-summary {
-  position: sticky;
-  z-index: 10;
-  bottom: 10px;
+  position: static;
   display: flex;
   align-items: center;
   gap: 16px;
