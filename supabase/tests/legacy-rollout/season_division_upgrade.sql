@@ -88,9 +88,13 @@ join public.series_category_data_profiles profile
   and profile.status = 'active'
 where series.slug = 'liga-upgrade';
 
+select set_config('bdb.allow_internal_ingestion_game', 'on', false);
+
 insert into public.games (id, competition_id, game_number, source)
 overriding system value
 values (92001, 91001, 'UPGRADE-1', 'structural');
+
+select set_config('bdb.allow_internal_ingestion_game', 'off', false);
 
 with publication_snapshot as (
   select private.competition_publication_snapshot(91001) ||
