@@ -64,3 +64,7 @@ jobs:
         run: node scripts/test-preset-concurrency.mjs
       - name: Verify boxscore team-resolution concurrency on disposable database
         run: node scripts/test-boxscore-team-resolution-concurrency.mjs
+      - name: Start disposable Data API for RPC contract smoke
+        run: npx --no-install supabase start -x studio,imgproxy,mailpit,storage-api,realtime,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - name: Verify named RPC arguments through PostgREST
+        run: node scripts/test-season-division-rpc-contract.mjs

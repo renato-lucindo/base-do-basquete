@@ -4748,6 +4748,7 @@ export type Database = {
       admin_assign_competition_competitive_division: {
         Args: {
           p_competition_id: number;
+          p_expected_competitive_division_value_id: number | null;
           p_competitive_division_value_id: number | null;
         };
         Returns: number;

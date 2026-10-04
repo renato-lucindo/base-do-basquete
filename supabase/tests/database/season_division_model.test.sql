@@ -496,12 +496,12 @@ select throws_ok(
 
 set local role authenticated;
 select is(
-  public.admin_assign_competition_competitive_division(adult_competition_id, silver_id),
+  public.admin_assign_competition_competitive_division(adult_competition_id, null, silver_id),
   adult_competition_id,
   'division assignment uses an AAL2 guarded RPC'
 ) from season_division_context;
 select is(
-  public.admin_assign_competition_competitive_division(adult_competition_id, silver_id),
+  public.admin_assign_competition_competitive_division(adult_competition_id, null, silver_id),
   adult_competition_id,
   'identical division assignment is idempotent'
 ) from season_division_context;
@@ -551,7 +551,7 @@ reset role;
 
 set local role anon;
 select throws_ok(
-  $$select public.admin_assign_competition_competitive_division(1, null)$$,
+  $$select public.admin_assign_competition_competitive_division(1, null, null)$$,
   '42501',
   null,
   'anon cannot execute division assignment'

@@ -232,6 +232,124 @@ create trigger competitions_ensure_season
 before insert on public.competitions
 for each row execute function private.ensure_competition_season();
 
+-- Preserve the final-profile invariants while moving all contextual dimensions
+-- together. Never infer a different primary source or silently drop a division.
+create or replace function public.admin_review_competition_gender(
+  p_competition_id bigint,
+  p_gender_division text
+)
+returns public.competitions
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_row public.competitions;
+  result public.competitions;
+  target_season_id bigint;
+  target_division_id bigint;
+  target_profile_id bigint;
+  season_name text;
+  conflict_constraint text;
+begin
+  if not public.is_current_admin_aal2() then
+    raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
+  end if;
+  if p_gender_division is null or p_gender_division not in ('male', 'female') then
+    raise exception using errcode = 'BD501', message = 'BDB_GENDER_DIVISION_INVALID';
+  end if;
+
+  select competition.* into current_row
+  from public.competitions competition
+  where competition.id = p_competition_id for update;
+  if not found then
+    raise exception using errcode = 'BD404', message = 'BDB_COMPETITION_NOT_FOUND';
+  end if;
+  if current_row.gender_division = p_gender_division
+    and not current_row.gender_division_review_required then
+    return current_row;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(
+    current_row.series_id::text || ':' || current_row.category_id::text || ':' || p_gender_division, 271
+  ));
+  select destination.id into target_profile_id
+  from public.series_category_data_profiles destination
+  join public.series_category_data_profiles source on source.id = current_row.data_profile_id
+  where destination.series_id = current_row.series_id
+    and destination.category_id = current_row.category_id
+    and destination.gender_division = p_gender_division
+    and destination.primary_source = source.primary_source
+    and destination.status = 'active'
+  for share of destination;
+  if not found then
+    raise exception using errcode = 'BD409', message = 'BDB_COMPETITION_PROFILE_MAPPING_NOT_FOUND';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(
+    current_row.series_id::text || ':' || current_row.year::text || ':' || p_gender_division, 417
+  ));
+  select series.name into season_name from public.competition_series series
+  where series.id = current_row.series_id and series.is_active for share;
+  if not found then
+    raise exception using errcode = 'BD404', message = 'BDB_COMPETITION_SERIES_NOT_FOUND';
+  end if;
+  insert into public.competition_seasons(
+    series_id, year, gender_division, name, suggested_starts_on, suggested_ends_on
+  ) values (
+    current_row.series_id, current_row.year, p_gender_division, season_name,
+    current_row.starts_on, current_row.ends_on
+  ) on conflict (series_id, year, gender_division) do nothing;
+  select season.id into target_season_id from public.competition_seasons season
+  where season.series_id = current_row.series_id and season.year = current_row.year
+    and season.gender_division = p_gender_division for share;
+
+  if current_row.competitive_division_value_id is not null then
+    select destination_value.id into target_division_id
+    from public.competition_competitive_division_values source_value
+    join public.competition_competitive_division_types source_type
+      on source_type.id = source_value.competitive_division_type_id
+    join public.competition_competitive_division_types destination_type
+      on destination_type.season_id = target_season_id and destination_type.slug = source_type.slug
+    join public.competition_competitive_division_values destination_value
+      on destination_value.competitive_division_type_id = destination_type.id
+      and destination_value.slug = source_value.slug
+    where source_value.id = current_row.competitive_division_value_id
+    for share of destination_type, destination_value;
+    if not found then
+      raise exception using errcode = 'BD409', message = 'BDB_COMPETITION_DIVISION_MAPPING_NOT_FOUND';
+    end if;
+  end if;
+
+  begin
+    update public.competitions set
+      gender_division = p_gender_division, season_id = target_season_id,
+      competitive_division_value_id = target_division_id,
+      gender_division_review_required = false, data_profile_id = target_profile_id,
+      data_profile_review_required = false, data_profile_validated_at = now(),
+      data_profile_validated_by = auth.uid()
+    where id = p_competition_id returning * into strict result;
+  exception when unique_violation then
+    get stacked diagnostics conflict_constraint = constraint_name;
+    if conflict_constraint <> 'competitions_dispute_unique' then raise; end if;
+    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_CONTEXT_ALREADY_EXISTS';
+  end;
+  insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
+  values ('competition_gender_reviewed', 'competition', result.id, jsonb_build_object(
+    'previousGenderDivision', current_row.gender_division, 'genderDivision', result.gender_division,
+    'previousSeasonId', current_row.season_id, 'seasonId', result.season_id,
+    'previousCompetitiveDivisionValueId', current_row.competitive_division_value_id,
+    'competitiveDivisionValueId', result.competitive_division_value_id,
+    'previousDataProfileId', current_row.data_profile_id, 'dataProfileId', result.data_profile_id
+  ));
+  return result;
+end;
+$$;
+
+revoke all on function public.admin_review_competition_gender(bigint, text)
+  from public, anon, authenticated;
+grant execute on function public.admin_review_competition_gender(bigint, text) to authenticated;
+
 create or replace function public.admin_create_competition_from_preset(
   p_request_id uuid,
   p_input jsonb
@@ -262,6 +380,7 @@ declare
   active_profile public.series_category_data_profiles;
   competition_id bigint;
   revision_id bigint;
+  conflict_constraint text;
 begin
   if not public.is_current_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -438,6 +557,7 @@ begin
     from public.admin_activate_series_category_data_profile(active_profile.id);
   end if;
 
+  begin
   insert into public.competitions (
     series_id,
     category_id,
@@ -473,6 +593,11 @@ begin
     requested_competitive_division_value_id
   )
   returning id into competition_id;
+  exception when unique_violation then
+    get stacked diagnostics conflict_constraint = constraint_name;
+    if conflict_constraint <> 'competitions_dispute_unique' then raise; end if;
+    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_CONTEXT_CONFLICT';
+  end;
 
   revision_id := private.materialize_competition_preset(competition_id, preset_key, entry_count);
   insert into private.competition_creation_requests (request_id, actor_id, input, competition_id)
@@ -492,9 +617,6 @@ begin
     )
   );
   return competition_id;
-exception
-  when unique_violation then
-    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_CONTEXT_CONFLICT';
 end;
 $$;
 
@@ -614,6 +736,7 @@ declare
   normalized_input jsonb;
   previous private.competition_dimension_requests;
   created_season_id bigint;
+  conflict_constraint text;
 begin
   if not public.is_current_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -622,7 +745,7 @@ begin
   if p_request_id is null
     or p_series_id is null
     or p_year is null
-    or p_year not between 1900 and 2200
+    or p_year not between 1900 and extract(year from current_date)::integer + 1
     or p_gender_division is null
     or p_gender_division not in ('male', 'female')
     or char_length(clean_name) not between 2 and 160
@@ -676,6 +799,7 @@ begin
     )
   );
 
+  begin
   insert into public.competition_seasons (
     series_id,
     year,
@@ -695,6 +819,11 @@ begin
     p_suggested_ends_on
   )
   returning id into created_season_id;
+  exception when unique_violation then
+    get stacked diagnostics conflict_constraint = constraint_name;
+    if conflict_constraint <> 'competition_seasons_context_unique' then raise; end if;
+    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_SEASON_CONFLICT';
+  end;
 
   insert into private.competition_dimension_requests (
     request_id,
@@ -714,9 +843,6 @@ begin
   );
 
   return created_season_id;
-exception
-  when unique_violation then
-    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_SEASON_CONFLICT';
 end;
 $$;
 
@@ -827,6 +953,7 @@ declare
   previous private.competition_dimension_requests;
   division_type public.competition_competitive_division_types;
   created_value_id bigint;
+  conflict_constraint text;
 begin
   if not public.is_current_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -890,6 +1017,7 @@ begin
     raise exception using errcode = 'BD409', message = 'BDB_COMPETITION_DIVISION_TYPE_CONFLICT';
   end if;
 
+  begin
   insert into public.competition_competitive_division_values (
     competitive_division_type_id,
     season_id,
@@ -905,6 +1033,14 @@ begin
     p_sort_order
   )
   returning id into created_value_id;
+  exception when unique_violation then
+    get stacked diagnostics conflict_constraint = constraint_name;
+    if conflict_constraint not in (
+      'competition_competitive_division_values_slug_unique',
+      'competition_competitive_division_values_order_unique'
+    ) then raise; end if;
+    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_DIVISION_VALUE_CONFLICT';
+  end;
 
   insert into private.competition_dimension_requests (
     request_id,
@@ -934,9 +1070,6 @@ begin
   );
 
   return created_value_id;
-exception
-  when unique_violation then
-    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_DIVISION_VALUE_CONFLICT';
 end;
 $$;
 
@@ -949,6 +1082,7 @@ grant execute on function public.admin_add_competitive_division_value(
 
 create function public.admin_assign_competition_competitive_division(
   p_competition_id bigint,
+  p_expected_competitive_division_value_id bigint,
   p_competitive_division_value_id bigint
 )
 returns bigint
@@ -958,6 +1092,7 @@ set search_path = ''
 as $$
 declare
   target public.competitions;
+  conflict_constraint text;
 begin
   if not public.is_current_admin_aal2() then
     raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
@@ -988,28 +1123,38 @@ begin
     return target.id;
   end if;
 
+  if target.competitive_division_value_id is distinct from p_expected_competitive_division_value_id then
+    raise exception using errcode = 'BD409', message = 'BDB_COMPETITION_DIVISION_STALE';
+  end if;
+
+  begin
   update public.competitions competition
   set competitive_division_value_id = p_competitive_division_value_id
   where competition.id = target.id;
+  exception when unique_violation then
+    get stacked diagnostics conflict_constraint = constraint_name;
+    if conflict_constraint <> 'competitions_dispute_unique' then raise; end if;
+    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_DISPUTE_CONFLICT';
+  end;
 
   insert into public.admin_mutation_audit (action, entity_type, entity_id, metadata)
   values (
     'competition_competitive_division_assigned',
     'competition',
     target.id,
-    jsonb_build_object('competitiveDivisionValueId', p_competitive_division_value_id)
+    jsonb_build_object(
+      'previousCompetitiveDivisionValueId', target.competitive_division_value_id,
+      'competitiveDivisionValueId', p_competitive_division_value_id
+    )
   );
 
   return target.id;
-exception
-  when unique_violation then
-    raise exception using errcode = 'BD506', message = 'BDB_COMPETITION_DISPUTE_CONFLICT';
 end;
 $$;
 
-revoke all on function public.admin_assign_competition_competitive_division(bigint, bigint)
+revoke all on function public.admin_assign_competition_competitive_division(bigint, bigint, bigint)
   from public, anon, authenticated;
-grant execute on function public.admin_assign_competition_competitive_division(bigint, bigint)
+grant execute on function public.admin_assign_competition_competitive_division(bigint, bigint, bigint)
   to authenticated;
 
 create view public.competition_dispute_contexts

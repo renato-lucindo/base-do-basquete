@@ -156,6 +156,55 @@ const counts = JSON.parse(
 assert.deepEqual(counts, { editions: 1, audits: 1, revisions: 1 });
 console.log("PASS: concurrent first-write idempotency, exactly one edition/revision/audit");
 
+const divisionFixture = JSON.parse(
+  await run(`begin; ${authContext}
+set local role authenticated;
+select jsonb_build_object(
+  'gold', public.admin_add_competitive_division_value('${randomUUID()}',
+    (select season_id from public.competitions where id=${created[0]}),'Série','serie','Ouro','ouro',1),
+  'silver', public.admin_add_competitive_division_value('${randomUUID()}',
+    (select season_id from public.competitions where id=${created[0]}),'Série','serie','Prata','prata',2)
+); commit;`),
+);
+function divisionContender(valueId) {
+  return `create function pg_temp.division_contender() returns text language plpgsql as $$begin
+    perform public.admin_assign_competition_competitive_division(${created[0]},null,${valueId});
+    return 'accepted';
+  exception when sqlstate 'BD409' then
+    if sqlerrm <> 'BDB_COMPETITION_DIVISION_STALE' then raise; end if;
+    return 'stale';
+  end$$; set local role authenticated;
+  select pg_temp.division_contender()`;
+}
+const divisionOutcomes = await race(
+  `select id from public.competitions where id=${created[0]} for update`,
+  [divisionContender(divisionFixture.gold), divisionContender(divisionFixture.silver)],
+);
+assert.deepEqual(divisionOutcomes.sort(), ["accepted", "stale"]);
+const winningDivision = Number(
+  await run(`select competitive_division_value_id from public.competitions where id=${created[0]}`),
+);
+assert.ok([divisionFixture.gold, divisionFixture.silver].includes(winningDivision));
+assert.equal(
+  Number(
+    await run(`select count(*) from public.admin_mutation_audit
+    where action='competition_competitive_division_assigned' and entity_id=${created[0]}`),
+  ),
+  1,
+);
+await run(`begin; ${authContext} set local role authenticated;
+  select public.admin_assign_competition_competitive_division(${created[0]},null,${winningDivision}); commit;`);
+assert.equal(
+  Number(
+    await run(`select count(*) from public.admin_mutation_audit
+    where action='competition_competitive_division_assigned' and entity_id=${created[0]}`),
+  ),
+  1,
+);
+console.log(
+  "PASS: divergent division CAS accepts one writer, rejects stale writer, and retries once",
+);
+
 const raceToken = runId.replaceAll("-", "").slice(0, 8);
 const manualFixture = JSON.parse(
   await run(`begin; ${authContext}
