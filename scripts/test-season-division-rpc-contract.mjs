@@ -4,16 +4,28 @@ import { execFileSync } from "node:child_process";
 import { createHmac, randomUUID } from "node:crypto";
 
 if (process.env.CI !== "true") throw new Error("Run only in the disposable CI stack.");
-const status = JSON.parse(
-  execFileSync("npx", ["--no-install", "supabase", "status", "-o", "json"], {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  }),
-);
+let rawStatus;
+try {
+  rawStatus = execFileSync(
+    "npx",
+    ["--no-install", "supabase", "status", "--output", "env", "--output-format", "text"],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+} catch {
+  // Never dump subprocess stdout/stderr: status includes disposable credentials.
+  throw new Error("Cannot read the disposable Supabase stack status.");
+}
+const status = {};
+for (const line of rawStatus.split(/\r?\n/)) {
+  const match = /^(API_URL|ANON_KEY|JWT_SECRET)=(".*")$/.exec(line.trim());
+  if (match) status[match[1]] = JSON.parse(match[2]);
+}
+assert.ok(status.API_URL, "Disposable API_URL must be available from status --output env.");
+assert.ok(status.ANON_KEY, "Disposable ANON_KEY must be available from status --output env.");
+assert.ok(status.JWT_SECRET, "Disposable JWT_SECRET must be available from status --output env.");
 const endpoint = new URL(status.API_URL);
 assert.equal(endpoint.hostname, "127.0.0.1");
 assert.equal(endpoint.port, "54321");
-assert.ok(status.JWT_SECRET);
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const header = encode({ alg: "HS256", typ: "JWT" });
 const payload = encode({
