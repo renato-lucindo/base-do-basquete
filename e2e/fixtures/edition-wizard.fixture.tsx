@@ -28,7 +28,6 @@ const choices: EditionChoices = {
       series_id: 1,
       name: "RED",
       year: 2026,
-      gender_division: "male",
       description: null,
       suggested_starts_on: "2026-11-01",
       suggested_ends_on: null,

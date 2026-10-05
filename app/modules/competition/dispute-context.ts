@@ -9,13 +9,13 @@ export interface CompetitionDisputeContext {
   status: string;
   startsOn: string | null;
   endsOn: string | null;
+  genderDivision: "male" | "female";
   season: {
     id: number;
     seriesId: number;
     seriesName: string;
     seriesSlug: string;
     year: number;
-    genderDivision: "male" | "female";
     name: string;
     description: string | null;
     suggestedStartsOn: string | null;
@@ -104,13 +104,13 @@ export function toCompetitionDisputeContext(
     status: row.status,
     startsOn: row.starts_on,
     endsOn: row.ends_on,
+    genderDivision: row.gender_division,
     season: {
       id: row.season_id,
       seriesId: row.series_id,
       seriesName: row.series_name,
       seriesSlug: row.series_slug,
       year: row.year,
-      genderDivision: row.gender_division,
       name: row.season_name,
       description: row.season_description,
       suggestedStartsOn: row.suggested_starts_on,

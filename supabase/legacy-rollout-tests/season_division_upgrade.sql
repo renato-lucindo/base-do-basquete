@@ -30,7 +30,7 @@ insert into public.series_category_data_profiles (
 select
   series.id,
   category.id,
-  'male',
+  gender.value,
   1,
   'manual_scoresheet',
   'active',
@@ -39,6 +39,7 @@ select
   clock_timestamp()
 from public.competition_series series
 cross join public.categories category
+cross join (values ('male'::text), ('female'::text)) gender(value)
 where series.slug = 'liga-upgrade'
   and category.slug in ('sub-15-upgrade', 'sub-17-upgrade');
 
@@ -68,7 +69,7 @@ select
   'draft',
   fixture.starts_on,
   fixture.ends_on,
-  'male',
+  fixture.gender_division,
   false,
   profile.id,
   false,
@@ -77,14 +78,15 @@ select
 from public.competition_series series
 join (
   values
-    (91001::bigint, 'sub-15-upgrade'::text, 'Liga Upgrade Sub-15'::text, '2030-03-01'::date, '2030-09-30'::date),
-    (91002::bigint, 'sub-17-upgrade'::text, 'Liga Upgrade Sub-17'::text, '2030-04-01'::date, '2030-11-30'::date)
-) fixture(id, category_slug, display_name, starts_on, ends_on) on true
+    (91001::bigint, 'sub-15-upgrade'::text, 'male'::text, 'Liga Upgrade Sub-15'::text, '2030-03-01'::date, '2030-09-30'::date),
+    (91002::bigint, 'sub-17-upgrade'::text, 'male'::text, 'Liga Upgrade Sub-17'::text, '2030-04-01'::date, '2030-11-30'::date),
+    (91003::bigint, 'sub-15-upgrade'::text, 'female'::text, 'Liga Upgrade Sub-15 Feminino'::text, '2030-03-01'::date, '2030-11-30'::date)
+) fixture(id, category_slug, gender_division, display_name, starts_on, ends_on) on true
 join public.categories category on category.slug = fixture.category_slug
 join public.series_category_data_profiles profile
   on profile.series_id = series.id
   and profile.category_id = category.id
-  and profile.gender_division = 'male'
+  and profile.gender_division = fixture.gender_division
   and profile.status = 'active'
 where series.slug = 'liga-upgrade';
 

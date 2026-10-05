@@ -1350,7 +1350,6 @@ export type Database = {
         Row: {
           created_at: string;
           description: string | null;
-          gender_division: string;
           id: number;
           name: string;
           revision: number;
@@ -1363,7 +1362,6 @@ export type Database = {
         Insert: {
           created_at?: string;
           description?: string | null;
-          gender_division: string;
           id?: never;
           name: string;
           revision?: number;
@@ -1376,7 +1374,6 @@ export type Database = {
         Update: {
           created_at?: string;
           description?: string | null;
-          gender_division?: string;
           id?: never;
           name?: string;
           revision?: number;
@@ -4889,6 +4886,10 @@ export type Database = {
           p_suggested_starts_on: string | null;
           p_year: number;
         };
+        Returns: number;
+      };
+      admin_resolve_competition_season_id: {
+        Args: { p_season_id: number };
         Returns: number;
       };
       admin_create_manual_scoresheet: {
