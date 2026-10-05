@@ -29,6 +29,17 @@
 
 ## Criação e navegação
 
+### Refinamento aprovado — 05/10/2026 — mesma PR #66
+
+- Exceção limitada à ordem de entrega: criação completa e acesso mínimo a adicionar disputa entram na PR #66; inscrições múltiplas, accordion completo e demais pacotes continuam separados.
+- Campeonato é a identidade recorrente (`competition_series`); edição é a temporada por campeonato+ano+naipe; disputa é categoria+divisão opcional (`competitions`). Renomear o seletor antigo “Série” para Campeonato.
+- Criar ou selecionar campeonato; usar seu nome compartilhado sem outro nome livre da disputa. Nome derivado: `RED`, `GREEN - Sub-17`, `RED - 55+`, ou `GREEN - Sub-17 · Série Ouro`. Preservar nomes/IDs históricos.
+- Adulto explícito/persistido e padrão, idade nula e sufixo oculto; Base aceita inteiros 12..23; Master aceita 30..85 de 5 em 5 e usa select nativo. Tipo/idade estruturados são autoritativos; nome/slug compatíveis são derivados para novas categorias. Legado não classificável permanece legado, sem inferência.
+- Ano independente obrigatório (1900..atual+1); datas opcionais no rascunho e ordenadas quando ambas presentes. A idade não introduz regra de elegibilidade de atletas.
+- Manter Identificação → Dados e formato → Revisão. Criação final atômica de campeonato/categoria/edição/divisão/perfil/disputa e estrutura; nenhuma escrita na revisão. Adicionar disputa herda contexto compartilhado e sugere datas, mantendo estrutura e participantes independentes.
+- Lista agrupada mínima por edição com abrir/adicionar; sem accordion completo, abas novas, URLs públicas, reforma visual global ou Sienna nesta extensão.
+- Nova migration aditiva, API legada compatível, testes SQL/concorrência/HTTP/UI, gates e novos pareceres de banco, acessibilidade e QA; PR draft e rollout compartilhado bloqueado sem autorização explícita.
+
 - Na criação inicial, solicitar nome, ano, naipe, descrição, primeira categoria e, opcionalmente, tipo e valor de divisão.
 - Permitir adicionar posteriormente uma categoria, valor de divisão ou combinação entre ambos.
 - Herdar nome, descrição, ano, naipe e datas sugeridas; formato, equipes, agenda e resultados permanecem independentes.

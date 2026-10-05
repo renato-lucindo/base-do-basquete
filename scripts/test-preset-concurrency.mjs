@@ -328,3 +328,81 @@ assert.equal(
   2,
 );
 console.log("PASS: competing semifinal writes serialize; third matchup rejected");
+
+const editionRequest = randomUUID();
+const editionInput = {
+  seriesId: null,
+  championshipName: `Edition race ${runId}`,
+  seasonId: null,
+  categoryKind: "adult",
+  categoryAge: null,
+  year: 2026,
+  gender: "male",
+  description: null,
+  startsOn: null,
+  endsOn: null,
+  divisionMode: "none",
+  divisionValueId: null,
+  divisionTypeName: null,
+  divisionValueName: null,
+  source: "manual_scoresheet",
+  preset: "single_group",
+  entryCount: 4,
+  expectedProfileId: null,
+  reason: null,
+  reviewed: true,
+};
+const editionCall = `set local role authenticated; select public.admin_create_competition_edition('${editionRequest}', '${JSON.stringify(editionInput)}'::jsonb)`;
+const editionResults = await race(
+  `select pg_advisory_xact_lock(hashtextextended('${editionRequest}',431))`,
+  [editionCall, editionCall],
+);
+assert.equal(editionResults[0], editionResults[1], "concurrent exact retry returns identical IDs");
+const editionResult = JSON.parse(editionResults[0]);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from private.edition_creation_requests where request_id='${editionRequest}'`,
+    ),
+  ),
+  1,
+);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.admin_mutation_audit where action='edition_workflow_created' and entity_id=${editionResult.seasonId}`,
+    ),
+  ),
+  1,
+);
+console.log("PASS: concurrent complete edition creation is idempotent with one ledger and audit");
+const editionSeries = Number(
+  await run(`select series_id from public.competition_seasons where id=${editionResult.seasonId}`),
+);
+const competingEdition = {
+  ...editionInput,
+  seriesId: editionSeries,
+  championshipName: null,
+  year: 2025,
+  categoryKind: "base",
+  categoryAge: 12,
+};
+const contenderEdition =
+  () => `set local role authenticated; create function pg_temp.create_edition_contender() returns text language plpgsql as $$begin
+  perform public.admin_create_competition_edition('${randomUUID()}','${JSON.stringify(competingEdition)}'::jsonb);
+  return 'accepted'; exception when sqlstate 'BD506' then return 'duplicate'; end$$;
+  select pg_temp.create_edition_contender()`;
+const editionOutcomes = await race(
+  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025:male',417))`,
+  [contenderEdition(), contenderEdition()],
+);
+assert.deepEqual(editionOutcomes.sort(), ["accepted", "duplicate"]);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025 and gender_division='male'`,
+    ),
+  ),
+  1,
+);
+console.log("PASS: competing edition requests serialize; one accepted and one explicit duplicate");

@@ -39,6 +39,8 @@ const signature = createHmac("sha256", status.JWT_SECRET)
   .digest("base64url");
 const token = `${header}.${payload}.${signature}`;
 const calls = [
+  ["admin_create_competition_edition", { p_request_id: randomUUID(), p_input: {} }],
+  ["admin_add_competition_dispute", { p_request_id: randomUUID(), p_input: {} }],
   [
     "admin_create_competition_season",
     {

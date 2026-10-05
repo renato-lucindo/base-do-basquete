@@ -7,13 +7,15 @@ insert into public.competition_series (name, slug)
 values ('Liga de Desenvolvimento', 'liga-de-desenvolvimento')
 on conflict (slug) do update set name = excluded.name, is_active = true;
 
-insert into public.categories (name, slug, has_advanced_stats)
+insert into public.categories (name, slug, has_advanced_stats, age_kind, age_value)
 values
-  ('Sub-15', 'sub-15', true),
-  ('Sub-17', 'sub-17', true)
+  ('Sub-15', 'sub-15', true, 'base', 15),
+  ('Sub-17', 'sub-17', true, 'base', 17)
 on conflict (slug) do update
 set name = excluded.name,
     has_advanced_stats = excluded.has_advanced_stats,
+    age_kind = excluded.age_kind,
+    age_value = excluded.age_value,
     is_active = true;
 
 insert into public.series_category_data_profiles(

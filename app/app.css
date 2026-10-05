@@ -5507,9 +5507,57 @@ body {
   border-radius: 0.75rem;
 }
 
+.edition-identification-row,
+.edition-period-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.edition-period-row {
+  grid-template-columns: minmax(6rem, 0.6fr) repeat(2, minmax(0, 1fr));
+}
+.edition-identification-row > div {
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  min-width: 0;
+}
+.edition-identification-row input,
+.edition-identification-row select {
+  width: 100%;
+  min-width: 0;
+}
+.edition-wizard-form details {
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .edition-identification-row,
+  .edition-period-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .edition-wizard-form[hidden],
 .edition-wizard-form > fieldset[hidden] {
   display: none;
+}
+
+.admin-edition-list section {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.admin-edition-list h2 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  overflow-wrap: anywhere;
+}
+.admin-edition-list ul {
+  margin-block: 0.5rem;
+  padding-left: 1.2rem;
+}
+.admin-edition-list li {
+  padding-block: 0.35rem;
+  overflow-wrap: anywhere;
 }
 
 .roster-form {

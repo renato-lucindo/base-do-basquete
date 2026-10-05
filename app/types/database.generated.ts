@@ -327,6 +327,8 @@ export type Database = {
       };
       categories: {
         Row: {
+          age_kind: string;
+          age_value: number | null;
           created_at: string;
           has_advanced_stats: boolean;
           id: number;
@@ -336,6 +338,8 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          age_kind?: string;
+          age_value?: number | null;
           created_at?: string;
           has_advanced_stats?: boolean;
           id?: never;
@@ -345,6 +349,8 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          age_kind?: string;
+          age_value?: number | null;
           created_at?: string;
           has_advanced_stats?: boolean;
           id?: never;
@@ -4599,6 +4605,14 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_competition_edition: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
+      admin_add_competition_dispute: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
       admin_activate_game_data_authorities: {
         Args: {
           p_domains: string[];
