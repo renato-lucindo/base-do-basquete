@@ -58,6 +58,7 @@ $$;
 
 create function private.create_edition_workflow(p_request_id uuid,p_input jsonb,p_add boolean)
 returns jsonb language plpgsql security definer set search_path='' as $$
+<<workflow>>
 declare
   prior private.edition_creation_requests;
   championship public.competition_series;
@@ -195,15 +196,19 @@ begin
     raise exception using errcode='BD409',message='BDB_EDITION_CONTEXT_STALE';
   end if;
   if division_mode='existing' then
-    select * into division from public.competition_competitive_division_values d where d.id=division_id and d.season_id=season_id;
+    select * into division from public.competition_competitive_division_values d where d.id=division_id and d.season_id=workflow.season_id;
     if not found then raise exception using errcode='BD501',message='BDB_COMPETITION_DIVISION_CONTEXT_INVALID'; end if;
     select * into division_type from public.competition_competitive_division_types t where t.id=division.competitive_division_type_id;
   elsif division_mode='new' then
     division_id:=public.admin_add_competitive_division_value(gen_random_uuid(),season_id,type_name,
       private.slugify_team_name(type_name),value_name,private.slugify_team_name(value_name),
-      (select coalesce(max(d.sort_order),0)+1 from public.competition_competitive_division_values d where d.season_id=season_id));
+      (select coalesce(max(d.sort_order),0)+1 from public.competition_competitive_division_values d where d.season_id=workflow.season_id));
     select * into division from public.competition_competitive_division_values d where d.id=division_id;
     select * into division_type from public.competition_competitive_division_types t where t.id=division.competitive_division_type_id;
+  end if;
+  if exists(select 1 from public.competitions c where c.season_id=workflow.season_id
+    and c.category_id=category.id and c.competitive_division_value_id is not distinct from division_id) then
+    raise exception using errcode='BD506',message='BDB_COMPETITION_CONTEXT_ALREADY_EXISTS';
   end if;
   display_name:=season.name || case when kind='adult' then '' else ' - ' || category.name end;
   if division_id is not null then

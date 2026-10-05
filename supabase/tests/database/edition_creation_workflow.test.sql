@@ -64,7 +64,7 @@ select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid()
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"categoryKind":"master","categoryAge":90}')$$,'BD501','BDB_EDITION_WORKFLOW_INPUT_INVALID','Master upper bound');
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"categoryKind":"adult","categoryAge":30}')$$,'BD501','BDB_EDITION_WORKFLOW_INPUT_INVALID','adult has no age');
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"gender":"female"}')$$,'BD409','BDB_EDITION_CONTEXT_STALE','inherited gender is authoritative');
-select throws_ok($$select public.admin_create_competition_edition(gen_random_uuid(),input || '{"championshipName":"Rollback workflow","entryCount":1}') from workflow_context$$,'BR009','BDB_EDITION_INPUT_INVALID','invalid blueprint rolls back all writes');
+select throws_ok($$select public.admin_create_competition_edition(gen_random_uuid(),input || '{"championshipName":"Rollback workflow","entryCount":1}') from workflow_context$$,'BR002','BDB_PRESET_CAPACITY_INVALID','invalid blueprint rolls back all writes');
 reset role;
 select is((select count(*) from public.competition_series where slug='rollback-workflow'),0::bigint,'new championship is rolled back');
 select is((select count(*) from public.competition_seasons s join public.competition_series c on c.id=s.series_id where c.slug='rollback-workflow'),0::bigint,'new season is rolled back');
