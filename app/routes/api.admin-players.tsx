@@ -108,7 +108,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
     const registrationIds = [...new Set(rosterResult.data.map((entry) => entry.registration_id))];
     const registrationsResult = registrationIds.length
-      ? await auth.client.from("team_registrations").select("id,team_id").in("id", registrationIds)
+      ? await auth.client
+          .from("team_registrations")
+          .select("id,public_name")
+          .in("id", registrationIds)
       : { data: [], error: null };
     if (registrationsResult.error) {
       return data(
@@ -117,24 +120,12 @@ export async function loader({ request, context }: Route.LoaderArgs) {
       );
     }
 
-    const teamIds = [...new Set(registrationsResult.data.map((item) => item.team_id))];
-    const teamsResult = teamIds.length
-      ? await auth.client.from("teams").select("id,name").in("id", teamIds)
-      : { data: [], error: null };
-    if (teamsResult.error) {
-      return data(
-        { error: "Não foi possível pesquisar atletas.", results: [] },
-        { status: 503, headers: headers(auth.cookie) },
-      );
-    }
-
     const registrationById = new Map(registrationsResult.data.map((item) => [item.id, item]));
-    const teamNames = new Map(teamsResult.data.map((team) => [team.id, team.name]));
     const rosterByPlayer = new Map(rosterResult.data.map((entry) => [entry.player_id, entry]));
     results = compatiblePlayersResult.data.map((player) => {
       const roster = rosterByPlayer.get(player.id);
       const registration = roster ? registrationById.get(roster.registration_id) : null;
-      const teamName = registration ? (teamNames.get(registration.team_id) ?? null) : null;
+      const teamName = registration?.public_name ?? null;
       const unavailable = Boolean(roster && roster.registration_id !== registrationId && teamName);
       return {
         id: player.id,

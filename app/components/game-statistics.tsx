@@ -106,7 +106,7 @@ function TeamBoxscore({
   game: PublicGameDetail;
   team: PublicGameTeam;
 }) {
-  const players = game.players.filter((player) => player.teamId === team.teamId);
+  const players = game.players.filter((player) => player.registrationId === team.registrationId);
   return (
     <section className="game-team-statistics">
       <h2>

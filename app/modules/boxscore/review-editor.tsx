@@ -11,6 +11,7 @@ import type { Json } from "../../types/database.generated";
 import { readAdminDraft, removeAdminDraft, saveAdminDraft } from "../admin-drafts/client";
 import type { AdminDraft } from "../admin-drafts/schema";
 import type { AdminPlayerSearchResult } from "../players/admin-domain";
+import { matchingRegistrationCandidates } from "./team-registration-resolution";
 import type { ParsedBoxscore } from "./types";
 
 const importSteps = ["Arquivo", "Revisão", "Associações", "Confirmação"] as const;
@@ -54,10 +55,12 @@ interface ReviewGame {
 interface ReviewTeamCandidate {
   teamId: number;
   teamName: string;
+  publicName: string | null;
   abbreviation: string | null;
   isActive: boolean;
   registrationId: number | null;
   registrationStatus: string | null;
+  registrationCount: number;
 }
 
 interface BoxscoreReviewEditorProps {
@@ -134,11 +137,7 @@ export function BoxscoreReviewEditor({
     [review.parsed.teams],
   );
   const candidatesForTeam = (team: ParsedBoxscore["teams"][number]) =>
-    teamCandidates.filter(
-      (candidate) =>
-        normalizeTeam(candidate.teamName) === normalizeTeam(team.name) ||
-        candidate.abbreviation?.toUpperCase() === team.abbreviation,
-    );
+    matchingRegistrationCandidates(team, teamCandidates);
   const matchedRegistration = (team: ParsedBoxscore["teams"][number]) => {
     const audited = review.resolvedTeams.find(
       (resolved) => normalizeTeam(resolved.sourceTeamName) === normalizeTeam(team.name),
@@ -507,8 +506,11 @@ export function BoxscoreReviewEditor({
                         Selecione como resolver
                       </option>
                       {candidates.map((candidate) => {
+                        const candidateName = candidate.publicName ?? candidate.teamName;
                         const unavailable =
                           !candidate.isActive ||
+                          (candidate.registrationStatus === "draft" &&
+                            candidate.registrationCount > 1) ||
                           (candidate.registrationStatus !== null &&
                             candidate.registrationStatus !== "draft" &&
                             candidate.registrationStatus !== "confirmed");
@@ -517,16 +519,22 @@ export function BoxscoreReviewEditor({
                             ? `registration:${candidate.registrationId}`
                             : `team:${candidate.teamId}`;
                         const label = !candidate.isActive
-                          ? `${candidate.teamName} · equipe inativa`
+                          ? `${candidateName} · equipe inativa`
                           : candidate.registrationStatus === "confirmed"
-                            ? `${candidate.teamName} · usar inscrição confirmada`
+                            ? `${candidateName} · usar inscrição confirmada`
                             : candidate.registrationStatus === "draft"
-                              ? `${candidate.teamName} · confirmar inscrição existente`
+                              ? candidate.registrationCount > 1
+                                ? `${candidateName} · confirme esta inscrição no hub antes de importar`
+                                : `${candidateName} · confirmar inscrição existente`
                               : candidate.registrationStatus === null
-                                ? `${candidate.teamName} · inscrever equipe existente`
-                                : `${candidate.teamName} · inscrição ${candidate.registrationStatus}`;
+                                ? `${candidateName} · inscrever equipe existente`
+                                : `${candidateName} · inscrição ${candidate.registrationStatus}`;
                         return (
-                          <option key={candidate.teamId} value={value} disabled={unavailable}>
+                          <option
+                            key={`${candidate.teamId}:${candidate.registrationId ?? "new"}`}
+                            value={value}
+                            disabled={unavailable}
+                          >
                             {label}
                           </option>
                         );

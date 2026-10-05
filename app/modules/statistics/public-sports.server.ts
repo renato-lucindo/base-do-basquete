@@ -192,7 +192,7 @@ export async function loadPublicSportsCore(
 
   const registrationsResult = await client
     .from("team_registrations")
-    .select("id,team_id")
+    .select("id,team_id,public_name")
     .eq("competition_id", context.competitionId)
     .in("status", ["confirmed", "completed"]);
   ensure(registrationsResult.error);
@@ -212,16 +212,22 @@ export async function loadPublicSportsCore(
     .order("name");
   ensure(teamsResult.error);
 
-  const teams: PublicTeamSummary[] = teamsResult.data.map((team) => ({
-    id: team.id,
-    name: team.name,
-    slug: team.slug,
-    abbreviation: team.abbreviation,
-  }));
-  const registrationById = new Map(
-    registrationsResult.data.map((registration) => [registration.id, registration]),
+  const globalTeamById = new Map(teamsResult.data.map((team) => [team.id, team]));
+  const teams: PublicTeamSummary[] = registrationsResult.data.flatMap(
+    (registration): PublicTeamSummary[] => {
+      const team = globalTeamById.get(registration.team_id);
+      if (!team) return [];
+      return [
+        {
+          id: registration.id,
+          name: registration.public_name,
+          slug: `inscricao-${registration.id}`,
+          abbreviation: team.abbreviation,
+        },
+      ];
+    },
   );
-  const teamById = new Map(teams.map((team) => [team.id, team]));
+  const teamByRegistrationId = new Map(teams.map((team) => [team.id, team]));
 
   const gamesResult = await client
     .from("games")
@@ -278,14 +284,8 @@ export async function loadPublicSportsCore(
     const participants = participantsResult.data.filter((item) => item.game_id === game.id);
     const homeParticipant = participants.find((item) => item.side === "home");
     const awayParticipant = participants.find((item) => item.side === "away");
-    const homeRegistration = homeParticipant
-      ? registrationById.get(homeParticipant.registration_id)
-      : null;
-    const awayRegistration = awayParticipant
-      ? registrationById.get(awayParticipant.registration_id)
-      : null;
-    const home = homeRegistration ? teamById.get(homeRegistration.team_id) : null;
-    const away = awayRegistration ? teamById.get(awayRegistration.team_id) : null;
+    const home = homeParticipant ? teamByRegistrationId.get(homeParticipant.registration_id) : null;
+    const away = awayParticipant ? teamByRegistrationId.get(awayParticipant.registration_id) : null;
     if (!homeParticipant || !awayParticipant || !home || !away) return [];
     const score = (registrationId: number) =>
       scoresResult.data.find(
@@ -314,7 +314,7 @@ export async function loadPublicSportsCore(
   ensure(statisticsResult.error);
 
   const teamStatistics = teams.map((team) => {
-    const rows = statisticsResult.data.filter((row) => row.team_id === team.id);
+    const rows = statisticsResult.data.filter((row) => row.registration_id === team.id);
     const sum = (key: keyof (typeof rows)[number]) =>
       rows.reduce((total, row) => total + numberValue(row[key] as number | null), 0);
     return summarizeTeamStatistics({

@@ -398,8 +398,8 @@ export function buildBoxscoreStatisticsPage(
   const teams = [
     ...new Map(
       allRows.map((row) => [
-        row.teamId,
-        { id: row.teamId, name: row.teamName, slug: row.teamSlug },
+        row.registrationId,
+        { id: row.registrationId, name: row.teamName, slug: row.teamSlug },
       ]),
     ).values(),
   ].sort((left, right) => left.name.localeCompare(right.name, "pt-BR"));

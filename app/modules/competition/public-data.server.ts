@@ -95,7 +95,7 @@ async function teamItems(
 ): Promise<PublicResourceItem[]> {
   const registrationResult = await client
     .from("team_registrations")
-    .select("id,team_id,status")
+    .select("id,team_id,public_name,status")
     .eq("competition_id", context.competitionId)
     .in("status", ["confirmed", "completed"]);
   ensureQuery(registrationResult.error);
@@ -114,13 +114,19 @@ async function teamItems(
     .eq("is_public", true)
     .order("name");
   ensureQuery(teamResult.error);
-
-  return teamResult.data.map((team) => ({
-    id: String(team.id),
-    label: team.name,
-    detail: team.abbreviation ?? "Equipe inscrita",
-    detailKey: team.slug,
-  }));
+  const teamById = new Map(teamResult.data.map((team) => [team.id, team]));
+  return registrationResult.data.flatMap((registration): PublicResourceItem[] => {
+    const team = teamById.get(registration.team_id);
+    if (!team) return [];
+    return [
+      {
+        id: String(registration.id),
+        label: registration.public_name ?? team.name,
+        detail: team.abbreviation ?? "Equipe inscrita",
+        detailKey: `inscricao-${registration.id}`,
+      },
+    ];
+  });
 }
 
 async function playerItems(
@@ -210,41 +216,70 @@ export async function loadPublicDetail(
   detailKey: string,
 ): Promise<PublicDetail | null> {
   if (resource === "equipes") {
-    const teamResult = await client
-      .from("teams")
-      .select("id,name,slug,abbreviation")
-      .eq("slug", detailKey)
-      .eq("is_public", true)
-      .limit(2);
-    ensureQuery(teamResult.error);
-    if (teamResult.data.length !== 1) {
-      return null;
+    let registration: { id: number; public_name: string; team_id: number } | null = null;
+    let team: { abbreviation: string | null; id: number; name: string; slug: string } | null = null;
+    const registrationMatch = detailKey.match(/^inscricao-([1-9][0-9]*)$/);
+    if (registrationMatch) {
+      const registrationResult = await client
+        .from("team_registrations")
+        .select("id,team_id,public_name")
+        .eq("id", Number(registrationMatch[1]))
+        .eq("competition_id", context.competitionId)
+        .in("status", ["confirmed", "completed"])
+        .maybeSingle();
+      ensureQuery(registrationResult.error);
+      if (!registrationResult.data) return null;
+      registration = registrationResult.data;
+      const teamResult = await client
+        .from("teams")
+        .select("id,name,slug,abbreviation")
+        .eq("id", registration.team_id)
+        .eq("is_public", true)
+        .maybeSingle();
+      ensureQuery(teamResult.error);
+      team = teamResult.data;
+    } else {
+      const teamResult = await client
+        .from("teams")
+        .select("id,name,slug,abbreviation")
+        .eq("slug", detailKey)
+        .eq("is_public", true)
+        .limit(2);
+      ensureQuery(teamResult.error);
+      if (teamResult.data.length !== 1 || !teamResult.data[0]) return null;
+      team = teamResult.data[0];
+      const registrationResult = await client
+        .from("team_registrations")
+        .select("id,team_id,public_name")
+        .eq("competition_id", context.competitionId)
+        .eq("team_id", team.id)
+        .in("status", ["confirmed", "completed"])
+        .order("id");
+      ensureQuery(registrationResult.error);
+      const exactLegacyRegistration = registrationResult.data.filter(
+        (candidate) =>
+          candidate.public_name.toLocaleLowerCase("pt-BR") ===
+          team?.name.toLocaleLowerCase("pt-BR"),
+      );
+      registration =
+        exactLegacyRegistration.length === 1
+          ? (exactLegacyRegistration[0] ?? null)
+          : registrationResult.data.length === 1
+            ? (registrationResult.data[0] ?? null)
+            : null;
     }
-    const team = teamResult.data[0];
-    if (!team) {
-      return null;
-    }
-
-    const registrationResult = await client
-      .from("team_registrations")
-      .select("id")
-      .eq("competition_id", context.competitionId)
-      .eq("team_id", team.id)
-      .in("status", ["confirmed", "completed"])
-      .limit(1);
-    ensureQuery(registrationResult.error);
-    if (registrationResult.data.length !== 1) return null;
+    if (!team || !registration) return null;
     const achievementsResult = await client
       .from("team_achievements")
       .select(
         "competition_id,competition_display_name,series_name,series_slug,year,category_name,category_slug,gender_division,placement,result_label",
       )
-      .eq("team_id", team.id)
+      .eq("registration_id", registration.id)
       .order("year", { ascending: false })
       .order("placement");
     ensureQuery(achievementsResult.error);
     return {
-      label: team.name,
+      label: registration.public_name,
       description: team.abbreviation ?? "Equipe inscrita nesta edição.",
       achievements: achievementsResult.data
         .map(toPublicAchievement)

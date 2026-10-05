@@ -224,7 +224,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     auth.client.from("categories").select("name").eq("id", competition.category_id).single(),
     auth.client
       .from("team_registrations")
-      .select("id,team_id,status,confirmed_at")
+      .select("id,team_id,public_name,status,confirmed_at")
       .eq("competition_id", competitionId)
       .order("id"),
     auth.client
@@ -302,7 +302,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const previousRegistrationsResult = teamIds.length
     ? await auth.client
         .from("team_registrations")
-        .select("id,team_id,competition_id,updated_at")
+        .select("id,team_id,competition_id,public_name,updated_at")
         .in("team_id", teamIds)
         .neq("competition_id", competitionId)
         .in("status", ["confirmed", "completed"])
@@ -310,10 +310,22 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     : { data: [], error: null };
   if (previousRegistrationsResult.error) throw new Error("Previous roster query failed");
   const latestPreviousByTeam = new Map<number, (typeof previousRegistrationsResult.data)[number]>();
+  const previousByTeam = new Map<number, typeof previousRegistrationsResult.data>();
   for (const registration of previousRegistrationsResult.data) {
-    if (!latestPreviousByTeam.has(registration.team_id)) {
-      latestPreviousByTeam.set(registration.team_id, registration);
-    }
+    const registrations = previousByTeam.get(registration.team_id) ?? [];
+    registrations.push(registration);
+    previousByTeam.set(registration.team_id, registrations);
+  }
+  for (const [teamId, candidates] of previousByTeam) {
+    const latest = candidates[0];
+    if (!latest) continue;
+    const sameDisputeCandidates = candidates.filter(
+      (candidate) => candidate.competition_id === latest.competition_id,
+    );
+    // With independent A/B registrations, a global team can have more than one
+    // roster in the same dispute. The legacy one-click suggestion must never
+    // guess between them; the dedicated copy screen exposes that choice.
+    if (sameDisputeCandidates.length === 1) latestPreviousByTeam.set(teamId, latest);
   }
   const previousRegistrationIds = [...latestPreviousByTeam.values()].map(({ id }) => id);
   const previousRosterResult = previousRegistrationIds.length
@@ -375,7 +387,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   );
   const registrations = registrationsResult.data.map((registration) => ({
     ...registration,
-    teamName: teamNames.get(registration.team_id) ?? "Equipe indisponível",
+    teamName: registration.public_name,
+    globalTeamName: teamNames.get(registration.team_id) ?? "Equipe indisponível",
     roster: rosterResult.data
       .filter((entry) => entry.registration_id === registration.id)
       .flatMap((entry) => {
@@ -417,9 +430,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
                     currentEntry && currentEntry.registration_id !== registration.id
                       ? {
                           registrationId: currentEntry.registration_id,
-                          teamName:
-                            (conflictRegistration && teamNames.get(conflictRegistration.team_id)) ??
-                            "outra equipe",
+                          teamName: conflictRegistration?.public_name ?? "outra inscrição",
                         }
                       : null,
                   jerseyNumber: entry.jersey_number ?? "",
@@ -431,7 +442,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     suggestionLabel: (() => {
       const previous = latestPreviousByTeam.get(registration.team_id);
       return previous
-        ? `Elenco de ${previousCompetitionNames.get(previous.competition_id) ?? "edição anterior"}`
+        ? `Elenco de ${previous.public_name} em ${previousCompetitionNames.get(previous.competition_id) ?? "edição anterior"}`
         : null;
     })(),
     finalPlacement:
@@ -439,7 +450,6 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       null,
     removalDecision: removalDecisions.get(registration.id) ?? null,
   }));
-  const registeredTeamIds = new Set(registrations.map((registration) => registration.team_id));
   const primarySource: CompetitionPrimarySource =
     profileResult.data?.primary_source === "manual_scoresheet" ||
     profileResult.data?.primary_source === "fiba_boxscore"
@@ -472,7 +482,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         categoryName: categoryResult.data.name,
       },
       registrations,
-      availableTeams: teamsResult.data.filter((team) => !registeredTeamIds.has(team.id)),
+      availableTeams: teamsResult.data,
       playerCount: playerCountResult.count ?? 0,
       gameCount: gamesResult.count ?? 0,
       readiness,
@@ -509,9 +519,16 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     const teamId =
       parseId(formData.get("teamId")) ?? parseTeamSelection(formData.get("teamSelection"));
     if (!teamId) return data({ error: "Selecione uma equipe." }, { status: 400 });
-    result = await auth.client.rpc("admin_create_team_registration", {
+    const publicName = String(formData.get("publicName") ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (publicName.length < 2 || publicName.length > 120) {
+      return data({ error: "Informe um nome público de 2 a 120 caracteres." }, { status: 400 });
+    }
+    result = await auth.client.rpc("admin_create_named_team_registration", {
       p_competition_id: competitionId,
       p_team_id: teamId,
+      p_public_name: publicName,
     });
   } else if (intent === "create-and-register-team") {
     const normalized = normalizeTeamCreationInput(
@@ -519,10 +536,17 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       formData.get("abbreviation"),
     );
     if (!normalized.ok) return data({ error: normalized.error }, { status: 400 });
-    const createResult = await auth.client.rpc("admin_create_and_register_team", {
+    const publicName = String(formData.get("publicName") ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (publicName && (publicName.length < 2 || publicName.length > 120)) {
+      return data({ error: "Revise o nome público da inscrição." }, { status: 400 });
+    }
+    const createResult = await auth.client.rpc("admin_create_and_register_named_team", {
       p_competition_id: competitionId,
       p_name: normalized.input.name,
       p_abbreviation: normalized.input.abbreviation as string,
+      p_public_name: publicName || normalized.input.name,
     });
     if (!createResult.error) {
       throw redirect(`/admin/competitions/${competitionId}?teamAdded=1#teams`, {
@@ -817,8 +841,23 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
         <section className="admin-panel" id="teams">
           <h2>Adicionar equipe à edição</h2>
           <p>
-            Busque uma equipe já cadastrada ou crie uma nova sem precisar informar endereço técnico.
+            A mesma equipe pode ter mais de uma inscrição. O nome público distingue cada
+            participação, como “Lobos” e “Lobos B”.
           </p>
+          <div className="admin-actions-row">
+            <Link
+              className="button button-ghost"
+              to={`/admin/competitions/${loaderData.competition.id}/registrations/copy`}
+            >
+              Copiar equipes e elencos
+            </Link>
+            <Link
+              className="button button-ghost"
+              to={`/admin/competitions/${loaderData.competition.id}/context`}
+            >
+              Corrigir categoria ou naipe
+            </Link>
+          </div>
           <Form method="post" className="inline-admin-form">
             <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
             <input type="hidden" name="intent" value="register-team" />
@@ -842,6 +881,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
                 ))}
               </datalist>
             </label>
+            <label>
+              Nome público da inscrição
+              <input
+                name="publicName"
+                required
+                minLength={2}
+                maxLength={120}
+                placeholder="Ex.: Lobos B"
+              />
+            </label>
             <button
               className="button button-primary"
               type="submit"
@@ -851,7 +900,7 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </button>
           </Form>
           {loaderData.availableTeams.length === 0 ? (
-            <p>Todas as equipes ativas já estão inscritas. Você ainda pode cadastrar uma nova.</p>
+            <p>Nenhuma equipe ativa está cadastrada. Cadastre uma nova para continuar.</p>
           ) : null}
           <details className="admin-create-inline" open={Boolean(actionData?.error)}>
             <summary>Cadastrar nova equipe e inscrever</summary>
@@ -865,6 +914,15 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               <label>
                 Sigla (opcional)
                 <input name="abbreviation" maxLength={8} pattern="[A-Za-z0-9]{2,8}" />
+              </label>
+              <label>
+                Nome público da inscrição (opcional)
+                <input
+                  name="publicName"
+                  minLength={2}
+                  maxLength={120}
+                  placeholder="Usa o nome da equipe"
+                />
               </label>
               <p>O endereço técnico da equipe é gerado automaticamente no servidor.</p>
               <button className="button button-primary" type="submit" disabled={isSubmitting}>

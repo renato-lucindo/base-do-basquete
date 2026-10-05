@@ -59,6 +59,7 @@ describe("GameStatistics", () => {
           playerId: 1,
           playerName: "Atleta Um",
           playerSlug: "atleta-um",
+          registrationId: 1,
           teamId: 1,
           side: "home",
           jerseyNumber: "7",
