@@ -148,8 +148,8 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
       ) : null}
       <div className="admin-edition-list">
         {loaderData.groups.map((group) => (
-          <section key={group.id} aria-label={`${group.name} ${group.year}`}>
-            <h2>
+          <section key={group.id} aria-labelledby={`edition-${group.id}`}>
+            <h2 id={`edition-${group.id}`}>
               {group.name} · {group.year} ·{" "}
               {group.gender === "male"
                 ? "Masculino"

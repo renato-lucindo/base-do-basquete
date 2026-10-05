@@ -78,6 +78,8 @@ export function EditionWizard({
   const region = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const error = useRef<HTMLParagraphElement>(null);
+  const focusedResponse = useRef<EditionResult | undefined>(undefined);
+  const divisionDetails = useRef<HTMLDetailsElement>(null);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const category = choices.categories.find(
@@ -108,12 +110,22 @@ export function EditionWizard({
   });
   useEffect(() => {
     if (result?.error && !result.review)
-      setStep(["source", "entryCount", "reason"].includes(result.field ?? "") ? 2 : 1);
+      setStep(["source", "preset", "entryCount", "reason"].includes(result.field ?? "") ? 2 : 1);
     else if (result?.review) setStep(3);
   }, [result]);
   useEffect(() => {
-    if (result?.error) error.current?.focus();
-    else if (step === 3) heading.current?.focus();
+    if (result?.error && focusedResponse.current !== result) {
+      const targetStep = result.review
+        ? 3
+        : ["source", "preset", "entryCount", "reason"].includes(result.field ?? "")
+          ? 2
+          : 1;
+      if (step !== targetStep) return;
+      if (result.field?.startsWith("division") && divisionDetails.current)
+        divisionDetails.current.open = true;
+      focusedResponse.current = result;
+      error.current?.focus();
+    } else if (step === 3) heading.current?.focus();
     else
       region.current?.querySelector<HTMLFieldSetElement>(`fieldset[data-step="${step}"]`)?.focus();
   }, [step, result]);
@@ -343,7 +355,7 @@ export function EditionWizard({
                 {...invalid("description")}
               />
             </label>
-            <details>
+            <details ref={divisionDetails}>
               <summary>Divisão competitiva (opcional)</summary>
               <div>
                 <label htmlFor="divisionMode">Divisão</label>
@@ -388,6 +400,7 @@ export function EditionWizard({
                   <label>
                     Tipo
                     <input
+                      id="divisionTypeName"
                       name="divisionTypeName"
                       value={divisionTypeName}
                       readOnly={Boolean(type)}
@@ -395,6 +408,7 @@ export function EditionWizard({
                       required
                       minLength={2}
                       maxLength={80}
+                      {...invalid("divisionTypeName")}
                     />
                   </label>
                   <label>
@@ -462,7 +476,7 @@ export function EditionWizard({
             </p>
             <div>
               <label htmlFor="preset">Formato</label>
-              <select id="preset" name="preset" required defaultValue="">
+              <select id="preset" name="preset" required defaultValue="" {...invalid("preset")}>
                 <option value="">Selecione</option>
                 <option value="single_group">Grupo único — turno único</option>
                 <option value="single_elimination">Eliminatória simples — jogo único</option>

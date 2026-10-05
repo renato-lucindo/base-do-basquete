@@ -93,3 +93,50 @@ test("addition inherits context and allows independent dates and divisions", asy
   await page.getByLabel("Valor", { exact: true }).selectOption("4");
   await expect(page.getByText("Nome da disputa: RED - Série Ouro", { exact: true })).toBeVisible();
 });
+
+test("format errors identify the format and navigation does not refocus old errors", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await page.getByLabel("Campeonato", { exact: true }).selectOption("new");
+  await page.getByLabel("Nome", { exact: true }).fill("GREEN");
+  await page.getByLabel("Naipe").selectOption("male");
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByLabel("Fonte primária").selectOption("manual_scoresheet");
+  await page.getByLabel("Quantidade de equipes").fill("4");
+  await page.getByRole("button", { name: "Revisar estrutura" }).click();
+  await expect(page.getByLabel("Formato", { exact: true })).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByLabel("Formato", { exact: true })).toHaveAttribute(
+    "aria-describedby",
+    "edition-error",
+  );
+  await expect(page.getByRole("alert")).toBeFocused();
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await expect(page.locator('fieldset[data-step="1"]')).toBeFocused();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(page.locator('fieldset[data-step="2"]')).toBeFocused();
+});
+
+test("invalid division fields are revealed and associated with their errors", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await page.getByLabel("Campeonato", { exact: true }).selectOption("new");
+  await page.getByLabel("Nome", { exact: true }).fill("GREEN");
+  await page.getByLabel("Naipe").selectOption("male");
+  const summary = page.getByText("Divisão competitiva (opcional)", { exact: true });
+  await summary.click();
+  await page.getByLabel("Divisão", { exact: true }).selectOption("new");
+  await summary.click();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByRole("button", { name: "Revisar estrutura" }).click();
+  await expect(page.getByLabel("Tipo", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Tipo", { exact: true })).toHaveAttribute(
+    "aria-describedby",
+    "edition-error",
+  );
+  await page.getByLabel("Tipo", { exact: true }).fill("Série");
+  await summary.click();
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByRole("button", { name: "Revisar estrutura" }).click();
+  await expect(page.getByLabel("Valor", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Valor", { exact: true })).toHaveAttribute("aria-invalid", "true");
+});

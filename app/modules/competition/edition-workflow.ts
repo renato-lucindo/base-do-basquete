@@ -101,11 +101,11 @@ export function validateEditionWorkflow(value: unknown, year: number) {
       return fail("divisionValueId", "Selecione uma divisão da edição.");
     }
   } else if (input.divisionMode === "new") {
+    if (input.divisionTypeName === null || !optionalText(input.divisionTypeName, 2, 80))
+      return fail("divisionTypeName", "Informe o tipo da divisão (2 a 80 caracteres).");
     if (
       input.divisionValueId !== null ||
-      input.divisionTypeName === null ||
       input.divisionValueName === null ||
-      !optionalText(input.divisionTypeName, 2, 80) ||
       !optionalText(input.divisionValueName, 1, 80)
     ) {
       return fail("divisionValueName", "Informe o tipo e o valor da divisão.");
@@ -118,6 +118,8 @@ export function validateEditionWorkflow(value: unknown, year: number) {
   ) {
     return fail("divisionMode", "Revise a divisão competitiva.");
   }
+  if (!["single_group", "single_elimination"].includes(String(input.preset)))
+    return fail("preset", "Selecione um dos dois formatos.");
   const legacy = validateEditionInput(
     { ...input, seriesId: 1, categoryId: 1, name: "Validação" },
     year,
