@@ -344,6 +344,8 @@ select is(
   0, 'team resolution never creates structural entry assignments'
 );
 
+-- Seed privileged fixtures as the owner; exercise the RPC as authenticated.
+reset role;
 insert into public.team_registrations(
   id, competition_id, team_id, public_name, status, confirmed_at
 )
@@ -363,6 +365,7 @@ overriding system value values (
   '{"valid":true}'::jsonb, (select user_id from private.admin_accounts limit 1)
 );
 
+set local role authenticated;
 select throws_ok(
   $$select public.admin_resolve_boxscore_team_registrations(
     94708,
