@@ -57,7 +57,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where s.slug = 'liga-de-desenvolvimento'
-on conflict (season_id,category_id,competitive_division_value_id) do update
+on conflict (season_id,category_id,gender_division,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -411,7 +411,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
-on conflict (season_id,category_id,competitive_division_value_id) do update
+on conflict (season_id,category_id,gender_division,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
