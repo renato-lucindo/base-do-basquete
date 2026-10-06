@@ -448,9 +448,9 @@ begin
   if exists(
     select 1
     from jsonb_array_elements(p_items) value
-    join public.team_registrations existing_target_registration
-      on existing_target_registration.competition_id = target_competition.id
-     and lower(existing_target_registration.public_name) = lower(regexp_replace(btrim(value->>'publicName'), '\s+', ' ', 'g'))
+    join public.team_registrations target_registration
+      on target_registration.competition_id = target_competition.id
+     and lower(target_registration.public_name) = lower(regexp_replace(btrim(value->>'publicName'), '\s+', ' ', 'g'))
   ) then
     raise exception using errcode = 'BD409', message = 'BDB_REGISTRATION_PUBLIC_NAME_CONFLICT';
   end if;
@@ -879,8 +879,6 @@ begin
       'categoryId', result.category_id,
       'previousGenderDivision', current_row.gender_division,
       'genderDivision', result.gender_division,
-      'seasonId', result.season_id,
-      'competitiveDivisionValueId', result.competitive_division_value_id,
       'previousDataProfileId', current_row.data_profile_id,
       'dataProfileId', result.data_profile_id,
       'contextCorrection', true
