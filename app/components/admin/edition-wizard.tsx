@@ -145,6 +145,8 @@ export function EditionWizard({
   const error = useRef<HTMLParagraphElement>(null);
   const focusedResponse = useRef<EditionResult | undefined>(undefined);
   const nextDraftId = useRef(1);
+  const pendingDisputeFocus = useRef<string | null>(null);
+  const restoreAddDisputeFocus = useRef(false);
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const seriesNumber = season?.series_id ?? numberOrNull(seriesId);
@@ -226,7 +228,6 @@ export function EditionWizard({
     else
       region.current?.querySelector<HTMLFieldSetElement>(`fieldset[data-step="${step}"]`)?.focus();
   }, [step, result]);
-
   return (
     <>
       <p>
@@ -391,6 +392,12 @@ export function EditionWizard({
                     <div>
                       <label htmlFor={fieldId("categoryKind", index)}>Categoria</label>
                       <select
+                        ref={(node) => {
+                          if (node && pendingDisputeFocus.current === draft.id) {
+                            pendingDisputeFocus.current = null;
+                            node.focus();
+                          }
+                        }}
                         id={fieldId("categoryKind", index)}
                         value={draft.kind}
                         onChange={(event) =>
@@ -635,9 +642,10 @@ export function EditionWizard({
                     <button
                       type="button"
                       className="button button-ghost"
-                      onClick={() =>
-                        setDisputes((current) => current.filter((_, item) => item !== index))
-                      }
+                      onClick={() => {
+                        restoreAddDisputeFocus.current = true;
+                        setDisputes((current) => current.filter((_, item) => item !== index));
+                      }}
                     >
                       Remover disputa {index + 1}
                     </button>
@@ -647,15 +655,23 @@ export function EditionWizard({
             })}
             {!season && disputes.length < 12 ? (
               <button
+                ref={(node) => {
+                  if (node && restoreAddDisputeFocus.current) {
+                    restoreAddDisputeFocus.current = false;
+                    node.focus();
+                  }
+                }}
                 type="button"
                 className="button button-ghost"
                 onClick={() => {
                   const template = disputes.at(-1) ?? draftForSeason();
+                  const id = `draft-${nextDraftId.current++}`;
+                  pendingDisputeFocus.current = id;
                   setDisputes((current) => [
                     ...current,
                     {
                       ...template,
-                      id: `draft-${nextDraftId.current++}`,
+                      id,
                       kind: "adult",
                       age: "",
                       gender: "",

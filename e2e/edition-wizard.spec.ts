@@ -77,6 +77,56 @@ test("multiple disputes preserve independent configuration in one review", async
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test("adding and removing disputes preserves keyboard focus", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await identifyNewEdition(page);
+  const add = page.getByRole("button", { name: "Adicionar outra disputa" });
+  await add.focus();
+  await page.keyboard.press("Enter");
+  const second = page.getByRole("group", { name: "Disputa 2" });
+  await expect(second.getByLabel("Categoria", { exact: true })).toBeFocused();
+  const remove = second.getByRole("button", { name: "Remover disputa 2" });
+  await remove.focus();
+  await page.keyboard.press("Enter");
+  await expect(second).toHaveCount(0);
+  await expect(add).toBeFocused();
+});
+
+test("removing from the dispute limit focuses the reappearing add action", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await identifyNewEdition(page);
+  const add = page.getByRole("button", { name: "Adicionar outra disputa" });
+  for (let dispute = 2; dispute <= 12; dispute++) await add.click();
+  await expect(add).toHaveCount(0);
+  await page
+    .getByRole("group", { name: "Disputa 12" })
+    .getByRole("button", { name: "Remover disputa 12" })
+    .click();
+  await expect(add).toBeFocused();
+});
+
+for (const width of [390, 720, 1440])
+  test(`adaptive edition table is accessible and contained at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.goto(`${fixtureUrl}?table`);
+    const table = page.getByRole("table", { name: "Copa Metropolitana · 2026" });
+    await expect(table).toBeVisible();
+    await expect(table.getByRole("columnheader")).toHaveText([
+      "Divisão",
+      "Categoria",
+      "Naipe",
+      "Disputa",
+      "Situação",
+    ]);
+    await expect(table.getByRole("row")).toHaveCount(3);
+    const dimensions = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client);
+    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  });
+
 test("keyboard review, preserved values and programmatic validation", async ({ page }) => {
   await page.goto(fixtureUrl);
   await page.getByLabel("Campeonato", { exact: true }).selectOption("new");

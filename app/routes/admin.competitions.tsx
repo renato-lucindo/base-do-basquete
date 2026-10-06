@@ -1,18 +1,11 @@
 import { data, Form, Link } from "react-router";
 import { AdminArea } from "../components/admin/admin-area";
+import { AdminEditionList, competitionStatusLabels } from "../components/admin/admin-edition-list";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { recordAuthAuditEvent } from "../modules/auth/audit.server";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
-import { buildEditionNavigation } from "../modules/competition/admin-edition-navigation";
-import type { DisputeNavigationOrder } from "../modules/competition/edition-workflow";
 import type { Route } from "./+types/admin.competitions";
 
-const statusLabels: Record<string, string> = {
-  draft: "Rascunho",
-  review: "Aguardando validação",
-  published: "Publicada",
-  archived: "Arquivada",
-};
 export function meta() {
   return [{ title: "Competições — Administração" }];
 }
@@ -162,7 +155,7 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
           Situação
           <select name="status" defaultValue={loaderData.status}>
             <option value="">Todas</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
+            {Object.entries(competitionStatusLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -176,75 +169,7 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
       {loaderData.competitions.length === 0 ? (
         <p>Nenhuma edição encontrada com esses filtros.</p>
       ) : null}
-      <div className="admin-edition-list">
-        {loaderData.groups.map((group) => {
-          const { showCategory, showDivision, showGender, ordered, dimensionHeaders } =
-            buildEditionNavigation(
-              group.competitions,
-              group.navigationOrder as DisputeNavigationOrder,
-            );
-          return (
-            <section key={group.id} aria-labelledby={`edition-${group.id}`}>
-              <h2 id={`edition-${group.id}`}>
-                {group.name} · {group.year}
-              </h2>
-              {group.seasonId ? (
-                <Link to={`/admin/competitions/new?seasonId=${group.seasonId}`}>
-                  Adicionar disputa
-                </Link>
-              ) : null}
-              <div className="admin-edition-table-wrap">
-                <table className="admin-edition-table">
-                  <thead>
-                    <tr>
-                      {dimensionHeaders.map((label) =>
-                        label ? <th key={label}>{label}</th> : null,
-                      )}
-                      {showGender ? <th>Naipe</th> : null}
-                      <th>Disputa</th>
-                      <th>Situação</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ordered.map((item) => {
-                      const dimensions =
-                        group.navigationOrder === "division_category"
-                          ? [
-                              showDivision ? (item.divisionLabel ?? "Sem divisão") : null,
-                              showCategory ? item.dimensionCategoryName : null,
-                            ]
-                          : [
-                              showCategory ? item.dimensionCategoryName : null,
-                              showDivision ? (item.divisionLabel ?? "Sem divisão") : null,
-                            ];
-                      return (
-                        <tr key={item.id}>
-                          {dimensions.map((label) =>
-                            label ? <td key={`${item.id}-${label}`}>{label}</td> : null,
-                          )}
-                          {showGender ? (
-                            <td>
-                              {item.dimensionGender === "male"
-                                ? "Masculino"
-                                : item.dimensionGender === "female"
-                                  ? "Feminino"
-                                  : "Naipe pendente"}
-                            </td>
-                          ) : null}
-                          <td>
-                            <Link to={`/admin/competitions/${item.id}`}>{item.display_name}</Link>
-                          </td>
-                          <td>{statusLabels[item.status] ?? "Em revisão"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          );
-        })}
-      </div>
+      <AdminEditionList groups={loaderData.groups} />
     </AdminArea>
   );
 }

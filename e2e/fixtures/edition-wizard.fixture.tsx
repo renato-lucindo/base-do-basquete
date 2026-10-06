@@ -1,6 +1,7 @@
 // Isolated component fixture: never an application route, never connected to Supabase.
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, RouterProvider, useActionData } from "react-router";
+import { AdminEditionList } from "../../app/components/admin/admin-edition-list";
 import {
   EditionWizard,
   type EditionChoices,
@@ -12,6 +13,7 @@ import {
 } from "../../app/modules/competition/edition-workflow";
 import "../../app/app.css";
 const addition = new URLSearchParams(location.search).has("add");
+const table = new URLSearchParams(location.search).has("table");
 const choices: EditionChoices = {
   available: true,
   selectedSeasonId: addition ? 7 : null,
@@ -41,6 +43,43 @@ const choices: EditionChoices = {
 };
 function Fixture() {
   const result = useActionData<EditionResult>();
+  if (table)
+    return (
+      <main className="admin-area">
+        <h1>Competições</h1>
+        <AdminEditionList
+          groups={[
+            {
+              id: "7",
+              name: "Copa Metropolitana",
+              year: 2026,
+              seasonId: 7,
+              navigationOrder: "division_category",
+              competitions: [
+                {
+                  id: 11,
+                  display_name: "Copa Metropolitana - Sub-15 · Série Ouro",
+                  status: "draft",
+                  dimensionCategoryName: "Sub-15",
+                  dimensionGender: "female",
+                  divisionLabel: "Série Ouro",
+                  divisionSortOrder: 1,
+                },
+                {
+                  id: 12,
+                  display_name: "Copa Metropolitana - Sub-17 · Série Prata",
+                  status: "published",
+                  dimensionCategoryName: "Sub-17",
+                  dimensionGender: "male",
+                  divisionLabel: "Série Prata",
+                  divisionSortOrder: 2,
+                },
+              ],
+            },
+          ]}
+        />
+      </main>
+    );
   return (
     <main className="admin-area">
       <h1>{addition ? "Adicionar disputa" : "Criar edição"}</h1>
