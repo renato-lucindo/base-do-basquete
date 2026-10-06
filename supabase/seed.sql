@@ -87,15 +87,15 @@ on conflict (player_id) do update
 set sex=excluded.sex,sex_review_required=false;
 
 insert into public.team_registrations
-  (competition_id, team_id, status, confirmed_at)
-select c.id, t.id, 'confirmed', now()
+  (competition_id, team_id, public_name, status, confirmed_at)
+select c.id, t.id, t.name, 'confirmed', now()
 from public.competitions c
 join public.competition_series s on s.id = c.series_id
 cross join public.teams t
 where s.slug = 'liga-de-desenvolvimento'
   and c.year in (2025, 2026)
   and t.slug in ('equipe-demonstracao-azul', 'equipe-demonstracao-dourada')
-on conflict (competition_id, team_id) do update
+on conflict (competition_id, lower(public_name)) do update
 set status = 'confirmed',
     confirmed_at = coalesce(public.team_registrations.confirmed_at, excluded.confirmed_at);
 

@@ -4,11 +4,11 @@ import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
 import {
   calculateStandings,
-  summarizeTeamStatistics,
   type PublicGameStatus,
   type PublicGameSummary,
   type PublicTeamSummary,
   type StandingRow,
+  summarizeTeamStatistics,
   type TeamStatisticsRow,
 } from "./sports-domain";
 
@@ -43,6 +43,11 @@ function nullableNumberValue(value: unknown): number | null {
 
 function publicationRpcUnavailable(error: unknown): boolean {
   return record(error)?.code === "PGRST202";
+}
+
+function registrationIdentitySchemaUnavailable(error: unknown): boolean {
+  const code = record(error)?.code;
+  return ["42703", "42P01", "PGRST204", "PGRST205"].includes(String(code));
 }
 
 function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null {
@@ -190,14 +195,34 @@ export async function loadPublicSportsCore(
   const published = publishedSportsCore(publicationResult.data);
   if (published) return published;
 
-  const registrationsResult = await client
+  const registrationsWithIdentityResult = await client
     .from("team_registrations")
     .select("id,team_id,public_name")
     .eq("competition_id", context.competitionId)
     .in("status", ["confirmed", "completed"]);
-  ensure(registrationsResult.error);
+  const registrationIdentityAvailable = !registrationIdentitySchemaUnavailable(
+    registrationsWithIdentityResult.error,
+  );
+  const legacyRegistrationsResult = registrationIdentityAvailable
+    ? null
+    : await client
+        .from("team_registrations")
+        .select("id,team_id")
+        .eq("competition_id", context.competitionId)
+        .in("status", ["confirmed", "completed"]);
+  if (registrationIdentityAvailable) {
+    ensure(registrationsWithIdentityResult.error);
+  } else {
+    ensure(legacyRegistrationsResult?.error ?? null);
+  }
+  const registrations = registrationIdentityAvailable
+    ? (registrationsWithIdentityResult.data ?? [])
+    : (legacyRegistrationsResult?.data ?? []).map((registration) => ({
+        ...registration,
+        public_name: null,
+      }));
 
-  if (registrationsResult.data.length === 0) {
+  if (registrations.length === 0) {
     return { games: [], standings: [], teamStatistics: [], teams: [] };
   }
 
@@ -206,28 +231,27 @@ export async function loadPublicSportsCore(
     .select("id,name,slug,abbreviation")
     .in(
       "id",
-      registrationsResult.data.map((registration) => registration.team_id),
+      registrations.map((registration) => registration.team_id),
     )
     .eq("is_public", true)
     .order("name");
   ensure(teamsResult.error);
 
   const globalTeamById = new Map(teamsResult.data.map((team) => [team.id, team]));
-  const teams: PublicTeamSummary[] = registrationsResult.data.flatMap(
-    (registration): PublicTeamSummary[] => {
-      const team = globalTeamById.get(registration.team_id);
-      if (!team) return [];
-      return [
-        {
-          id: registration.id,
-          name: registration.public_name,
-          slug: `inscricao-${registration.id}`,
-          abbreviation: team.abbreviation,
-        },
-      ];
-    },
-  );
-  const teamByRegistrationId = new Map(teams.map((team) => [team.id, team]));
+  const teamByRegistrationId = new Map<number, PublicTeamSummary>();
+  for (const registration of registrations) {
+    const team = globalTeamById.get(registration.team_id);
+    if (!team) continue;
+    teamByRegistrationId.set(registration.id, {
+      id: registrationIdentityAvailable ? registration.id : team.id,
+      name: registrationIdentityAvailable ? (registration.public_name ?? team.name) : team.name,
+      slug: registrationIdentityAvailable ? `inscricao-${registration.id}` : team.slug,
+      abbreviation: team.abbreviation,
+    });
+  }
+  const teams = [
+    ...new Map([...teamByRegistrationId.values()].map((team) => [team.id, team] as const)).values(),
+  ];
 
   const gamesResult = await client
     .from("games")
@@ -314,7 +338,9 @@ export async function loadPublicSportsCore(
   ensure(statisticsResult.error);
 
   const teamStatistics = teams.map((team) => {
-    const rows = statisticsResult.data.filter((row) => row.registration_id === team.id);
+    const rows = statisticsResult.data.filter((row) =>
+      registrationIdentityAvailable ? row.registration_id === team.id : row.team_id === team.id,
+    );
     const sum = (key: keyof (typeof rows)[number]) =>
       rows.reduce((total, row) => total + numberValue(row[key] as number | null), 0);
     return summarizeTeamStatistics({

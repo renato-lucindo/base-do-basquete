@@ -113,10 +113,17 @@ function nullableNumber(value: number | null): number | null {
   return value;
 }
 
+function registrationIdentitySchemaUnavailable(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false;
+  return ["42703", "42P01", "PGRST204", "PGRST205"].includes(
+    String((error as { code?: unknown }).code),
+  );
+}
+
 async function registrationIdentityMap(
   client: SupabaseClient<Database>,
   rows: Array<Record<string, unknown>>,
-) {
+): Promise<Map<number, string> | null> {
   const registrationIds = [
     ...new Set(
       rows.flatMap((row) => (typeof row.registration_id === "number" ? [row.registration_id] : [])),
@@ -127,6 +134,7 @@ async function registrationIdentityMap(
     .from("team_registrations")
     .select("id,public_name")
     .in("id", registrationIds);
+  if (registrationIdentitySchemaUnavailable(result.error)) return null;
   ensure(result.error);
   return new Map(result.data.map((registration) => [registration.id, registration.public_name]));
 }
@@ -201,11 +209,11 @@ export async function loadCompetitionStatistics(
           playerName: row.player_name as string,
           playerSlug: row.player_slug as string,
           teamName:
-            typeof row.registration_id === "number"
+            registrationNames !== null && typeof row.registration_id === "number"
               ? (registrationNames.get(row.registration_id) ?? row.team_name)
               : row.team_name,
           teamSlug:
-            typeof row.registration_id === "number"
+            registrationNames !== null && typeof row.registration_id === "number"
               ? `inscricao-${row.registration_id}`
               : row.team_slug,
           teamAbbreviation: row.team_abbreviation,
@@ -262,11 +270,11 @@ export async function loadCompetitionStatistics(
         playerName: row.player_name as string,
         playerSlug: row.player_slug as string,
         teamName:
-          typeof row.registration_id === "number"
+          registrationNames !== null && typeof row.registration_id === "number"
             ? (registrationNames.get(row.registration_id) ?? row.team_name)
             : row.team_name,
         teamSlug:
-          typeof row.registration_id === "number"
+          registrationNames !== null && typeof row.registration_id === "number"
             ? `inscricao-${row.registration_id}`
             : row.team_slug,
         teamAbbreviation: row.team_abbreviation,

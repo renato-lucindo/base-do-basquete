@@ -85,4 +85,51 @@ describe("published sports snapshot", () => {
     const result = await loadPublicSportsCore(client as never, context);
     expect(result).toEqual({ games: [], standings: [], teamStatistics: [], teams: [] });
   });
+
+  it("keeps legacy public team identity while public_name is not deployed", async () => {
+    let registrationQueries = 0;
+    const resultBuilder = (result: unknown) => {
+      const builder = {
+        eq: vi.fn(() => builder),
+        in: vi.fn(() => builder),
+        order: vi.fn(() => builder),
+        // biome-ignore lint/suspicious/noThenProperty: Supabase query builders are intentionally thenable.
+        then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
+          Promise.resolve(result).then(resolve, reject),
+      };
+      return builder;
+    };
+    const client = {
+      rpc: vi.fn().mockResolvedValue({
+        data: null,
+        error: { code: "PGRST202", message: "function is not in the schema cache" },
+      }),
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => {
+          if (table === "team_registrations") {
+            registrationQueries += 1;
+            return resultBuilder(
+              registrationQueries === 1
+                ? { data: null, error: { code: "PGRST204" } }
+                : { data: [{ id: 10, team_id: 1 }], error: null },
+            );
+          }
+          if (table === "teams") {
+            return resultBuilder({
+              data: [{ id: 1, name: "Azul", slug: "azul", abbreviation: "AZL" }],
+              error: null,
+            });
+          }
+          if (table === "games") {
+            return resultBuilder({ data: [], error: null });
+          }
+          throw new Error(`unexpected table: ${table}`);
+        }),
+      })),
+    };
+
+    const result = await loadPublicSportsCore(client as never, context);
+
+    expect(result.teams).toEqual([{ id: 1, name: "Azul", slug: "azul", abbreviation: "AZL" }]);
+  });
 });
