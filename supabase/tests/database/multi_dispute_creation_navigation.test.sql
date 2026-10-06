@@ -1,7 +1,19 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(28);
+
+select ok(
+  pg_get_constraintdef(
+    (
+      select constraint_item.oid
+      from pg_constraint constraint_item
+      where constraint_item.conname = 'admin_mutation_audit_action_check'
+        and constraint_item.conrelid = 'public.admin_mutation_audit'::regclass
+    )
+  ) like '%competition_season_navigation_configured%',
+  'closed audit vocabulary accepts the edition navigation action'
+);
 
 insert into auth.users(id)
 values ('11111111-1111-4111-8111-111111111111')

@@ -23,6 +23,25 @@ alter table private.edition_batch_creation_requests enable row level security;
 alter table private.edition_batch_creation_requests force row level security;
 revoke all on private.edition_batch_creation_requests from public, anon, authenticated;
 
+do $$
+declare previous_expression text;
+begin
+  select pg_get_expr(conbin, conrelid) into strict previous_expression
+  from pg_constraint
+  where conrelid = 'public.admin_mutation_audit'::regclass
+    and conname = 'admin_mutation_audit_action_check';
+
+  alter table public.admin_mutation_audit
+    drop constraint admin_mutation_audit_action_check;
+
+  execute format(
+    'alter table public.admin_mutation_audit add constraint admin_mutation_audit_action_check check ((%s) or action=%L)',
+    previous_expression,
+    'competition_season_navigation_configured'
+  );
+end;
+$$;
+
 create function private.create_edition_workflow_batch(
   p_request_id uuid,
   p_input jsonb
