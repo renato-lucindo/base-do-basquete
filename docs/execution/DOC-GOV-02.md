@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação documental em andamento na branch `codex/doc-gov-02`. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços.
+Implementação documental concluída localmente na branch `codex/doc-gov-02` e aguardando parecer obrigatório de `qa-reviewer`. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços.
 
 ## Base
 
@@ -91,7 +91,7 @@ O `npm ci` também reportou seis vulnerabilidades de severidade alta no inventá
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: delta DOC-GOV-02
-ACAO: commitar localmente o delta documental validado e solicitar qa-reviewer para o HEAD exato resultante
-CRITERIO_DE_CONCLUSAO: worktree limpo após o commit, parecer QA válido e nenhuma regressão de autoridade, rastreabilidade ou retomada antes de qualquer integração
+ARQUIVO_OU_SERVICO: HEAD atual de codex/doc-gov-02
+ACAO: obter parecer qa-reviewer para o HEAD exato atual sem mudança material durante a revisão
+CRITERIO_DE_CONCLUSAO: parecer QA válido e nenhuma regressão de autoridade, rastreabilidade ou retomada antes de qualquer integração
 ```

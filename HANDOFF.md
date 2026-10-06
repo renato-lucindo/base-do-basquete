@@ -19,7 +19,7 @@ BASE_COMMIT: b663b7acf1be3ce5463468a17613ae983bbe5a26
 SCOPE: reduzir HANDOFF, preservar histórico por evidência versionada e reconciliar o estado da governança documental
 SCOPE_NEGATIVO: sem deduplicação ampla, movimentação/remoção de documentos, metadados em massa, novo gate de CI, código, banco, cloud, merge ou release
 REQUIRED_REVIEWERS: qa-reviewer
-STATUS: DOING
+STATUS: REVIEW
 ```
 
 Somente `project-maintainer` possui o lock de escrita desta unidade. Revisão independente é read-only.
@@ -33,6 +33,7 @@ Somente `project-maintainer` possui o lock de escrita desta unidade. Revisão in
 - PR #64 está `MERGED`; merge commit `b663b7a` em 02/10/2026.
 - CI da `main` no merge `b663b7a`: run `37004512230` aprovado; CodeQL `37004512245` aprovado. Nova execução de CodeQL `37304000358`, em 05/10/2026, também aprovada.
 - Ainda não existe PR nem push para `codex/doc-gov-02` nesta unidade.
+- Implementação documental commitada localmente em `d4d4fc0` (`docs: reduce operational handoff`).
 - O checkout funcional original e seus arquivos não rastreados permanecem fora deste worktree e não devem ser limpos, movidos ou incorporados aqui.
 
 ## 4. Estado dos serviços e ambientes
@@ -68,7 +69,7 @@ Enquanto o delta não estiver commitado, `git diff` deste worktree é a fonte pa
 - Não usar o handoff reduzido para apagar evidência histórica: a fonte antiga permanece no Git e os fechamentos permanecem em `docs/execution/`.
 - Não transformar `HANDOFF.md` novamente em changelog, relatório de testes cumulativo ou backlog histórico.
 
-## 8. REVIEW_PACKET provisório
+## 8. REVIEW_PACKET pronto para revisão
 
 Enquanto não houver PR, o pacote de revisão permanece aqui conforme `.agents/agent-contract.md`:
 
@@ -84,16 +85,16 @@ REQUIRED_REVIEWERS: qa-reviewer
 WRITE_LOCK_OWNER: project-maintainer
 ```
 
-O `HEAD_COMMIT` para o parecer deve ser o `git rev-parse HEAD` da branch após o commit final da unidade. Qualquer delta material posterior exige nova revisão.
+O `HEAD_COMMIT` para o parecer deve ser obtido com `git rev-parse HEAD` após este checkpoint estar commitado. Qualquer delta material posterior exige nova revisão.
 
 ## 9. Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: delta DOC-GOV-02 neste worktree
-ACAO: commitar localmente o delta documental validado e solicitar parecer qa-reviewer para o HEAD exato resultante
-CRITERIO_DE_CONCLUSAO: worktree limpo após o commit e parecer QA válido para esse HEAD antes de qualquer push/PR/merge autorizado
+ARQUIVO_OU_SERVICO: HEAD atual de codex/doc-gov-02
+ACAO: obter parecer qa-reviewer para o HEAD exato atual, sem alterar arquivos enquanto o parecer estiver em curso
+CRITERIO_DE_CONCLUSAO: parecer QA válido para o HEAD exato antes de qualquer push/PR/merge autorizado
 ```
 
 ## 10. Onde localizar o histórico
