@@ -58,7 +58,7 @@ jobs:
           npx --no-install supabase db reset --local
       - name: Verify divergent editions block consolidation
         run: |
-          npx --no-install supabase db reset --local --version 20261005140504 --sql-paths legacy-rollout-tests/edition_identity_conflict.sql
+          npx --no-install supabase db reset --local --version 20261005124828 --sql-paths legacy-rollout-tests/edition_identity_conflict.sql
           if npx --no-install supabase migration up --local > edition-identity-conflict.log 2>&1; then
             cat edition-identity-conflict.log
             echo "Expected edition identity consolidation to fail"
