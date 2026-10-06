@@ -138,8 +138,8 @@ begin
   from private.player_private private_data
   where private_data.player_id in (
     select player_id::bigint
-    from jsonb_array_elements(p_items) value,
-         jsonb_array_elements_text(value->'playerIds') player_id
+    from jsonb_array_elements(p_items) items(value)
+         cross join lateral jsonb_array_elements_text(items.value->'playerIds') player_id
   )
   order by private_data.player_id
   for share;
@@ -150,18 +150,18 @@ begin
     and target_roster.status = 'active'
     and target_roster.player_id in (
       select player_id::bigint
-      from jsonb_array_elements(p_items) value,
-           jsonb_array_elements_text(value->'playerIds') player_id
+      from jsonb_array_elements(p_items) items(value)
+           cross join lateral jsonb_array_elements_text(items.value->'playerIds') player_id
     )
   order by target_roster.id
   for share;
 
   if exists(
     select 1
-    from jsonb_array_elements(p_items) value,
-         jsonb_array_elements_text(value->'playerIds') selected(player_id)
+    from jsonb_array_elements(p_items) items(value)
+         cross join lateral jsonb_array_elements_text(items.value->'playerIds') selected(player_id)
     left join public.roster_entries source_roster
-      on source_roster.registration_id = (value->>'sourceRegistrationId')::bigint
+      on source_roster.registration_id = (items.value->>'sourceRegistrationId')::bigint
      and source_roster.player_id = selected.player_id::bigint
      and source_roster.status = 'active'
     where source_roster.id is null
@@ -171,8 +171,8 @@ begin
 
   if exists(
     select 1
-    from jsonb_array_elements(p_items) value,
-         jsonb_array_elements_text(value->'playerIds') selected(player_id)
+    from jsonb_array_elements(p_items) items(value)
+         cross join lateral jsonb_array_elements_text(items.value->'playerIds') selected(player_id)
     join public.players player on player.id = selected.player_id::bigint
     left join private.player_private private_data on private_data.player_id = player.id
     where not player.is_active
@@ -184,8 +184,8 @@ begin
   end if;
   if exists(
     select 1
-    from jsonb_array_elements(p_items) value,
-         jsonb_array_elements_text(value->'playerIds') selected(player_id)
+    from jsonb_array_elements(p_items) items(value)
+         cross join lateral jsonb_array_elements_text(items.value->'playerIds') selected(player_id)
     join private.player_private private_data on private_data.player_id = selected.player_id::bigint
     where private_data.sex <> target_competition.gender_division
   ) then
@@ -193,8 +193,8 @@ begin
   end if;
   if exists(
     select 1
-    from jsonb_array_elements(p_items) value,
-         jsonb_array_elements_text(value->'playerIds') selected(player_id)
+    from jsonb_array_elements(p_items) items(value)
+         cross join lateral jsonb_array_elements_text(items.value->'playerIds') selected(player_id)
     join public.roster_entries target_roster
       on target_roster.competition_id = target_competition.id
      and target_roster.player_id = selected.player_id::bigint
