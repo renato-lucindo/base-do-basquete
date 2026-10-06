@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   disputeName,
   masterAges,
+  validateEditionBatchWorkflow,
   validateEditionWorkflow,
   workflowInputFromForm,
+  type EditionBatchWorkflowInput,
   type EditionWorkflowInput,
 } from "./edition-workflow";
 const workflowFixture: EditionWorkflowInput = {
@@ -26,6 +28,33 @@ const workflowFixture: EditionWorkflowInput = {
   entryCount: 4,
   expectedProfileId: null,
   reason: null,
+  reviewed: false,
+};
+const batchFixture: EditionBatchWorkflowInput = {
+  seriesId: 1,
+  championshipName: null,
+  seasonId: null,
+  year: 2026,
+  description: null,
+  navigationOrder: "category_division",
+  disputes: [
+    {
+      categoryKind: "adult",
+      categoryAge: null,
+      gender: "male",
+      startsOn: null,
+      endsOn: null,
+      divisionMode: "none",
+      divisionValueId: null,
+      divisionTypeName: null,
+      divisionValueName: null,
+      source: "manual_scoresheet",
+      preset: "single_group",
+      entryCount: 4,
+      expectedProfileId: null,
+      reason: null,
+    },
+  ],
   reviewed: false,
 };
 describe("edition workflow", () => {
@@ -101,5 +130,116 @@ describe("edition workflow", () => {
       categoryAge: null,
       divisionValueId: null,
     });
+  });
+
+  it("accepts independent disputes in the same initial batch", () => {
+    const result = validateEditionBatchWorkflow(
+      {
+        ...batchFixture,
+        navigationOrder: "division_category",
+        disputes: [
+          batchFixture.disputes[0],
+          {
+            ...batchFixture.disputes[0],
+            categoryKind: "base",
+            categoryAge: 17,
+            gender: "female",
+            startsOn: "2026-04-01",
+            endsOn: "2026-06-30",
+            preset: "single_elimination",
+            entryCount: 8,
+          },
+        ],
+      },
+      2026,
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.input.navigationOrder).toBe("division_category");
+      expect(result.summaries).toHaveLength(2);
+    }
+  });
+
+  it("rejects duplicate combinations before the batch reaches the database", () => {
+    const result = validateEditionBatchWorkflow(
+      { ...batchFixture, disputes: [batchFixture.disputes[0], batchFixture.disputes[0]] },
+      2026,
+    );
+    expect(result).toMatchObject({ ok: false, field: "disputes.1.categoryKind" });
+  });
+
+  it("enforces one competitive division type for a new edition", () => {
+    const first = {
+      ...batchFixture.disputes[0],
+      divisionMode: "new" as const,
+      divisionTypeName: "Série",
+      divisionValueName: "Ouro Norte",
+    };
+    const second = {
+      ...first,
+      gender: "female" as const,
+      divisionTypeName: "Conferência",
+      divisionValueName: "Sul",
+    };
+    expect(
+      validateEditionBatchWorkflow({ ...batchFixture, disputes: [first, second] }, 2026),
+    ).toMatchObject({ ok: false, field: "disputes.1.divisionTypeName" });
+  });
+
+  it("allows different disputes to share the same new division", () => {
+    const sharedDivision = {
+      ...batchFixture.disputes[0],
+      divisionMode: "new" as const,
+      divisionTypeName: "Série",
+      divisionValueName: "Ouro",
+    };
+    const result = validateEditionBatchWorkflow(
+      {
+        ...batchFixture,
+        disputes: [
+          { ...sharedDivision, categoryKind: "base", categoryAge: 15 },
+          {
+            ...sharedDivision,
+            categoryKind: "base",
+            categoryAge: 17,
+            gender: "female",
+            divisionTypeName: "Serie",
+            divisionValueName: "ouro/norte",
+          },
+        ],
+      },
+      2026,
+    );
+
+    expect(result.ok).toBe(true);
+  });
+
+  it("keeps later additions unitary and forbids existing divisions in an initial batch", () => {
+    expect(
+      validateEditionBatchWorkflow(
+        {
+          ...batchFixture,
+          seasonId: 7,
+          seriesId: null,
+          disputes: [batchFixture.disputes[0], { ...batchFixture.disputes[0], gender: "female" }],
+        },
+        2026,
+      ),
+    ).toMatchObject({ ok: false, field: "disputes" });
+    expect(
+      validateEditionBatchWorkflow(
+        {
+          ...batchFixture,
+          disputes: [
+            {
+              ...batchFixture.disputes[0],
+              divisionMode: "existing",
+              divisionValueId: 10,
+            },
+          ],
+        },
+        2026,
+      ),
+    ).toMatchObject({ ok: false, field: "disputes.0.divisionMode" });
   });
 });
