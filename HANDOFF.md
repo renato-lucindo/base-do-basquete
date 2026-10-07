@@ -2,13 +2,13 @@
 
 > Checkpoint operacional para retomada. Histórico detalhado pertence ao Git, às PRs e a `docs/execution/`; não registre segredos aqui.
 
-## 1. Objetivo vigente
+## 1. Estado vigente
 
-Executar `DOC-GOV-02`: separar o estado operacional corrente do histórico acumulado no antigo `HANDOFF.md`, preservando a rastreabilidade e deixando um único próximo passo autoritativo.
+`DOC-GOV-02` está concluída localmente: o estado operacional corrente foi separado do histórico acumulado no antigo `HANDOFF.md`, com rastreabilidade preservada e um único próximo passo autoritativo para eventual integração.
 
 Esta unidade é exclusivamente documental. Não altera produto, banco, migrations, Supabase, Cloudflare, produção ou contratos funcionais.
 
-## 2. Unidade ativa e WRITE_LOCK
+## 2. Unidade encerrada e WRITE_LOCK
 
 ```text
 WRITE_LOCK:
@@ -19,10 +19,10 @@ BASE_COMMIT: b663b7acf1be3ce5463468a17613ae983bbe5a26
 SCOPE: reduzir HANDOFF, preservar histórico por evidência versionada e reconciliar o estado da governança documental
 SCOPE_NEGATIVO: sem deduplicação ampla, movimentação/remoção de documentos, metadados em massa, novo gate de CI, código, banco, cloud, merge ou release
 REQUIRED_REVIEWERS: qa-reviewer
-STATUS: REVIEW
+STATUS: RELEASED
 ```
 
-Somente `project-maintainer` possui o lock de escrita desta unidade. Revisão independente é read-only.
+O `project-maintainer` encerrou a escrita desta unidade e liberou o lock. Qualquer retomada material exige nova unidade/lock; eventual revisão independente permanece read-only.
 
 ## 3. Git e integração corrente
 
@@ -34,6 +34,7 @@ Somente `project-maintainer` possui o lock de escrita desta unidade. Revisão in
 - CI da `main` no merge `b663b7a`: run `37004512230` aprovado; CodeQL `37004512245` aprovado. Nova execução de CodeQL `37304000358`, em 05/10/2026, também aprovada.
 - Ainda não existe PR nem push para `codex/doc-gov-02` nesta unidade.
 - Implementação documental commitada localmente em `d4d4fc0` (`docs: reduce operational handoff`).
+- Checkpoint documental de revisão commitado localmente em `a3c6f56` (`docs: checkpoint doc governance review`).
 - O checkout funcional original e seus arquivos não rastreados permanecem fora deste worktree e não devem ser limpos, movidos ou incorporados aqui.
 
 ## 4. Estado dos serviços e ambientes
@@ -64,12 +65,12 @@ Enquanto o delta não estiver commitado, `git diff` deste worktree é a fonte pa
 
 ## 7. Riscos e bloqueios
 
-- `qa-reviewer` é obrigatório antes de merge porque esta unidade altera governança e processo documental.
+- `GATE_MERGE_RELEASE: BLOCK_RELEASE`: `qa-reviewer` é obrigatório porque esta unidade altera governança e processo documental, mas não foi acionado nesta retomada para respeitar a instrução explícita de não usar subagents. O parecer não pode ser simulado pelo `project-maintainer`.
 - Não antecipar `DOC-GOV-03` (deduplicação/movimentação), `DOC-GOV-04` (metadados), `DOC-GOV-05` (verificador/CI) ou `DOC-GOV-06` (baseline/gate bloqueante).
 - Não usar o handoff reduzido para apagar evidência histórica: a fonte antiga permanece no Git e os fechamentos permanecem em `docs/execution/`.
 - Não transformar `HANDOFF.md` novamente em changelog, relatório de testes cumulativo ou backlog histórico.
 
-## 8. REVIEW_PACKET pronto para revisão
+## 8. REVIEW_PACKET preservado para eventual integração
 
 Enquanto não houver PR, o pacote de revisão permanece aqui conforme `.agents/agent-contract.md`:
 
@@ -82,19 +83,19 @@ OBJETIVO: tornar HANDOFF um checkpoint atual e preservar o histórico em fontes 
 CRITERIOS_DE_ACEITE: HANDOFF < 200 linhas; um único próximo passo; histórico removido acessível no Git/docs/execution; nenhuma mudança funcional
 ESCOPO_NEGATIVO: sem código, banco, cloud, deduplicação ampla, movimentação/remoção de fontes ou ativação de gate documental
 REQUIRED_REVIEWERS: qa-reviewer
-WRITE_LOCK_OWNER: project-maintainer
+WRITE_LOCK_OWNER: RELEASED
 ```
 
-O `HEAD_COMMIT` para o parecer deve ser obtido com `git rev-parse HEAD` após este checkpoint estar commitado. Qualquer delta material posterior exige nova revisão.
+Se esta unidade voltar ao fluxo de integração, o `HEAD_COMMIT` para o parecer deve ser obtido com `git rev-parse HEAD` no momento da revisão. Qualquer delta material posterior exige nova revisão.
 
 ## 9. Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
-RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: HEAD atual de codex/doc-gov-02
-ACAO: obter parecer qa-reviewer para o HEAD exato atual, sem alterar arquivos enquanto o parecer estiver em curso
-CRITERIO_DE_CONCLUSAO: parecer QA válido para o HEAD exato antes de qualquer push/PR/merge autorizado
+RESPONSAVEL: responsável do projeto
+ARQUIVO_OU_SERVICO: codex/doc-gov-02
+ACAO: somente se decidir integrar esta unidade, viabilizar parecer independente de qa-reviewer para o HEAD exato e então autorizar separadamente qualquer push/PR/merge
+CRITERIO_DE_CONCLUSAO: parecer QA válido para o HEAD exato antes de integração; sem esse parecer, manter BLOCK_RELEASE e a branch apenas local
 ```
 
 ## 10. Onde localizar o histórico

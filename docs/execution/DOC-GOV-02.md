@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação documental concluída localmente na branch `codex/doc-gov-02` e aguardando parecer obrigatório de `qa-reviewer`. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços.
+Implementação documental concluída localmente na branch `codex/doc-gov-02`. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços. O gate de merge/release permanece em `BLOCK_RELEASE` exclusivamente porque `qa-reviewer` é obrigatório e não foi acionado nesta retomada, em respeito à instrução explícita de não usar subagents.
 
 ## Base
 
@@ -84,14 +84,14 @@ O `npm ci` também reportou seis vulnerabilidades de severidade alta no inventá
 
 ## Revisão necessária
 
-`qa-reviewer` é obrigatório porque a unidade altera governança e o processo de retomada. `database-security-reviewer` e `accessibility-ui-reviewer` não são exigidos: não há mudança de banco, segurança de dados ou interface.
+`qa-reviewer` é obrigatório para qualquer integração porque a unidade altera governança e o processo de retomada. Como esta retomada foi executada sem subagents, nenhum parecer foi fabricado ou atribuído. A implementação local está encerrada; somente o gate de integração permanece bloqueado. `database-security-reviewer` e `accessibility-ui-reviewer` não são exigidos: não há mudança de banco, segurança de dados ou interface.
 
 ## Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
-RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: HEAD atual de codex/doc-gov-02
-ACAO: obter parecer qa-reviewer para o HEAD exato atual sem mudança material durante a revisão
-CRITERIO_DE_CONCLUSAO: parecer QA válido e nenhuma regressão de autoridade, rastreabilidade ou retomada antes de qualquer integração
+RESPONSAVEL: responsável do projeto
+ARQUIVO_OU_SERVICO: codex/doc-gov-02
+ACAO: somente se decidir integrar a unidade, viabilizar qa-reviewer independente para o HEAD exato e autorizar separadamente qualquer operação remota
+CRITERIO_DE_CONCLUSAO: parecer QA válido antes de integração; na ausência dele, manter BLOCK_RELEASE sem novas mutações
 ```
