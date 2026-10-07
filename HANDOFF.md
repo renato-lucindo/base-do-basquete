@@ -29,19 +29,19 @@ STATUS: ACTIVE
 
 - Etapa 0 — commit `70c003e`: plano retomável portado para `docs/plan/sumula-manual-v2/`, editor/rascunho fixado em `v2` e contrato de `localStorage` preservado.
 - Etapa 1 — commit `f5e5757`: domínio puro FIBA 2024 com tipo semântico separado da penalidade, `U2`, `C1`/`B1`, GD por `D`/`2T`/`2U`/`T+U` e bloqueio de nova falta de atleta após GD. Teste focal: 44/44 verdes; Biome focal e `git diff --check` verdes.
-- Etapa 2 — commit `0ba4d1c`: persistência aditiva para faltas semânticas, comissão técnica e oficiais; compatibilidade com inserts legados; RLS/grants das novas tabelas; pgTAP focal versionado. Teste de domínio 44/44 verde; Biome focal e `git diff --check` verdes.
+- Etapa 2 — commit `0ba4d1c`: persistência aditiva para faltas semânticas, comissão técnica e oficiais; compatibilidade com inserts legados; RLS/grants das novas tabelas; pgTAP focal versionado. Teste de domínio 44/44 verde; Biome focal e `git diff --check` verdes. O workflow descartável `37671645385` concluiu gate, database e accessibility em verde, incluindo banco desde zero, pgTAP e prova de concorrência.
 
 O `npm run typecheck` da Etapa 2 falhou apenas pelos dois erros já existentes no WIP posterior da rota da súmula: `ScoresheetRevisionState` ainda não exportado pelo editor e prop `revision` ainda não declarada em `ManualScoresheetEditorProps`. Não houve erro novo nos artefatos da Etapa 2.
 
-## 4. Bloqueio do checkpoint atual
+## 4. Checkpoint atual — Etapa 3
 
-A Etapa 2 ainda não está autorizada a avançar. Este host não possui Docker nem Podman, portanto `supabase db reset` e pgTAP não podem ser executados localmente. O checkpoint exige CI descartável comprovando banco desde zero, compatibilidade de upgrade e a suíte `supabase/tests/database/manual_scoresheet_v2_persistence.test.sql`.
+A Etapa 3 está ativa em `docs/plan/sumula-manual-v2/03-criacao-transacional-jogo-sumula.md`. O delta local adiciona `supabase/migrations/20261007161000_manual_scoresheet_v2_atomic_create.sql` e `supabase/tests/database/manual_scoresheet_v2_atomic_create.test.sql` para criar matchup, jogo e súmula em uma única transação, com idempotência, rollback total, validação de registrations, persistência do payload e RLS.
 
-Não usar o Supabase compartilhado para suprir essa validação. Se o CI SQL falhar, corrigir a Etapa 2 e repetir o checkpoint antes de iniciar a Etapa 3.
+Validações locais atuais: `git diff --check` verde, `npm run docs:inventory` verde, 29 assertions compatíveis com `plan(29)` e `npm run scan:secrets` verde para 699 arquivos rastreados. Este host continua sem Docker/Podman, então a prova real da migration e do pgTAP da Etapa 3 deve ocorrer no CI descartável após o commit/push isolado.
 
 ## 5. WIP preservado
 
-Antes da reconciliação com `main`, o WIP de etapas posteriores foi guardado no stash `manual-scoresheet-v2-wip-before-main-reconcile` e depois reaplicado sem conflito. A igualdade foi confirmada pelo SHA-256 `8E4F9F0A7033AB5E028E80D96BA4DB5C5D04AB5E760C9BA4F4154D43292CFFDB` tanto para o patch atual quanto para o patch preservado no stash. O stash permanece como backup até o checkpoint SQL ficar verde. O WIP restaurado contém alterações em:
+Antes da reconciliação com `main`, o WIP de etapas posteriores foi guardado no stash `manual-scoresheet-v2-wip-before-main-reconcile` e depois reaplicado sem conflito. A igualdade foi confirmada pelo SHA-256 `8E4F9F0A7033AB5E028E80D96BA4DB5C5D04AB5E760C9BA4F4154D43292CFFDB` tanto para o patch atual quanto para o patch preservado no stash. O stash permanece como backup durante a Etapa 3. O WIP restaurado contém alterações em:
 
 - `app/modules/observability/operation.server.ts`;
 - `app/modules/scoresheet/compact-grid.tsx`;
@@ -54,34 +54,33 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 ## 6. GitHub e ambientes
 
 - PR draft: #72 — `feat: manual scoresheet v2 FIBA 2024`.
-- Head remoto antes desta reconciliação: `0ba4d1ce1da33f9298573bb449d7d9311691e324`.
-- Antes da reconciliação, a PR estava `mergeable=false` porque `main` avançou até `8ac6220`; não havia checks associados ao head anterior. A branch local agora contém o merge `6beb49c` e aguarda push para atualizar a PR e disparar os checks.
+- HEAD local/remoto antes do commit da Etapa 3: `125afe2e54f4f83fd1d7b3ae265a391a2890150f`.
+- O checkpoint reconciliado desse HEAD ficou verde na PR #72; a PR permanece aberta e draft.
 - Supabase compartilhado: não alterado por esta unidade.
 - Cloudflare preview/produção: não alterados por esta unidade.
 - Produção: nenhuma ação autorizada ou executada nesta unidade.
 
 ## 7. Riscos e pontos de atenção
 
-- Confirmar no PostgreSQL real o nome esperado da constraint `game_officials_role_check` usada no pgTAP.
-- Reavaliar se `linked_captain_roster_entry_id` precisa de garantia estrutural adicional de que o roster entry é o capitão do jogo; caso não fique no schema, a Etapa 3 deve validar isso autoritativamente no writer.
+- A Etapa 3 valida autoritativamente o capitão antes de persistir `linked_captain_roster_entry_id`; preservar esse contrato ao corrigir eventuais falhas de CI.
 - C1/B1 devem persistir semanticamente como `foul_type='T'`, `penalty_ft_count=1` e `original_notation` preservada; o legado `foul_code` pode continuar `T`.
-- Não iniciar interface ou writer v2 antes do checkpoint SQL da Etapa 2 ficar verde.
+- Não iniciar a Etapa 4 enquanto migration e pgTAP da Etapa 3 não estiverem verdes no CI descartável.
 
 ## 8. Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: branch codex/manual-scoresheet-v2 / PR #72 / workflow de banco descartável
-ACAO: publicar a branch reconciliada e validar migrations do zero, upgrade e pgTAP da Etapa 2 no CI; corrigir qualquer falha antes de abrir a Etapa 3
-CRITERIO_DE_CONCLUSAO: PR #72 sem conflito, WIP restaurado sem perda e checkpoint SQL da Etapa 2 verde no mesmo HEAD; somente então iniciar docs/plan/sumula-manual-v2/03-criacao-transacional-jogo-sumula.md
+ARQUIVO_OU_SERVICO: supabase/migrations/20261007161000_manual_scoresheet_v2_atomic_create.sql + supabase/tests/database/manual_scoresheet_v2_atomic_create.test.sql + branch codex/manual-scoresheet-v2 / PR #72
+ACAO: revisar o diff isolado da Etapa 3, commitá-lo como `feat: create game and manual scoresheet atomically`, fazer push e validar migration/pgTAP no workflow descartável; corrigir somente o delta da Etapa 3 se houver falha
+CRITERIO_DE_CONCLUSAO: gate/database/accessibility e revisões obrigatórias verdes no HEAD da Etapa 3, sem incluir os cinco arquivos WIP posteriores; somente então iniciar a Etapa 4
 ```
 
 ## 9. Referências de retomada
 
 - Plano da unidade: `docs/plan/sumula-manual-v2/README.md`.
-- Etapa atual: `docs/plan/sumula-manual-v2/02-persistencia-aditiva.md`.
-- Próxima etapa condicionada: `docs/plan/sumula-manual-v2/03-criacao-transacional-jogo-sumula.md`.
+- Etapa atual: `docs/plan/sumula-manual-v2/03-criacao-transacional-jogo-sumula.md`.
+- Próxima etapa condicionada: Etapa 4, somente após o checkpoint SQL da Etapa 3 ficar verde.
 - Estado anterior completo do handoff: recuperável no histórico Git em `b663b7a:HANDOFF.md`.
 
 Ao fechar cada etapa, mantenha este arquivo conciso e registre a evidência detalhada na PR ou em `docs/execution/`.
