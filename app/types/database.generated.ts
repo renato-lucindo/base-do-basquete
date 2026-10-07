@@ -1587,33 +1587,61 @@ export type Database = {
           created_at: string;
           elapsed_seconds: number | null;
           foul_code: string;
+          foul_rules_version: string;
+          foul_type: string;
           game_id: number;
-          game_roster_slot_id: number;
+          game_roster_slot_id: number | null;
           id: number;
+          original_notation: string;
+          penalty_ft_count: number;
           period_number: number;
+          registration_id: number;
           sequence_number: number;
+          staff_role: string | null;
+          target_kind: string;
         };
         Insert: {
           created_at?: string;
           elapsed_seconds?: number | null;
           foul_code: string;
+          foul_rules_version?: string;
+          foul_type: string;
           game_id: number;
-          game_roster_slot_id: number;
+          game_roster_slot_id?: number | null;
           id?: never;
+          original_notation: string;
+          penalty_ft_count?: number;
           period_number: number;
+          registration_id: number;
           sequence_number: number;
+          staff_role?: string | null;
+          target_kind?: string;
         };
         Update: {
           created_at?: string;
           elapsed_seconds?: number | null;
           foul_code?: string;
+          foul_rules_version?: string;
+          foul_type?: string;
           game_id?: number;
-          game_roster_slot_id?: number;
+          game_roster_slot_id?: number | null;
           id?: never;
+          original_notation?: string;
+          penalty_ft_count?: number;
           period_number?: number;
+          registration_id?: number;
           sequence_number?: number;
+          staff_role?: string | null;
+          target_kind?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "foul_events_participant_fkey";
+            columns: ["game_id", "registration_id"];
+            isOneToOne: false;
+            referencedRelation: "game_participants";
+            referencedColumns: ["game_id", "registration_id"];
+          },
           {
             foreignKeyName: "foul_events_period_fkey";
             columns: ["game_id", "period_number"];
@@ -2027,6 +2055,86 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "legacy_unclassified_games";
             referencedColumns: ["game_id"];
+          },
+        ];
+      };
+      game_officials: {
+        Row: {
+          created_at: string;
+          display_name: string;
+          game_id: number;
+          role: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name: string;
+          game_id: number;
+          role: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string;
+          game_id?: number;
+          role?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_officials_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      game_team_staff: {
+        Row: {
+          created_at: string;
+          display_name: string;
+          game_id: number;
+          linked_captain_roster_entry_id: number | null;
+          origin: string;
+          registration_id: number;
+          role: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name: string;
+          game_id: number;
+          linked_captain_roster_entry_id?: number | null;
+          origin: string;
+          registration_id: number;
+          role: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string;
+          game_id?: number;
+          linked_captain_roster_entry_id?: number | null;
+          origin?: string;
+          registration_id?: number;
+          role?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "game_team_staff_linked_captain_fkey";
+            columns: ["linked_captain_roster_entry_id", "registration_id"];
+            isOneToOne: false;
+            referencedRelation: "roster_entries";
+            referencedColumns: ["id", "registration_id"];
+          },
+          {
+            foreignKeyName: "game_team_staff_participant_fkey";
+            columns: ["game_id", "registration_id"];
+            isOneToOne: false;
+            referencedRelation: "game_participants";
+            referencedColumns: ["game_id", "registration_id"];
           },
         ];
       };

@@ -5,7 +5,7 @@ export const FOUL_RULES_VERSION = "FIBA_2024" as const;
 export type FoulCode = (typeof FOUL_CODES)[number];
 export type FoulType = (typeof FOUL_TYPES)[number];
 export type FoulRulesVersion = typeof FOUL_RULES_VERSION;
-export type FoulTargetKind = "player" | "bench" | "staff";
+export type FoulTargetKind = "player" | "bench" | "staff" | "team";
 export type TeamSide = "home" | "away";
 export type StaffRole = "coach" | "assistant_1";
 export type StaffOrigin = "manual" | "captain_placeholder";
@@ -212,6 +212,9 @@ export function isValidSemanticFoulTarget(target: SemanticFoulTarget): boolean {
     );
   }
   if (target.kind === "bench") {
+    return target.rosterEntryId === undefined && target.staffRole === undefined;
+  }
+  if (target.kind === "team") {
     return target.rosterEntryId === undefined && target.staffRole === undefined;
   }
   return (

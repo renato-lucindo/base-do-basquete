@@ -150,7 +150,7 @@ describe("manual scoresheet domain", () => {
     ).toEqual(expect.arrayContaining(["duplicate_player", "duplicate_jersey", "captain_required"]));
   });
 
-  it("validates player, bench and staff foul targets independently", () => {
+  it("validates player, bench, staff and team foul targets independently", () => {
     expect(isValidSemanticFoulTarget({ kind: "player", registrationId: 1, rosterEntryId: 7 })).toBe(
       true,
     );
@@ -158,8 +158,12 @@ describe("manual scoresheet domain", () => {
     expect(
       isValidSemanticFoulTarget({ kind: "staff", registrationId: 1, staffRole: "coach" }),
     ).toBe(true);
+    expect(isValidSemanticFoulTarget({ kind: "team", registrationId: 1 })).toBe(true);
     expect(isValidSemanticFoulTarget({ kind: "player", registrationId: 1 })).toBe(false);
     expect(isValidSemanticFoulTarget({ kind: "bench", registrationId: 1, rosterEntryId: 7 })).toBe(
+      false,
+    );
+    expect(isValidSemanticFoulTarget({ kind: "team", registrationId: 1, staffRole: "coach" })).toBe(
       false,
     );
   });
