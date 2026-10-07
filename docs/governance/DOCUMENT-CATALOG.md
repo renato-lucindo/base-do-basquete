@@ -1,8 +1,8 @@
 # Catálogo documental inicial
 
-**Estado:** rascunho de auditoria
-**Unidade:** `DOC-GOV-01`
-**Atualizado em:** 2026-09-25
+**Estado:** catálogo operacional em implantação
+**Unidade:** `DOC-GOV-02`
+**Atualizado em:** 2026-10-06
 
 ## Finalidade
 
@@ -15,9 +15,9 @@ Este catálogo identifica as fontes principais do repositório e os conflitos qu
 | Regras permanentes do repositório | `AGENTS.md` | Segurança, execução, Git, acessibilidade e continuidade | vigente |
 | Coordenação dos agentes | `.agents/agent-contract.md` | Write lock, review packet e validade dos pareceres | vigente |
 | Perfil de referências | `docs/governance/STANDARDS-PROFILE.md` | Aplicação proporcional de ISO/IEC/IEEE 15289, 12207 e 26514 e práticas GitHub | proposta |
-| Contribuição | `CONTRIBUTING.md` | Entrada operacional para colaboradores | proposta nesta unidade |
-| Estado operacional | `HANDOFF.md` | Estado corrente, evidências e próximo passo | vigente; requer redução |
-| Entrada do plano | `docs/plan/README.md` | Ordem de leitura e encaminhamento aos planos | vigente; requer consolidação |
+| Contribuição | `CONTRIBUTING.md` | Entrada operacional para colaboradores | vigente |
+| Estado operacional | `HANDOFF.md` | Checkpoint corrente, riscos, mudanças locais e próximo passo | vigente; reduzido em `DOC-GOV-02`, QA pendente |
+| Entrada do plano | `docs/plan/README.md` | Ordem de leitura e encaminhamento aos planos | vigente; governança em implantação |
 | Requisitos de produto | `docs/plan/REQUISITOS-FUNCIONAIS.md` | Baseline funcional consolidada | vigente |
 | Arquitetura e segurança | `docs/plan/ARQUITETURA-SEGURANCA.md` | Stack, fronteiras e controles obrigatórios | vigente; estrutura física requer reconciliação |
 | Contrato FIBA | `docs/plan/MODELO-BOXSCORE-FIBA.md` | Formato versionado e critérios do parser FIBA | vigente |
@@ -32,9 +32,12 @@ Este catálogo identifica as fontes principais do repositório e os conflitos qu
 | Conflito | Evidência | Risco | Tratamento proposto |
 | --- | --- | --- | --- |
 | Mais de um plano se declara ativo | `docs/plan/README.md` apresenta plano mestre, tasks retomáveis e plano acelerado em momentos sucessivos | Agente escolher fila antiga | Definir um único ciclo operacional ativo e marcar os demais como congelados ou históricos |
-| Handoff mistura estado e histórico | `HANDOFF.md` concentra centenas de linhas de unidades concluídas | Próximo passo antigo ser interpretado como atual | Extrair histórico para `docs/execution/` e manter resumo com links |
 | Task e evidência compartilham basename | Exemplos `ADM-REF-02A.md` em `tasks-pr35` e `docs/execution` | Busca e links ambíguos | Manter diretórios distintos e introduzir tipo/estado nos metadados; avaliar sufixos apenas em unidade futura |
 | Arquitetura descrita diverge da árvore atual | Documento cita `app/contracts`, `app/domain` e `app/server`; implementação usa `app/modules` | Onboarding e barreiras inconsistentes | Registrar a estrutura real ou executar refatoração separada; não misturar com governança documental |
+
+## Resolução registrada em DOC-GOV-02
+
+O conflito “handoff mistura estado e histórico” foi tratado sem mover ou apagar evidências. O `HANDOFF.md` passa a conter somente o checkpoint operacional; o arquivo integral anterior permanece no histórico Git em `b663b7a:HANDOFF.md`, e os relatos fechados continuam em `docs/execution/`. A mudança só pode ser integrada após parecer válido de `qa-reviewer`.
 
 ## Inventário quantitativo inicial
 

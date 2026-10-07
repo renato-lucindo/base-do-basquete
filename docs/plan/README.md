@@ -40,11 +40,11 @@ O texto que inicia a primeira tarefa está em `PROMPT-PARA-EXECUCAO.md`.
 
 Executar os pacotes de trabalho de `PLANO-EXECUCAO.md` na ordem de dependência. Cada pacote representa uma entrega vertical completa e pode envolver banco, backend, interface, testes e deploy no mesmo PR.
 
-## Proposta de governança documental
+## Governança documental em implantação
 
-O plano para classificar fontes, explicitar precedência, reduzir o `HANDOFF.md`, tratar duplicatas e introduzir verificações automáticas está em `PLANO-GOVERNANCA-DOCUMENTAL.md`. Enquanto estiver marcado como proposta, ele não altera a autoridade nem o estado dos documentos existentes.
+O plano para classificar fontes, explicitar precedência, reduzir o `HANDOFF.md`, tratar duplicatas e introduzir verificações automáticas está em `PLANO-GOVERNANCA-DOCUMENTAL.md`. A fundação `DOC-GOV-01` já foi integrada à `main`; as fases seguintes são adotadas somente pelas unidades sequenciais previstas no próprio plano, sem antecipar deduplicação, metadados ou gates ainda não implantados.
 
-O catálogo inicial da auditoria está em `../governance/DOCUMENT-CATALOG.md`. Itens marcados como `classificação pendente` são conflitos a resolver; não representam uma mudança silenciosa de autoridade.
+O catálogo operacional está em `../governance/DOCUMENT-CATALOG.md`. Conflitos ainda abertos continuam sem mudança silenciosa de autoridade e devem ser resolvidos pela unidade indicada no plano.
 
 Não pedir confirmação para decisões técnicas reversíveis cobertas por este plano. Aplicar os padrões definidos, registrar a decisão e continuar.
 
