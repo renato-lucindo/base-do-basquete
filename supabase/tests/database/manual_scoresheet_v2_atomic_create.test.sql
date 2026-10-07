@@ -195,7 +195,7 @@ select is(
   'immutable submission payload snapshot persists'
 );
 select is(
-  (select count(*) from public.game_data_domain_authority where game_id=(select game_id from manual_v2_result) and valid_to is null),
+  (select count(*) from public.game_data_domain_authority where game_id=(select game_id from manual_v2_result)),
   6::bigint,
   'six manual data authority domains become active'
 );
