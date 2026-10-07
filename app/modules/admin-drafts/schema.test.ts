@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createAdminDraft, parseAdminDraft } from "./schema";
+import {
+  adminDraftKey,
+  createAdminDraft,
+  MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION,
+  parseAdminDraft,
+} from "./schema";
 
 describe("administrative draft schema", () => {
   it("serializes a versioned draft and restores it", () => {
@@ -42,6 +47,38 @@ describe("administrative draft schema", () => {
       parseAdminDraft('{"schemaVersion":2}', {
         flow: "roster",
         competitionId: 20,
+      }).status,
+    ).toBe("incompatible");
+  });
+
+  it("scopes scoresheet drafts by editor version", () => {
+    expect(adminDraftKey("roster", 20, 7)).toBe("base-do-basquete:admin-draft:v1:roster:20:7");
+    expect(
+      adminDraftKey("manual-scoresheet", 20, undefined, MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION),
+    ).toBe("base-do-basquete:admin-draft:v1:manual-scoresheet:20:new:v2");
+    const draft = createAdminDraft(
+      "manual-scoresheet",
+      20,
+      { periodCount: 4 },
+      {
+        editorVersion: MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION,
+        now: new Date("2026-08-01T00:00:00.000Z"),
+      },
+    );
+    expect(
+      parseAdminDraft(JSON.stringify(draft), {
+        flow: "manual-scoresheet",
+        competitionId: 20,
+        editorVersion: MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION,
+        now: new Date("2026-08-01T12:00:00.000Z"),
+      }).status,
+    ).toBe("available");
+    expect(
+      parseAdminDraft(JSON.stringify(draft), {
+        flow: "manual-scoresheet",
+        competitionId: 20,
+        editorVersion: "v1",
+        now: new Date("2026-08-01T12:00:00.000Z"),
       }).status,
     ).toBe("incompatible");
   });

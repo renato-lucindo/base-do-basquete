@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const ADMIN_DRAFT_SCHEMA_VERSION = 1 as const;
 export const ADMIN_DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION = "v2" as const;
 
 export type AdminDraftFlow = "roster" | "manual-scoresheet" | "boxscore-review";
 
@@ -10,6 +11,7 @@ export interface AdminDraft<T> {
   flow: AdminDraftFlow;
   competitionId: number;
   entityId?: number;
+  editorVersion?: string;
   savedAt: string;
   expiresAt: string;
   data: T;
@@ -26,6 +28,7 @@ const adminDraftEnvelopeSchema = z
     flow: z.enum(["roster", "manual-scoresheet", "boxscore-review"]),
     competitionId: z.number().int(),
     entityId: z.number().int().optional(),
+    editorVersion: z.string().min(1).max(40).optional(),
     savedAt: z.string(),
     expiresAt: z.string(),
     data: z.unknown(),
@@ -52,15 +55,17 @@ export function adminDraftKey(
   flow: AdminDraftFlow,
   competitionId: number,
   entityId?: number,
+  editorVersion?: string,
 ): string {
-  return `base-do-basquete:admin-draft:v1:${flow}:${competitionId}:${entityId ?? "new"}`;
+  const baseKey = `base-do-basquete:admin-draft:v1:${flow}:${competitionId}:${entityId ?? "new"}`;
+  return editorVersion ? `${baseKey}:${editorVersion}` : baseKey;
 }
 
 export function createAdminDraft<T>(
   flow: AdminDraftFlow,
   competitionId: number,
   data: T,
-  options?: { entityId?: number; now?: Date; ttlMs?: number },
+  options?: { entityId?: number; editorVersion?: string; now?: Date; ttlMs?: number },
 ): AdminDraft<T> {
   if (hasForbiddenValue(data)) throw new Error("ADMIN_DRAFT_UNSAFE_DATA");
   const now = options?.now ?? new Date();
@@ -70,6 +75,7 @@ export function createAdminDraft<T>(
     flow,
     competitionId,
     ...(options?.entityId ? { entityId: options.entityId } : {}),
+    ...(options?.editorVersion ? { editorVersion: options.editorVersion } : {}),
     savedAt: now.toISOString(),
     expiresAt: new Date(now.getTime() + ttlMs).toISOString(),
     data,
@@ -78,7 +84,13 @@ export function createAdminDraft<T>(
 
 export function parseAdminDraft<T>(
   raw: string | null,
-  expected: { flow: AdminDraftFlow; competitionId: number; entityId?: number; now?: Date },
+  expected: {
+    flow: AdminDraftFlow;
+    competitionId: number;
+    entityId?: number;
+    editorVersion?: string;
+    now?: Date;
+  },
 ): AdminDraftReadResult<T> {
   if (!raw) return { status: "missing" };
   let value: unknown;
@@ -98,7 +110,8 @@ export function parseAdminDraft<T>(
   if (
     candidate.flow !== expected.flow ||
     candidate.competitionId !== expected.competitionId ||
-    candidate.entityId !== expected.entityId
+    candidate.entityId !== expected.entityId ||
+    candidate.editorVersion !== expected.editorVersion
   ) {
     return { status: "incompatible" };
   }
