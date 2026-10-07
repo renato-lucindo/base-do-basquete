@@ -6,7 +6,7 @@
 
 A unidade ativa é `MANUAL-SCORESHEET-V2-FIBA2024`, na branch `codex/manual-scoresheet-v2` e PR draft #72. O objetivo é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
-A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e está sendo reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0`, que integrou a governança documental da PR #71. O conflito previsto ficou restrito a este arquivo; a resolução adota o novo formato compacto do handoff.
+A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e foi reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0` pelo merge `6beb49c`, que integrou a governança documental da PR #71. O conflito ficou restrito a este arquivo; a resolução adotou o novo formato compacto do handoff.
 
 ## 2. WRITE_LOCK
 
@@ -41,7 +41,7 @@ Não usar o Supabase compartilhado para suprir essa validação. Se o CI SQL fal
 
 ## 5. WIP preservado
 
-Antes da reconciliação com `main`, o WIP de etapas posteriores foi guardado no stash `manual-scoresheet-v2-wip-before-main-reconcile`. Ele contém alterações em:
+Antes da reconciliação com `main`, o WIP de etapas posteriores foi guardado no stash `manual-scoresheet-v2-wip-before-main-reconcile` e depois reaplicado sem conflito. A igualdade foi confirmada pelo SHA-256 `8E4F9F0A7033AB5E028E80D96BA4DB5C5D04AB5E760C9BA4F4154D43292CFFDB` tanto para o patch atual quanto para o patch preservado no stash. O stash permanece como backup até o checkpoint SQL ficar verde. O WIP restaurado contém alterações em:
 
 - `app/modules/observability/operation.server.ts`;
 - `app/modules/scoresheet/compact-grid.tsx`;
@@ -55,7 +55,7 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 
 - PR draft: #72 — `feat: manual scoresheet v2 FIBA 2024`.
 - Head remoto antes desta reconciliação: `0ba4d1ce1da33f9298573bb449d7d9311691e324`.
-- A PR estava `mergeable=false` porque `main` avançou até `8ac6220`; não havia checks associados ao head anterior.
+- Antes da reconciliação, a PR estava `mergeable=false` porque `main` avançou até `8ac6220`; não havia checks associados ao head anterior. A branch local agora contém o merge `6beb49c` e aguarda push para atualizar a PR e disparar os checks.
 - Supabase compartilhado: não alterado por esta unidade.
 - Cloudflare preview/produção: não alterados por esta unidade.
 - Produção: nenhuma ação autorizada ou executada nesta unidade.
@@ -73,7 +73,7 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
 ARQUIVO_OU_SERVICO: branch codex/manual-scoresheet-v2 / PR #72 / workflow de banco descartável
-ACAO: concluir o merge de origin/main, restaurar e conferir integralmente o stash preservado, publicar a branch reconciliada e validar migrations do zero, upgrade e pgTAP da Etapa 2 no CI; corrigir qualquer falha antes de abrir a Etapa 3
+ACAO: publicar a branch reconciliada e validar migrations do zero, upgrade e pgTAP da Etapa 2 no CI; corrigir qualquer falha antes de abrir a Etapa 3
 CRITERIO_DE_CONCLUSAO: PR #72 sem conflito, WIP restaurado sem perda e checkpoint SQL da Etapa 2 verde no mesmo HEAD; somente então iniciar docs/plan/sumula-manual-v2/03-criacao-transacional-jogo-sumula.md
 ```
 
