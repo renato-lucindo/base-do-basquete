@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-`DOC-GOV-02` está concluída localmente: o estado operacional corrente foi separado do histórico acumulado no antigo `HANDOFF.md`, com rastreabilidade preservada e um único próximo passo autoritativo para eventual integração.
+`DOC-GOV-02` está concluída e publicada para integração pela PR #71: o estado operacional corrente foi separado do histórico acumulado no antigo `HANDOFF.md`, com rastreabilidade preservada e um único próximo passo autoritativo.
 
 Esta unidade é exclusivamente documental. Não altera produto, banco, migrations, Supabase, Cloudflare, produção ou contratos funcionais.
 
@@ -32,9 +32,9 @@ O `project-maintainer` encerrou a escrita desta unidade e liberou o lock. Qualqu
 - `origin/main` aponta para o mesmo commit.
 - PR #64 está `MERGED`; merge commit `b663b7a` em 02/10/2026.
 - CI da `main` no merge `b663b7a`: run `37004512230` aprovado; CodeQL `37004512245` aprovado. Nova execução de CodeQL `37304000358`, em 05/10/2026, também aprovada.
-- Ainda não existe PR nem push para `codex/doc-gov-02` nesta unidade.
-- Implementação documental commitada localmente em `d4d4fc0` (`docs: reduce operational handoff`).
-- Checkpoint documental de revisão commitado localmente em `a3c6f56` (`docs: checkpoint doc governance review`).
+- A branch `codex/doc-gov-02` está publicada no `origin` e a PR #71 é o veículo de integração desta unidade.
+- O primeiro parecer independente revisou `b40ee021b3b97b9e873f0746f50c78736d880ec7` e retornou `REQUEST_CHANGES` por inconsistências do próprio checkpoint sobre ausência de push/PR e branch apenas local.
+- A correção é exclusivamente documental; qualquer novo parecer deve se vincular ao HEAD exato que contiver esta reconciliação.
 - O checkout funcional original e seus arquivos não rastreados permanecem fora deste worktree e não devem ser limpos, movidos ou incorporados aqui.
 
 ## 4. Estado dos serviços e ambientes
@@ -53,7 +53,7 @@ O `project-maintainer` encerrou a escrita desta unidade e liberou o lock. Qualqu
 - `docs/plan/PLANO-GOVERNANCA-DOCUMENTAL.md`: estado reconciliado para implantação e próximo passo sequencial atualizado.
 - `docs/governance/DOCUMENT-CATALOG.md`: classificação do handoff reconciliada sem mover fontes.
 
-Enquanto o delta não estiver commitado, `git diff` deste worktree é a fonte para as mudanças não commitadas.
+O diff e o histórico da PR #71 são a fonte remota para o delta desta unidade.
 
 ## 6. Evidências válidas
 
@@ -61,18 +61,19 @@ Enquanto o delta não estiver commitado, `git diff` deste worktree é a fonte pa
 - `DOC-GOV-02` segue a Fase 2 de `docs/plan/PLANO-GOVERNANCA-DOCUMENTAL.md`.
 - O antigo `HANDOFF.md` completo permanece recuperável em `b663b7a:HANDOFF.md` e no histórico Git.
 - Evidências fechadas de pacotes permanecem em `docs/execution/`; ADRs permanecem em `docs/decisions/` e operação em `docs/runbooks/`.
-- Validações da unidade estão registradas em `docs/execution/DOC-GOV-02.md`: inventário documental aprovado, `npm run check` aprovado após `npm ci`, 406 testes aprovados, build e secret scan aprovados, `git diff --check` aprovado e handoff com 108 linhas.
+- Validações da unidade estão registradas em `docs/execution/DOC-GOV-02.md`: inventário documental aprovado, `npm run check` aprovado após `npm ci`, 406 testes aprovados, build e secret scan aprovados e `git diff --check` aprovado.
+- Para `b40ee02`, CI (`gate`, `accessibility`, `database`), CodeQL e preview da PR #71 ficaram verdes antes do primeiro parecer QA.
 
 ## 7. Riscos e bloqueios
 
-- `GATE_MERGE_RELEASE: BLOCK_RELEASE`: `qa-reviewer` é obrigatório porque esta unidade altera governança e processo documental, mas não foi acionado nesta retomada para respeitar a instrução explícita de não usar subagents. O parecer não pode ser simulado pelo `project-maintainer`.
+- `GATE_MERGE_RELEASE: BLOCK_RELEASE` até existir novo parecer `qa-reviewer` válido para o HEAD corrigido e os checks remotos desse mesmo HEAD estarem verdes. O primeiro parecer, para `b40ee02`, retornou `REQUEST_CHANGES`.
 - Não antecipar `DOC-GOV-03` (deduplicação/movimentação), `DOC-GOV-04` (metadados), `DOC-GOV-05` (verificador/CI) ou `DOC-GOV-06` (baseline/gate bloqueante).
 - Não usar o handoff reduzido para apagar evidência histórica: a fonte antiga permanece no Git e os fechamentos permanecem em `docs/execution/`.
 - Não transformar `HANDOFF.md` novamente em changelog, relatório de testes cumulativo ou backlog histórico.
 
-## 8. REVIEW_PACKET preservado para eventual integração
+## 8. REVIEW_PACKET da integração
 
-Enquanto não houver PR, o pacote de revisão permanece aqui conforme `.agents/agent-contract.md`:
+A PR #71 contém o `REVIEW_PACKET` remoto. Este resumo local permanece alinhado ao contrato:
 
 ```text
 REVIEW_PACKET:
@@ -86,16 +87,16 @@ REQUIRED_REVIEWERS: qa-reviewer
 WRITE_LOCK_OWNER: RELEASED
 ```
 
-Se esta unidade voltar ao fluxo de integração, o `HEAD_COMMIT` para o parecer deve ser obtido com `git rev-parse HEAD` no momento da revisão. Qualquer delta material posterior exige nova revisão.
+O `HEAD_COMMIT` para o parecer deve ser obtido com `git rev-parse HEAD` no momento da revisão. Qualquer delta material posterior exige nova revisão.
 
 ## 9. Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: responsável do projeto
-ARQUIVO_OU_SERVICO: codex/doc-gov-02
-ACAO: somente se decidir integrar esta unidade, viabilizar parecer independente de qa-reviewer para o HEAD exato e então autorizar separadamente qualquer push/PR/merge
-CRITERIO_DE_CONCLUSAO: parecer QA válido para o HEAD exato antes de integração; sem esse parecer, manter BLOCK_RELEASE e a branch apenas local
+ARQUIVO_OU_SERVICO: PR #71 / docs/plan/PLANO-GOVERNANCA-DOCUMENTAL.md
+ACAO: verificar o estado da PR #71; se ainda estiver aberta, exigir parecer qa-reviewer válido para o HEAD exato e checks remotos verdes antes de integrar; se já estiver MERGED, iniciar DOC-GOV-03 conforme a sequência do plano
+CRITERIO_DE_CONCLUSAO: PR #71 integrada somente com QA válido e checks verdes; após o merge, DOC-GOV-03 passa a ser a próxima unidade
 ```
 
 ## 10. Onde localizar o histórico

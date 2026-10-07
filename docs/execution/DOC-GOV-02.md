@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementação documental concluída localmente na branch `codex/doc-gov-02`. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços. O gate de merge/release permanece em `BLOCK_RELEASE` exclusivamente porque `qa-reviewer` é obrigatório e não foi acionado nesta retomada, em respeito à instrução explícita de não usar subagents.
+Implementação documental concluída e publicada na branch `codex/doc-gov-02`, com integração pela PR #71. A unidade reduz o `HANDOFF.md` ao estado necessário para retomada e preserva o histórico por referências versionadas, sem alterar código ou serviços. O primeiro parecer independente, para `b40ee02`, retornou `REQUEST_CHANGES` porque o checkpoint ainda descrevia incorretamente a unidade como sem push/PR e com branch apenas local; esta correção reconcilia esse estado antes de nova revisão.
 
 ## Base
 
@@ -77,21 +77,21 @@ Validações executadas em 06/10/2026 no worktree isolado:
 - `npm run check`: aprovado após a restauração do ambiente. `format:check`, `lint`, `typecheck`, 55 arquivos de teste/406 testes, `check:runbooks`, `check:agents`, build e `scan:secrets` concluíram com sucesso. O lint reportou 292 warnings já existentes e nenhum erro bloqueante.
 - `scan:secrets`: aprovado dentro de `npm run check` para 682 arquivos rastreados.
 - `git diff --check`: aprovado.
-- `HANDOFF.md`: 108 linhas, abaixo do alvo de 200.
+- `HANDOFF.md`: permanece abaixo do alvo de 200 linhas após a reconciliação do estado remoto.
 - `git status`: somente os cinco arquivos documentais desta unidade permaneciam alterados/não rastreados antes do commit.
 
 O `npm ci` também reportou seis vulnerabilidades de severidade alta no inventário de dependências existente. Nenhuma dependência foi alterada nesta unidade documental; eventual remediação deve ocorrer em unidade própria para não misturar escopo.
 
 ## Revisão necessária
 
-`qa-reviewer` é obrigatório para qualquer integração porque a unidade altera governança e o processo de retomada. Como esta retomada foi executada sem subagents, nenhum parecer foi fabricado ou atribuído. A implementação local está encerrada; somente o gate de integração permanece bloqueado. `database-security-reviewer` e `accessibility-ui-reviewer` não são exigidos: não há mudança de banco, segurança de dados ou interface.
+`qa-reviewer` é obrigatório para qualquer integração porque a unidade altera governança e o processo de retomada. O primeiro parecer independente revisou `b40ee02` e retornou `REQUEST_CHANGES`; a integração permanece bloqueada até um novo parecer válido para o HEAD corrigido e checks remotos verdes para esse mesmo commit. `database-security-reviewer` e `accessibility-ui-reviewer` não são exigidos: não há mudança de banco, segurança de dados ou interface.
 
 ## Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: responsável do projeto
-ARQUIVO_OU_SERVICO: codex/doc-gov-02
-ACAO: somente se decidir integrar a unidade, viabilizar qa-reviewer independente para o HEAD exato e autorizar separadamente qualquer operação remota
-CRITERIO_DE_CONCLUSAO: parecer QA válido antes de integração; na ausência dele, manter BLOCK_RELEASE sem novas mutações
+ARQUIVO_OU_SERVICO: PR #71
+ACAO: obter novo parecer qa-reviewer para o HEAD corrigido, aguardar os checks remotos desse mesmo HEAD e integrar somente se todos os gates estiverem verdes
+CRITERIO_DE_CONCLUSAO: PR #71 integrada com parecer QA válido e checks verdes; DOC-GOV-03 permanece como próxima unidade separada
 ```
