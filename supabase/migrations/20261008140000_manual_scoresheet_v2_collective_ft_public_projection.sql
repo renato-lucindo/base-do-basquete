@@ -100,10 +100,18 @@ returns void
 language plpgsql
 security definer
 set search_path = ''
-as $$
+as $
+declare
+  collective_summary jsonb;
 begin
+  collective_summary := private.manual_scoresheet_v2_collective_ft_summary(p_game_id);
+  if (collective_summary #>> '{home,wasted}')::integer < 0
+    or (collective_summary #>> '{away,wasted}')::integer < 0
+  then
+    raise exception using errcode='BD225', message='BDB_MANUAL_FREE_THROWS_EXCEED_CHARGED';
+  end if;
   insert into public.manual_scoresheet_public_statistics_projection(game_id, submission_id, free_throw_summary)
-  values(p_game_id, p_submission_id, private.manual_scoresheet_v2_collective_ft_summary(p_game_id))
+  values(p_game_id, p_submission_id, collective_summary)
   on conflict(game_id) do update set
     submission_id = excluded.submission_id,
     free_throw_summary = excluded.free_throw_summary,

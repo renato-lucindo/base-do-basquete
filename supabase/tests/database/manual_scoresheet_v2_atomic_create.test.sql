@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(36);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -255,6 +255,22 @@ select throws_ok(
     )
   )$$,
   'BD208','BDB_FINAL_GAME_TIED','a validation failure after scheduling rolls the transaction back'
+);
+select throws_ok(
+  $select public.admin_create_manual_scoresheet_v2(
+    jsonb_set(
+      jsonb_set((select payload from manual_v2_payloads where name='base'),
+        '{idempotencyKey}','"98310000-0000-4000-8000-000000000004"'::jsonb),
+      '{periods,0,stats,1,freeThrowMade}','4'::jsonb
+    )
+  )$,
+  'BD225','BDB_MANUAL_FREE_THROWS_EXCEED_CHARGED',
+  'manual confirmation rejects player conversions above collectively charged free throws'
+);
+select is(
+  (select count(*) from public.game_data_submissions where game_id=(select game_id from manual_v2_result)),
+  1::bigint,
+  'excess free throw conversions roll back creation without adding submissions'
 );
 select is((select count(*) from public.games where competition_id=9831),1::bigint,'failed confirmation leaves no orphan game');
 select is((select count(*) from public.matchups where competition_id=9831),1::bigint,'failed confirmation leaves no orphan matchup');
