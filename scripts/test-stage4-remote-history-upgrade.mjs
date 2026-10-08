@@ -2,7 +2,16 @@
 // GitHub Actions-only, offline, schema-only remote-history reconstruction.
 // The five local-only prerequisite migrations are required for bootstrap;
 // historical remote SQL is preferred where it differs from the Git repository.
-import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, unlink, writeFile } from "node:fs/promises";
+import {
+  cp,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
