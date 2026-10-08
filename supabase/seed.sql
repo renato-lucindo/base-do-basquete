@@ -7,13 +7,15 @@ insert into public.competition_series (name, slug)
 values ('Liga de Desenvolvimento', 'liga-de-desenvolvimento')
 on conflict (slug) do update set name = excluded.name, is_active = true;
 
-insert into public.categories (name, slug, has_advanced_stats)
+insert into public.categories (name, slug, has_advanced_stats, age_kind, age_value)
 values
-  ('Sub-15', 'sub-15', true),
-  ('Sub-17', 'sub-17', true)
+  ('Sub-15', 'sub-15', true, 'base', 15),
+  ('Sub-17', 'sub-17', true, 'base', 17)
 on conflict (slug) do update
 set name = excluded.name,
     has_advanced_stats = excluded.has_advanced_stats,
+    age_kind = excluded.age_kind,
+    age_value = excluded.age_value,
     is_active = true;
 
 insert into public.series_category_data_profiles(
@@ -55,7 +57,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where s.slug = 'liga-de-desenvolvimento'
-on conflict (series_id,category_id,gender_division,year) do update
+on conflict (season_id,category_id,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -409,7 +411,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
-on conflict (series_id,category_id,gender_division,year) do update
+on conflict (season_id,category_id,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)

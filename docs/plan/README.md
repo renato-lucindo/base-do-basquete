@@ -115,3 +115,9 @@ Somente uma task pode permanecer em `DOING`. Migrations já enviadas ou aplicada
 Por decisão do responsável, a fila operacional ativa da PR #35 passou a ser `acelerado-mvp/README.md`. Os 50 cartões permanecem rastreados em `tasks-pr35/`, mas agora funcionam como requisitos internos de 5 pacotes verticais de MVP e 4 pacotes pós-MVP, sem CI, preview e handoff separados por cartão.
 
 O pacote ativo é `MVP-01 — Jogo estrutural e ingestão principal`. O MVP prioriza o fluxo completo e seguro de criação, equipes/elencos, estrutura, agenda, súmula ou boxscore PDF de contrato versionado, publicação explícita e consulta pública. Funcionalidades adiadas continuam obrigatoriamente mapeadas em `POST-01` a `POST-04`.
+
+## Plano ativo — competições multidimensionais — 02/10/2026
+
+A evolução aprovada após a consolidação administrativa está em `COMPETICOES-MULTIDIMENSIONAIS.md`. O plano introduz temporada por campeonato, ano e naipe; disputa por categoria etária e divisão competitiva opcional; inscrições públicas distintas; navegação administrativa por disputa; contexto público isolado; revisão visual compacta; e ocultação temporária do Sienna sem remover sua implementação nem a acessibilidade estrutural.
+
+Executar as sete PRs verticais na ordem registrada no documento. A unidade ativa é a PR 1, `SEASON-DIVISION-MODEL-PR1`. Não aplicar migration no Supabase compartilhado, fazer merge ou publicar produção sem autorização explícita.

@@ -23,9 +23,9 @@ select col_not_null(
   'private eligibility value is mandatory after final enforcement'
 );
 select has_index(
-  'public', 'competitions', 'competitions_context_unique',
-  array['series_id','category_id','gender_division','year'],
-  'final edition identity is unique by gender'
+  'public', 'competitions', 'competitions_dispute_unique',
+  array['season_id','category_id','competitive_division_value_id'],
+  'final dispute identity is unique by season, category and optional competitive division'
 );
 select has_fk(
   'public', 'players',

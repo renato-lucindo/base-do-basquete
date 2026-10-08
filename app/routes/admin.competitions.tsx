@@ -42,6 +42,13 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     categoryName: categoryNames.get(competition.category_id) ?? "Categoria indisponível",
   }));
 
+  const contexts = await auth.client
+    .from("competition_dispute_contexts")
+    .select("competition_id,season_id,season_name");
+  if (contexts.error && !["PGRST205", "42P01"].includes(contexts.error.code))
+    throw new Error("Edition grouping unavailable");
+  const contextById = new Map((contexts.data ?? []).map((row) => [row.competition_id, row]));
+
   const params = new URL(request.url).searchParams;
   const query = (params.get("q") ?? "").trim().slice(0, 80);
   const year = params.get("year") ?? "";
@@ -56,10 +63,36 @@ export async function loader({ request, context }: Route.LoaderArgs) {
         .toLocaleLowerCase("pt-BR")
         .includes(query.toLocaleLowerCase("pt-BR")),
   );
+  const groups = new Map<
+    string,
+    {
+      name: string;
+      year: number;
+      gender: string | null;
+      seasonId: number | null;
+      competitions: typeof competitions;
+    }
+  >();
+  for (const competition of filtered) {
+    const dimension = contextById.get(competition.id);
+    const key = dimension?.season_id
+      ? String(dimension.season_id)
+      : `legacy-${competition.series_id}-${competition.year}-${competition.gender_division}`;
+    const group = groups.get(key) ?? {
+      name: dimension?.season_name ?? competition.seriesName,
+      year: competition.year,
+      gender: competition.gender_division,
+      seasonId: dimension?.season_id ?? null,
+      competitions: [],
+    };
+    group.competitions.push(competition);
+    groups.set(key, group);
+  }
   return data(
     {
       csrfToken: auth.payload.csrfToken,
       competitions: filtered,
+      groups: [...groups.entries()].map(([id, group]) => ({ id, ...group })),
       years,
       query,
       year,
@@ -72,13 +105,16 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 export default function Competitions({ loaderData }: Route.ComponentProps) {
   return (
     <AdminArea title="Competições">
-      <p>Selecione uma edição para organizar equipes, jogos e dados.</p>
+      <p>
+        Cada edição reúne as disputas de um campeonato, ano e naipe. Abra uma disputa para organizar
+        equipes, jogos e dados.
+      </p>
       <Link className="button" to="/admin/competitions/new">
         Criar edição
       </Link>
       <Form method="get" className="inline-admin-form">
         <label>
-          Buscar por nome, série ou categoria
+          Buscar por nome, campeonato ou categoria
           <input name="q" maxLength={80} defaultValue={loaderData.query} />
         </label>
         <label>
@@ -110,22 +146,31 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
       {loaderData.competitions.length === 0 ? (
         <p>Nenhuma edição encontrada com esses filtros.</p>
       ) : null}
-      <div className="admin-competition-grid">
-        {loaderData.competitions.map((item) => (
-          <Link key={item.id} to={`/admin/competitions/${item.id}`}>
-            <span>
-              {item.year} · {statusLabels[item.status] ?? "Em revisão"}
-            </span>
-            <strong>{item.display_name}</strong>
-            <small>
-              {item.seriesName} · {item.categoryName} ·{" "}
-              {item.gender_division === "male"
+      <div className="admin-edition-list">
+        {loaderData.groups.map((group) => (
+          <section key={group.id} aria-labelledby={`edition-${group.id}`}>
+            <h2 id={`edition-${group.id}`}>
+              {group.name} · {group.year} ·{" "}
+              {group.gender === "male"
                 ? "Masculino"
-                : item.gender_division === "female"
+                : group.gender === "female"
                   ? "Feminino"
                   : "Naipe pendente"}
-            </small>
-          </Link>
+            </h2>
+            {group.seasonId ? (
+              <Link to={`/admin/competitions/new?seasonId=${group.seasonId}`}>
+                Adicionar disputa
+              </Link>
+            ) : null}
+            <ul>
+              {group.competitions.map((item) => (
+                <li key={item.id}>
+                  <Link to={`/admin/competitions/${item.id}`}>{item.display_name}</Link> ·{" "}
+                  {item.categoryName} · {statusLabels[item.status] ?? "Em revisão"}
+                </li>
+              ))}
+            </ul>
+          </section>
         ))}
       </div>
     </AdminArea>
