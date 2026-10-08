@@ -209,13 +209,13 @@ select is(
   'initial collective projection references the active submission'
 );
 select results_eq(
-  $select free_throw_summary #>> '{home,conceded}',
+  $actual$select free_throw_summary #>> '{home,conceded}',
            free_throw_summary #>> '{away,charged}',
            free_throw_summary #>> '{away,converted}',
            free_throw_summary #>> '{away,wasted}'
     from public.manual_scoresheet_public_statistics_projection
-    where game_id=(select game_id from manual_v2_result)$,
-  $values ('3'::text,'3'::text,'1'::text,'2'::text)$,
+    where game_id=(select game_id from manual_v2_result)$actual$,
+  $expected$values ('3'::text,'3'::text,'1'::text,'2'::text)$expected$,
   'initial projection reports only team-level awarded, charged, converted and wasted free throws'
 );
 select ok(
@@ -267,13 +267,13 @@ select throws_ok(
   'BD208','BDB_FINAL_GAME_TIED','a validation failure after scheduling rolls the transaction back'
 );
 select throws_ok(
-  $select public.admin_create_manual_scoresheet_v2(
+  $invalid$select public.admin_create_manual_scoresheet_v2(
     jsonb_set(
       jsonb_set((select payload from manual_v2_payloads where name='base'),
         '{idempotencyKey}','"98310000-0000-4000-8000-000000000004"'::jsonb),
       '{periods,0,stats,1,freeThrowMade}','4'::jsonb
     )
-  )$,
+  )$invalid$,
   'BD225','BDB_MANUAL_FREE_THROWS_EXCEED_CHARGED',
   'manual confirmation rejects player conversions above collectively charged free throws'
 );
@@ -331,7 +331,7 @@ select is(
   'anon cannot read projection while game has no current public publication'
 );
 select throws_ok(
-  $select public.admin_create_manual_scoresheet_v2('{}'::jsonb)$,
+  $anon$select public.admin_create_manual_scoresheet_v2('{}'::jsonb)$anon$,
   '42501',null,'anon cannot execute the v2 creation RPC'
 );
 
