@@ -394,14 +394,12 @@ export async function loadPublicPlayerProfile(
   ensure(participantsResult.error, "Adversários temporariamente indisponíveis");
   const registrationIds = participantsResult.data.map((item) => item.registration_id);
   const registrationsResult = registrationIds.length
-    ? await client.from("team_registrations").select("id,team_id").in("id", registrationIds)
+    ? await client
+        .from("team_registrations")
+        .select("id,team_id,public_name")
+        .in("id", registrationIds)
     : { data: [], error: null };
   ensure(registrationsResult.error, "Equipes temporariamente indisponíveis");
-  const teamIds = registrationsResult.data.map((item) => item.team_id);
-  const teamsResult = teamIds.length
-    ? await client.from("teams").select("id,name").in("id", teamIds).eq("is_public", true)
-    : { data: [], error: null };
-  ensure(teamsResult.error, "Equipes temporariamente indisponíveis");
   const scoresResult = gameIds.length
     ? await client
         .from("game_scores")
@@ -426,7 +424,6 @@ export async function loadPublicPlayerProfile(
     ),
   );
   const registrationById = new Map(registrationsResult.data.map((item) => [item.id, item]));
-  const teamById = new Map(teamsResult.data.map((item) => [item.id, item]));
 
   return {
     id: profile.id,
@@ -508,8 +505,15 @@ export async function loadPublicPlayerProfile(
             : legacyStats;
       if (!rowContext || !stats) return [];
       const participants = participantsResult.data.filter((item) => item.game_id === game.id);
+      const statsRegistrationId =
+        "registration_id" in stats && typeof stats.registration_id === "number"
+          ? stats.registration_id
+          : null;
       const ownParticipant = participants.find(
-        (item) => registrationById.get(item.registration_id)?.team_id === stats.team_id,
+        (item) =>
+          (statsRegistrationId !== null && item.registration_id === statsRegistrationId) ||
+          (statsRegistrationId === null &&
+            registrationById.get(item.registration_id)?.team_id === stats.team_id),
       );
       const opponentParticipant = participants.find(
         (item) => item.registration_id !== ownParticipant?.registration_id,
@@ -517,7 +521,9 @@ export async function loadPublicPlayerProfile(
       const opponentRegistration = opponentParticipant
         ? registrationById.get(opponentParticipant.registration_id)
         : null;
-      const opponent = opponentRegistration ? teamById.get(opponentRegistration.team_id) : null;
+      const ownRegistration = ownParticipant
+        ? registrationById.get(ownParticipant.registration_id)
+        : null;
       const ownScore = scoresResult.data.find(
         (item) =>
           item.game_id === game.id && item.registration_id === ownParticipant?.registration_id,
@@ -540,9 +546,9 @@ export async function loadPublicPlayerProfile(
         status: game.status,
         scheduledAt: game.scheduled_at,
         context: rowContext,
-        teamName: stats.team_name,
+        teamName: ownRegistration?.public_name ?? stats.team_name,
         jerseyNumber: stats.jersey_number,
-        opponentName: opponent?.name ?? null,
+        opponentName: opponentRegistration?.public_name ?? null,
         result,
         score: ownScore == null || opponentScore == null ? null : `${ownScore} × ${opponentScore}`,
         didNotPlay: Boolean(stats.did_not_play),

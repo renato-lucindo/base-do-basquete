@@ -393,7 +393,7 @@ const contenderEdition =
   return 'accepted'; exception when sqlstate 'BD506' then return 'duplicate'; end$$;
   select pg_temp.create_edition_contender()`;
 const editionOutcomes = await race(
-  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025:male',417))`,
+  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025',417))`,
   [contenderEdition(), contenderEdition()],
 );
 assert.deepEqual(editionOutcomes.sort(), ["accepted", "duplicate"]);

@@ -63,14 +63,16 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const auth = await requireAdminAal2(request, context.get(cloudflareContext).env);
   const id = scheduleId(params.competitionId);
   if (!id) throw new Response("Edição não encontrada", { status: 404 });
-  const [edition, schedule, registrations, teams] = await Promise.all([
+  const [edition, schedule, registrations] = await Promise.all([
     auth.client.from("competitions").select("id,display_name,status").eq("id", id).single(),
     auth.client.rpc("admin_get_competition_schedule", { p_competition_id: id }),
-    auth.client.from("team_registrations").select("id,team_id,status").eq("competition_id", id),
-    auth.client.from("teams").select("id,name"),
+    auth.client
+      .from("team_registrations")
+      .select("id,team_id,public_name,status")
+      .eq("competition_id", id),
   ]);
   if (edition.error) throw new Response("Edição não encontrada", { status: 404 });
-  if (schedule.error || registrations.error || teams.error)
+  if (schedule.error || registrations.error)
     throw new Response("Agendamento indisponível. Tente novamente mais tarde.", { status: 503 });
   return data(
     {
@@ -78,7 +80,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       schedule: schedule.data as unknown as Schedule,
       registrations: registrations.data.map((r) => ({
         ...r,
-        name: teams.data.find((t) => t.id === r.team_id)?.name ?? "Equipe",
+        name: r.public_name,
       })),
       requestId: crypto.randomUUID(),
       csrfToken: auth.payload.csrfToken,

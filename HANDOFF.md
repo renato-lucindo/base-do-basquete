@@ -4,17 +4,17 @@
 
 ## 1. Unidade corrente e integração
 
-`EDITION-IDENTITY-PR68-STACK-RECONCILE`: atualização da PR draft #68 sobre a PR #66 já reconciliada com main; PR #66 (`codex/season-division-model`) com `main` em 08/10/2026, após a integração da governança documental pela PR #71 (merge `8ac6220`). O conflito de `HANDOFF.md` foi reconciliado com o formato compacto da governança; `docs/plan/README.md` teve merge automático.
+`INDEPENDENT-REGISTRATIONS-PR69-STACK-RECONCILE`: atualização da PR draft #69 sobre a PR #68 já reconciliada; PR #66 (`codex/season-division-model`) com `main` em 08/10/2026, após a integração da governança documental pela PR #71 (merge `8ac6220`). O conflito de `HANDOFF.md` foi reconciliado com o formato compacto da governança; `docs/plan/README.md` teve merge automático.
 
-Este merge incorpora a governança documental da PR #66 e preserva a implementação funcional da PR #68 (edição sem naipe). Não modifica deliberadamente migrations, contratos de aplicação ou infraestrutura. Os commits funcionais anteriores mantêm sua validade histórica; CI e verificação do HEAD resultante são necessários antes de integrar.
+Este merge incorpora a governança documental e a PR #68 atualizada e preserva a implementação funcional da PR #69 (inscrições independentes e cópia transacional). Não modifica deliberadamente migrations, contratos de aplicação ou infraestrutura. Os commits funcionais anteriores mantêm sua validade histórica; CI e verificação do HEAD resultante são necessários antes de integrar.
 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: EDITION-IDENTITY-PR68-STACK-RECONCILE
-BRANCH: codex/edition-identity-no-gender
-BASE_COMMIT: be8cb34d4b7814c880ba5e5b9a992c7216a9c4ed
-SCOPE: incorporar o HEAD reconciliado da PR66 na PR68 e atualizar checkpoint
+WORK_UNIT: INDEPENDENT-REGISTRATIONS-PR69-STACK-RECONCILE
+BRANCH: codex/independent-registrations-copy
+BASE_COMMIT: b9c8d571f5d8f3d77a8ae2728b29d0bfa34e8aff
+SCOPE: incorporar o HEAD reconciliado da PR68 na PR69 e atualizar checkpoint
 SCOPE_NEGATIVO: sem novas migrations, alteração de dados no Supabase, merge na main ou produção
 REQUIRED_REVIEWERS: dispensa especializada para delta de merge/documentação sem mudança funcional, sujeita à confirmação do diff
 STATUS: RELEASED
@@ -24,7 +24,7 @@ STATUS: RELEASED
 
 - PR #66: edição/temporada/divisões; draft sobre `main`; branch `codex/season-division-model`. Commit funcional revisado `4542f44`; último HEAD anterior a este merge `3d27b45`.
 - PR #68: cadastro de edição sem naipe, dependente da #66; draft sobre `codex/season-division-model`; funcional `a35366b`, HEAD anterior ao merge `be8cb34`; migration `20261005183643_edition_identity_no_gender.sql` ainda sem rollout compartilhado.
-- PR #69: inscrições independentes e cópia transacional, dependente da #68; draft sobre `codex/edition-identity-no-gender`; HEAD documental `b9c8d57` já publicado em 08/10. Artefato funcional revisado `a5c84f4`.
+- PR #69: inscrições independentes e cópia transacional, dependente da #68; draft sobre `codex/edition-identity-no-gender`; HEAD anterior ao merge `b9c8d57` publicado em 08/10. Artefato funcional revisado `a5c84f4`.
 - PR3: criação múltipla de disputas/navegação, implementada localmente na branch `codex/multi-dispute-creation-navigation` (HEAD `f1f2112`), aguardando publicação e gates remotos, na sequência da #69.
 - PR4/PR5: importação individual e em lote permanecem etapas posteriores e devem usar unidades/branches próprias.
 
@@ -39,6 +39,8 @@ As PRs são empilhadas e precisam ser conciliadas em ordem. Nenhuma PR desta seq
 
 ## 4. Evidências e riscos
 
+- PR #69, funcional `a5c84f4`: cinco pareceres independentes de banco/segurança, boxscore, estatísticas, acessibilidade e QA, todos `APPROVE` ou `APPROVE_WITH_NON_BLOCKING_NOTES` e nenhum P0–P3; QA `READY`; gate remoto validou migrações/upgrade e 45 arquivos/1.264 pgTAP. Notas não bloqueantes: concorrência focal de RPC copy ainda sem ensaio específico, advisors pós-rollout futuros e cobertura de acessibilidade focal. Não aplicar migration PR2 ao Supabase compartilhado nesta etapa.
+
 - PR #68, funcional `a35366b`: typecheck, 457 Vitest, 8 Playwright focais com axe, build, scan e verificações documentais passaram localmente antes da publicação; SQL/CI/pareceres posteriores devem ser confirmados pelos registros remotos do HEAD funcional. Nenhuma migration PR68 aplicada ao Supabase compartilhado.
 
 - PR #66, funcional `4542f44`: pareceres banco/segurança, acessibilidade e QA `APPROVE`, sem P0–P3; CI, banco/pgTAP, preview e CodeQL verdes no artefato funcional. Os cinco checks antigos também estavam verdes no HEAD `3d27b45`.
@@ -50,11 +52,11 @@ As PRs são empilhadas e precisam ser conciliadas em ordem. Nenhuma PR desta seq
 
 ```text
 REVIEW_PACKET:
-WORK_UNIT: EDITION-IDENTITY-PR68-STACK-RECONCILE
-BRANCH: codex/edition-identity-no-gender
-BASE_COMMIT: be8cb34d4b7814c880ba5e5b9a992c7216a9c4ed
-OBJETIVO: alinhar PR68 à base atualizada da PR66, conservando o checkpoint documental compacto
-CRITERIOS_DE_ACEITE: sem conflitos, diff funcional preservado, gates remotos do HEAD resultante aprovados, cadeia empilhada coerente
+WORK_UNIT: INDEPENDENT-REGISTRATIONS-PR69-STACK-RECONCILE
+BRANCH: codex/independent-registrations-copy
+BASE_COMMIT: b9c8d571f5d8f3d77a8ae2728b29d0bfa34e8aff
+OBJETIVO: alinhar PR69 à base atualizada da PR68, conservando o checkpoint documental compacto
+CRITERIOS_DE_ACEITE: sem conflitos, delta funcional PR2 preservado, gates remotos do HEAD resultante aprovados, cadeia empilhada coerente
 ESCOPO_NEGATIVO: sem nova migration, alteração de banco compartilhado ou deploy em produção
 REQUIRED_REVIEWERS: dispensa de revisão especializada se o delta for comprovadamente apenas documental/merge; caso contrário renovar pareceres proporcionais
 WRITE_LOCK_OWNER: RELEASED
@@ -65,9 +67,9 @@ WRITE_LOCK_OWNER: RELEASED
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: GitHub PR #68, PR #69 e branch codex/multi-dispute-creation-navigation
-ACAO: publicar a PR68 atualizada sobre PR66; reconciliar PR69 e publicar a PR3 draft; validar CI/database/preview/CodeQL e pareceres especializados proporcionais nos HEADs atualizados
-CRITERIO_DE_CONCLUSAO: PR68 alinhada à PR66; PR69 consistente; PR3 draft publicada e gates remotos vinculados ao SHA; sem perda de worktrees/untracked
+ARQUIVO_OU_SERVICO: GitHub PR #69 e branch codex/multi-dispute-creation-navigation
+ACAO: publicar a PR69 reconciliada sobre PR68 e publicar a PR3 draft; validar CI/database/preview/CodeQL e pareceres especializados proporcionais nos HEADs atualizados
+CRITERIO_DE_CONCLUSAO: PR69 alinhada à PR68; PR3 draft publicada e gates remotos vinculados ao SHA; sem perda de worktrees/untracked
 ```
 
 ## 7. Rastreabilidade

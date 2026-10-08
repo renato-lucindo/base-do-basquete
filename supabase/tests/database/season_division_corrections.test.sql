@@ -154,7 +154,7 @@ select throws_ok(
   '23505',null,'unexpected audit uniqueness is not translated as a division conflict'
 );
 select throws_ok(
-  $$select public.admin_assign_competition_competitive_division(competition_id,male_gold_id,null) from correction_context$$,
+  $$select public.admin_assign_competition_competitive_division(competition_id,male_gold_id,male_silver_id) from correction_context$$,
   '23505',null,'unexpected audit uniqueness is not translated as a dispute conflict'
 );
 reset role;

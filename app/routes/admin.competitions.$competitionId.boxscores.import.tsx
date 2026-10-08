@@ -12,6 +12,7 @@ import {
 import { suggestPlayerMatch } from "../modules/boxscore/matching";
 import { validateParsedBoxscore } from "../modules/boxscore/parser";
 import { BoxscoreReviewEditor } from "../modules/boxscore/review-editor";
+import { uniqueRegistrationCandidate } from "../modules/boxscore/team-registration-resolution";
 import type { ParsedBoxscore } from "../modules/boxscore/types";
 import { scheduleLocalToIso } from "../modules/competition/scheduling";
 import { logOperationalEvent } from "../modules/observability/operation.server";
@@ -195,6 +196,12 @@ export function mapImportError(
         message: "A resolução das equipes mudou desde a revisão. Recarregue a importação.",
         status: 409,
       };
+    case "BD319":
+      return {
+        message:
+          "Há mais de uma inscrição para esta equipe. Selecione explicitamente a inscrição correta.",
+        status: 409,
+      };
     case "BD505":
       return { message: "Revise o naipe da edição antes de confirmar a importação.", status: 409 };
     case "BD501":
@@ -289,7 +296,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .single(),
     auth.client
       .from("team_registrations")
-      .select("id,team_id,status")
+      .select("id,team_id,public_name,status")
       .eq("competition_id", competitionId)
       .order("id"),
     auth.client.from("teams").select("id,name,abbreviation,is_active").order("name"),
@@ -336,7 +343,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const registrations = confirmedRegistrations.map((registration) => ({
     id: registration.id,
     teamId: registration.team_id,
-    teamName: teamById.get(registration.team_id)?.name ?? "Equipe indisponível",
+    teamName:
+      registration.public_name ?? teamById.get(registration.team_id)?.name ?? "Equipe indisponível",
     abbreviation: teamById.get(registration.team_id)?.abbreviation ?? null,
     roster: rosterResult.data
       .filter((entry) => entry.registration_id === registration.id)
@@ -347,20 +355,51 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         jerseyNumber: entry.jersey_number,
       })),
   }));
-  const registrationByTeamId = new Map(
-    registrationsResult.data.map((registration) => [registration.team_id, registration]),
-  );
-  const teamCandidates = teamsResult.data.map((team) => {
-    const registration = registrationByTeamId.get(team.id);
-    return {
-      teamId: team.id,
-      teamName: team.name,
-      abbreviation: team.abbreviation,
-      isActive: team.is_active,
-      registrationId: registration?.id ?? null,
-      registrationStatus: registration?.status ?? null,
-    };
-  });
+  const registrationsByTeamId = new Map<number, typeof registrationsResult.data>();
+  for (const registration of registrationsResult.data) {
+    const current = registrationsByTeamId.get(registration.team_id) ?? [];
+    current.push(registration);
+    registrationsByTeamId.set(registration.team_id, current);
+  }
+  type TeamCandidate = {
+    teamId: number;
+    teamName: string;
+    publicName: string | null;
+    abbreviation: string | null;
+    isActive: boolean;
+    registrationId: number | null;
+    registrationStatus: string | null;
+    registrationCount: number;
+  };
+  const teamCandidates = teamsResult.data.reduce<TeamCandidate[]>((all, team) => {
+    const teamRegistrations = registrationsByTeamId.get(team.id) ?? [];
+    if (teamRegistrations.length === 0) {
+      all.push({
+        teamId: team.id,
+        teamName: team.name,
+        publicName: null,
+        abbreviation: team.abbreviation,
+        isActive: team.is_active,
+        registrationId: null,
+        registrationStatus: null,
+        registrationCount: 0,
+      });
+      return all;
+    }
+    all.push(
+      ...teamRegistrations.map((registration) => ({
+        teamId: team.id,
+        teamName: team.name,
+        publicName: registration.public_name,
+        abbreviation: team.abbreviation,
+        isActive: team.is_active,
+        registrationId: registration.id,
+        registrationStatus: registration.status,
+        registrationCount: teamRegistrations.length,
+      })),
+    );
+    return all;
+  }, []);
   const gameIds = gamesResult.data.map((game) => game.id);
   const [participantsResult, fallbackResult] = gameIds.length
     ? await Promise.all([
@@ -663,7 +702,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       const [registrationsResult, teamsResult, rosterResult, playersResult] = await Promise.all([
         auth.client
           .from("team_registrations")
-          .select("id,team_id")
+          .select("id,team_id,public_name")
           .eq("competition_id", competitionId)
           .eq("status", "confirmed"),
         auth.client.from("teams").select("id,name,abbreviation"),
@@ -686,14 +725,23 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         playersResult.data.map((player) => [player.id, player.full_name]),
       );
       const matches = parsed.teams.flatMap((team) => {
-        const selectedTeam = teamsResult.data.find(
-          (candidate) =>
-            normalizeTeam(candidate.name) === normalizeTeam(team.name) ||
-            candidate.abbreviation?.toUpperCase() === team.abbreviation,
-        );
-        const registration = selectedTeam
-          ? registrationsResult.data.find((candidate) => candidate.team_id === selectedTeam.id)
-          : undefined;
+        const registrationCandidates = registrationsResult.data.flatMap((registration) => {
+          const selectedTeam = teamsResult.data.find(
+            (teamRow) => teamRow.id === registration.team_id,
+          );
+          return selectedTeam
+            ? [
+                {
+                  ...registration,
+                  teamId: selectedTeam.id,
+                  teamName: selectedTeam.name,
+                  publicName: registration.public_name,
+                  abbreviation: selectedTeam.abbreviation,
+                },
+              ]
+            : [];
+        });
+        const registration = uniqueRegistrationCandidate(team, registrationCandidates);
         const candidates = rosterResult.data
           .filter((entry) => entry.registration_id === registration?.id)
           .map((activeRoster) => {
