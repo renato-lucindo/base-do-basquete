@@ -81,7 +81,7 @@ for (const item of manifest.applied) {
   check(!migrationVersions.has(item.version), "Duplicate baseline version: " + item.version);
   migrationVersions.add(item.version);
   const from = exceptions.has(item.name)
-    ? path.join(fixtureDir, name)
+    ? path.join(fixtureDir, name + ".fixture")
     : path.join(original, byName.get(item.name) ?? "MISSING_" + name);
   await copyFile(from, path.join(migrations, name));
 }

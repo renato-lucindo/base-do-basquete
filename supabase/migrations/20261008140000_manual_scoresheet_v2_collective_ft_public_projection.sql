@@ -89,7 +89,11 @@ revoke all on public.manual_scoresheet_public_statistics_projection from public,
 grant select on public.manual_scoresheet_public_statistics_projection to anon, authenticated;
 
 create policy manual_scoresheet_public_statistics_projection_select
-on public.manual_scoresheet_public_statistics_projection for select to anon, authenticated
+on public.manual_scoresheet_public_statistics_projection for select to anon
+using ((select private.game_is_currently_published(game_id)));
+
+create policy manual_scoresheet_public_statistics_projection_admin_select
+on public.manual_scoresheet_public_statistics_projection for select to authenticated
 using (
   (select private.game_is_currently_published(game_id))
   or (select public.is_current_admin_aal2())
