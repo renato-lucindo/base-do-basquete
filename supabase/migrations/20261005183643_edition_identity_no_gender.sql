@@ -1130,6 +1130,31 @@ begin
       message = 'BDB_COMPETITION_DIVISION_TYPE_CONFLICT';
   end if;
 
+  select existing.id into created_value_id
+  from public.competition_competitive_division_values existing
+  where existing.competitive_division_type_id = division_type.id
+    and existing.season_id = resolved_season_id
+    and existing.slug = clean_value_slug;
+
+  if found then
+    insert into private.competition_dimension_requests (
+      request_id,
+      actor_id,
+      operation,
+      input,
+      result_id
+    )
+    values (
+      p_request_id,
+      auth.uid(),
+      'create_division_value',
+      normalized_input,
+      created_value_id
+    );
+
+    return created_value_id;
+  end if;
+
   begin
     insert into public.competition_competitive_division_values (
       competitive_division_type_id,
