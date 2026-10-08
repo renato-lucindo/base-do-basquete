@@ -400,7 +400,7 @@ assert.deepEqual(editionOutcomes.sort(), ["accepted", "duplicate"]);
 assert.equal(
   Number(
     await run(
-      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025 and gender_division='male'`,
+      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025`,
     ),
   ),
   1,

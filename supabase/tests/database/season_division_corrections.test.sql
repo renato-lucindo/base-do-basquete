@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(27);
+select plan(26);
 
 insert into auth.users(id) values ('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id)
@@ -11,7 +11,7 @@ select set_config('request.jwt.claims', jsonb_build_object(
 )::text, true);
 create temporary table correction_context(
   series_id bigint, category_id bigint, competition_id bigint, male_season_id bigint,
-  female_season_id bigint, male_gold_id bigint, male_silver_id bigint, female_gold_id bigint
+  female_season_id bigint, male_gold_id bigint, male_silver_id bigint, duplicate_competition_id bigint
 );
 with s as (
   insert into public.competition_series(name,slug) values ('Correções','season-corrections') returning id
@@ -30,17 +30,17 @@ grant select,update on correction_context to authenticated;
 set local role authenticated;
 select lives_ok(
   $$select public.admin_review_competition_gender(competition_id,'female') from correction_context$$,
-  'gender correction creates its destination season atomically under final-profile constraints'
+  'gender correction keeps the shared edition under final-profile constraints'
 );
 reset role;
 update correction_context context set female_season_id = competition.season_id
 from public.competitions competition where competition.id = context.competition_id;
 select ok((select c.gender_division='female' and c.season_id=x.female_season_id
-  and c.season_id<>x.male_season_id and not c.data_profile_review_required
+  and c.season_id=x.male_season_id and not c.data_profile_review_required
   and p.gender_division='female' and p.primary_source='manual_scoresheet'
   from correction_context x join public.competitions c on c.id=x.competition_id
   join public.series_category_data_profiles p on p.id=c.data_profile_id),
-  'gender season and validated primary-source profile stay consistent');
+  'gender changes on the dispute while edition and validated profile stay consistent');
 set local role authenticated;
 select lives_ok(
   $$select public.admin_review_competition_gender(competition_id,'female') from correction_context$$,
@@ -48,15 +48,15 @@ select lives_ok(
 );
 select lives_ok(
   $$select public.admin_review_competition_gender(competition_id,'male') from correction_context$$,
-  'gender correction reuses the existing destination season'
+  'gender correction reuses the same edition'
 );
 reset role;
 select is((select count(*) from public.competition_seasons s join correction_context x on x.series_id=s.series_id),
-  2::bigint,'gender retries do not duplicate seasons');
+  1::bigint,'gender retries never duplicate the championship-year edition');
 select is((select count(*) from public.admin_mutation_audit a join correction_context x on x.competition_id=a.entity_id
   where a.action='competition_gender_reviewed'),2::bigint,'only actual gender changes are audited');
-select ok((select bool_and(a.metadata ?& array['previousGenderDivision','genderDivision','previousSeasonId',
-  'seasonId','previousCompetitiveDivisionValueId','competitiveDivisionValueId','previousDataProfileId','dataProfileId'])
+select ok((select bool_and(a.metadata ?& array['previousGenderDivision','genderDivision',
+  'seasonId','competitiveDivisionValueId','previousDataProfileId','dataProfileId'])
   from public.admin_mutation_audit a join correction_context x on x.competition_id=a.entity_id
   where a.action='competition_gender_reviewed'),'gender audit includes both contextual identities');
 
@@ -76,34 +76,26 @@ select throws_ok(
 );
 select is(public.admin_assign_competition_competitive_division(competition_id,null,male_gold_id),competition_id,
   'exact retry succeeds after its own CAS changed the row') from correction_context;
-select throws_ok(
-  $$select public.admin_review_competition_gender(competition_id,'female') from correction_context$$,
-  'BD409','BDB_COMPETITION_DIVISION_MAPPING_NOT_FOUND','missing equivalent division rejects the entire change'
-);
-reset role;
-select ok((select c.gender_division='male' and c.season_id=x.male_season_id
-  and c.competitive_division_value_id=x.male_gold_id from correction_context x
-  join public.competitions c on c.id=x.competition_id),'failed mapping preserves all dimensions');
-set local role authenticated;
-update correction_context set female_gold_id=public.admin_add_competitive_division_value(
-  gen_random_uuid(),female_season_id,'Conferência','conferencia','Ouro','ouro',1
-);
-select throws_ok(
-  $$select public.admin_review_competition_gender(competition_id,'female') from correction_context$$,
-  'BD409','BDB_COMPETITION_DIVISION_MAPPING_NOT_FOUND','same value slug under a different type cannot be mapped'
-);
-reset role;
--- Explicitly correct only this disposable fixture's type to exercise exact mapping.
-update public.competition_competitive_division_types set name='Série',slug='serie'
-where season_id=(select female_season_id from correction_context);
-set local role authenticated;
 select lives_ok(
   $$select public.admin_review_competition_gender(competition_id,'female') from correction_context$$,
-  'gender maps the exact type and value slugs in the destination season'
+  'gender changes without remapping the edition-level competitive division'
 );
 reset role;
-select is((select c.competitive_division_value_id from public.competitions c join correction_context x on x.competition_id=c.id),
-  (select female_gold_id from correction_context),'gender uses the destination division ID');
+select ok((select c.gender_division='female' and c.season_id=x.male_season_id
+  and c.competitive_division_value_id=x.male_gold_id from correction_context x
+  join public.competitions c on c.id=x.competition_id),'gender change preserves the same edition-level division');
+
+update correction_context set duplicate_competition_id=pg_temp.create_final_competition(
+  null,series_id,category_id,2026,'Colisão feminina','draft',null,'female','manual_scoresheet'
+);
+set local role authenticated;
+select throws_ok(
+  $$select public.admin_assign_competition_competitive_division(duplicate_competition_id,null,male_gold_id) from correction_context$$,
+  'BD506','BDB_COMPETITION_DISPUTE_CONFLICT','same category gender and division cannot be duplicated'
+);
+reset role;
+select is((select c.competitive_division_value_id from public.competitions c join correction_context x on x.duplicate_competition_id=c.id),
+  null::bigint,'failed duplicate assignment preserves the competing dispute');
 
 -- A second male dispute collides only after the first returns to the male context.
 select pg_temp.create_final_competition(null,series_id,category_id,2026,'Colisão masculina','draft',null,'male','manual_scoresheet')
@@ -162,7 +154,7 @@ select throws_ok(
   '23505',null,'unexpected audit uniqueness is not translated as a division conflict'
 );
 select throws_ok(
-  $$select public.admin_assign_competition_competitive_division(competition_id,female_gold_id,null) from correction_context$$,
+  $$select public.admin_assign_competition_competitive_division(competition_id,male_gold_id,null) from correction_context$$,
   '23505',null,'unexpected audit uniqueness is not translated as a dispute conflict'
 );
 reset role;
@@ -172,7 +164,7 @@ select set_config('request.jwt.claims',jsonb_set(current_setting('request.jwt.cl
 set local role authenticated;
 select throws_ok($$select public.admin_review_competition_gender(competition_id,'male') from correction_context$$,
   'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 cannot change gender');
-select throws_ok($$select public.admin_assign_competition_competitive_division(competition_id,female_gold_id,null) from correction_context$$,
+select throws_ok($$select public.admin_assign_competition_competitive_division(competition_id,male_gold_id,null) from correction_context$$,
   'BD401','BDB_ADMIN_AAL2_REQUIRED','AAL1 cannot assign division');
 reset role;
 select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}',true);

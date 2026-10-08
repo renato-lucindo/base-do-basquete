@@ -82,10 +82,11 @@ for (const width of [390, 720, 1440])
     expect(dimensions.scroll).toBeLessThanOrEqual(dimensions.client);
     expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   });
-test("addition inherits context and allows independent dates and divisions", async ({ page }) => {
+test("addition inherits edition context and chooses gender per dispute", async ({ page }) => {
   await page.goto(`${fixtureUrl}?add`);
   await expect(page.getByLabel("Ano", { exact: true })).toHaveValue("2026");
-  await expect(page.getByLabel("Naipe")).toBeDisabled();
+  await expect(page.getByLabel("Naipe")).toBeEnabled();
+  await page.getByLabel("Naipe").selectOption("female");
   await expect(page.getByLabel("Início (opcional)")).toHaveValue("2026-11-01");
   await page.getByLabel("Início (opcional)").fill("2026-12-01");
   await page.getByText("Divisão competitiva (opcional)", { exact: true }).click();

@@ -180,7 +180,7 @@ export function workflowError(code?: string, message?: string): string {
   if (message === "BDB_CHAMPIONSHIP_ALREADY_EXISTS")
     return "Esse campeonato já existe. Selecione-o na lista.";
   if (message === "BDB_COMPETITION_SEASON_CONFLICT")
-    return "Já existe uma edição para esse campeonato, ano e naipe. Use Adicionar disputa.";
+    return "Já existe uma edição para esse campeonato e ano. Use Adicionar disputa.";
   if (message === "BDB_COMPETITION_CONTEXT_ALREADY_EXISTS")
     return "Essa categoria e divisão já possuem uma disputa na edição.";
   if (message === "BDB_CATEGORY_LEGACY_CONFLICT")

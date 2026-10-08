@@ -119,7 +119,6 @@ describe("edition workflow actions", () => {
           id: 7,
           series_id: 1,
           year: 2026,
-          gender_division: "male",
           name: "RED",
           description: null,
         },
@@ -137,7 +136,6 @@ describe("edition workflow actions", () => {
           id: 7,
           series_id: 1,
           year: 2026,
-          gender_division: "male",
           name: "RED",
           description: null,
         },
@@ -153,14 +151,13 @@ describe("edition workflow actions", () => {
     expect(JSON.stringify(result)).toContain('"existingSeasonId":7');
     expect(client.rpc).not.toHaveBeenCalled();
   });
-  it("adds to the selected edition and rejects forged inherited fields", async () => {
+  it("adds male and female disputes to the selected edition", async () => {
     tables.competition_seasons = {
       data: [
         {
           id: 7,
           series_id: 1,
           year: 2026,
-          gender_division: "male",
           name: "RED",
           description: null,
         },
@@ -180,8 +177,10 @@ describe("edition workflow actions", () => {
     ).rejects.toMatchObject({ status: 302 });
     expect(client.rpc.mock.calls[0]?.[0]).toBe("admin_add_competition_dispute");
     client.rpc.mockClear();
-    await action(post({ ...create, payload: JSON.stringify({ ...addition, gender: "female" }) }));
-    expect(client.rpc).not.toHaveBeenCalled();
+    await expect(
+      action(post({ ...create, payload: JSON.stringify({ ...addition, gender: "female" }) })),
+    ).rejects.toMatchObject({ status: 302 });
+    expect(client.rpc.mock.calls[0]?.[0]).toBe("admin_add_competition_dispute");
   });
   it("never leaks database errors and blocks the unavailable schema", async () => {
     client.rpc.mockResolvedValue({

@@ -30,7 +30,6 @@ export interface EditionChoices {
     series_id: number;
     name: string;
     year: number;
-    gender_division: string;
     description: string | null;
     suggested_starts_on: string | null;
     suggested_ends_on: string | null;
@@ -68,7 +67,7 @@ export function EditionWizard({
   const [championshipName, setChampionshipName] = useState("");
   const [kind, setKind] = useState<AgeKind>("adult");
   const [age, setAge] = useState("");
-  const [gender, setGender] = useState(season?.gender_division ?? "");
+  const [gender, setGender] = useState("");
   const [divisionMode, setDivisionMode] = useState("none");
   const [divisionId, setDivisionId] = useState("");
   const [divisionValueName, setDivisionValueName] = useState("");
@@ -134,7 +133,7 @@ export function EditionWizard({
       <p>
         {season
           ? "A disputa herda a edição; equipes, formato e resultados permanecem independentes."
-          : "Crie uma edição com sua primeira disputa. Campeonato, ano e naipe identificam a edição."}{" "}
+          : "Crie uma edição com sua primeira disputa. Campeonato e ano identificam a edição; categoria, naipe e divisão identificam a disputa."}{" "}
         Tudo começa como rascunho privado.
       </p>
       {!choices.available ? (
@@ -293,7 +292,6 @@ export function EditionWizard({
                   id="gender"
                   name="gender"
                   value={gender}
-                  disabled={Boolean(season)}
                   onChange={(event) => {
                     setGender(event.target.value);
                     setSourceOverride("");
@@ -305,7 +303,6 @@ export function EditionWizard({
                   <option value="male">Masculino</option>
                   <option value="female">Feminino</option>
                 </select>
-                {season ? <input type="hidden" name="gender" value={gender} /> : null}
               </div>
             </div>
             <div className="edition-period-row">

@@ -22,20 +22,20 @@ select is(
   (
     select count(*)
     from (
-      select distinct series_id, year, gender_division
+      select distinct series_id, year
       from public.competitions
     ) contexts
   ),
-  'backfill creates one season per championship year and gender'
+  'backfill creates one edition per championship and year'
 );
 select ok(
   not exists(
     select 1
     from public.competitions competition
     join public.competition_seasons season on season.id = competition.season_id
-    where (season.series_id, season.year, season.gender_division)
+    where (season.series_id, season.year)
       is distinct from
-      (competition.series_id, competition.year, competition.gender_division)
+      (competition.series_id, competition.year)
   ),
   'backfill preserves the historical context on every dispute'
 );
@@ -63,8 +63,8 @@ select has_index(
   'public',
   'competitions',
   'competitions_dispute_unique',
-  array['season_id', 'category_id', 'competitive_division_value_id'],
-  'dispute identity includes the optional division value'
+  array['season_id', 'category_id', 'gender_division', 'competitive_division_value_id'],
+  'dispute identity includes category, gender and optional division value'
 );
 select is(
   (
@@ -254,7 +254,7 @@ select throws_ok(
   ) from season_division_context$$,
   'BD506',
   'BDB_COMPETITION_SEASON_CONFLICT',
-  'duplicate championship year and gender is rejected'
+  'duplicate championship and year is rejected regardless of requested gender'
 );
 select is(
   public.admin_update_competition_season(

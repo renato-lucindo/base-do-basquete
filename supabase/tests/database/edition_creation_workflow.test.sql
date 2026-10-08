@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(43);
+select plan(44);
 insert into auth.users(id) values ('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts(user_id)
 select '11111111-1111-4111-8111-111111111111' where not exists(select 1 from private.admin_accounts);
@@ -63,7 +63,12 @@ select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid()
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"categoryKind":"master","categoryAge":38}')$$,'BD501','BDB_EDITION_WORKFLOW_INPUT_INVALID','Master step');
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"categoryKind":"master","categoryAge":90}')$$,'BD501','BDB_EDITION_WORKFLOW_INPUT_INVALID','Master upper bound');
 select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"categoryKind":"adult","categoryAge":30}')$$,'BD501','BDB_EDITION_WORKFLOW_INPUT_INVALID','adult has no age');
-select throws_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"gender":"female"}')$$,'BD409','BDB_EDITION_CONTEXT_STALE','inherited gender is authoritative');
+select lives_ok($$select public.admin_add_competition_dispute(gen_random_uuid(),pg_temp.workflow_add_input() || '{"gender":"female"}')$$,'same edition accepts a dispute with the other gender');
+reset role;
+select is((select count(*) from public.competitions c join workflow_context x on c.season_id=(x.result->>'seasonId')::bigint
+  where c.category_id=(select id from public.categories where age_kind='base' and age_value=17)
+    and c.gender_division='female'),1::bigint,'gender is authoritative on the dispute');
+set local role authenticated;
 select throws_ok($$select public.admin_create_competition_edition(gen_random_uuid(),input || '{"championshipName":"Rollback workflow","entryCount":1}') from workflow_context$$,'BR002','BDB_PRESET_CAPACITY_INVALID','invalid blueprint rolls back all writes');
 reset role;
 select is((select count(*) from public.competition_series where slug='rollback-workflow'),0::bigint,'new championship is rolled back');

@@ -34,9 +34,9 @@ describe("competition dispute context", () => {
   it("represents Adulto without inventing a competitive division", () => {
     expect(toCompetitionDisputeContext(adultRow)).toMatchObject({
       competitionId: 42,
+      genderDivision: "male",
       season: {
         id: 7,
-        genderDivision: "male",
         seriesSlug: "liga-metropolitana",
         year: 2031,
       },
