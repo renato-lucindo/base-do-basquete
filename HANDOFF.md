@@ -157,3 +157,19 @@ ARQUIVO_OU_SERVICO: PR #72, docs/execution/manual-scoresheet-stage4-github-actio
 ACAO: obter pareceres independentes válidos dos revisores database-security e statistics-domain e, após ambos, QA; sanear quaisquer achados relevantes. Não fazer db push, migration repair, merge ou Etapa 5.
 CRITERIO_DE_CONCLUSAO: pareceres válidos no HEAD efetivo, sem BLOCK_RELEASE, testes verdes e WIP preservado; somente então encerrar formalmente Etapa 4.
 ```
+
+## 12. Pré-análise sequencial / bloqueio legítimo dos pareceres (08/10/2026)
+
+GitHub HEAD remoto observado em 08/10: `c6639dd93bb3e1c87a9c7a51c328c37f3a3ee780`, `main` em `59fb0eeb7a9f99491e8b913dc9265a4f08ecb184`. O `HEAD_COMMIT` do WRITE_LOCK no início deste handoff registra um **checkpoint local anterior** e não deve ser interpretado como GitHub HEAD atual. Status do worktree Windows não disponível nesta sessão: preservar modificações locais não commitadas e reconciliar `git status` e `git log` antes de usar Git local.
+
+Resultado da pré-análise de segurança, estatísticas e QA (não pareceres independentes): `docs/execution/manual-scoresheet-stage4-review-preflight.md`. CI funcional [37832981246](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37832981246) verde, com 1.228 pgTAP e 314 focais no replay histórico. `get_advisors` remoto indica warnings de baseline preexistentes que exigem revisão contextual; cenário estatístico futuro `game.source=manual` + `player_advanced=fiba_boxscore` requer decisão do revisor. GitHub `mergeable_state=dirty`; a `main` também editou `.github/workflows/ci.yml`, `HANDOFF.md` e `app/types/database.generated.ts`. A PR não possui reviews submetidos. O REVIEW_PACKET foi publicado na PR com HEAD `c6639dd`; este commit documental de pré-análise necessita atualizar o packet ou validar delta documental quando a revisão real começar.
+
+**Bloqueio:** os revisores customizados read-only não foram acionados por esta interface, que não possui token de execução de subagentes da unidade. Não simular aprovações. Bloqueio estatístico anterior permanece. Etapa 4 ativa, PR draft, sem merge, produção, Etapa 5, push ao Supabase compartilhado ou alteração de WIP.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer (agentes Codex disponíveis no ambiente da unidade)
+ARQUIVO_OU_SERVICO: PR #72 e .agents/agent-contract.md
+ACAO: acionar database-security-reviewer, depois statistics-domain-reviewer, depois accessibility/boxscore se aplicável e qa-reviewer; resolver conflitos com main de forma conservadora, testar novo HEAD e obter pareceres válidos antes de encerrar Etapa 4.
+CRITERIO_DE_CONCLUSAO: pareceres formais no mesmo HEAD, sem BLOCK_RELEASE, mergeable sem conflitos, CI green, WIP preservado.
+```
