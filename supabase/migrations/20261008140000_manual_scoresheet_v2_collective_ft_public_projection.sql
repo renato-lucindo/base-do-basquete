@@ -89,8 +89,11 @@ revoke all on public.manual_scoresheet_public_statistics_projection from public,
 grant select on public.manual_scoresheet_public_statistics_projection to anon, authenticated;
 
 create policy manual_scoresheet_public_statistics_projection_select
-on public.manual_scoresheet_public_statistics_projection for select
-using (true);
+on public.manual_scoresheet_public_statistics_projection for select to anon, authenticated
+using (
+  (select private.game_is_currently_published(game_id))
+  or (select public.is_current_admin_aal2())
+);
 
 create function private.refresh_manual_scoresheet_public_projection(p_game_id bigint, p_submission_id bigint)
 returns void
@@ -110,3 +113,24 @@ $$;
 revoke all on function private.refresh_manual_scoresheet_public_projection(bigint,bigint) from public, anon, authenticated;
 
 comment on table public.manual_scoresheet_public_statistics_projection is 'Public manual scoresheet projection. It contains collective free throws only and never creates individual attempts.';
+
+-- Materialize the first confirmed manual submission as well as all later revisions.
+-- Snapshots are inserted only by privileged transactional RPCs; this runs inside
+-- the same transaction and therefore never publishes a rolled-back game.
+create function private.populate_manual_scoresheet_public_projection()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  perform private.refresh_manual_scoresheet_public_projection(new.game_id, new.submission_id);
+  return new;
+end;
+$$;
+
+revoke all on function private.populate_manual_scoresheet_public_projection() from public, anon, authenticated;
+
+create trigger manual_scoresheet_submission_payload_public_projection
+  after insert on public.manual_scoresheet_submission_payloads
+  for each row execute function private.populate_manual_scoresheet_public_projection();

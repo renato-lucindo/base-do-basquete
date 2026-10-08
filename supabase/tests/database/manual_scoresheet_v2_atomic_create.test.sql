@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(34);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -195,6 +195,36 @@ select is(
   'immutable submission payload snapshot persists'
 );
 select is(
+  (select count(*) from public.manual_scoresheet_public_statistics_projection
+    where game_id=(select game_id from manual_v2_result)),
+  1::bigint,
+  'initial manual confirmation materializes one collective public projection'
+);
+select is(
+  (select projection.submission_id
+   from public.manual_scoresheet_public_statistics_projection projection
+   where projection.game_id=(select game_id from manual_v2_result)),
+  (select submission.id from public.game_data_submissions submission
+   where submission.game_id=(select game_id from manual_v2_result) and submission.status='active'),
+  'initial collective projection references the active submission'
+);
+select results_eq(
+  $select free_throw_summary #>> '{home,conceded}',
+           free_throw_summary #>> '{away,charged}',
+           free_throw_summary #>> '{away,converted}',
+           free_throw_summary #>> '{away,wasted}'
+    from public.manual_scoresheet_public_statistics_projection
+    where game_id=(select game_id from manual_v2_result)$,
+  $values ('3'::text,'3'::text,'1'::text,'2'::text)$,
+  'initial projection reports only team-level awarded, charged, converted and wasted free throws'
+);
+select ok(
+  (select free_throw_summary #>> '{home,percentage}'
+    from public.manual_scoresheet_public_statistics_projection
+    where game_id=(select game_id from manual_v2_result)) is null,
+  'zero initial home free throws have unavailable, not artificial, percentage'
+);
+select is(
   (select count(*) from public.game_data_domain_authority where game_id=(select game_id from manual_v2_result)),
   6::bigint,
   'six manual data authority domains become active'
@@ -269,8 +299,13 @@ select is(
 
 reset role;
 set local role anon;
+select is(
+  (select count(*) from public.manual_scoresheet_public_statistics_projection),
+  0::bigint,
+  'anon cannot read projection while game has no current public publication'
+);
 select throws_ok(
-  $$select public.admin_create_manual_scoresheet_v2('{}'::jsonb)$$,
+  $select public.admin_create_manual_scoresheet_v2('{}'::jsonb)$,
   '42501',null,'anon cannot execute the v2 creation RPC'
 );
 
