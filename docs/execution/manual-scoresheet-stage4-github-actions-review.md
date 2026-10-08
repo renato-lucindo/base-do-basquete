@@ -39,3 +39,9 @@ ARQUIVO_OU_SERVICO: PR #72, GitHub Actions remote_history_upgrade, .agents/{data
 ACAO: conferir gate verde no HEAD efetivo, obter pareceres independentes sobre as correções e manter o banco compartilhado intocado até aprovação.
 CRITERIO_DE_CONCLUSAO: CI completo verde, revisores válidos, HANDOFF coerente com Git, sem perda de WIP nem deploy em produção.
 ```
+
+## Encerramento da validação automatizada — 08/10/2026
+
+**COMPLETED/SUCCESS:** [GitHub Actions CI 37832981246](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37832981246) no código `badb8ddf`: jobs `gate`, `accessibility`, `database` e `remote_history_upgrade` concluídos com sucesso; PostgreSQL local limpo com **45 arquivos/1.228 testes PASS**; reconstrução histórica com **9 arquivos/314 testes PASS** após aplicar as quatro migrations de Etapa 4 em sequência. [CodeQL 37832981226](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37832981226) e [preview 37832981113](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37832981113) também concluídos com sucesso.
+
+O êxito técnico automatizado **não substitui parecer independente** dos três reviewers exigidos. A baseline de histórico é reconstruída e não um dump completo; segue proibido declarar release aprovado ou aplicar migrations ao Supabase compartilhado. Etapa 4 permanece em revisão.
