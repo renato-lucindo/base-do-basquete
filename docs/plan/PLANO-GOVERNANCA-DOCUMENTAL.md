@@ -1,6 +1,6 @@
 # Plano de governança documental
 
-**Estado:** proposta para adoção
+**Estado:** em implantação; `DOC-GOV-01` integrada e `DOC-GOV-02` em execução
 **Escopo:** documentação versionada do projeto
 **Responsável operacional:** `project-maintainer`
 **Aprovação necessária:** responsável pelo produto e `qa-reviewer`
@@ -382,7 +382,7 @@ As métricas orientam manutenção; não justificam apagar evidência útil apen
 | Quebrar links ao mover documentos | Classificar sem mover na Fase 1; verificar links antes de cada movimentação |
 | Criar burocracia excessiva | Metadados mínimos e revisão proporcional ao risco |
 | Transformar o índice em nova cópia da especificação | Limitar o índice a catálogo, estado, escopo e precedência |
-| Confundir plano proposto com regra vigente | Manter este documento como `proposta para adoção` até aprovação e implantação da Fase 1 |
+| Confundir fases ainda não implantadas com regra vigente | Adotar cada fase somente pela unidade sequencial correspondente e registrar sua integração no índice/catálogo |
 | Apagar trabalho local não rastreado | Inventariar e atribuir origem antes de qualquer deduplicação |
 
 ## 19. Critérios de conclusão
@@ -416,7 +416,7 @@ Este plano não autoriza:
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: HANDOFF.md e evidências históricas em docs/execution/
-ACAO: após a integração de DOC-GOV-01, abrir DOC-GOV-02 para separar estado operacional corrente do histórico, sem apagar evidências
-CRITERIO_DE_CONCLUSAO: handoff retomável e conciso, histórico preservado por links versionados e nenhum próximo passo concorrente
+ARQUIVO_OU_SERVICO: documentos duplicados ou concorrentes identificados em docs/governance/DOCUMENT-CATALOG.md
+ACAO: após a integração de DOC-GOV-02 e seu parecer obrigatório, abrir DOC-GOV-03 para comparar semanticamente duplicatas e atualizar referências antes de qualquer remoção ou movimentação
+CRITERIO_DE_CONCLUSAO: cada duplicata conhecida possui autoridade e sucessor verificáveis, referências atualizadas e nenhuma evidência histórica perdida
 ```
