@@ -82,5 +82,5 @@ jobs:
           cp supabase/migrations/20261008090000_manual_scoresheet_v2_revisions.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           cp supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" migration up
-      - name: Verify pgTAP including RLS, revisions and statistical projections
+      - name: Verify focused stage 4 and imported boxscore pgTAP regressions
         run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" test db --local

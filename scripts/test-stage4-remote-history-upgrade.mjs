@@ -2,7 +2,7 @@
 // GitHub Actions-only, offline, schema-only remote-history reconstruction.
 // The five local-only prerequisite migrations are required for bootstrap;
 // historical remote SQL is preferred where it differs from the Git repository.
-import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -73,6 +73,30 @@ await writeFile(
 await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), {
   recursive: true,
 });
+// The normal CI runs all 45 pgTAP suites. This schema-only upgrade fixture has
+// no demo seed, so only stage 4 plus compatible FIBA/read-model regressions
+// are run here. Older suites require seed data or superseded uniqueness rules.
+const focalTests = new Set([
+  "manual_scoresheet_v2_atomic_create.test.sql",
+  "manual_scoresheet_v2_collective_ft_public_projection.test.sql",
+  "manual_scoresheet_v2_persistence.test.sql",
+  "manual_scoresheet_v2_revisions.test.sql",
+  "manual_scoresheet_transactions.test.sql",
+  "fiba_boxscore_import.test.sql",
+  "basketball_site_boxscore.test.sql",
+  "game_data_domain_authority.test.sql",
+  "stats_public_player_snapshot.test.sql",
+]);
+const testDir = path.join(overlaySupabase, "tests", "database");
+const availableTests = await readdir(testDir);
+for (const filename of focalTests) {
+  check(availableTests.includes(filename), "Missing required regression test: " + filename);
+}
+for (const filename of availableTests) {
+  if (filename.endsWith(".sql") && !focalTests.has(filename)) {
+    await unlink(path.join(testDir, filename));
+  }
+}
 
 const migrationVersions = new Set();
 for (const item of manifest.applied) {
