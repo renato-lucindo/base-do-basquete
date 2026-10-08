@@ -2,6 +2,29 @@
 
 > Checkpoint operacional da linha de edições multidimensionais. Histórico detalhado e evidências anteriores permanecem no Git, nas PRs e em `docs/execution/`. Não registrar segredos.
 
+## Checkpoint de retomada — 08/10/2026 — PR3 SQL
+
+- Estado remoto confirmado: PRs draft #66 (base main, HEAD 4865592), #68 (base #66, HEAD 62dcfa9), #69 (base #68, HEAD ec9c4f1) e #73 PR3 (base #69, HEAD 58a1205); validação temporária #74 sobre main no mesmo SHA.
+- Runs da PR #74: CI 37781752092: gate e accessibility PASS, database FAIL no pgTAP; CodeQL 37781752041 PASS e preview 37781752184 PASS. O banco concluiu reset/seed, upgrade season/division, divergent edition e manual scheduling antes da falha.
+- Causa confirmada: public.admin_create_competition_edition_batch na migration da PR3 encontra referência ambígua a season_id na função private.create_edition_workflow_batch durante multi_dispute_creation_navigation.test.sql. Correção incremental aditiva é necessária; migração PR3 anterior será preservada.
+- PR #74 é uma validação temporária sem merge. Não publicar migrations no banco compartilhado nem executar deploy de produção nesta correção.
+- Arquivos não rastreados e alterações de outras worktrees pertencem a outras unidades e devem ser preservados.
+
+WRITE_LOCK:
+OWNER: project-maintainer
+WORK_UNIT: MULTI-DISPUTE-PR3-DB-FIX
+BRANCH: codex/pr3-stack-reconcile (publicação para codex/multi-dispute-creation-navigation)
+BASE_COMMIT: 58a1205d9eb29f46b3dc898ed2e6c679d4ef0673
+SCOPE: correção aditiva PL/pgSQL para falha pgTAP da PR3, testes de banco e registro de evidências.
+SCOPE_NEGATIVO: sem merge, compartilhamento de migration, deploy de produção ou alteração das demais worktrees.
+REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer (PR3 funcional).
+STATUS: ACTIVE
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: supabase/migrations e GitHub PR #74
+ACAO: corrigir referência ambígua com migration aditiva, validar pgTAP remoto, obter pareceres da PR3 vinculados ao SHA final.
+CRITERIO_DE_CONCLUSAO: database CI verde inclusive pgTAP e concurrency, PR #73 atualizada com REVIEW_PACKET e pareceres rastreáveis.
 ## 1. Unidade corrente e integração
 
 `MULTI-DISPUTE-PR3-STACK-RECONCILE`: atualização da branch PR3 sobre a PR #69 já reconciliada; PR #66 (`codex/season-division-model`) com `main` em 08/10/2026, após a integração da governança documental pela PR #71 (merge `8ac6220`). O conflito de `HANDOFF.md` foi reconciliado com o formato compacto da governança; `docs/plan/README.md` teve merge automático.
