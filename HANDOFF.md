@@ -111,10 +111,19 @@ CRITERIO_DE_CONCLUSAO: comportamento estatístico fiel ao plano e comprovado por
 Ao fechar cada etapa, mantenha este arquivo conciso e registre a evidência detalhada na PR ou em `docs/execution/`.
 
 
-## 10. Diagnóstico de sincronização de migrations — 08/10/2026
+## 10. Reconciliação operacional e validação isolada — 08/10/2026
 
-Consulta read-only ao Supabase `yjnbemfeyjhxhomprlnm`: 62 migrations remotas, 69 arquivos na branch, 54 versões com timestamp divergente, 3 versões remotas ausentes dos arquivos locais e 10 arquivos locais sem registro remoto. Comparação de conteúdo: 56 SQL idênticos por nome, duas divergências (`canonical_model`, `basketball_site_boxscore`) e um registro remoto sem SQL (`wp14_import_team_stats_assisted_players`).
+- Banco remoto `yjnbemfeyjhxhomprlnm` (consultado apenas em leitura): 62 migrations aplicadas, última `20261005140504_edition_creation_workflow`, nenhuma migration da súmula manual v2. Sem `repair`, DDL, DML ou deploy no Supabase compartilhado.
+- Comparação das 69 migrations da branch: 54 timestamps divergentes, 3 nomes remotos ausentes localmente e 10 arquivos locais sem registro remoto; 56 SQL iguais por nome, divergências reais em `canonical_model` e formato diferente em `basketball_site_boxscore`; `wp14_import_team_stats_assisted_players` sem statements remotos. A reconciliação definitiva do histórico segue pendente.
+- `scripts/supabase-stage4-reconcile-overlay.mjs` construiu overlay temporário com 62 versões registradas + 4 migrations novas. **Dry-run real informado pelo usuário em Windows:** `npx.cmd supabase --workdir "<pasta-temporaria>" db push --project-ref yjnbemfeyjhxhomprlnm --dry-run` listou apenas `20261006223000_manual_scoresheet_v2.sql`, `20261007161000_manual_scoresheet_v2_atomic_create.sql`, `20261008090000_manual_scoresheet_v2_revisions.sql` e `20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql`, sem aplicar alterações.
+- **Validação isolada comprovada no GitHub Actions**: CI run [37819623694](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37819623694), commit funcional/documental `2992c7bc`: PostgreSQL descartável do zero recebeu as quatro migrations sem erro; `supabase test db --local` PASS, **45 arquivos e 1.220 asserções**, incluindo os quatro testes pgTAP da súmula manual v2. Run `database` validou também upgrade de agendamento e concorrência de presets/boxscore. `gate` (formatação, lint, typecheck, testes JS, build, varredura de segredos) e `accessibility` PASS. CodeQL run [37819623706](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37819623706) e preview run [37819623679](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37819623679) concluíram em sucesso.
+- **Limite da evidência:** o CI valida bootstrap do esquema versionado do GitHub, não upgrade em cópia fiel do banco remoto com seus três scripts exclusivos e divergências históricas. Não tratar este gate como homologação de deploy no Supabase principal. Revisões independentes de `database-security-reviewer`, `statistics-domain-reviewer` (BLOCK_RELEASE anterior) e `qa-reviewer` continuam pendentes; Etapa 4 não encerrada.
+- Todas as alterações WIP locais em `codex/manual-scoresheet-v2` foram preservadas; nenhum merge nem início da Etapa 5.
 
-Foi preparado um overlay **apenas para dry-run** via `scripts/supabase-stage4-reconcile-overlay.mjs` e `docs/execution/supabase-stage4-remote-migration-history.json`, com procedimento em `docs/execution/supabase-stage4-migration-reconciliation.md`. Não foi alterado o banco remoto nem reparado o histórico; o teste CLI local continua pendente porque o executor Windows não esteve acessível nessa execução. As alterações WIP existentes não foram modificadas. O HEAD remoto anterior às adições deste checkpoint era `7781486`.
-
-PROXIMO_PASSO_EXATO (reconciliação): executar o gerador de overlay no worktree da PR #72 e o `db push --dry-run` com o `--workdir` impresso. Validar que só aparecem as quatro migrations da Etapa 4; documentar resultado e manter o gate de revisão/backend pendente até pgTAP/RLS/CI válidos. Não fazer merge, deploy em produção nem Etapa 5.
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72, docs/execution/supabase-stage4-migration-reconciliation.md, banco de homologação isolado
+ACAO: verificar upgrade sobre cópia fiel da baseline remota, completar revisões de segurança/estatística e QA, e somente depois considerar a aplicação das quatro migrations em ambiente autorizado; preservar WIP e histórico existente.
+CRITERIO_DE_CONCLUSAO: pgTAP/RLS/concorrência e upgrade testados sobre baseline representativa, pareceres técnicos e QA válidos, sem reparação irreversível do histórico nem mudanças no Supabase compartilhado.
+```

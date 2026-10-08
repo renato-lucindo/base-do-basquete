@@ -23,8 +23,8 @@ Esta solução permite inspecionar o plano de upgrade da Etapa 4 sem alterar ver
 - Histórico remoto consultado via plugin Supabase em 08/10/2026; nenhum DDL/DML/repair executado.
 - SQL comparado com arquivos GitHub na branch da PR #72.
 - Dados do snapshot em `docs/execution/supabase-stage4-remote-migration-history.json`.
-- Validação do overlay no computador do usuário e `db push --dry-run` **pendentes**; o ambiente conectado nesta sessão não permitiu executar comandos locais, portanto não há evidência de CLI verde.
-- Nenhuma migration da Etapa 4 foi aplicada; RLS, pgTAP, reviewers, gates, merge e produção ainda pendentes.
+- Overlay gerado no worktree Windows do usuário. O `db push --dry-run` retornou **somente as quatro migrations da Etapa 4**, sem escrever no banco.
+- As quatro migrations foram aplicadas **somente no PostgreSQL descartável do GitHub Actions**, com pgTAP **45 arquivos / 1.220 testes PASS** (CI run [37819623694](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37819623694), commit `2992c7bc`). O gate, acessibilidade, CodeQL e preview também passaram. O banco remoto permaneceu com 62 versões aplicadas e nenhuma dessas quatro. Pareceres especializados e QA final ainda pendentes. A aplicação em um clone fiel da baseline remota não foi testada.
 - Não iniciar Etapa 5.
 
-**Próximo passo exato:** no worktree `codex/manual-scoresheet-v2`, com WIP preservado, executar `node scripts/supabase-stage4-reconcile-overlay.mjs` e depois o `npx.cmd supabase --workdir ... db push --project-ref yjnbemfeyjhxhomprlnm --dry-run` impresso. Critério: saída mostra exclusivamente as quatro migrations pendentes, sem versões remotas ausentes e sem escrita no banco. Se falhar, não fazer `repair`; registrar o erro no `HANDOFF.md`.
+**Próximo passo exato:** validar upgrade sobre um clone representativo da baseline remota divergente e obter revisões especializadas de banco/estatística/QA para Etapa 4. Não efetuar `repair`, deploy nem merge no Supabase compartilhado sem gate e autorização apropriados.
