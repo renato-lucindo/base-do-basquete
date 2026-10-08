@@ -100,7 +100,7 @@ returns void
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $manualprojection$
 declare
   collective_summary jsonb;
 begin
@@ -117,7 +117,7 @@ begin
     free_throw_summary = excluded.free_throw_summary,
     published_at = now();
 end;
-$$;
+$manualprojection$;
 revoke all on function private.refresh_manual_scoresheet_public_projection(bigint,bigint) from public, anon, authenticated;
 
 comment on table public.manual_scoresheet_public_statistics_projection is 'Public manual scoresheet projection. It contains collective free throws only and never creates individual attempts.';
