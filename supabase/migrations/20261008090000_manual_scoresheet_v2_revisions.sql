@@ -367,6 +367,7 @@ begin
     where submission.id=base_submission_id;
   update public.game_data_submissions submission set status='active'
     where submission.id=new_submission_id;
+  perform private.refresh_manual_scoresheet_public_projection(saved_game_id, new_submission_id);
   foreach authority_domain in array authority_domains loop
     perform private.activate_game_data_domain_authority(
       saved_game_id,authority_domain,new_submission_id,base_submission_id,revision_reason
