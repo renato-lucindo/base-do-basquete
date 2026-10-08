@@ -65,7 +65,11 @@ for (const [before, after] of independentSettings) {
   config = config.replace(before, after);
 }
 await writeFile(path.join(overlaySupabase, "config.toml"), config, "utf8");
-await copyFile(path.join(root, "supabase", "seed.sql"), path.join(overlaySupabase, "seed.sql"));
+await writeFile(
+  path.join(overlaySupabase, "seed.sql"),
+  "-- Deliberately empty: no demo or personal data in the schema-only upgrade test.\\n",
+  "utf8",
+);
 await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), {
   recursive: true,
 });
