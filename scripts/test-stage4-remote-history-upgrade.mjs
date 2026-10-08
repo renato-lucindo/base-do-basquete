@@ -39,7 +39,8 @@ function check(condition, message) {
 }
 check(manifest.projectRef === "yjnbemfeyjhxhomprlnm", "Unexpected project baseline");
 check(manifest.applied.length === 62, "Remote baseline version count changed");
-for (const name of prerequisiteNames) check(byName.has(name), "Missing bootstrap prerequisite: " + name);
+for (const name of prerequisiteNames)
+  check(byName.has(name), "Missing bootstrap prerequisite: " + name);
 for (const name of exceptions) {
   const record = manifest.applied.find((item) => item.name === name);
   check(Boolean(record), "Missing recorded historical exception: " + name);
@@ -48,9 +49,14 @@ const overlay = await mkdtemp(path.join(tmpdir(), "bdb-remote-history-stage4-"))
 const overlaySupabase = path.join(overlay, "supabase");
 const migrations = path.join(overlaySupabase, "migrations");
 await mkdir(migrations, { recursive: true });
-await copyFile(path.join(root, "supabase", "config.toml"), path.join(overlaySupabase, "config.toml"));
+await copyFile(
+  path.join(root, "supabase", "config.toml"),
+  path.join(overlaySupabase, "config.toml"),
+);
 await copyFile(path.join(root, "supabase", "seed.sql"), path.join(overlaySupabase, "seed.sql"));
-await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), { recursive: true });
+await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), {
+  recursive: true,
+});
 
 const migrationVersions = new Set();
 for (const item of manifest.applied) {
@@ -72,7 +78,10 @@ for (const extra of prerequisiteNames) {
 }
 check(migrationVersions.size === 67, "Unexpected baseline migration count");
 for (const pending of manifest.stage4Pending) {
-  check(!migrationVersions.has(pending.slice(0, 14)), "Stage 4 version already applied in baseline");
+  check(
+    !migrationVersions.has(pending.slice(0, 14)),
+    "Stage 4 version already applied in baseline",
+  );
   check(filenames.includes(pending), "Missing pending Stage 4 migration");
 }
 // The CI workflow adds only the four pending migrations *after* bootstrapping.
