@@ -239,7 +239,10 @@ select results_eq(
   $$select submission_version,status from public.game_data_submissions
     where game_id=(select game_id from manual_v2_result)
     order by submission_version$$,
-  $$values(1::integer,'superseded'::text),(2::integer,'active'::text)$$,
+  $$select submission_version,status from (values
+      (1::integer,'superseded'::text),
+      (2::integer,'active'::text)
+    ) as expected(submission_version,status)$$,
   'base version is superseded and version two active'
 );
 select is((select count(*) from public.manual_scoresheet_submission_payloads
