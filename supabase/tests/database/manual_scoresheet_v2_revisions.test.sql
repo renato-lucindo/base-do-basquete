@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(39);
+select plan(40);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -128,12 +128,19 @@ create function pg_temp.v2_revision_current_penalty(p_key text)
 returns jsonb language sql stable as $$
   select jsonb_set(
     jsonb_set(
-      snapshot.payload || jsonb_build_object(
-        'gameId',submission.game_id,
-        'revisionKey',p_key,
-        'baseSubmissionId',submission.id,
-        'basePayloadHash',submission.payload_hash,
-        'revisionReason','Correção de penalidade concedida'
+      jsonb_set(
+        snapshot.payload || jsonb_build_object(
+          'gameId',submission.game_id,
+          'revisionKey',p_key,
+          'baseSubmissionId',submission.id,
+          'basePayloadHash',submission.payload_hash,
+          'revisionReason','Correção de penalidade concedida'
+        ),
+        '{fouls}',(snapshot.payload -> 'fouls') || '[{
+          "periodNumber":2,"sequenceNumber":2,
+          "target":{"kind":"player","registrationId":9832,"rosterEntryId":9832},
+          "type":"U","penaltyFtCount":2,"originalNotation":"U2","rulesVersion":"FIBA_2024"
+        }]'::jsonb
       ),
       '{fouls,0,penaltyFtCount}','3'::jsonb
     ),
@@ -338,8 +345,12 @@ select lives_ok(
 select is((select penalty_free_throws from public.manual_scoresheet_revisions r
   join public.game_data_submissions s on s.id=r.submission_id
   where s.game_id=(select game_id from manual_v2_result) and s.submission_version=3),
-  '{"homeConceded":4,"homeReceived":0,"awayConceded":0,"awayReceived":4}'::jsonb,
-  'revised semantic foul changes conceded/received FT totals');
+  '{"homeConceded":4,"homeReceived":2,"awayConceded":2,"awayReceived":4}'::jsonb,
+  'simultaneous penalties for home and away update both received/conceded totals');
+select is((select count(*) from public.foul_events
+  where game_id=(select game_id from manual_v2_result) and registration_id=9832
+    and penalty_ft_count=2),1::bigint,
+  'away-side two-shot penalty persists in live semantic foul events');
 select is((select count(*) from public.game_data_submissions s
   where s.game_id=(select game_id from manual_v2_result)),3::bigint,
   'successive revision creates version three without losing history');
