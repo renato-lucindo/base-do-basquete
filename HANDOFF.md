@@ -110,3 +110,11 @@ CRITERIO_DE_CONCLUSAO: comportamento estatístico fiel ao plano e comprovado por
 
 Ao fechar cada etapa, mantenha este arquivo conciso e registre a evidência detalhada na PR ou em `docs/execution/`.
 
+
+## 10. Diagnóstico de sincronização de migrations — 08/10/2026
+
+Consulta read-only ao Supabase `yjnbemfeyjhxhomprlnm`: 62 migrations remotas, 69 arquivos na branch, 54 versões com timestamp divergente, 3 versões remotas ausentes dos arquivos locais e 10 arquivos locais sem registro remoto. Comparação de conteúdo: 56 SQL idênticos por nome, duas divergências (`canonical_model`, `basketball_site_boxscore`) e um registro remoto sem SQL (`wp14_import_team_stats_assisted_players`).
+
+Foi preparado um overlay **apenas para dry-run** via `scripts/supabase-stage4-reconcile-overlay.mjs` e `docs/execution/supabase-stage4-remote-migration-history.json`, com procedimento em `docs/execution/supabase-stage4-migration-reconciliation.md`. Não foi alterado o banco remoto nem reparado o histórico; o teste CLI local continua pendente porque o executor Windows não esteve acessível nessa execução. As alterações WIP existentes não foram modificadas. O HEAD remoto anterior às adições deste checkpoint era `7781486`.
+
+PROXIMO_PASSO_EXATO (reconciliação): executar o gerador de overlay no worktree da PR #72 e o `db push --dry-run` com o `--workdir` impresso. Validar que só aparecem as quatro migrations da Etapa 4; documentar resultado e manter o gate de revisão/backend pendente até pgTAP/RLS/CI válidos. Não fazer merge, deploy em produção nem Etapa 5.

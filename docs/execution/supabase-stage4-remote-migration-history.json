@@ -1,0 +1,279 @@
+{
+  "auditedAt": "2026-10-08",
+  "projectRef": "yjnbemfeyjhxhomprlnm",
+  "purpose": "Readonly remote-history overlay for PR #72 stage-4 CLI dry-run",
+  "applied": [
+    {
+      "version": "20260821182245",
+      "name": "canonical_model"
+    },
+    {
+      "version": "20260821182624",
+      "name": "canonical_model_advisors"
+    },
+    {
+      "version": "20260821190820",
+      "name": "admin_roster_transactions"
+    },
+    {
+      "version": "20260821191448",
+      "name": "jersey_history_views"
+    },
+    {
+      "version": "20260821200628",
+      "name": "manual_scoresheet_transactions"
+    },
+    {
+      "version": "20260821201048",
+      "name": "manual_scoresheet_advisors"
+    },
+    {
+      "version": "20260821205703",
+      "name": "public_game_statistics"
+    },
+    {
+      "version": "20260821215047",
+      "name": "fiba_boxscore_import"
+    },
+    {
+      "version": "20260821215427",
+      "name": "boxscore_rate_limit_maintenance"
+    },
+    {
+      "version": "20260824112306",
+      "name": "private_boxscore_functions"
+    },
+    {
+      "version": "20260824120043",
+      "name": "history_placements_achievements"
+    },
+    {
+      "version": "20260824163802",
+      "name": "wp14_import_team_stats_assisted_players"
+    },
+    {
+      "version": "20260831133611",
+      "name": "player_profile_foundation_compat"
+    },
+    {
+      "version": "20260831133619",
+      "name": "admin_player_search_and_create"
+    },
+    {
+      "version": "20260831133629",
+      "name": "data_profile_gender_compatibility"
+    },
+    {
+      "version": "20260831133914",
+      "name": "data_profile_fk_covering_index"
+    },
+    {
+      "version": "20260901201250",
+      "name": "player_private_admin_flow"
+    },
+    {
+      "version": "20260902013629",
+      "name": "roster_eligibility_enforcement"
+    },
+    {
+      "version": "20260902064839",
+      "name": "boxscore_import_eligibility_enforcement"
+    },
+    {
+      "version": "20260902114439",
+      "name": "classification_backfill_reconciliation"
+    },
+    {
+      "version": "20260902115601",
+      "name": "classification_backfill_coverage_fix"
+    },
+    {
+      "version": "20260902163902",
+      "name": "game_data_submissions"
+    },
+    {
+      "version": "20260902201619",
+      "name": "game_data_domain_authority"
+    },
+    {
+      "version": "20260903021740",
+      "name": "game_data_domain_authority_fk_indexes"
+    },
+    {
+      "version": "20260903074040",
+      "name": "game_data_backfill"
+    },
+    {
+      "version": "20260910172559",
+      "name": "mvp03_preset_compiler"
+    },
+    {
+      "version": "20260910172608",
+      "name": "mvp03_relational_presets"
+    },
+    {
+      "version": "20260911173435",
+      "name": "mvp04_private_scheduling"
+    },
+    {
+      "version": "20260911174551",
+      "name": "mvp04_fk_covering_indexes"
+    },
+    {
+      "version": "20260911180212",
+      "name": "mvp04_knockout_progression"
+    },
+    {
+      "version": "20260914113513",
+      "name": "mvp04_versioned_publication"
+    },
+    {
+      "version": "20260914114432",
+      "name": "mvp04_publication_hardening"
+    },
+    {
+      "version": "20260914182126",
+      "name": "post01_source_roles"
+    },
+    {
+      "version": "20260914182136",
+      "name": "post01_submission_snapshots"
+    },
+    {
+      "version": "20260914182145",
+      "name": "post01_domain_comparisons"
+    },
+    {
+      "version": "20260914182152",
+      "name": "post01_conflict_reader_hardening"
+    },
+    {
+      "version": "20260914182203",
+      "name": "post01_late_fiba_candidate"
+    },
+    {
+      "version": "20260914182229",
+      "name": "post01_conflict_resolution"
+    },
+    {
+      "version": "20260914182237",
+      "name": "post01_manual_fiba_projection"
+    },
+    {
+      "version": "20260914182245",
+      "name": "post01_conflict_reader_audit_order"
+    },
+    {
+      "version": "20260914182942",
+      "name": "post01_snapshot_fk_covering_index"
+    },
+    {
+      "version": "20260915141710",
+      "name": "post02_registration_removal_policy"
+    },
+    {
+      "version": "20260915141724",
+      "name": "post02_ruleset_clone"
+    },
+    {
+      "version": "20260915141739",
+      "name": "post02_draft_ruleset_editor"
+    },
+    {
+      "version": "20260916101702",
+      "name": "post03_group_closure"
+    },
+    {
+      "version": "20260916101715",
+      "name": "post03_administrative_results"
+    },
+    {
+      "version": "20260916101728",
+      "name": "post03_ruleset_amendments"
+    },
+    {
+      "version": "20260916101805",
+      "name": "post03_sports_exceptions_dashboard"
+    },
+    {
+      "version": "20260916103155",
+      "name": "post03_fk_covering_indexes"
+    },
+    {
+      "version": "20260916193734",
+      "name": "admin_bulk_player_private_review"
+    },
+    {
+      "version": "20260916203906",
+      "name": "admin_review_queue_context_and_concurrency"
+    },
+    {
+      "version": "20260917124914",
+      "name": "post04_final_profile_enforcement"
+    },
+    {
+      "version": "20260922161633",
+      "name": "stats_public_player_snapshot"
+    },
+    {
+      "version": "20260924153000",
+      "name": "admin_ux_02_operations"
+    },
+    {
+      "version": "20260924194303",
+      "name": "admin_manual_schedule_flow"
+    },
+    {
+      "version": "20260925173548",
+      "name": "boxscore_team_resolution"
+    },
+    {
+      "version": "20260925180553",
+      "name": "basketball_site_boxscore"
+    },
+    {
+      "version": "20260925190000",
+      "name": "admin_audit_manual_matchup_compat"
+    },
+    {
+      "version": "20260929124948",
+      "name": "admin_ux_01_readiness"
+    },
+    {
+      "version": "20261001185013",
+      "name": "boxscore_dynamic_import"
+    },
+    {
+      "version": "20261005140439",
+      "name": "season_division_model"
+    },
+    {
+      "version": "20261005140504",
+      "name": "edition_creation_workflow"
+    }
+  ],
+  "remoteOnly": [
+    "player_profile_foundation_compat",
+    "season_division_model",
+    "edition_creation_workflow"
+  ],
+  "legacyLocalExcluded": [
+    "single_admin_auth",
+    "player_profile_foundation",
+    "mvp01_structural_foundation",
+    "mvp01_existing_game_ingestion",
+    "mvp01_matchup_enforcement",
+    "mvp02_public_player_read_models"
+  ],
+  "stage4Pending": [
+    "20261006223000_manual_scoresheet_v2.sql",
+    "20261007161000_manual_scoresheet_v2_atomic_create.sql",
+    "20261008090000_manual_scoresheet_v2_revisions.sql",
+    "20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql"
+  ],
+  "differences": [
+    "canonical_model: remote SQL lacks indexes present locally, policies have different role targets",
+    "basketball_site_boxscore: function raises same error with different formatting",
+    "wp14_import_team_stats_assisted_players: no statements in remote history"
+  ]
+}
