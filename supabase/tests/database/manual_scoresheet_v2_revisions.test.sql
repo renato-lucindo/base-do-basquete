@@ -254,7 +254,7 @@ select is((select payload from public.manual_scoresheet_submission_payloads
   'original payload remains bytewise equivalent as jsonb');
 select ok((select reason='Correção conferida após o jogo'
     and jsonb_array_length(diff)=1 and diff->0->>'section'='game'
-    and revised_by=(select user_id from private.admin_accounts)
+    and revised_by='11111111-1111-4111-8111-111111111111'::uuid
     and revised_at is not null
   from public.manual_scoresheet_revisions where game_id=(select game_id from manual_v2_result)),
   'reason, author, timestamp and section diff are recorded');
