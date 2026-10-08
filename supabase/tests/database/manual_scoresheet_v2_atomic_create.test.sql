@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(37);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -223,6 +223,16 @@ select ok(
     from public.manual_scoresheet_public_statistics_projection
     where game_id=(select game_id from manual_v2_result)) is null,
   'zero initial home free throws have unavailable, not artificial, percentage'
+);
+select ok(
+  not exists (
+    select 1 from public.game_player_statistics stats
+    where stats.game_id=(select game_id from manual_v2_result)
+      and (stats.two_point_attempted is not null
+        or stats.three_point_attempted is not null
+        or stats.free_throw_attempted is not null)
+  ),
+  'legacy read model masks synthetic attempts for manual games'
 );
 select is(
   (select count(*) from public.game_data_domain_authority where game_id=(select game_id from manual_v2_result)),
