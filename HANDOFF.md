@@ -16,7 +16,7 @@ OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
 BRANCH: codex/manual-scoresheet-v2
 BASE_COMMIT: 8ac62209a636be757d96270eef9dc6b27c8735c0
-HEAD_COMMIT: a14d3fc29e90dd3ea276eadd2eb820731617e1df (local; push bloqueado)
+HEAD_COMMIT: 39fa5be81ddb600bcd46471b5dba12fe9e448ca0 (confirmado localmente em 08/10/2026; referência de tracking sem divergência reportada por `git status`)
 HEAD_FUNCIONAL: d10d048922525eb06d5b14152469170359d7d994 (CI verde)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
@@ -24,7 +24,7 @@ REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, acce
 STATUS: ACTIVE
 ```
 
-`statistics-domain-reviewer` será acrescentado somente se etapas posteriores alterarem fórmulas, projeções, agregações ou isolamento estatístico além do armazenamento semântico previsto.
+`statistics-domain-reviewer` está previsto por envolver projeções e isolamento estatístico. Os pareceres bloqueantes da Etapa 4 permanecem pendentes; esta revisão documental não representa aprovação.
 
 ## 3. Checkpoints concluídos
 
@@ -41,11 +41,23 @@ A Etapa 3 está encerrada. O gate final incremental do checkpoint `be0036d` rece
 
 A Etapa 4 está ativa em `docs/plan/sumula-manual-v2/04-revisoes-e-auditoria-backend.md`. O objetivo é criar revisões auditáveis da súmula salva com controle de concorrência e snapshots imutáveis: RPC separada de revisão, `baseSubmissionId/hash`, motivo obrigatório, nova versão sem mutar snapshots anteriores, autor/data/diff, rejeição de revisão desatualizada e cálculo correto dos LL de penalidade concedidos/recebidos. O checkpoint deve permanecer backend-only até revisão e concorrência estarem cobertas por testes.
 
+**Decisão de negócio documentada em 08/10/2026:** todos os LL concedidos nas penalidades são efetivamente cobrados. `P` = 0 LL; `P3` = 3; `T1` = 1; `U2` = uma falta U com 2 LL. LL cedidos de uma equipe são a soma das penalidades de suas faltas; LL cobrados são a soma das faltas adversárias; LL convertidos são os acertos de 1 ponto de seus atletas; LL desperdiçados = cobrados − convertidos. O único aproveitamento da súmula manual será **LL% coletivo da equipe**, se cobrados > 0, sem permitir convertidos > cobrados. Zero cobranças implica percentual indisponível. Não há tentativas individuais, LL% individual ou aproveitamento de 2P/3P/geral. A regra deve preservar os boxscores avançados. Aplicada exclusivamente ao **planejamento**, nos arquivos `PLANO-SUMULA-MANUAL-V2.md`, `docs/plan/sumula-manual-v2/README.md`, nas Etapas 1, 2, 4, 7, 8, 9, 10 e em `docs/plan/PLANO-MESTRE-PR-FONTES-DE-DADOS-E-JOGADORES.md`; implementação/testes de código continuam pendentes.
+
 Foi implementada a migration `20261008090000_manual_scoresheet_v2_revisions.sql` e o pgTAP `manual_scoresheet_v2_revisions.test.sql` em `bff263c`, com correções nos testes em `7b79b6f` e `d10d048`. O CI `37780280225` do commit `d10d048` terminou verde: database, gate e accessibility; pgTAP completo com 44 arquivos e 1211 asserções, incluindo as 39 de revisão. CodeQL `37780280231` também passou. A descrição da PR #72 contém o REVIEW_PACKET com esse HEAD remoto e as evidências.
 
-Após parecer estatístico `BLOCK_RELEASE`, foi acrescentado o cenário bilateral de LL no teste pgTAP (40 asserções planejadas) pelo commit **local** `a14d3fc29e90dd3ea276eadd2eb820731617e1df`. **Este commit ainda não foi enviado nem executado no CI**: `git push origin HEAD:codex/manual-scoresheet-v2` recebeu recusa expressa da ferramenta (não foi executado), apesar das autorizações de tarefa anteriores. Não reenviar por ferramenta alternativa sem resolver essa recusa.
+Após parecer estatístico `BLOCK_RELEASE`, foi acrescentado o cenário bilateral de LL no teste pgTAP pelo commit `a14d3fc29e90dd3ea276eadd2eb820731617e1df`. O commit documental posterior `39fa5be81ddb600bcd46471b5dba12fe9e448ca0` é o HEAD local confirmado em 08/10/2026. O histórico de recusa anterior de push deve ser mantido como evidência histórica; o status local atual não indica divergência com `origin/codex/manual-scoresheet-v2`, mas não houve novo `fetch` nem validação de CI nesta sessão.
 
 Revisão estatística no `d10d048`: fórmula semântica de LL considerada coerente, porém parecer `BLOCK_RELEASE` por impossibilidade de inspecionar os modelos públicos e confirmar a ausência de percentuais derivados de `free_throw_attempted` desconhecido. A inspeção foi recusada novamente pela ferramenta após autorização explícita do usuário; não houve contorno. Os dois agentes de segurança de banco falharam por indisponibilidade de capacidade do modelo e não emitiram parecer. O QA final ainda não foi acionado. A Etapa 4 **não está encerrada**.
+
+## 4.1. Implementação parcial da Etapa 4 — LL coletivo
+
+Foi adicionada a regra estatística de domínio para a súmula manual: LL cobrados, cedidos e convertidos são tratados como totais coletivos, sem criação de tentativas individuais. A função manualScoresheetFreeThrowSummary valida convertidos <= cobrados, calcula desperdiçados e retorna percentual 
+ull quando não existem cobranças. Teste focal executado: 
+pm test -- app/modules/statistics/domain.test.ts (12 testes verdes).
+
+Esta alteração ainda não encerra a Etapa 4. Permanecem pendentes a integração completa com projeções públicas, validações transacionais de revisão, pareceres especializados e QA final.
+
+Foi criada a migration aditiva `20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql`. Ela adiciona uma barreira transacional para impedir que submissões manuais criem tentativas artificiais em `player_period_stats`, publica uma projeção coletiva de LL e mantém os cálculos de tentativas dos boxscores importados isolados. O teste focal executado nesta sessão foi `npm test -- app/modules/statistics/domain.test.ts` (12/12 verdes). Ainda faltam pgTAP focal da nova migration, gates consolidados e pareceres especializados.
 
 ## 5. WIP preservado
 
@@ -62,7 +74,7 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 ## 6. GitHub e ambientes
 
 - PR draft: #72 — `feat: manual scoresheet v2 FIBA 2024`.
-- HEAD remoto da Etapa 4: `d10d048922525eb06d5b14152469170359d7d994`. HEAD local `a14d3fc29e90dd3ea276eadd2eb820731617e1df`, um commit adiante com teste bilateral aguardando push.
+- HEAD local e referência local de tracking da branch em 08/10/2026: `39fa5be81ddb600bcd46471b5dba12fe9e448ca0` (`git status` sem ahead/behind). O último CI comprovadamente verde permanece vinculado a `d10d048922525eb06d5b14152469170359d7d994`; não foi comprovado novo CI para `a14d3fc` ou `39fa5be` nesta sessão.
 - CI remoto `37780280225` e CodeQL `37780280231` verdes no `d10d048`; o teste bilateral local ainda não foi validado. A PR permanece aberta e draft.
 - Supabase compartilhado: não alterado por esta unidade.
 - Preview da PR: workflow verde; produção não alterada.
@@ -75,17 +87,18 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 - A Etapa 4 deve preservar mandante/visitante e snapshots anteriores, rejeitar revisão concorrente desatualizada e manter motivo/autor/data/diff auditáveis.
 - `BLOCK_RELEASE` estatístico em `d10d048`: verificar a exposição de tentativas de lance livre não informadas em read models públicos; essa inspeção foi recusada pela ferramenta duas vezes. A cobertura bilateral foi adicionada localmente mas depende de CI.
 - Database/security reviewer falhou por capacidade do modelo nas tentativas anteriores; nenhum APPROVE válido da Etapa 4. Gate de QA segue pendente.
-- Push do commit de teste bilateral recusado expressamente pela revisão automática da ferramenta; pedir confirmação específica antes de nova tentativa conforme fluxo de autorização.
+- Uma tentativa anterior de push do commit bilateral foi recusada pela revisão automática da ferramenta; não houve novo push nesta reconciliação. Inspecionar a situação atual antes de eventual envio futuro.
 - Os cinco arquivos WIP posteriores continuam fora dos commits até serem reconciliados explicitamente com o escopo da etapa correspondente.
+- Em 08/10/2026, a documentação do plano foi modificada localmente. `git diff --check` passou; nenhuma migration, código, Supabase, CI, preview ou produção foi executado/alterado para aplicar essa regra. As cinco alterações WIP anteriores foram mantidas, sem alterações pela atualização documental. Planejamento não equivale a implementação.
 
 ## 8. Próximo passo exato
 
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: branch `codex/manual-scoresheet-v2`, PR #72, `supabase/tests/database/manual_scoresheet_v2_revisions.test.sql`, revisão estatística e de segurança
-ACAO: obter confirmação específica após bloqueio automático do push do commit local `a14d3fc`; quando permitido, enviar somente a branch WP e validar o cenário bilateral no pgTAP do CI. Atualizar o REVIEW_PACKET para o HEAD resultante; obter parecer independente de database-security-reviewer, resolver o `BLOCK_RELEASE` estatístico sem contornar a recusa de inspeção e somente então acionar qa-reviewer. Preservar o WIP de cinco arquivos da UI.
-CRITERIO_DE_CONCLUSAO: CI verde no HEAD final, pareceres especializados válidos sem bloqueio, QA aprovado, histórico imutável e concorrência confirmados no backend; não iniciar Etapa 5 antes do fechamento.
+ARQUIVO_OU_SERVICO: `docs/plan/sumula-manual-v2/04-revisoes-e-auditoria-backend.md`, código e testes afetados da Súmula Manual V2, branch `codex/manual-scoresheet-v2`, PR #72
+ACAO: adicionar pgTAP para a migration `20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql`, integrar a publicação versionada ao fluxo de revisão transacional e verificar read models públicos para impedir percentuais artificiais. Preservar os cinco arquivos WIP, validar testes focais/pgTAP e conferir CI no HEAD efetivo antes de atualizar REVIEW_PACKET. Obter pareceres válidos de database-security-reviewer e statistics-domain-reviewer, resolver o BLOCK_RELEASE e somente então acionar qa-reviewer.
+CRITERIO_DE_CONCLUSAO: comportamento estatístico fiel ao plano e comprovado por testes e CI, sem criar tentativas individuais ou regressão de boxscore; pareceres de segurança/estatística/QA válidos e concorrência/snapshots preservados. Não iniciar Etapa 5 antes de encerrar a Etapa 4.
 ```
 
 ## 9. Referências de retomada
@@ -96,3 +109,4 @@ CRITERIO_DE_CONCLUSAO: CI verde no HEAD final, pareceres especializados válidos
 - Estado anterior completo do handoff: recuperável no histórico Git em `b663b7a:HANDOFF.md`.
 
 Ao fechar cada etapa, mantenha este arquivo conciso e registre a evidência detalhada na PR ou em `docs/execution/`.
+
