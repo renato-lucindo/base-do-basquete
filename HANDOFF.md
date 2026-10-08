@@ -16,10 +16,11 @@ OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
 BRANCH: codex/manual-scoresheet-v2
 BASE_COMMIT: 8ac62209a636be757d96270eef9dc6b27c8735c0
-HEAD_FUNCIONAL: e9da09ac2cb8d412ec0f91d73f3120e278154362
+HEAD_COMMIT: a14d3fc29e90dd3ea276eadd2eb820731617e1df (local; push bloqueado)
+HEAD_FUNCIONAL: d10d048922525eb06d5b14152469170359d7d994 (CI verde)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
-REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer
+REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
 STATUS: ACTIVE
 ```
 
@@ -40,6 +41,12 @@ A Etapa 3 está encerrada. O gate final incremental do checkpoint `be0036d` rece
 
 A Etapa 4 está ativa em `docs/plan/sumula-manual-v2/04-revisoes-e-auditoria-backend.md`. O objetivo é criar revisões auditáveis da súmula salva com controle de concorrência e snapshots imutáveis: RPC separada de revisão, `baseSubmissionId/hash`, motivo obrigatório, nova versão sem mutar snapshots anteriores, autor/data/diff, rejeição de revisão desatualizada e cálculo correto dos LL de penalidade concedidos/recebidos. O checkpoint deve permanecer backend-only até revisão e concorrência estarem cobertas por testes.
 
+Foi implementada a migration `20261008090000_manual_scoresheet_v2_revisions.sql` e o pgTAP `manual_scoresheet_v2_revisions.test.sql` em `bff263c`, com correções nos testes em `7b79b6f` e `d10d048`. O CI `37780280225` do commit `d10d048` terminou verde: database, gate e accessibility; pgTAP completo com 44 arquivos e 1211 asserções, incluindo as 39 de revisão. CodeQL `37780280231` também passou. A descrição da PR #72 contém o REVIEW_PACKET com esse HEAD remoto e as evidências.
+
+Após parecer estatístico `BLOCK_RELEASE`, foi acrescentado o cenário bilateral de LL no teste pgTAP (40 asserções planejadas) pelo commit **local** `a14d3fc29e90dd3ea276eadd2eb820731617e1df`. **Este commit ainda não foi enviado nem executado no CI**: `git push origin HEAD:codex/manual-scoresheet-v2` recebeu recusa expressa da ferramenta (não foi executado), apesar das autorizações de tarefa anteriores. Não reenviar por ferramenta alternativa sem resolver essa recusa.
+
+Revisão estatística no `d10d048`: fórmula semântica de LL considerada coerente, porém parecer `BLOCK_RELEASE` por impossibilidade de inspecionar os modelos públicos e confirmar a ausência de percentuais derivados de `free_throw_attempted` desconhecido. A inspeção foi recusada novamente pela ferramenta após autorização explícita do usuário; não houve contorno. Os dois agentes de segurança de banco falharam por indisponibilidade de capacidade do modelo e não emitiram parecer. O QA final ainda não foi acionado. A Etapa 4 **não está encerrada**.
+
 ## 5. WIP preservado
 
 Antes da reconciliação com `main`, o WIP de etapas posteriores foi guardado no stash `manual-scoresheet-v2-wip-before-main-reconcile` e depois reaplicado sem conflito. A igualdade foi confirmada pelo SHA-256 `8E4F9F0A7033AB5E028E80D96BA4DB5C5D04AB5E760C9BA4F4154D43292CFFDB` tanto para o patch atual quanto para o patch preservado no stash. O stash permanece como backup durante a Etapa 3. O WIP restaurado contém alterações em:
@@ -55,8 +62,8 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 ## 6. GitHub e ambientes
 
 - PR draft: #72 — `feat: manual scoresheet v2 FIBA 2024`.
-- HEAD funcional local/remoto da Etapa 3: `e9da09ac2cb8d412ec0f91d73f3120e278154362` antes deste checkpoint documental.
-- CI `37677320985`, preview `37677320940` e CodeQL `37677320958` estão verdes para o HEAD funcional; a PR permanece aberta e draft.
+- HEAD remoto da Etapa 4: `d10d048922525eb06d5b14152469170359d7d994`. HEAD local `a14d3fc29e90dd3ea276eadd2eb820731617e1df`, um commit adiante com teste bilateral aguardando push.
+- CI remoto `37780280225` e CodeQL `37780280231` verdes no `d10d048`; o teste bilateral local ainda não foi validado. A PR permanece aberta e draft.
 - Supabase compartilhado: não alterado por esta unidade.
 - Preview da PR: workflow verde; produção não alterada.
 - Produção: nenhuma ação autorizada ou executada nesta unidade.
@@ -66,6 +73,9 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 - A Etapa 3 valida autoritativamente o capitão antes de persistir `linked_captain_roster_entry_id`; preservar esse contrato ao corrigir eventuais falhas de CI.
 - C1/B1 devem persistir semanticamente como `foul_type='T'`, `penalty_ft_count=1` e `original_notation` preservada; o legado `foul_code` pode continuar `T`.
 - A Etapa 4 deve preservar mandante/visitante e snapshots anteriores, rejeitar revisão concorrente desatualizada e manter motivo/autor/data/diff auditáveis.
+- `BLOCK_RELEASE` estatístico em `d10d048`: verificar a exposição de tentativas de lance livre não informadas em read models públicos; essa inspeção foi recusada pela ferramenta duas vezes. A cobertura bilateral foi adicionada localmente mas depende de CI.
+- Database/security reviewer falhou por capacidade do modelo nas tentativas anteriores; nenhum APPROVE válido da Etapa 4. Gate de QA segue pendente.
+- Push do commit de teste bilateral recusado expressamente pela revisão automática da ferramenta; pedir confirmação específica antes de nova tentativa conforme fluxo de autorização.
 - Os cinco arquivos WIP posteriores continuam fora dos commits até serem reconciliados explicitamente com o escopo da etapa correspondente.
 
 ## 8. Próximo passo exato
@@ -73,9 +83,9 @@ Backup adicional do SQL completo do WIP: `C:\Users\12405304716\AppData\Local\Tem
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: `docs/plan/sumula-manual-v2/04-revisoes-e-auditoria-backend.md` + backend de súmula manual + testes focais da Etapa 4
-ACAO: reconciliar o WIP preservado que pertença à Etapa 4 sem incluir UI posterior, implementar a RPC versionada de revisão com `baseSubmissionId/hash`, motivo obrigatório, snapshots imutáveis, auditoria e CAS; validar concorrência e cálculo de LL de penalidade no backend antes de depender da interface
-CRITERIO_DE_CONCLUSAO: revisão versionada e concorrência otimista verdes em testes backend, sem regressão dos contratos da Etapa 3 e sem misturar arquivos das Etapas 5–9; então criar o commit coerente da Etapa 4 e atualizar o REVIEW_PACKET
+ARQUIVO_OU_SERVICO: branch `codex/manual-scoresheet-v2`, PR #72, `supabase/tests/database/manual_scoresheet_v2_revisions.test.sql`, revisão estatística e de segurança
+ACAO: obter confirmação específica após bloqueio automático do push do commit local `a14d3fc`; quando permitido, enviar somente a branch WP e validar o cenário bilateral no pgTAP do CI. Atualizar o REVIEW_PACKET para o HEAD resultante; obter parecer independente de database-security-reviewer, resolver o `BLOCK_RELEASE` estatístico sem contornar a recusa de inspeção e somente então acionar qa-reviewer. Preservar o WIP de cinco arquivos da UI.
+CRITERIO_DE_CONCLUSAO: CI verde no HEAD final, pareceres especializados válidos sem bloqueio, QA aprovado, histórico imutável e concorrência confirmados no backend; não iniciar Etapa 5 antes do fechamento.
 ```
 
 ## 9. Referências de retomada
