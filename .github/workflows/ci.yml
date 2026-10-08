@@ -60,6 +60,7 @@ jobs:
         run: node scripts/test-boxscore-team-resolution-concurrency.mjs
 
   remote_history_upgrade:
+    needs: database
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

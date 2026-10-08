@@ -2,7 +2,7 @@
 // GitHub Actions-only, offline, schema-only remote-history reconstruction.
 // The five local-only prerequisite migrations are required for bootstrap;
 // historical remote SQL is preferred where it differs from the Git repository.
-import { cp, copyFile, mkdir, mkdtemp, readFile, readdir } from "node:fs/promises";
+import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,10 +49,22 @@ const overlay = await mkdtemp(path.join(tmpdir(), "bdb-remote-history-stage4-"))
 const overlaySupabase = path.join(overlay, "supabase");
 const migrations = path.join(overlaySupabase, "migrations");
 await mkdir(migrations, { recursive: true });
-await copyFile(
-  path.join(root, "supabase", "config.toml"),
-  path.join(overlaySupabase, "config.toml"),
-);
+let config = await readFile(path.join(root, "supabase", "config.toml"), "utf8");
+const independentSettings = [
+  ['project_id = "base-do-basquete"', 'project_id = "base-do-basquete-remote-history"'],
+  ["port = 54321", "port = 55321"],
+  ["port = 54322", "port = 55322"],
+  ["shadow_port = 54320", "shadow_port = 55320"],
+  ["port = 54329", "port = 55329"],
+  ["port = 54323", "port = 55323"],
+  ["port = 54324", "port = 55324"],
+  ["port = 54327", "port = 55327"],
+];
+for (const [before, after] of independentSettings) {
+  check(config.includes(before), "Missing expected Supabase test setting");
+  config = config.replace(before, after);
+}
+await writeFile(path.join(overlaySupabase, "config.toml"), config, "utf8");
 await copyFile(path.join(root, "supabase", "seed.sql"), path.join(overlaySupabase, "seed.sql"));
 await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), {
   recursive: true,
