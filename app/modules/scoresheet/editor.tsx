@@ -37,15 +37,23 @@ export interface ScoresheetGame {
   awayRegistrationId: number;
 }
 
+export interface ScoresheetRevisionState {
+  gameId: number;
+  baseSubmissionId: number;
+  basePayloadHash: string;
+  payload: unknown;
+}
+
 interface ManualScoresheetEditorProps {
   actionError?: string;
   competitionId: number;
   competitionName: string;
   csrfToken: string;
   idempotencyKey: string;
-  games: ScoresheetGame[];
+  games?: ScoresheetGame[];
   registrations: ScoresheetRegistration[];
   requiresFallbackReason: boolean;
+  revision?: ScoresheetRevisionState | null;
 }
 
 const sides: TeamSide[] = ["home", "away"];
@@ -108,9 +116,10 @@ export function ManualScoresheetEditor({
   competitionName,
   csrfToken,
   idempotencyKey,
-  games,
+  games = [],
   registrations,
   requiresFallbackReason,
+  revision,
 }: ManualScoresheetEditorProps) {
   const navigation = useNavigation();
   const submitted = useRef(false);
