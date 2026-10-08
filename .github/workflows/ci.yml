@@ -58,3 +58,28 @@ jobs:
         run: node scripts/test-preset-concurrency.mjs
       - name: Verify boxscore team-resolution concurrency on disposable database
         run: node scripts/test-boxscore-team-resolution-concurrency.mjs
+
+  remote_history_upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Prepare offline remote-history reconstruction
+        id: overlay
+        run: echo "root=$(node scripts/test-stage4-remote-history-upgrade.mjs)" >> "$GITHUB_OUTPUT"
+      - name: Start a disposable PostgreSQL database from remote migration SQL
+        run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" db start
+      - name: Apply the four pending Stage 4 migrations to existing schema
+        run: |
+          cp supabase/migrations/20261006223000_manual_scoresheet_v2.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261007161000_manual_scoresheet_v2_atomic_create.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261008090000_manual_scoresheet_v2_revisions.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" migration up
+      - name: Verify pgTAP including RLS, revisions and statistical projections
+        run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" test db --local

@@ -1,0 +1,79 @@
+#!/usr/bin/env node
+// GitHub Actions-only, offline, schema-only remote-history reconstruction.
+// The five local-only prerequisite migrations are required for bootstrap;
+// historical remote SQL is preferred where it differs from the Git repository.
+import { cp, copyFile, mkdir, mkdtemp, readFile, readdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const manifest = JSON.parse(
+  await readFile(
+    path.join(root, "docs", "execution", "supabase-stage4-remote-migration-history.json"),
+    "utf8",
+  ),
+);
+const original = path.join(root, "supabase", "migrations");
+const fixtureDir = path.join(root, "supabase", "tests", "fixtures", "remote-baseline");
+const filenames = (await readdir(original)).filter((item) => item.endsWith(".sql"));
+const byName = new Map(
+  filenames.map((filename) => [filename.replace(/^\d{14}_|\.sql$/g, ""), filename]),
+);
+const exceptions = new Set([
+  "canonical_model",
+  "basketball_site_boxscore",
+  "player_profile_foundation_compat",
+  "season_division_model",
+  "edition_creation_workflow",
+]);
+const prerequisiteNames = [
+  "single_admin_auth",
+  "mvp01_structural_foundation",
+  "mvp01_existing_game_ingestion",
+  "mvp01_matchup_enforcement",
+  "mvp02_public_player_read_models",
+];
+function check(condition, message) {
+  if (!condition) throw new Error(message);
+}
+check(manifest.projectRef === "yjnbemfeyjhxhomprlnm", "Unexpected project baseline");
+check(manifest.applied.length === 62, "Remote baseline version count changed");
+for (const name of prerequisiteNames) check(byName.has(name), "Missing bootstrap prerequisite: " + name);
+for (const name of exceptions) {
+  const record = manifest.applied.find((item) => item.name === name);
+  check(Boolean(record), "Missing recorded historical exception: " + name);
+}
+const overlay = await mkdtemp(path.join(tmpdir(), "bdb-remote-history-stage4-"));
+const overlaySupabase = path.join(overlay, "supabase");
+const migrations = path.join(overlaySupabase, "migrations");
+await mkdir(migrations, { recursive: true });
+await copyFile(path.join(root, "supabase", "config.toml"), path.join(overlaySupabase, "config.toml"));
+await copyFile(path.join(root, "supabase", "seed.sql"), path.join(overlaySupabase, "seed.sql"));
+await cp(path.join(root, "supabase", "tests"), path.join(overlaySupabase, "tests"), { recursive: true });
+
+const migrationVersions = new Set();
+for (const item of manifest.applied) {
+  const name = item.version + "_" + item.name + ".sql";
+  check(/^\d{14}$/.test(item.version) && /^[a-z0-9_]+$/.test(item.name), "Invalid history row");
+  check(!migrationVersions.has(item.version), "Duplicate baseline version: " + item.version);
+  migrationVersions.add(item.version);
+  const from = exceptions.has(item.name)
+    ? path.join(fixtureDir, name)
+    : path.join(original, byName.get(item.name) ?? "MISSING_" + name);
+  await copyFile(from, path.join(migrations, name));
+}
+for (const extra of prerequisiteNames) {
+  const file = byName.get(extra);
+  const version = file.slice(0, 14);
+  check(!migrationVersions.has(version), "Historical bootstrap prerequisite has version collision");
+  migrationVersions.add(version);
+  await copyFile(path.join(original, file), path.join(migrations, file));
+}
+check(migrationVersions.size === 67, "Unexpected baseline migration count");
+for (const pending of manifest.stage4Pending) {
+  check(!migrationVersions.has(pending.slice(0, 14)), "Stage 4 version already applied in baseline");
+  check(filenames.includes(pending), "Missing pending Stage 4 migration");
+}
+// The CI workflow adds only the four pending migrations *after* bootstrapping.
+console.log(overlay);
