@@ -1,0 +1,99 @@
+name: Stage 4 Validation
+
+# Technical verification only; this workflow does not issue independent reviewer approvals.
+on:
+  push:
+    branches: [codex/manual-scoresheet-v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stage4-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security_and_statistics:
+    name: Security + statistics (pgTAP)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Start disposable database with project migrations
+        run: npx --no-install supabase db start
+      - name: Validate all RLS, domain statistics, rollback and revision pgTAP tests
+        run: npx --no-install supabase test db --local
+      - name: Verify concurrency invariants
+        run: |
+          node scripts/test-preset-concurrency.mjs
+          node scripts/test-boxscore-team-resolution-concurrency.mjs
+
+  remote_history_upgrade:
+    name: Remote-history upgrade (focused pgTAP)
+    needs: security_and_statistics
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Prepare schema-only remote migration reconstruction
+        id: overlay
+        run: echo "root=$(node scripts/test-stage4-remote-history-upgrade.mjs)" >> "$GITHUB_OUTPUT"
+      - name: Build isolated remote-history baseline
+        run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" db start
+      - name: Apply the four pending Stage 4 migrations
+        run: |
+          cp supabase/migrations/20261006223000_manual_scoresheet_v2.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261007161000_manual_scoresheet_v2_atomic_create.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261008090000_manual_scoresheet_v2_revisions.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" migration up
+      - name: Check focused Stage 4 and FIBA pgTAP tests on reconstructed schema
+        run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" test db --local
+
+  qa:
+    name: QA (build, tests, accessibility)
+    needs: remote_history_upgrade
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Lint, format, typecheck, unit tests, build and secrets gate
+        run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - name: Browser and keyboard regression suite
+        run: npm run test:e2e
+
+  integration:
+    name: Integration (detect main conflicts)
+    needs: qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Check real merge compatibility without changing any files
+        run: |
+          git fetch --no-tags origin main
+          if git merge-tree --write-tree origin/main HEAD; then
+            echo "Stage 4 feature branch can merge cleanly with current main."
+          else
+            echo "::error::PR #72 conflicts with main. Resolve conflicts without discarding local WIP, then rerun this gate."
+            exit 1
+          fi
