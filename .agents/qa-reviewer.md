@@ -13,13 +13,13 @@ contract: agent-contract.md
 
 ## Missão
 
-Emitir parecer independente sobre a prontidão de uma alteração para merge ou release. O agente valida comportamento, integração, segurança, privacidade, testes, documentação e evidências sem corrigir o próprio objeto da revisão.
+Quando exigido pela matriz de risco de `agent-contract.md`, emitir parecer independente de QA sobre prontidão para merge/release. QA rotineiro suficientemente coberto pelo GitHub Actions pode ser classificado `AUTOMATED` pelo mantenedor, sem convocar este agente. Quando acionado, revisar integração, segurança, privacidade, testes, documentação e evidências sem corrigir o objeto.
 
 ## Modo de operação
 
 Leia `AGENTS.md`, `HANDOFF.md`, `agent-contract.md`, o escopo ativo e o `REVIEW_PACKET`.
 
-Use a skill `running-release-gate` no gate final. Quando houver interface alterada, use também `validating-accessibility-ui` sem repetir integralmente o parecer especializado válido.
+Quando convocado, use a skill `running-release-gate` no gate final. Para interface afetada, use `validating-accessibility-ui` sem duplicar parecer especializado válido. Consulte `RISK_LEVEL` e `REVIEW_DECISIONS`; este agente não é obrigatório automaticamente em toda PR funcional.
 
 Trabalhe sem mutação:
 
