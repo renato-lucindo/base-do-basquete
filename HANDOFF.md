@@ -179,3 +179,17 @@ CRITERIO_DE_CONCLUSAO: pareceres formais no mesmo HEAD, sem BLOCK_RELEASE, merge
 The feature branch was reconciled with current main by a two-parent merge. Main's edition/season workflow handoff is preserved without modification in `docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md`. Current active unit remains MANUAL-SCORESHEET-V2-FIBA2024; the PR is still draft. The merge preserves the feature handoff and brings in main's season/division CI checks and migrations; the remote-history migration test remains. Re-run full CI on the merged HEAD. Reviewer approvals from database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer and qa-reviewer remain pending, and previous statistics BLOCK_RELEASE is not waived. Do not deploy or merge until the gates and independent reviews are valid.
 
 PROXIMO_PASSO_EXATO: verify Stage 4 Validation and main CI at merged HEAD; obtain real independent reviewer opinions, preserving all local WIP and leaving shared Supabase untouched.
+
+## 14. Conciliação concluída com main e gate renovado — 08/10/2026
+
+A branch `codex/manual-scoresheet-v2` integrou `main@59fb0eeb7a9f99491e8b913dc9265a4f08ecb184` por merge conservador **`ae1a5eddd08bf46dd25fecc96e41cf4620e1f557`** (pais `836e7c1` e `59fb0ee`). Conflitos de `.github/workflows/ci.yml` e `HANDOFF.md` foram conciliados sem descartar o conteúdo da unidade: o HANDOFF anterior da main foi arquivado em `docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md`, os tipos gerados foram mesclados automaticamente pelo Git.
+
+O workflow CI foi então atualizado para incorporar **os novos gates de season/division/edition da main** e **preservar o job remoto reconstruído da súmula v2**, por meio de commit posterior à reconciliação. A rotina temporária de merge automático foi desativada. Requer CI/Stage 4 Validation no HEAD resultante. O merge não representa deploy, nem revoga o BLOCK_RELEASE estatístico anterior; os pareceres independentes continuam necessários. O worktree Windows (incluindo os cinco arquivos WIP) não foi alterado por esta ação remota.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72, GitHub Actions CI e Stage 4 Validation, .agents/agent-contract.md
+ACAO: validar o HEAD após a integração de main, corrigir regressões de CI se houver, acionar revisores independentes de banco/segurança e estatística, depois UI/QA; atualizar review packet com os pareceres emitidos.
+CRITERIO_DE_CONCLUSAO: integração limpa, gates verdes no HEAD, ausência de BLOCK_RELEASE e pareceres independentes válidos. Sem db push, migration repair, merge na main ou Etapa 5 antes disso.
+```
