@@ -24,7 +24,7 @@ Os perfis executáveis do Codex ficam em `.codex/agents/` e as skills reutilizá
 
 Todo agente especializado deve obedecer primeiro a este `AGENTS.md` e ao `HANDOFF.md`. As instruções de `.agents/` complementam estas regras sem substituí-las.
 
-Essas definições passam a reger unidades iniciadas depois de sua integração na `main`; não criam exigência retroativa para a própria PR que as introduz. Alterações apenas documentais e sem mudança de governança podem usar o gate normal sem revisor especializado, desde que a dispensa seja registrada na PR. Mudanças funcionais, de dependências, workflows, segurança, banco ou governança continuam sujeitas à revisão proporcional definida no contrato.
+Essas definições passam a reger unidades iniciadas depois de sua integração na `main`; não criam exigência retroativa para a própria PR que as introduz. Alterações apenas documentais e sem mudança de governança podem usar o gate normal sem revisor especializado, desde que a dispensa seja registrada na PR. A seleção de revisores para código, dependências, workflows, segurança, banco, interface e governança segue a **matriz de risco** da versão vigente de `.agents/agent-contract.md`: parecer independente para riscos críticos e QA/acessibilidade rotineiros por CI quando a cobertura for suficiente. Toda dispensa exige evidências, responsável e registro na PR; não remove bloqueios anteriores.
 
 ## Início obrigatório de cada sessão
 
