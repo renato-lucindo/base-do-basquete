@@ -173,3 +173,9 @@ ARQUIVO_OU_SERVICO: PR #72 e .agents/agent-contract.md
 ACAO: acionar database-security-reviewer, depois statistics-domain-reviewer, depois accessibility/boxscore se aplicável e qa-reviewer; resolver conflitos com main de forma conservadora, testar novo HEAD e obter pareceres válidos antes de encerrar Etapa 4.
 CRITERIO_DE_CONCLUSAO: pareceres formais no mesmo HEAD, sem BLOCK_RELEASE, mergeable sem conflitos, CI green, WIP preservado.
 ```
+
+## Main integration checkpoint (manual scoresheet Stage 4)
+
+The feature branch was reconciled with current main by a two-parent merge. Main's edition/season workflow handoff is preserved without modification in `docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md`. Current active unit remains MANUAL-SCORESHEET-V2-FIBA2024; the PR is still draft. The merge preserves the feature handoff and brings in main's season/division CI checks and migrations; the remote-history migration test remains. Re-run full CI on the merged HEAD. Reviewer approvals from database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer and qa-reviewer remain pending, and previous statistics BLOCK_RELEASE is not waived. Do not deploy or merge until the gates and independent reviews are valid.
+
+PROXIMO_PASSO_EXATO: verify Stage 4 Validation and main CI at merged HEAD; obtain real independent reviewer opinions, preserving all local WIP and leaving shared Supabase untouched.

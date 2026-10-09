@@ -327,6 +327,8 @@ export type Database = {
       };
       categories: {
         Row: {
+          age_kind: string;
+          age_value: number | null;
           created_at: string;
           has_advanced_stats: boolean;
           id: number;
@@ -336,6 +338,8 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          age_kind?: string;
+          age_value?: number | null;
           created_at?: string;
           has_advanced_stats?: boolean;
           id?: never;
@@ -345,6 +349,8 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          age_kind?: string;
+          age_value?: number | null;
           created_at?: string;
           has_advanced_stats?: boolean;
           id?: never;
@@ -1264,6 +1270,132 @@ export type Database = {
           },
         ];
       };
+      competition_competitive_division_types: {
+        Row: {
+          created_at: string;
+          id: number;
+          name: string;
+          season_id: number;
+          slug: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: never;
+          name: string;
+          season_id: number;
+          slug: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: never;
+          name?: string;
+          season_id?: number;
+          slug?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_competitive_division_types_season_id_fkey";
+            columns: ["season_id"];
+            isOneToOne: true;
+            referencedRelation: "competition_seasons";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      competition_competitive_division_values: {
+        Row: {
+          competitive_division_type_id: number;
+          created_at: string;
+          id: number;
+          name: string;
+          season_id: number;
+          slug: string;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          competitive_division_type_id: number;
+          created_at?: string;
+          id?: never;
+          name: string;
+          season_id: number;
+          slug: string;
+          sort_order: number;
+          updated_at?: string;
+        };
+        Update: {
+          competitive_division_type_id?: number;
+          created_at?: string;
+          id?: never;
+          name?: string;
+          season_id?: number;
+          slug?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_competitive_division_values_type_fkey";
+            columns: ["competitive_division_type_id", "season_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_competitive_division_types";
+            referencedColumns: ["id", "season_id"];
+          },
+        ];
+      };
+      competition_seasons: {
+        Row: {
+          created_at: string;
+          description: string | null;
+          gender_division: string;
+          id: number;
+          name: string;
+          revision: number;
+          series_id: number;
+          suggested_ends_on: string | null;
+          suggested_starts_on: string | null;
+          updated_at: string;
+          year: number;
+        };
+        Insert: {
+          created_at?: string;
+          description?: string | null;
+          gender_division: string;
+          id?: never;
+          name: string;
+          revision?: number;
+          series_id: number;
+          suggested_ends_on?: string | null;
+          suggested_starts_on?: string | null;
+          updated_at?: string;
+          year: number;
+        };
+        Update: {
+          created_at?: string;
+          description?: string | null;
+          gender_division?: string;
+          id?: never;
+          name?: string;
+          revision?: number;
+          series_id?: number;
+          suggested_ends_on?: string | null;
+          suggested_starts_on?: string | null;
+          updated_at?: string;
+          year?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competition_seasons_series_id_fkey";
+            columns: ["series_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_series";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       competition_series: {
         Row: {
           created_at: string;
@@ -1432,6 +1564,7 @@ export type Database = {
       competitions: {
         Row: {
           category_id: number;
+          competitive_division_value_id: number | null;
           created_at: string;
           current_publication_id: number | null;
           data_profile_id: number;
@@ -1444,6 +1577,7 @@ export type Database = {
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
+          season_id: number;
           series_id: number;
           starts_on: string | null;
           status: string;
@@ -1452,6 +1586,7 @@ export type Database = {
         };
         Insert: {
           category_id: number;
+          competitive_division_value_id?: number | null;
           created_at?: string;
           current_publication_id?: number | null;
           data_profile_id: number;
@@ -1464,6 +1599,7 @@ export type Database = {
           gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
+          season_id: number;
           series_id: number;
           starts_on?: string | null;
           status?: string;
@@ -1472,6 +1608,7 @@ export type Database = {
         };
         Update: {
           category_id?: number;
+          competitive_division_value_id?: number | null;
           created_at?: string;
           current_publication_id?: number | null;
           data_profile_id?: number;
@@ -1484,6 +1621,7 @@ export type Database = {
           gender_division_review_required?: boolean;
           id?: never;
           published_at?: string | null;
+          season_id?: number;
           series_id?: number;
           starts_on?: string | null;
           status?: string;
@@ -1491,6 +1629,13 @@ export type Database = {
           year?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "competitions_competitive_division_value_season_fkey";
+            columns: ["competitive_division_value_id", "season_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_competitive_division_values";
+            referencedColumns: ["id", "season_id"];
+          },
           {
             foreignKeyName: "competitions_category_id_fkey";
             columns: ["category_id"];
@@ -1525,6 +1670,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "competition_series";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competitions_season_identity_fkey";
+            columns: ["season_id", "series_id", "year", "gender_division"];
+            isOneToOne: false;
+            referencedRelation: "competition_seasons";
+            referencedColumns: ["id", "series_id", "year", "gender_division"];
           },
         ];
       };
@@ -3676,6 +3828,51 @@ export type Database = {
           },
         ];
       };
+      competition_dispute_contexts: {
+        Row: {
+          category_id: number | null;
+          category_name: string | null;
+          category_slug: string | null;
+          competition_display_name: string | null;
+          competition_id: number | null;
+          competitive_division_sort_order: number | null;
+          competitive_division_type_id: number | null;
+          competitive_division_type_name: string | null;
+          competitive_division_type_slug: string | null;
+          competitive_division_value_id: number | null;
+          competitive_division_value_name: string | null;
+          competitive_division_value_slug: string | null;
+          ends_on: string | null;
+          gender_division: string | null;
+          season_description: string | null;
+          season_id: number | null;
+          season_name: string | null;
+          series_id: number | null;
+          series_name: string | null;
+          series_slug: string | null;
+          starts_on: string | null;
+          status: string | null;
+          suggested_ends_on: string | null;
+          suggested_starts_on: string | null;
+          year: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "competitions_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "competitions_series_id_fkey";
+            columns: ["series_id"];
+            isOneToOne: false;
+            referencedRelation: "competition_series";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       competition_boxscore_player_statistics: {
         Row: {
           advanced_games_played: number | null;
@@ -4516,6 +4713,14 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_competition_edition: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
+      admin_add_competition_dispute: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
       admin_activate_game_data_authorities: {
         Args: {
           p_domains: string[];
@@ -4609,6 +4814,18 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_add_competitive_division_value: {
+        Args: {
+          p_request_id: string;
+          p_season_id: number;
+          p_sort_order: number;
+          p_type_name: string;
+          p_type_slug: string;
+          p_value_name: string;
+          p_value_slug: string;
+        };
+        Returns: number;
+      };
       admin_apply_ruleset_draft_edit: {
         Args: {
           p_expected_editor_revision: number;
@@ -4623,6 +4840,7 @@ export type Database = {
         Args: { p_competition_id: number; p_profile_id: number };
         Returns: {
           category_id: number;
+          competitive_division_value_id: number | null;
           created_at: string;
           current_publication_id: number | null;
           data_profile_id: number;
@@ -4635,6 +4853,7 @@ export type Database = {
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
+          season_id: number;
           series_id: number;
           starts_on: string | null;
           status: string;
@@ -4647,6 +4866,14 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      admin_assign_competition_competitive_division: {
+        Args: {
+          p_competition_id: number;
+          p_expected_competitive_division_value_id: number | null;
+          p_competitive_division_value_id: number | null;
+        };
+        Returns: number;
       };
       admin_assign_competition_entry: {
         Args: { p_entry_id: number; p_registration_id: number };
@@ -4757,6 +4984,19 @@ export type Database = {
       };
       admin_create_competition_from_preset: {
         Args: { p_input: Json; p_request_id: string };
+        Returns: number;
+      };
+      admin_create_competition_season: {
+        Args: {
+          p_description: string | null;
+          p_gender_division: string;
+          p_name: string;
+          p_request_id: string;
+          p_series_id: number;
+          p_suggested_ends_on: string | null;
+          p_suggested_starts_on: string | null;
+          p_year: number;
+        };
         Returns: number;
       };
       admin_create_manual_scoresheet: {
@@ -5069,6 +5309,7 @@ export type Database = {
         Args: { p_competition_id: number; p_gender_division: string };
         Returns: {
           category_id: number;
+          competitive_division_value_id: number | null;
           created_at: string;
           current_publication_id: number | null;
           data_profile_id: number;
@@ -5081,6 +5322,7 @@ export type Database = {
           gender_division_review_required: boolean;
           id: number;
           published_at: string | null;
+          season_id: number;
           series_id: number;
           starts_on: string | null;
           status: string;
@@ -5093,6 +5335,17 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      admin_update_competition_season: {
+        Args: {
+          p_description: string | null;
+          p_expected_revision: number;
+          p_name: string;
+          p_season_id: number;
+          p_suggested_ends_on: string | null;
+          p_suggested_starts_on: string | null;
+        };
+        Returns: number;
       };
       admin_search_players: {
         Args: {
