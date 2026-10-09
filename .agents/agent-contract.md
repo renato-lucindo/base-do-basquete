@@ -119,7 +119,7 @@ Classifique o risco real do **diff** e de seus efeitos, não apenas o tipo de ar
 
 | Risco | Exemplos | Exigência |
 | --- | --- | --- |
-| **CRITICO** | Auth/autorização, RLS/grants, função privilegiada, dados privados, migration destrutiva ou com efeito na integridade; persistência/concorrrência crítica; fonte autoritativa, fórmula, denominador ou isolamento estatístico; contrato semântico FIBA; barreira de acessibilidade crítica | Parecer **independente e obrigatório** do especialista de cada domínio afetado, mais gates técnicos. Não admite dispensa |
+| **CRITICO** | Auth/autorização, RLS/grants, função privilegiada, dados privados, migration destrutiva ou com efeito na integridade; persistência/concorrência crítica; fonte autoritativa, fórmula, denominador ou isolamento estatístico; contrato semântico FIBA; barreira de acessibilidade crítica | Parecer **independente e obrigatório** do especialista de cada domínio afetado, mais gates técnicos. Não admite dispensa |
 | **MODERADO** | Mudança funcional não sensível, UI usual, migration aditiva comprovadamente sem impacto crítico, workflow/dependência não sensível, governança operacional | CI/Actions com cobertura demonstrada pode substituir QA e acessibilidade independentes. Escalar quando houver lacunas ou risco residual |
 | **BAIXO** | Documentação editorial, formatação ou refatoração mecânica comprovadamente sem mudança de comportamento | Gate proporcional; dispensa documentada quando aplicável |
 
