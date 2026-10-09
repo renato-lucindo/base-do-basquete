@@ -1,0 +1,87 @@
+name: Reconcile manual scoresheet PR with main (one-time)
+
+on:
+  push:
+    branches: [codex/manual-scoresheet-v2]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: manual-scoresheet-reconcile-main
+  cancel-in-progress: false
+
+jobs:
+  merge_main:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Safely merge current main without resetting feature work
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch --no-tags origin main
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "main is already an ancestor of the feature branch"
+            exit 0
+          fi
+          git merge --no-commit --no-ff origin/main || true
+          node <<'NODE'
+          const {execFileSync} = require("node:child_process");
+          const {readFileSync,writeFileSync,mkdirSync} = require("node:fs");
+          const path = require("node:path");
+          const git=(...args)=>execFileSync("git",args,{encoding:"utf8"});
+          const entries=git("ls-files","-u").split("\n").filter(Boolean);
+          const unmerged=new Set(entries.map(line=>line.split("\t")[1]));
+          const expected=new Set(["HANDOFF.md",".github/workflows/ci.yml"]);
+          if(unmerged.size!==2 || [...unmerged].some(x=>!expected.has(x))){
+            throw new Error("Unexpected conflict paths: "+[...unmerged].join(", "));
+          }
+          const oursCI=git("show",":2:.github/workflows/ci.yml");
+          const mainCI=git("show",":3:.github/workflows/ci.yml");
+          const section=oursCI.match(/\n  remote_history_upgrade:\n[\s\S]*$/);
+          if(!section || mainCI.includes("  remote_history_upgrade:")){
+            throw new Error("CI layouts changed: manual resolution required");
+          }
+          if(!mainCI.includes("Verify season and division upgrade compatibility") ||
+             !mainCI.includes("test-season-division-rpc-contract.mjs") ||
+             !section[0].includes("test-stage4-remote-history-upgrade.mjs")){
+            throw new Error("Expected upgrade gates not found; refusing incomplete merge");
+          }
+          writeFileSync(".github/workflows/ci.yml",mainCI.trimEnd()+"\n"+section[0]);
+          const featureHandoff=git("show",":2:HANDOFF.md");
+          const mainHandoff=git("show",":3:HANDOFF.md");
+          const archive="docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md";
+          mkdirSync(path.dirname(archive),{recursive:true});
+          writeFileSync(archive, mainHandoff);
+          const reconciliation="\n## Main integration checkpoint (manual scoresheet Stage 4)\n\n"+
+            "The feature branch was reconciled with current main by a two-parent merge. "+
+            "Main's edition/season workflow handoff is preserved without modification in "+
+            "`"+archive+"`. Current active unit remains MANUAL-SCORESHEET-V2-FIBA2024; "+
+            "the PR is still draft. The merge preserves the feature handoff and brings in "+
+            "main's season/division CI checks and migrations; the remote-history migration "+
+            "test remains. Re-run full CI on the merged HEAD. Reviewer approvals from "+
+            "database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer "+
+            "and qa-reviewer remain pending, and previous statistics BLOCK_RELEASE is not waived. "+
+            "Do not deploy or merge until the gates and independent reviews are valid.\n\n"+
+            "PROXIMO_PASSO_EXATO: verify Stage 4 Validation and main CI at merged HEAD; "+
+            "obtain real independent reviewer opinions, preserving all local WIP and "+
+            "leaving shared Supabase untouched.\n";
+          writeFileSync("HANDOFF.md",featureHandoff.trimEnd()+"\n"+reconciliation);
+          console.log("Resolved only the expected conflicts:",[...unmerged].join(", "));
+          NODE
+          git add .github/workflows/ci.yml HANDOFF.md docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md
+          if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+            echo "::error::Unresolved conflicts remain"
+            exit 1
+          fi
+          git diff --cached --check
+          git status --short
+          git commit -m "merge: reconcile main edition changes with manual scoresheet stage 4"
+          git push origin HEAD:refs/heads/codex/manual-scoresheet-v2
