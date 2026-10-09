@@ -54,7 +54,9 @@ jobs:
              !section[0].includes("test-stage4-remote-history-upgrade.mjs")){
             throw new Error("Expected upgrade gates not found; refusing incomplete merge");
           }
-          writeFileSync(".github/workflows/ci.yml",mainCI.trimEnd()+"\n"+section[0]);
+          // Keep the feature CI workflow unchanged during GitHub Actions push: GITHUB_TOKEN cannot alter workflow files.
+          // The connected maintainer API will install the combined main+Stage4 workflow immediately after this merge.
+          writeFileSync(".github/workflows/ci.yml",oursCI);
           const featureHandoff=git("show",":2:HANDOFF.md");
           const mainHandoff=git("show",":3:HANDOFF.md");
           const archive="docs/execution/edition-creation-main-handoff-at-stage4-reconcile.md";
