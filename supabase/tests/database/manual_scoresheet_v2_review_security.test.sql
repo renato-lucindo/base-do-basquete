@@ -1,7 +1,7 @@
 -- Stage 4 automated structural security gate. This is NOT an independent agent opinion.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(24);
 
 select ok(
   (select relrowsecurity and relforcerowsecurity
@@ -99,6 +99,28 @@ select ok(
 select ok(
   not has_table_privilege('anon','public.game_team_staff','select'),
   'anon cannot read private team staff data'
+);
+
+select ok(
+  (select pg_get_expr(conbin, conrelid)
+   from pg_constraint
+   where conrelid='public.admin_mutation_audit'::regclass
+     and conname='admin_mutation_audit_action_check') like '%competition_season_created%',
+  'manual revision migration preserves season creation audit action'
+);
+select ok(
+  (select pg_get_expr(conbin, conrelid)
+   from pg_constraint
+   where conrelid='public.admin_mutation_audit'::regclass
+     and conname='admin_mutation_audit_action_check') like '%edition_workflow_created%',
+  'manual revision migration preserves edition workflow audit action'
+);
+select ok(
+  (select pg_get_expr(conbin, conrelid)
+   from pg_constraint
+   where conrelid='public.admin_mutation_audit'::regclass
+     and conname='admin_mutation_audit_action_check') like '%manual_scoresheet_revised%',
+  'manual revision audit action remains admitted'
 );
 
 select * from finish();
