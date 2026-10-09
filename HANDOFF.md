@@ -193,3 +193,13 @@ ARQUIVO_OU_SERVICO: PR #72, GitHub Actions CI e Stage 4 Validation, .agents/agen
 ACAO: validar o HEAD após a integração de main, corrigir regressões de CI se houver, acionar revisores independentes de banco/segurança e estatística, depois UI/QA; atualizar review packet com os pareceres emitidos.
 CRITERIO_DE_CONCLUSAO: integração limpa, gates verdes no HEAD, ausência de BLOCK_RELEASE e pareceres independentes válidos. Sem db push, migration repair, merge na main ou Etapa 5 antes disso.
 ```
+
+## 15. Checkpoint de transicao para governanca v3 — 09/10/2026
+
+A PR #75 foi integrada em main no commit `27d917a1ce4a404ced091fd3ca660113c215ca92`. Esta unidade `MANUAL-SCORESHEET-V2-FIBA2024`, PR #72 draft, reconcilia as regras de risco da v3 por merge conservador em worktree isolada. O conflito ficou restrito ao HANDOFF; o historico anterior da sumula foi preservado. O checkpoint da PR #75 permanece verificavel em `main@27d917a:HANDOFF.md`.
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-FIBA2024; BRANCH=codex/manual-scoresheet-v2; STATUS=ACTIVE; SCOPE=conciliacao com main, revisoes criticas independentes e fechamento documental da Etapa 4; sem etapas 5-10 nem migrations compartilhadas.
+
+HEAD anterior da PR #72: `c6a97f4c67cbf5a55f8a8b8993b2b5727f4e4b14`. O HEAD final de revisao sera identificado no REVIEW_PACKET remoto apos os commits de merge e documentacao. A politica v3 exige database-security-reviewer e statistics-domain-reviewer para RLS/RPC/persistencia e denominadores de LL/isolamento estatistico. O BLOCK_RELEASE estatistico antigo nao esta dispensado; somente parecer independente novo pode encerra-lo. QA e acessibilidade dependem de evidencias e requisitos explicitos do plano. A reconstrucao das 62 migrations historicas no CI nao e clone fiel de producao. Nenhuma migration desta unidade foi aplicada ao banco compartilhado.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=GitHub PR #72 e Actions; ACAO=publicar REVIEW_PACKET v3 no HEAD reconciliado, obter novos pareceres independentes de seguranca e estatistica, corrigir eventuais BLOCK_RELEASE, verificar CI/CodeQL/Stage4 Validation no SHA final e formalizar o encerramento da Etapa 4 somente se aprovado; CRITERIO_DE_CONCLUSAO=pareceres validos e checks verdes no HEAD final, PR draft preservada, sem deploy de migrations ou merge.
