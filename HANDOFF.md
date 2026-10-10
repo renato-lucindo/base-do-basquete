@@ -235,3 +235,22 @@ ARQUIVO_OU_SERVICO: PR #72, .github/workflows/stage4-validation.yml e CI no GitH
 ACAO: commitar e enviar a correção focal de pgTAP; verificar execução completa dos 37 asserts em manual_scoresheet_v2_atomic_create.test.sql, suíte SQL integral e jobs CI/Stage 4 Validation/CodeQL no novo SHA; atualizar REVIEW_PACKET com evidências e solicitar pareceres independentes de banco/segurança e estatística.
 CRITERIO_DE_CONCLUSAO: SQL/CI verdes e resultados registrados no SHA final, sem BLOCK_RELEASE e com pareceres críticos válidos antes de encerrar Etapa 4; PR draft e Supabase compartilhado preservados.
 ```
+
+## 18. Verificação no SHA b05b243 e revisões independentes — 09/10/2026
+
+- HEAD funcional validado na PR #72: `b05b24399ab51dcd31d2076ccfc2f86f48f94b5b`; worktree `manual-stage4-v3-review` inicialmente limpo. Commits relevantes: `3baf771` (autoridade estatística por domínio) e `b05b243` (correção da asserção pgTAP sob o owner do teste).
+- GitHub Actions executados no SHA funcional e concluídos com `SUCCESS`: Stage 4 Validation [38016641258](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38016641258), CI [38016645276](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38016645276), CodeQL [38016645285](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38016645285) e preview [38016645274](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38016645274).
+- Stage 4 Validation: job `Security + statistics (pgTAP)` concluiu **49 arquivos/1.383 testes PASS**, incluindo os 37 asserts integrais da súmula atômica; job `Remote-history upgrade` concluiu **9 arquivos/320 testes PASS**. CI normal aprovou `database`, `accessibility`, `gate` e `remote_history_upgrade`. Banco utilizado: PostgreSQL descartável; baseline histórica reconstruída não equivale a clone fiel do Supabase compartilhado.
+- `accessibility-ui-reviewer`: parecer independente `APPROVE_WITH_NON_BLOCKING_NOTES` no SHA `b05b243`, 09/10/2026 23:29 -03:00. Sem regressão bloqueante de acessibilidade, observando lacuna de E2E direto da tabela coletiva e futuro editor de revisões.
+- `qa-reviewer`: parecer independente `BLOCK_RELEASE` no SHA `b05b243`, 09/10/2026 23:32 -03:00, **exclusivamente por gates de governança** (revisões independentes de banco/segurança e estatística ainda necessárias). O QA considerou cobertura automatizada adequada e não identificou defeito funcional bloqueante novo; observação P3 para teste integrado adicional dos LL coletivos após revisões.
+- `database-security-reviewer`: parecer independente `APPROVE_WITH_NON_BLOCKING_NOTES` no SHA `b05b243`, 09/10/2026 23:40 -03:00; revisão read-only das quatro migrations, RLS, grants por coluna, RPC transacional, histórico, concorrência e teste com troca temporária de papel, sem vulnerabilidade bloqueante identificada nos trechos examinados. Não certifica os consumidores estatísticos globais.
+- `statistics-domain-reviewer`: tentativa de acionar revisão independente recusada pela ferramenta com `This tool call was blocked by OpenAI because we couldn't determine the safety status of the request.` Nenhum parecer estatístico foi emitido; o `BLOCK_RELEASE` anterior permanece vigente.
+- O REVIEW_PACKET v3 recebeu addendum no corpo da PR #72 com HEAD, escopo, riscos, quatro links de workflows e pendência de pareceres. A PR permanece **aberta e draft**, sem merge, migrations no Supabase compartilhado, produção ou Etapa 5. O write lock do `project-maintainer` continua ativo para registro e correção focal de eventuais achados.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72, .agents/database-security-reviewer.md, .agents/statistics-domain-reviewer.md, .agents/agent-contract.md e GitHub Actions
+ACAO: obter autorização de execução aceita para o revisor estatístico, obter parecer formal no HEAD funcional e sanar eventuais bloqueios; atualizar REVIEW_PACKET com decisões verificáveis, revalidar apenas o que for afetado e reavaliar o BLOCK_RELEASE de QA. Não aplicar migrations remotas, fazer merge nem iniciar Etapa 5.
+CRITERIO_DE_CONCLUSAO: pareceres críticos independentes válidos no mesmo artefato funcional e ausência de BLOCK_RELEASE, com CI, pgTAP, CodeQL e preview verdes, PR ainda draft até decisão expressa de integração.
+```
