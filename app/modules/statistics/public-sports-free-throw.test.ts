@@ -11,6 +11,7 @@ type FixtureOptions = {
   manualMissingAuthority?: boolean;
   fibaMissingAdvanced?: boolean;
   missingFibaStatistics?: boolean;
+  missingFibaRosterStatistics?: boolean;
   manualCharged?: number;
   manualConverted?: number;
   missingProjection?: boolean;
@@ -95,11 +96,11 @@ function fixture(options: FixtureOptions) {
             team_id: 1,
             points: 10,
             free_throw_made: 2,
-            free_throw_attempted: 4,
+            free_throw_attempted: options.missingFibaRosterStatistics ? null : 4,
             two_point_made: 1,
-            two_point_attempted: 2,
+            two_point_attempted: options.missingFibaRosterStatistics ? null : 2,
             three_point_made: 2,
-            three_point_attempted: 4,
+            three_point_attempted: options.missingFibaRosterStatistics ? null : 4,
             offensive_rebounds: 3,
             defensive_rebounds: 4,
             assists: 2,
@@ -233,6 +234,15 @@ describe("public team statistics by effective domain authority", () => {
     const { client } = fixture({ manual: true, fiba: true, missingFibaStatistics: true });
     const result = await loadPublicSportsCore(client as never, context);
     expect(result.teamStatistics.find((row) => row.id === 1)?.freeThrowPercentage).toBeNull();
+  });
+
+  it("does not present partial FIBA roster rows as complete advanced coverage", async () => {
+    const { client } = fixture({ manual: true, fiba: true, missingFibaRosterStatistics: true });
+    const result = await loadPublicSportsCore(client as never, context);
+    const azul = result.teamStatistics.find((row) => row.id === 1);
+    expect(azul?.freeThrowPercentage).toBeNull();
+    expect(azul?.fieldGoalPercentage).toBeNull();
+    expect(azul?.efficiencyPerGame).toBeNull();
   });
 
   it("does not invent a percentage with zero manual attempts", async () => {

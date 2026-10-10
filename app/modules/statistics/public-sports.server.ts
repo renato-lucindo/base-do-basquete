@@ -409,10 +409,17 @@ export async function loadPublicSportsCore(
     let scoringCoverageComplete = teamGames.length > 0;
     for (const game of teamGames) {
       const gameRows = rows.filter((row) => row.game_id === game.id);
+      const missingAdvanced = gameRows.some(
+        (row) =>
+          !row.did_not_play &&
+          (row.two_point_attempted === null ||
+            row.three_point_attempted === null ||
+            row.free_throw_attempted === null),
+      );
       if (!scoringGameIds.has(game.id) || gameRows.length === 0) {
         scoringCoverageComplete = false;
       }
-      if (!advancedGameIds.has(game.id) || gameRows.length === 0) {
+      if (!advancedGameIds.has(game.id) || gameRows.length === 0 || missingAdvanced) {
         advancedCoverageComplete = false;
       }
       if (advancedGameIds.has(game.id)) {

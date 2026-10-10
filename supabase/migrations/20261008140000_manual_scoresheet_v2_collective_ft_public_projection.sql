@@ -225,11 +225,11 @@ select
   slot.did_not_play,
   coalesce(stat.seconds_played, 0)::bigint as seconds_played,
   coalesce(stat.two_point_made, 0)::bigint as two_point_made,
-  case when advanced.game_id is null then null::bigint else coalesce(stat.two_point_attempted, 0)::bigint end as two_point_attempted,
+  case when advanced.game_id is null or (stat.game_roster_slot_id is null and not slot.did_not_play) then null::bigint else coalesce(stat.two_point_attempted, 0)::bigint end as two_point_attempted,
   coalesce(stat.three_point_made, 0)::bigint as three_point_made,
-  case when advanced.game_id is null then null::bigint else coalesce(stat.three_point_attempted, 0)::bigint end as three_point_attempted,
+  case when advanced.game_id is null or (stat.game_roster_slot_id is null and not slot.did_not_play) then null::bigint else coalesce(stat.three_point_attempted, 0)::bigint end as three_point_attempted,
   coalesce(stat.free_throw_made, 0)::bigint as free_throw_made,
-  case when advanced.game_id is null then null::bigint else coalesce(stat.free_throw_attempted, 0)::bigint end as free_throw_attempted,
+  case when advanced.game_id is null or (stat.game_roster_slot_id is null and not slot.did_not_play) then null::bigint else coalesce(stat.free_throw_attempted, 0)::bigint end as free_throw_attempted,
   coalesce(stat.offensive_rebounds, 0)::bigint as offensive_rebounds,
   coalesce(stat.defensive_rebounds, 0)::bigint as defensive_rebounds,
   coalesce(stat.assists, 0)::bigint as assists,
@@ -263,3 +263,126 @@ left join foul_totals foul
   on foul.game_id = slot.game_id
  and foul.game_roster_slot_id = slot.id
 where slot.is_applicable;
+
+-- Preserve FIBA completeness across per-game, competition and player profile readers.
+-- A roster entry without a period-stat row is unknown, even with FIBA authority;
+-- a recorded zero remains zero. DNP is excluded from advanced coverage.
+create or replace view public.game_boxscore_player_statistics
+with (security_invoker = true)
+as
+with stat_totals as (
+  select
+    stats.game_id,
+    stats.game_roster_slot_id,
+    sum(stats.seconds_played)::bigint as seconds_played,
+    sum(stats.two_point_made)::bigint as two_point_made,
+    sum(stats.two_point_attempted)::bigint as two_point_attempted,
+    sum(stats.three_point_made)::bigint as three_point_made,
+    sum(stats.three_point_attempted)::bigint as three_point_attempted,
+    sum(stats.free_throw_made)::bigint as free_throw_made,
+    sum(stats.free_throw_attempted)::bigint as free_throw_attempted,
+    sum(stats.offensive_rebounds)::bigint as offensive_rebounds,
+    sum(stats.defensive_rebounds)::bigint as defensive_rebounds,
+    sum(stats.assists)::bigint as assists,
+    sum(stats.turnovers)::bigint as turnovers,
+    sum(stats.steals)::bigint as steals,
+    sum(stats.blocks)::bigint as blocks,
+    sum(stats.plus_minus)::bigint as plus_minus,
+    bool_and(stats.plus_minus_available) as plus_minus_available,
+    sum(stats.points)::bigint as points
+  from public.player_period_stats stats
+  group by stats.game_id, stats.game_roster_slot_id
+), foul_totals as (
+  select
+    foul.game_id,
+    foul.game_roster_slot_id,
+    count(*)::bigint as fouls
+  from public.foul_events foul
+  group by foul.game_id, foul.game_roster_slot_id
+)
+select
+  game.id as game_id,
+  game.competition_id,
+  game.game_number,
+  game.scheduled_at,
+  slot.id as game_roster_slot_id,
+  slot.registration_id,
+  participant.side,
+  registration.team_id,
+  team.name as team_name,
+  team.slug as team_slug,
+  team.abbreviation as team_abbreviation,
+  roster.player_id,
+  player.full_name as player_name,
+  player.slug as player_slug,
+  slot.jersey_number,
+  slot.is_starter,
+  slot.did_not_play,
+  scoring.source_type as scoring_source_type,
+  (advanced.game_id is not null and not slot.did_not_play and stats.game_roster_slot_id is not null) as has_advanced_coverage,
+  case
+    when slot.did_not_play or scoring.game_id is null or stats.game_roster_slot_id is null then null
+    else coalesce(stats.points, 0)
+  end::bigint as official_points,
+  case
+    when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null
+    else coalesce(stats.points, 0)
+  end::bigint as advanced_points,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.seconds_played, 0) end::bigint as seconds_played,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.two_point_made, 0) end::bigint as two_point_made,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.two_point_attempted, 0) end::bigint as two_point_attempted,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.three_point_made, 0) end::bigint as three_point_made,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.three_point_attempted, 0) end::bigint as three_point_attempted,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.free_throw_made, 0) end::bigint as free_throw_made,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.free_throw_attempted, 0) end::bigint as free_throw_attempted,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.offensive_rebounds, 0) end::bigint as offensive_rebounds,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.defensive_rebounds, 0) end::bigint as defensive_rebounds,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.assists, 0) end::bigint as assists,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.turnovers, 0) end::bigint as turnovers,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.steals, 0) end::bigint as steals,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null then null else coalesce(stats.blocks, 0) end::bigint as blocks,
+  case when slot.did_not_play or advanced.game_id is null or stats.game_roster_slot_id is null or not coalesce(stats.plus_minus_available, false) then null else coalesce(stats.plus_minus, 0) end::bigint as plus_minus,
+  case
+    when slot.did_not_play or foul_total.game_id is null then null
+    else coalesce(fouls.fouls, 0)
+  end::bigint as fouls
+from public.games game
+join public.competitions competition on competition.id = game.competition_id
+join public.series_category_data_profiles profile
+  on profile.id = competition.data_profile_id
+ and profile.primary_source = 'fiba_boxscore'
+join public.game_roster_slots slot
+  on slot.game_id = game.id
+ and slot.is_applicable
+join public.roster_entries roster
+  on roster.id = slot.roster_entry_id
+ and roster.registration_id = slot.registration_id
+join public.game_participants participant
+  on participant.game_id = slot.game_id
+ and participant.registration_id = slot.registration_id
+join public.team_registrations registration
+  on registration.id = slot.registration_id
+ and registration.competition_id = game.competition_id
+join public.teams team on team.id = registration.team_id
+join public.players player on player.id = roster.player_id
+join public.game_active_data_sources participation
+  on participation.game_id = game.id
+ and participation.domain = 'participation'
+left join public.game_active_data_sources scoring
+  on scoring.game_id = game.id
+ and scoring.domain = 'player_scoring'
+left join public.game_active_data_sources advanced
+  on advanced.game_id = game.id
+ and advanced.domain = 'player_advanced'
+ and advanced.source_type = 'fiba_boxscore'
+left join public.game_active_data_sources foul_total
+  on foul_total.game_id = game.id
+ and foul_total.domain = 'player_foul_total'
+left join stat_totals stats
+  on stats.game_id = slot.game_id
+ and stats.game_roster_slot_id = slot.id
+left join foul_totals fouls
+  on fouls.game_id = slot.game_id
+ and fouls.game_roster_slot_id = slot.id
+where game.status = 'final'
+  and not competition.data_profile_review_required;

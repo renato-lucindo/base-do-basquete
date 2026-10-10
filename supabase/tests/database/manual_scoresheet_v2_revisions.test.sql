@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(44);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -197,6 +197,15 @@ select is((select submission_version from public.game_data_submissions
   where id=(select submission_id from manual_v2_baseline)),1,
   'base submission starts at version one');
 reset role;
+select lives_ok(
+  $select private.backfill_legacy_competition_publication(9831,'published')$,
+  'the original manual game is captured in the explicitly published version'
+);
+create temp table manual_v2_published_before as
+select public.public_get_competition_publication(9831) as snapshot;
+select ok(private.game_is_currently_published((select game_id from manual_v2_result)),
+  'the original publication fingerprint authorizes its initial game');
+
 select throws_ok(
   $$update public.game_data_submissions set status='superseded'
     where id=(select submission_id from manual_v2_baseline)$$,
@@ -242,6 +251,13 @@ select lives_ok(
     pg_temp.v2_revision('98310000-0000-4000-8000-000000000016','Observação revisada'))$$,
   'valid revision commits atomically'
 );
+reset role;
+select is(public.public_get_competition_publication(9831),
+  (select snapshot from manual_v2_published_before),
+  'a successful revision preserves the immutable prior public snapshot until republished');
+select ok(not private.game_is_currently_published((select game_id from manual_v2_result)),
+  'a changed official-result authority invalidates the old public game fingerprint');
+set local role authenticated;
 select results_eq(
   $$select submission_version,status from public.game_data_submissions
     where game_id=(select game_id from manual_v2_result)

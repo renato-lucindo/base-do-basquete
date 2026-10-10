@@ -57,6 +57,33 @@ describe("published sports snapshot", () => {
     expect(result.teamStatistics.every((row) => row.reboundsPerGame === null)).toBe(true);
   });
 
+  it("keeps the approved publication independent of subsequently changed live authority", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: {
+        schemaVersion: 1,
+        teams: [
+          { id: 1, name: "Azul", slug: "azul" },
+          { id: 2, name: "Ouro", slug: "ouro" },
+        ],
+        games: [
+          {
+            id: 9, label: "Jogo 9", status: "final",
+            home: { id: 1, name: "Azul", slug: "azul" },
+            away: { id: 2, name: "Ouro", slug: "ouro" },
+            homeScore: 50, awayScore: 40,
+          },
+        ],
+      },
+      error: null,
+    });
+    const from = vi.fn(() => { throw new Error("unpublished authority data must stay private"); });
+    const result = await loadPublicSportsCore({ rpc, from } as never, context);
+    expect(result.games[0]?.homeScore).toBe(50);
+    expect(result.games[0]?.awayScore).toBe(40);
+    expect(result.teamStatistics.every((row) => row.freeThrowPercentage === null)).toBe(true);
+    expect(from).not.toHaveBeenCalled();
+  });
+
   it("rejects an invalid snapshot without exposing its contents", async () => {
     const client = {
       rpc: vi.fn().mockResolvedValue({ data: { secret: "do not expose" }, error: null }),

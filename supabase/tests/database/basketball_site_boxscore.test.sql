@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(39);
+select plan(44);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -320,6 +320,32 @@ select isnt(private.publication_game_fingerprint(94101),
   'changing a technical total changes the publication fingerprint');
 select ok(not private.game_is_currently_published(94101),
   'changing a technical total invalidates the published game');
+
+-- Exercise the real SQL view shape: a LEFT JOIN still returns the roster when
+-- its statistics disappear. Savepoint confines the intentionally incomplete data.
+savepoint missing_advanced_roster;
+delete from public.player_period_stats
+where game_id = 94101 and game_roster_slot_id in (
+  select id from public.game_roster_slots where game_id=94101 and roster_entry_id=9411
+);
+select is((select free_throw_attempted from public.game_player_statistics
+  where game_id=94101 and player_id=9411),null::bigint,
+  'legacy game reader exposes missing FIBA attempts as NULL, not zero');
+select is((select free_throw_attempted from public.game_boxscore_player_statistics
+  where game_id=94101 and player_id=9411),null::bigint,
+  'boxscore game reader exposes missing attempts as NULL');
+select is((select has_advanced_coverage from public.game_boxscore_player_statistics
+  where game_id=94101 and player_id=9411),false,
+  'a FIBA authority cannot imply advanced coverage for an unrecorded player');
+select is((select count(*) from public.competition_boxscore_player_statistics
+  where competition_id=9411 and player_id=9411),0::bigint,
+  'competition and player-profile boxscore aggregates exclude missing player data');
+update public.game_roster_slots set did_not_play=true
+where game_id=94101 and roster_entry_id=9411;
+select is((select free_throw_attempted from public.game_player_statistics
+  where game_id=94101 and player_id=9411),0::bigint,
+  'an explicitly DNP roster entry has zero attempts without claiming participation');
+rollback to savepoint missing_advanced_roster;
 
 select * from finish();
 rollback;
