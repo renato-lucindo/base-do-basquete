@@ -2754,6 +2754,38 @@ export type Database = {
           },
         ];
       };
+      manual_scoresheet_public_statistics_projection: {
+        Row: {
+          free_throw_summary: Json;
+          game_id: number;
+          published_at: string;
+          source_profile: string;
+          submission_id: number;
+        };
+        Insert: {
+          free_throw_summary: Json;
+          game_id: number;
+          published_at?: string;
+          source_profile?: string;
+          submission_id: number;
+        };
+        Update: {
+          free_throw_summary?: Json;
+          game_id?: number;
+          published_at?: string;
+          source_profile?: string;
+          submission_id?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "manual_scoresheet_public_statistics_projection_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: true;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       matchup_administrative_resolutions: {
         Row: {
           cancelled_game_id: number | null;

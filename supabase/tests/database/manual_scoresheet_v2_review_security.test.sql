@@ -9,12 +9,16 @@ select ok(
   'manual projection enables and forces RLS'
 );
 select ok(
-  has_table_privilege('anon','public.manual_scoresheet_public_statistics_projection','select'),
-  'anon only receives projection SELECT grant (policy still applies)'
+  has_column_privilege('anon','public.manual_scoresheet_public_statistics_projection','game_id','select')
+    and has_column_privilege('anon','public.manual_scoresheet_public_statistics_projection','free_throw_summary','select')
+    and not has_column_privilege('anon','public.manual_scoresheet_public_statistics_projection','submission_id','select'),
+  'anon can read only the public projection columns under RLS'
 );
 select ok(
-  has_table_privilege('authenticated','public.manual_scoresheet_public_statistics_projection','select'),
-  'authenticated role can query projection under RLS'
+  has_column_privilege('authenticated','public.manual_scoresheet_public_statistics_projection','game_id','select')
+    and has_column_privilege('authenticated','public.manual_scoresheet_public_statistics_projection','free_throw_summary','select')
+    and not has_column_privilege('authenticated','public.manual_scoresheet_public_statistics_projection','submission_id','select'),
+  'authenticated role can read public projection columns only'
 );
 select ok(
   not has_table_privilege('anon','public.manual_scoresheet_public_statistics_projection','insert'),
@@ -28,15 +32,15 @@ select ok(
   exists(select 1 from pg_policies
     where schemaname='public' and tablename='manual_scoresheet_public_statistics_projection'
       and policyname='manual_scoresheet_public_statistics_projection_select'
-      and 'anon'=any(roles) and qual like '%game_is_currently_published%'),
-  'anon projection policy checks current game publication'
+      and 'anon'=any(roles) and qual like '%manual_scoresheet_projection_is_current%'),
+  'anon projection policy checks effective manual scoring submission and publication'
 );
 select ok(
   exists(select 1 from pg_policies
     where schemaname='public' and tablename='manual_scoresheet_public_statistics_projection'
       and policyname='manual_scoresheet_public_statistics_projection_admin_select'
       and 'authenticated'=any(roles)
-      and qual like '%game_is_currently_published%'
+      and qual like '%manual_scoresheet_projection_is_current%'
       and qual like '%is_current_admin_aal2%'),
   'authenticated projection policy requires publication or admin AAL2'
 );

@@ -86,16 +86,45 @@ create table if not exists public.manual_scoresheet_public_statistics_projection
 alter table public.manual_scoresheet_public_statistics_projection enable row level security;
 alter table public.manual_scoresheet_public_statistics_projection force row level security;
 revoke all on public.manual_scoresheet_public_statistics_projection from public, anon, authenticated;
-grant select on public.manual_scoresheet_public_statistics_projection to anon, authenticated;
+grant select (game_id, free_throw_summary)
+on public.manual_scoresheet_public_statistics_projection to anon, authenticated;
+
+-- Publish only the projection belonging to the effective scoring submission.
+-- The private submission identifier is never exposed to anonymous clients.
+create function private.manual_scoresheet_projection_is_current(p_game_id bigint, p_submission_id bigint)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select private.game_is_currently_published(p_game_id)
+    and exists (
+      select 1
+      from public.game_data_domain_authority authority
+      join public.game_data_submissions submission
+        on submission.id = authority.submission_id
+       and submission.game_id = authority.game_id
+      where authority.game_id = p_game_id
+        and authority.domain = 'player_scoring'
+        and authority.source_type = 'manual_scoresheet'
+        and authority.submission_id = p_submission_id
+        and submission.status = 'active'
+    );
+$$;
+revoke all on function private.manual_scoresheet_projection_is_current(bigint,bigint)
+from public, anon, authenticated;
+grant execute on function private.manual_scoresheet_projection_is_current(bigint,bigint)
+to anon, authenticated;
 
 create policy manual_scoresheet_public_statistics_projection_select
 on public.manual_scoresheet_public_statistics_projection for select to anon
-using ((select private.game_is_currently_published(game_id)));
+using (private.manual_scoresheet_projection_is_current(game_id, submission_id));
 
 create policy manual_scoresheet_public_statistics_projection_admin_select
 on public.manual_scoresheet_public_statistics_projection for select to authenticated
 using (
-  (select private.game_is_currently_published(game_id))
+  private.manual_scoresheet_projection_is_current(game_id, submission_id)
   or (select public.is_current_admin_aal2())
 );
 
@@ -196,11 +225,11 @@ select
   slot.did_not_play,
   coalesce(stat.seconds_played, 0)::bigint as seconds_played,
   coalesce(stat.two_point_made, 0)::bigint as two_point_made,
-  case when game.source = 'manual' then null::bigint else coalesce(stat.two_point_attempted, 0)::bigint end as two_point_attempted,
+  case when advanced.game_id is null then null::bigint else coalesce(stat.two_point_attempted, 0)::bigint end as two_point_attempted,
   coalesce(stat.three_point_made, 0)::bigint as three_point_made,
-  case when game.source = 'manual' then null::bigint else coalesce(stat.three_point_attempted, 0)::bigint end as three_point_attempted,
+  case when advanced.game_id is null then null::bigint else coalesce(stat.three_point_attempted, 0)::bigint end as three_point_attempted,
   coalesce(stat.free_throw_made, 0)::bigint as free_throw_made,
-  case when game.source = 'manual' then null::bigint else coalesce(stat.free_throw_attempted, 0)::bigint end as free_throw_attempted,
+  case when advanced.game_id is null then null::bigint else coalesce(stat.free_throw_attempted, 0)::bigint end as free_throw_attempted,
   coalesce(stat.offensive_rebounds, 0)::bigint as offensive_rebounds,
   coalesce(stat.defensive_rebounds, 0)::bigint as defensive_rebounds,
   coalesce(stat.assists, 0)::bigint as assists,
@@ -212,6 +241,10 @@ select
   coalesce(foul.fouls, 0)::bigint as fouls
 from public.game_roster_slots slot
 join public.games game on game.id = slot.game_id
+left join public.game_active_data_sources advanced
+  on advanced.game_id = game.id
+ and advanced.domain = 'player_advanced'
+ and advanced.source_type = 'fiba_boxscore'
 join public.game_participants participant
   on participant.game_id = slot.game_id
  and participant.registration_id = slot.registration_id

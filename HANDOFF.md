@@ -14,9 +14,9 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 WRITE_LOCK:
 OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
-BRANCH: codex/manual-scoresheet-v2
+BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
 BASE_COMMIT: 8ac62209a636be757d96270eef9dc6b27c8735c0
-HEAD_COMMIT: 39fa5be81ddb600bcd46471b5dba12fe9e448ca0 (confirmado localmente em 08/10/2026; referência de tracking sem divergência reportada por `git status`)
+HEAD_COMMIT: 794490d4c960428f2b077c3c40d106cbe9b7e5f7 (confirmado no worktree manual-stage4-v3-review em 09/10/2026; delta estatistico WIP preservado)
 HEAD_FUNCIONAL: d10d048922525eb06d5b14152469170359d7d994 (CI verde)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
@@ -203,3 +203,19 @@ WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-FIBA2024; B
 HEAD anterior da PR #72: `c6a97f4c67cbf5a55f8a8b8993b2b5727f4e4b14`. O HEAD final de revisao sera identificado no REVIEW_PACKET remoto apos os commits de merge e documentacao. A politica v3 exige database-security-reviewer e statistics-domain-reviewer para RLS/RPC/persistencia e denominadores de LL/isolamento estatistico. O BLOCK_RELEASE estatistico antigo nao esta dispensado; somente parecer independente novo pode encerra-lo. QA e acessibilidade dependem de evidencias e requisitos explicitos do plano. A reconstrucao das 62 migrations historicas no CI nao e clone fiel de producao. Nenhuma migration desta unidade foi aplicada ao banco compartilhado.
 
 PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=GitHub PR #72 e Actions; ACAO=publicar REVIEW_PACKET v3 no HEAD reconciliado, obter novos pareceres independentes de seguranca e estatistica, corrigir eventuais BLOCK_RELEASE, verificar CI/CodeQL/Stage4 Validation no SHA final e formalizar o encerramento da Etapa 4 somente se aprovado; CRITERIO_DE_CONCLUSAO=pareceres validos e checks verdes no HEAD final, PR draft preservada, sem deploy de migrations ou merge.
+
+## 16. Correção de autoridade estatística por domínio — 09/10/2026
+
+- Worktree de revisão `manual-stage4-v3-review`, branch local `codex/manual-stage4-v3-review`, PR draft #72 com upstream `origin/codex/manual-scoresheet-v2`. HEAD de partida verificado: `794490d4c960428f2b077c3c40d106cbe9b7e5f7`. WRITE_LOCK mantido por `project-maintainer` para a unidade `MANUAL-SCORESHEET-V2-FIBA2024`.
+- O delta preservado substitui `games.source` pela autoridade efetiva de `game_active_data_sources` para `player_scoring` e `player_advanced` nos read models estatísticos. LL coletivos manuais usam a projeção pública da submissão ativa; tentativas avançadas são expostas somente quando há autoridade FIBA. Ausência de tentativas não vira zero artificial, inclusive na agregação entre partidas de fontes distintas.
+- A migration `20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql` mantém RLS, restringe a leitura pública às colunas `game_id` e `free_throw_summary`, oculta `submission_id` e publica exclusivamente a projeção da submissão manual efetivamente ativa. SQL pgTAP focal ampliado de 8 para 14 verificações; teste de segurança SQL (24 verificações) atualizado para grants por coluna e policy de autoridade corrente.
+- Evidência local informada na execução de 09/10: suíte Vitest completa **58 arquivos, 500 testes PASS**, incluindo 20 testes focais; formatação (202 arquivos), lint (sem erros; 299 warnings e 20 informativos), typecheck, build, check:runbooks, check:agents e varredura de segredos (736 arquivos rastreados) PASS. `git diff --check` PASS após a atualização SQL. A ferramenta auxiliar `inspect-work-unit.mjs` falhou ao tentar ler `stderr.trim()` indefinido no Node 24; `git status`, `git log` e diff foram verificados diretamente.
+- **Pendente:** executar pgTAP sobre PostgreSQL descartável via GitHub Actions no HEAD efetivamente publicado, verificar jobs CI, Stage 4 Validation e CodeQL, e obter pareceres independentes `database-security-reviewer` e `statistics-domain-reviewer` (BLOCK_RELEASE anterior ainda vigente), com QA após as revisões críticas. A reconstrução remota de 62 migrations não representa dump fiel do Supabase compartilhado. Nenhuma migration desta unidade foi aplicada ao Supabase compartilhado e nenhum merge na `main` foi autorizado.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72, workflow .github/workflows/stage4-validation.yml, GitHub Actions CI/CodeQL e .agents/agent-contract.md
+ACAO: publicar o delta estatístico com commit na branch da PR #72; executar e conferir pgTAP focal e completo em PostgreSQL descartável no Actions, documentando run IDs e resultados no REVIEW_PACKET; pedir revisão independente de segurança e estatísticas no mesmo SHA e preservar a PR draft enquanto houver BLOCK_RELEASE.
+CRITERIO_DE_CONCLUSAO: jobs de validação do HEAD publicado concluídos e evidenciados, pareceres críticos reais sem bloqueios; sem migrations no Supabase compartilhado, merge na main ou início da Etapa 5.
+```

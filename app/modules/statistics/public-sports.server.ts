@@ -4,11 +4,11 @@ import type { Database } from "../../types/database.generated";
 import type { CompetitionContext } from "../competition/context";
 import {
   calculateStandings,
-  summarizeTeamStatistics,
   type PublicGameStatus,
   type PublicGameSummary,
   type PublicTeamSummary,
   type StandingRow,
+  summarizeTeamStatistics,
   type TeamStatisticsRow,
 } from "./sports-domain";
 
@@ -177,6 +177,28 @@ function efficiency(row: {
   );
 }
 
+type CollectiveFreeThrowCounts = { charged: number; converted: number };
+
+function collectiveFreeThrows(
+  summary: unknown,
+  side: "home" | "away",
+): CollectiveFreeThrowCounts | null {
+  const values = record(record(summary)?.[side]);
+  const charged = nullableNumberValue(values?.charged);
+  const converted = nullableNumberValue(values?.converted);
+  if (
+    charged === null ||
+    converted === null ||
+    !Number.isInteger(charged) ||
+    !Number.isInteger(converted) ||
+    charged < 0 ||
+    converted < 0 ||
+    converted > charged
+  )
+    return null;
+  return { charged, converted };
+}
+
 export async function loadPublicSportsCore(
   client: SupabaseClient<Database>,
   context: CompetitionContext,
@@ -306,32 +328,140 @@ export async function loadPublicSportsCore(
     ];
   });
 
-  const finalGameIds = games.filter((game) => game.status === "final").map((game) => game.id);
-  const statisticsResult =
+  const finalGames = games.filter((game) => game.status === "final");
+  const finalGameIds = finalGames.map((game) => game.id);
+  const sourcesResult =
     finalGameIds.length > 0
-      ? await client.from("game_player_statistics").select("*").in("game_id", finalGameIds)
+      ? await client
+          .from("game_active_data_sources")
+          .select("game_id,domain,source_type")
+          .in("game_id", finalGameIds)
+          .in("domain", ["player_scoring", "player_advanced"])
       : { data: [], error: null };
+  ensure(sourcesResult.error);
+
+  const advancedGameIds = new Set(
+    sourcesResult.data
+      .filter(
+        (source) => source.domain === "player_advanced" && source.source_type === "fiba_boxscore",
+      )
+      .map((source) => source.game_id),
+  );
+  const scoringGameIds = new Set(
+    sourcesResult.data
+      .filter(
+        (source) =>
+          source.domain === "player_scoring" &&
+          (source.source_type === "manual_scoresheet" || source.source_type === "fiba_boxscore"),
+      )
+      .map((source) => source.game_id),
+  );
+  // Advanced FIBA attempts win when both domains are present on the same game.
+  // The manual collective projection is the only usable denominator otherwise.
+  const manualGameIds = finalGameIds.filter(
+    (gameId) =>
+      !advancedGameIds.has(gameId) &&
+      sourcesResult.data.some(
+        (source) =>
+          source.game_id === gameId &&
+          source.domain === "player_scoring" &&
+          source.source_type === "manual_scoresheet",
+      ),
+  );
+  const manualGameIdSet = new Set(manualGameIds);
+  const [statisticsResult, manualProjectionResult] = await Promise.all([
+    finalGameIds.length > 0
+      ? client.from("game_player_statistics").select("*").in("game_id", finalGameIds)
+      : Promise.resolve({ data: [], error: null }),
+    manualGameIds.length > 0
+      ? client
+          .from("manual_scoresheet_public_statistics_projection")
+          .select("game_id,free_throw_summary")
+          .in("game_id", manualGameIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
   ensure(statisticsResult.error);
+  ensure(manualProjectionResult.error);
+  const collectiveByGame = new Map(
+    manualProjectionResult.data.map((projection) => [
+      projection.game_id,
+      projection.free_throw_summary,
+    ]),
+  );
 
   const teamStatistics = teams.map((team) => {
+    const teamGames = finalGames.filter(
+      (game) => game.home.id === team.id || game.away.id === team.id,
+    );
     const rows = statisticsResult.data.filter((row) => row.team_id === team.id);
-    const sum = (key: keyof (typeof rows)[number]) =>
-      rows.reduce((total, row) => total + numberValue(row[key] as number | null), 0);
-    return summarizeTeamStatistics({
+    const advancedRows = rows.filter(
+      (row) => row.game_id !== null && advancedGameIds.has(row.game_id),
+    );
+    const scoringRows = rows.filter(
+      (row) => row.game_id !== null && scoringGameIds.has(row.game_id),
+    );
+    const sum = (items: typeof rows, key: keyof (typeof rows)[number]) =>
+      items.reduce((total, row) => total + numberValue(row[key] as number | null), 0);
+    let collectiveMade = 0;
+    let collectiveAttempted = 0;
+    let freeThrowCoverageComplete = true;
+    let advancedCoverageComplete = teamGames.length > 0;
+    let scoringCoverageComplete = teamGames.length > 0;
+    for (const game of teamGames) {
+      const gameRows = rows.filter((row) => row.game_id === game.id);
+      if (!scoringGameIds.has(game.id) || gameRows.length === 0) {
+        scoringCoverageComplete = false;
+      }
+      if (!advancedGameIds.has(game.id) || gameRows.length === 0) {
+        advancedCoverageComplete = false;
+      }
+      if (advancedGameIds.has(game.id)) {
+        if (
+          gameRows.length === 0 ||
+          gameRows.some((row) => row.free_throw_attempted === null || row.free_throw_made === null)
+        ) {
+          freeThrowCoverageComplete = false;
+        }
+      } else if (manualGameIdSet.has(game.id)) {
+        const counts = collectiveFreeThrows(
+          collectiveByGame.get(game.id),
+          game.home.id === team.id ? "home" : "away",
+        );
+        if (!counts) {
+          freeThrowCoverageComplete = false;
+        } else {
+          collectiveMade += counts.converted;
+          collectiveAttempted += counts.charged;
+        }
+      } else {
+        freeThrowCoverageComplete = false;
+      }
+    }
+    const summary = summarizeTeamStatistics({
       ...team,
-      games: new Set(rows.map((row) => row.game_id)).size,
-      points: sum("points"),
-      offensiveRebounds: sum("offensive_rebounds"),
-      defensiveRebounds: sum("defensive_rebounds"),
-      assists: sum("assists"),
-      twoPointMade: sum("two_point_made"),
-      twoPointAttempted: sum("two_point_attempted"),
-      threePointMade: sum("three_point_made"),
-      threePointAttempted: sum("three_point_attempted"),
-      freeThrowMade: sum("free_throw_made"),
-      freeThrowAttempted: sum("free_throw_attempted"),
-      efficiency: rows.reduce((total, row) => total + efficiency(row), 0),
+      games: teamGames.length,
+      points: sum(scoringRows, "points"),
+      offensiveRebounds: sum(advancedRows, "offensive_rebounds"),
+      defensiveRebounds: sum(advancedRows, "defensive_rebounds"),
+      assists: sum(advancedRows, "assists"),
+      twoPointMade: sum(advancedRows, "two_point_made"),
+      twoPointAttempted: sum(advancedRows, "two_point_attempted"),
+      threePointMade: sum(advancedRows, "three_point_made"),
+      threePointAttempted: sum(advancedRows, "three_point_attempted"),
+      freeThrowMade: sum(advancedRows, "free_throw_made") + collectiveMade,
+      freeThrowAttempted: sum(advancedRows, "free_throw_attempted") + collectiveAttempted,
+      efficiency: advancedRows.reduce((total, row) => total + efficiency(row), 0),
     });
+    if (!scoringCoverageComplete) summary.pointsPerGame = null;
+    if (!advancedCoverageComplete) {
+      summary.reboundsPerGame = null;
+      summary.assistsPerGame = null;
+      summary.fieldGoalPercentage = null;
+      summary.threePointPercentage = null;
+      summary.efficiencyPerGame = null;
+    }
+    if (!freeThrowCoverageComplete) summary.freeThrowPercentage = null;
+    return summary;
   });
 
   return {
