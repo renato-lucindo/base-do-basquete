@@ -198,7 +198,7 @@ select is((select submission_version from public.game_data_submissions
   'base submission starts at version one');
 reset role;
 select lives_ok(
-  $select private.backfill_legacy_competition_publication(9831,'published')$,
+  $pub$select private.backfill_legacy_competition_publication(9831,'published')$pub$,
   'the original manual game is captured in the explicitly published version'
 );
 create temp table manual_v2_published_before as

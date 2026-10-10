@@ -322,8 +322,7 @@ select ok(not private.game_is_currently_published(94101),
   'changing a technical total invalidates the published game');
 
 -- Exercise the real SQL view shape: a LEFT JOIN still returns the roster when
--- its statistics disappear. Savepoint confines the intentionally incomplete data.
-savepoint missing_advanced_roster;
+-- its statistics disappear. All data changes roll back with the outer test transaction.
 delete from public.player_period_stats
 where game_id = 94101 and game_roster_slot_id in (
   select id from public.game_roster_slots where game_id=94101 and roster_entry_id=9411
@@ -345,7 +344,6 @@ where game_id=94101 and roster_entry_id=9411;
 select is((select free_throw_attempted from public.game_player_statistics
   where game_id=94101 and player_id=9411),0::bigint,
   'an explicitly DNP roster entry has zero attempts without claiming participation');
-rollback to savepoint missing_advanced_roster;
 
 select * from finish();
 rollback;
