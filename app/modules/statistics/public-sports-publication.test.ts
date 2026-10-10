@@ -67,16 +67,21 @@ describe("published sports snapshot", () => {
         ],
         games: [
           {
-            id: 9, label: "Jogo 9", status: "final",
+            id: 9,
+            label: "Jogo 9",
+            status: "final",
             home: { id: 1, name: "Azul", slug: "azul" },
             away: { id: 2, name: "Ouro", slug: "ouro" },
-            homeScore: 50, awayScore: 40,
+            homeScore: 50,
+            awayScore: 40,
           },
         ],
       },
       error: null,
     });
-    const from = vi.fn(() => { throw new Error("unpublished authority data must stay private"); });
+    const from = vi.fn(() => {
+      throw new Error("unpublished authority data must stay private");
+    });
     const result = await loadPublicSportsCore({ rpc, from } as never, context);
     expect(result.games[0]?.homeScore).toBe(50);
     expect(result.games[0]?.awayScore).toBe(40);
