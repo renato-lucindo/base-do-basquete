@@ -4,6 +4,8 @@
 
 ## 1. Estado vigente
 
+**Checkpoint atual (10/10/2026): pendências estatísticas P1/P2 e republicação corrigidas; Etapa 4 backend aprovada e verificada no artefato 86934cc. PR #72 permanece draft, sem migrations no Supabase compartilhado, merge ou início da Etapa 5.**
+
 A unidade ativa é `MANUAL-SCORESHEET-V2-FIBA2024`, na branch `codex/manual-scoresheet-v2` e PR draft #72. O objetivo é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
 A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e foi reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0` pelo merge `6beb49c`, que integrou a governança documental da PR #71. O conflito ficou restrito a este arquivo; a resolução adotou o novo formato compacto do handoff.
@@ -15,16 +17,16 @@ WRITE_LOCK:
 OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: 8ac62209a636be757d96270eef9dc6b27c8735c0
-HEAD_COMMIT: 06ffcd73ffa11393ce0e49091b00b72f86bd3314 (reconciliado por fast-forward em 10/10/2026; veja checkpoint 21)
-HEAD_FUNCIONAL: b6fbf6bb2234102dd6bc9ed09fca14908cbb39de (CI/pgTAP verde; correção focal de republicação em andamento)
+BASE_COMMIT: 27d917a1ce4a404ced091fd3ca660113c215ca92
+HEAD_COMMIT: 86934cc16d8c4662f2a07e30868b6e10eea47c0a (artefato revisado; o commit desta seção 22 é exclusivamente documental, consultar Git)
+HEAD_FUNCIONAL: 86934cc16d8c4662f2a07e30868b6e10eea47c0a (gates verdes e pareceres renovados; Etapa 4 concluída tecnicamente)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
-STATUS: ACTIVE
+STATUS: RELEASED (checkpoint da Etapa 4 entregue; retomar explicitamente antes de nova escrita)
 ```
 
-`statistics-domain-reviewer` está previsto por envolver projeções e isolamento estatístico. Os pareceres bloqueantes da Etapa 4 permanecem pendentes; esta revisão documental não representa aprovação.
+`statistics-domain-reviewer` está previsto por envolver projeções e isolamento estatístico. Os bloqueios estatístico e de QA da Etapa 4 foram expressamente revogados no artefato 86934cc; veja seção 22. PR permanece draft, com Etapas 5–10 fora deste checkpoint.
 
 ## 3. Checkpoints concluídos
 
@@ -292,3 +294,40 @@ PROXIMO_PASSO_EXATO: em 20261008140000_manual_scoresheet_v2_collective_ft_public
 Correção focal preparada: revisão editorial compara fingerprints dos jogos da publicação vigente; publicação só retorna idempotentemente quando review.changed=false. Adicionadas 16 asserções pgTAP (plano 60) de republicação de notas/penalidades, retry, leitura anon e snapshots imutáveis. Gate local npm run check PASS (formatação/lint/typecheck/Vitest/runbooks/agentes/build/segredos); pgTAP novo pendente no Actions. QA independente confirmou o novo P1 no 06ffcd7; seu bloqueio permanece até evidência e renovação focal.
 
 Actions f246971 (Stage4 38093931733): 57 asserts executados sem falha antes de erro de cursor pgTAP na consulta esperada VALUES(2,4) sem espaço; ajuste focal para SELECT 2,4 evita a classificação de consulta preparada do pgTAP. SQL funcional e demais testes preservados. Reexecução pendente no commit de teste.
+
+## 22. Fechamento das pendências estatísticas e republicação — 10/10/2026
+
+**Etapa 4 backend: READY.** Artefato revisado e testado: `86934cc16d8c4662f2a07e30868b6e10eea47c0a`; base `27d917a1ce4a404ced091fd3ca660113c215ca92`. Correções de ausência/zero e isolamento preservadas de `2984f6c..b6fbf6b`; correção adicional de republicação `f246971`, ajuste focal de consulta pgTAP `86934cc`. Não houve descarte de trabalho; worktree manual-stage4-v3-review limpo e sincronizado antes deste registro exclusivamente documental.
+
+- P1 ausência versus zero: tentativas de atleta com roster mas sem stats efetivas ficam NULL; DNP tratado separadamente; cobertura avançada exige registro. Read models de jogo/competição/perfil e consumidor de equipes protegidos.
+- P2 publicação e isolamento: snapshot editorial anterior permanece congelado; revisão invalida fingerprint; testes confirmam autoridades manual/FIBA no mesmo jogo e LL ponderados entre jogos, sem depender de games.source.
+- P1 adicional de republicação (QA no 06ffcd7): resolvido. Review.changed compara fingerprints privados vigentes; retorno idempotente de publicação exige ausência de mudança. Notas e penalidades podem ser republicadas mesmo com JSON/placar igual. As 16 novas regressões verificam restauração de acesso anon, denominadores bilaterais 2/4, nova versão, retry idempotente e imutabilidade do primeiro snapshot.
+
+### Pareceres independentes consolidados
+
+| Revisor | Decisão | Commit / data |
+| --- | --- | --- |
+| statistics-domain-reviewer (Mendel) | APPROVE_WITH_NON_BLOCKING_NOTES; **BLOCK_RELEASE estatístico expressamente revogado**, inclusive republicação | 86934cc; 10/10/2026 20:14:35 -03:00 |
+| database-security-reviewer (Archimedes) | APPROVE_WITH_NON_BLOCKING_NOTES; auth/AAL2, CAS, locks, grants e search_path preservados; nenhum bloqueador | 86934cc; 10/10/2026 20:11:34 -03:00 |
+| qa-reviewer (Dirac) | APPROVE_WITH_NON_BLOCKING_NOTES; **BLOCK_RELEASE de QA expressamente revogado**, inclusive P1 de republicação | 86934cc; 10/10/2026 20:17:53 -03:00 |
+| accessibility-ui-reviewer (Ohm) | APPROVE_WITH_NON_BLOCKING_NOTES no domínio de UI preservado; validade incremental confirmada pelo QA, sem nova interação/UI | b05b243; 09/10/2026 23:29 -03:00 |
+
+A renovação estatística e a de segurança são focais ao delta desde 06ffcd7, sobre seus pareceres anteriores da PR. Não houve aprovação simulada ou dispensa de especialista crítico. CI/preview executaram o merge sintético 4c960744; QA confirmou árvore idêntica à do HEAD revisado.
+
+### Evidências no artefato final
+
+- [Stage4 38094118567](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38094118567): **SUCCESS**, quatro jobs aprovados. PostgreSQL descartável: **49 arquivos/1.408 pgTAP PASS**, revisão **60/60**; replay histórico **9 arquivos/345 pgTAP PASS**; QA/browser e integração com main aprovados.
+- [CI 38094121800](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38094121800): **SUCCESS**, gate, banco, acessibilidade e replay aprovados.
+- [CodeQL 38094121719](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38094121719) e [preview 38094121702](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38094121702): **SUCCESS**. Preview com smoke público, privacidade, acessibilidade/reflow aprovados.
+- Gate local npm run check: PASS, incluindo **58 arquivos/502 Vitest**, formatação/lint/typecheck/runbooks/agentes/build/segredos. Módulo estatístico focal: **10 arquivos/64 testes PASS**. Browser: **9 aprovados/1 skip conhecido**.
+- Primeiro run da republicação parou após 57 asserts por consulta esperada VALUES sem whitespace; ajuste SELECT explícito revalidado integralmente. Essa falha está encerrada.
+
+Riscos residuais não bloqueantes: replay histórico é reconstrução aproximada, não clone fiel do banco compartilhado; rollout remoto não certificado. Nota P3 do revisor: fortalecer futuramente o teste Vitest somente FIBA com atleta completo e outro sem stats (o caso misto já verifica ausência, mas mascara parte das métricas). Não resta P1/P2 ou BLOCK_RELEASE aberto neste checkpoint. Não houve migration no Supabase compartilhado, merge, produção ou Etapa 5. PR permanece DRAFT; write lock entregue.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72 e docs/plan/sumula-manual-v2/05-wizard-jogo-equipes.md
+ACAO: manter PR draft e checkpoint aprovado da Etapa 4; na próxima unidade explicitamente autorizada, reconciliar Git/HANDOFF e reassumir write lock antes de implementar a configuração restaurável do wizard conforme Etapa 5. Aplicação compartilhada de migrations e merge permanecem fora deste escopo.
+CRITERIO_DE_CONCLUSAO: esta entrega se encerra com HANDOFF/PR consistentes, commit documental publicado, artefato 86934cc verde e pareceres válidos; continuação de interface exige seu próprio escopo, testes e checkpoint.
+```
