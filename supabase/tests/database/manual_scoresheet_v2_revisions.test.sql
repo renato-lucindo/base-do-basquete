@@ -423,7 +423,7 @@ select results_eq($projection$
          (free_throw_summary->'away'->>'charged')::integer
   from public.manual_scoresheet_public_statistics_projection
   where game_id=(select game_id from manual_v2_result)
-$projection$, $$values(2,4)$$,
+$projection$, $$select 2,4$$,
   'anonymous projection exposes corrected bilateral penalty denominators after republication');
 select is((select count(*) from public.games
   where id=(select game_id from manual_v2_result)),1::bigint,
