@@ -254,3 +254,20 @@ ARQUIVO_OU_SERVICO: PR #72, .agents/database-security-reviewer.md, .agents/stati
 ACAO: obter autorização de execução aceita para o revisor estatístico, obter parecer formal no HEAD funcional e sanar eventuais bloqueios; atualizar REVIEW_PACKET com decisões verificáveis, revalidar apenas o que for afetado e reavaliar o BLOCK_RELEASE de QA. Não aplicar migrations remotas, fazer merge nem iniciar Etapa 5.
 CRITERIO_DE_CONCLUSAO: pareceres críticos independentes válidos no mesmo artefato funcional e ausência de BLOCK_RELEASE, com CI, pgTAP, CodeQL e preview verdes, PR ainda draft até decisão expressa de integração.
 ```
+
+## 19. Parecer estatistico independente — 10/10/2026
+
+- `statistics-domain-reviewer` acionado e executado em modo read-only no commit `f24caeeadb6c55ff586e750c59000bcdf5fc473d` (HEAD funcional `b05b243`); `BASE_COMMIT=27d917a1ce4a404ced091fd3ca660113c215ca92`; `REVIEWED_AT=2026-10-10 00:19 -03:00`. Parecer formal: **BLOCK_RELEASE**, revogacao do bloqueio anterior **NEGADA**. A revisao de estatisticas foi de fato executada; a recusa anterior da ferramenta permanece apenas como historico.
+- **P1 — ausencia convertida em zero:** `supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql:229-233` utiliza `coalesce(stat.free_throw_attempted, 0)` sobre `LEFT JOIN` de estatisticas ao roster sob autoridade FIBA, podendo produzir zero para atleta sem registro avancado; `app/modules/statistics/public-sports.server.ts:413-425` pode interpretar a linha como dado completo. Necessario diferenciar `NULL` (desconhecido), zero real e `did_not_play`, adicionar regressao PostgreSQL que cubra roster sem linha de estatisticas e teste focal do consumidor.
+- **P2 — snapshot publicado:** `app/modules/statistics/public-sports.server.ts:206-213` retorna `public_get_competition_publication` antes de resolver autoridade por dominio. Exigir teste integrado de consistencia/invalidacao da publicacao apos revisao e troca de autoridade; nao ha incorrecao concreta do snapshot comprovada apenas pelo early return.
+- **P2 — isolamento entre consumidores:** validar em testes integrados combinacoes distintas de `player_scoring` e `player_advanced` entre `game_player_statistics`, `public-statistics.server.ts`, `player-profile.server.ts` e estatisticas publicas de equipe/competicao; lacuna de cobertura, sem corrupcao confirmada.
+- **Melhorias confirmadas:** `3baf771` utiliza `game_active_data_sources` por dominio e preserva algumas tentativas desconhecidas como `null`; migration e pgTAP protegem LL coletivos. Todos os gates em `f24caee` continuam registrados como verdes: Stage 4 Validation 38017977886 (49/1.383 pgTAP + 9/320 no historico), CI 38017980701, CodeQL 38017980694, preview 38017980693. Os testes automáticos anteriores nao eliminam o P1/P2.
+- `database-security-reviewer` e `accessibility-ui-reviewer` mantem `APPROVE_WITH_NON_BLOCKING_NOTES` vinculados ao artefato funcional `b05b243`; `qa-reviewer` mantem `BLOCK_RELEASE` por governanca. PR #72 permanece **draft**, Etapa 4 em revisao, sem migration no Supabase compartilhado, merge em main, producao ou Etapa 5. Revisao read-only nao alterou arquivos.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql, app/modules/statistics/public-sports.server.ts, supabase/tests/database, app/modules/statistics/*.test.ts, PR #72
+ACAO: corrigir o P1 de NULL versus zero com teste SQL/consumidor; provar por regressao de integracao a consistencia de snapshots publicados apos revisao/troca de autoridade e do isolamento entre todos os read models; executar testes focais e gates pertinentes em PostgreSQL descartavel; pedir novo parecer independente statistics-domain-reviewer no commit corrigido e reavaliar o bloqueio QA.
+CRITERIO_DE_CONCLUSAO: nenhum P1 estatistico em aberto, cenarios P2 cobertos, gates verdes no HEAD funcional corrigido e novo parecer independente capaz de revogar explicitamente o BLOCK_RELEASE; preservar PR draft e nao tocar Supabase compartilhado.
+```
