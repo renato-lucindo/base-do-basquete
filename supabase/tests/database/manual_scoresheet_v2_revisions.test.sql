@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(60);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -197,12 +197,14 @@ select is((select submission_version from public.game_data_submissions
   where id=(select submission_id from manual_v2_baseline)),1,
   'base submission starts at version one');
 reset role;
+update public.competitions set starts_on='2026-01-01' where id=9831;
 select lives_ok(
   $pub$select private.backfill_legacy_competition_publication(9831,'published')$pub$,
   'the original manual game is captured in the explicitly published version'
 );
 create temp table manual_v2_published_before as
-select public.public_get_competition_publication(9831) as snapshot;
+select public.public_get_competition_publication(9831) as snapshot,
+  (select current_publication_id from public.competitions where id=9831) as publication_id;
 select ok(private.game_is_currently_published((select game_id from manual_v2_result)),
   'the original publication fingerprint authorizes its initial game');
 
@@ -257,6 +259,33 @@ select is(public.public_get_competition_publication(9831),
   'a successful revision preserves the immutable prior public snapshot until republished');
 select ok(not private.game_is_currently_published((select game_id from manual_v2_result)),
   'a changed official-result authority invalidates the old public game fingerprint');
+select ok((public.admin_get_publication_review(9831)->>'changed')::boolean,
+  'notes-only revision requires republication even when the public JSON is unchanged');
+create temp table manual_v2_republications(kind text primary key, id bigint);
+grant select on manual_v2_republications to anon;
+grant select on manual_v2_result to anon;
+select lives_ok($republish$
+  insert into manual_v2_republications values ('notes',public.admin_publish_competition(9831,1,true))
+$republish$, 'notes-only revision can be explicitly republished');
+select ok(private.game_is_currently_published((select game_id from manual_v2_result)),
+  'notes republication restores the current game fingerprint');
+select is((select snapshot from public.competition_publications
+  where id=(select publication_id from manual_v2_published_before)),
+  (select snapshot from manual_v2_published_before),
+  'republication preserves the original immutable snapshot');
+select is(public.admin_publish_competition(9831,1,true),
+  (select id from manual_v2_republications where kind='notes'),
+  'notes republication retry remains idempotent with the original expected version');
+select ok(not (public.admin_get_publication_review(9831)->>'changed')::boolean,
+  'publication review reports no pending changes after republication');
+set local role anon;
+select is((select count(*) from public.games
+  where id=(select game_id from manual_v2_result)),1::bigint,
+  'anonymous readers see the republished game');
+select is((select count(game_id) from public.manual_scoresheet_public_statistics_projection
+  where game_id=(select game_id from manual_v2_result)),1::bigint,
+  'anonymous readers see the republished active collective projection');
+reset role;
 set local role authenticated;
 select results_eq(
   $$select submission_version,status from public.game_data_submissions
@@ -373,6 +402,37 @@ select is((select count(*) from public.game_data_submissions s
 select is((select count(*) from public.game_data_domain_authority
   where game_id=(select game_id from manual_v2_result) and revision=3),6::bigint,
   'successive revisions increment six domain counters');
+
+reset role;
+select ok((public.admin_get_publication_review(9831)->>'changed')::boolean,
+  'penalty-only revision requires republication despite an unchanged score');
+select lives_ok($republish$
+  insert into manual_v2_republications values ('penalty',public.admin_publish_competition(9831,2,true))
+$republish$, 'penalty-only revision can be explicitly republished');
+select isnt((select id from manual_v2_republications where kind='penalty'),
+  (select id from manual_v2_republications where kind='notes'),
+  'penalty republication creates a new version');
+select ok(private.game_is_currently_published((select game_id from manual_v2_result)),
+  'penalty republication restores the game fingerprint');
+select is(public.admin_publish_competition(9831,2,true),
+  (select id from manual_v2_republications where kind='penalty'),
+  'penalty republication retry remains idempotent');
+set local role anon;
+select results_eq($projection$
+  select (free_throw_summary->'home'->>'charged')::integer,
+         (free_throw_summary->'away'->>'charged')::integer
+  from public.manual_scoresheet_public_statistics_projection
+  where game_id=(select game_id from manual_v2_result)
+$projection$, $$values(2,4)$$,
+  'anonymous projection exposes corrected bilateral penalty denominators after republication');
+select is((select count(*) from public.games
+  where id=(select game_id from manual_v2_result)),1::bigint,
+  'the corrected game remains anonymously visible after penalty republication');
+reset role;
+select is((select snapshot from public.competition_publications
+  where id=(select publication_id from manual_v2_published_before)),
+  (select snapshot from manual_v2_published_before),
+  'successive republications never rewrite the first published version');
 
 select * from finish();
 rollback;

@@ -386,3 +386,233 @@ left join foul_totals fouls
  and fouls.game_roster_slot_id = slot.id
 where game.status = 'final'
   and not competition.data_profile_review_required;
+
+
+-- A manual revision may change only private notes or penalty metadata. Its
+-- authority fingerprint still needs an explicit new publication even when the
+-- public JSON is unchanged. Preserve the current scheduling review requirements.
+create or replace function private.competition_publication_review(p_competition_id bigint)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  competition public.competitions;
+  data_profile public.series_category_data_profiles;
+  snapshot jsonb;
+  current_publication public.competition_publications;
+  current_statistics public.competition_publication_statistics;
+  blockers jsonb := '[]'::jsonb;
+  confirmed_teams integer;
+  eligible_games integer;
+  invalid_games integer;
+  snapshot_hash text;
+  statistics_fingerprint text;
+  statistics_changed boolean := false;
+begin
+  select * into competition from public.competitions where id = p_competition_id;
+  if not found then
+    raise exception using errcode = 'BD404', message = 'BDB_COMPETITION_NOT_FOUND';
+  end if;
+  select * into data_profile from public.series_category_data_profiles
+  where id = competition.data_profile_id;
+  select * into current_publication from public.competition_publications
+  where id = competition.current_publication_id;
+  select * into current_statistics from public.competition_publication_statistics
+  where publication_id = competition.current_publication_id;
+  select count(*) into confirmed_teams from public.team_registrations
+  where competition_id = competition.id and status in ('confirmed', 'completed');
+  select count(*) into eligible_games from public.games
+  where competition_id = competition.id and status in ('scheduled', 'live', 'final');
+  select count(*) into invalid_games from public.games game
+  where game.competition_id = competition.id and game.status in ('scheduled', 'live', 'final')
+    and (select count(*) from public.game_participants participant
+      where participant.game_id = game.id) <> 2;
+  if competition.status = 'archived' then
+    blockers := blockers || jsonb_build_array('ARCHIVED');
+  end if;
+  if competition.starts_on is null then
+    blockers := blockers || jsonb_build_array('START_DATE_REQUIRED');
+  elsif (clock_timestamp() at time zone 'America/Sao_Paulo')::date < competition.starts_on then
+    blockers := blockers || jsonb_build_array('BEFORE_STARTS_ON');
+  end if;
+  if coalesce(competition.gender_division_review_required, true) then
+    blockers := blockers || jsonb_build_array('GENDER_REVIEW_REQUIRED');
+  end if;
+  if coalesce(competition.data_profile_review_required, true) then
+    blockers := blockers || jsonb_build_array('DATA_PROFILE_REVIEW_REQUIRED');
+  end if;
+  if confirmed_teams < 2 then
+    blockers := blockers || jsonb_build_array('CONFIRMED_TEAMS_REQUIRED');
+  end if;
+  if invalid_games > 0 then
+    blockers := blockers || jsonb_build_array('INVALID_PUBLIC_GAME');
+  end if;
+  snapshot := private.competition_publication_snapshot(competition.id);
+  snapshot_hash := md5(snapshot::text);
+  if data_profile.primary_source = 'fiba_boxscore' and data_profile.status = 'active' then
+    statistics_fingerprint := private.competition_boxscore_statistics_fingerprint(competition.id);
+    statistics_changed := current_statistics.publication_id is null
+      or current_statistics.source_fingerprint is distinct from statistics_fingerprint
+      or current_statistics.data_profile_id is distinct from data_profile.id
+      or current_statistics.data_profile_version is distinct from data_profile.version;
+  end if;
+  return jsonb_build_object(
+    'competitionId', competition.id,
+    'currentVersion', coalesce(current_publication.version, 0),
+    'nextVersion', coalesce(current_publication.version, 0) + 1,
+    'confirmedTeams', confirmed_teams,
+    'eligibleGames', eligible_games,
+    'invalidGames', invalid_games,
+    'startsOn', competition.starts_on,
+    'canPublish', jsonb_array_length(blockers) = 0,
+    'blockers', blockers,
+    'changed', current_publication.id is null
+      or current_publication.snapshot_hash <> snapshot_hash
+      or statistics_changed
+      or exists (
+        select 1 from private.competition_publication_games published
+        where published.publication_id = current_publication.id
+          and published.fingerprint is distinct from
+            private.publication_game_fingerprint(published.game_id)
+      )
+  );
+end;
+$$;
+revoke all on function private.competition_publication_review(bigint)
+  from public, anon, authenticated;
+
+create or replace function public.admin_publish_competition(
+  p_competition_id bigint,
+  p_expected_version integer,
+  p_confirmed boolean
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  competition public.competitions;
+  data_profile public.series_category_data_profiles;
+  current_publication public.competition_publications;
+  current_statistics public.competition_publication_statistics;
+  review jsonb;
+  snapshot jsonb;
+  snapshot_hash text;
+  statistics_fingerprint text;
+  statistics_unchanged boolean := true;
+  saved_publication_id bigint;
+begin
+  if not private.is_admin_aal2() then
+    raise exception using errcode = 'BD401', message = 'BDB_ADMIN_AAL2_REQUIRED';
+  end if;
+  if p_confirmed is distinct from true then
+    raise exception using errcode = 'BR043', message = 'BDB_PUBLICATION_CONFIRMATION_REQUIRED';
+  end if;
+  if p_expected_version is null or p_expected_version < 0 then
+    raise exception using errcode = 'BR041', message = 'BDB_PUBLICATION_CHANGED_RELOAD';
+  end if;
+  select * into competition from public.competitions
+  where id = p_competition_id for update;
+  if not found then
+    raise exception using errcode = 'BD404', message = 'BDB_COMPETITION_NOT_FOUND';
+  end if;
+  select * into data_profile from public.series_category_data_profiles
+  where id = competition.data_profile_id;
+  select * into current_publication from public.competition_publications
+  where id = competition.current_publication_id for update;
+  select * into current_statistics from public.competition_publication_statistics
+  where publication_id = competition.current_publication_id;
+  review := private.competition_publication_review(competition.id);
+  if not (review ->> 'canPublish')::boolean then
+    raise exception using errcode = 'BR042', message = 'BDB_PUBLICATION_BLOCKED';
+  end if;
+  snapshot := private.competition_publication_snapshot(competition.id);
+  snapshot_hash := md5(snapshot::text);
+  if data_profile.primary_source = 'fiba_boxscore' and data_profile.status = 'active' then
+    statistics_fingerprint := private.competition_boxscore_statistics_fingerprint(competition.id);
+    statistics_unchanged := current_statistics.publication_id is not null
+      and current_statistics.source_fingerprint = statistics_fingerprint
+      and current_statistics.data_profile_id = data_profile.id
+      and current_statistics.data_profile_version = data_profile.version;
+  end if;
+  if current_publication.id is not null
+    and current_publication.snapshot_hash = snapshot_hash
+    and statistics_unchanged
+    and not (review ->> 'changed')::boolean
+  then
+    return current_publication.id;
+  end if;
+  if coalesce(current_publication.version, 0) <> p_expected_version then
+    raise exception using errcode = 'BR041', message = 'BDB_PUBLICATION_CHANGED_RELOAD';
+  end if;
+
+  update public.teams team set is_public = true
+  where exists (
+    select 1 from public.team_registrations registration
+    where registration.competition_id = competition.id
+      and registration.team_id = team.id
+      and registration.status in ('confirmed', 'completed')
+  );
+  update public.players player set is_public = true
+  where exists (
+    select 1 from public.roster_entries entry
+    where entry.competition_id = competition.id
+      and entry.player_id = player.id and entry.status = 'active'
+  );
+
+  insert into public.competition_publications (
+    competition_id, version, snapshot, snapshot_hash, publication_kind, published_by
+  ) values (
+    competition.id, p_expected_version + 1, snapshot, snapshot_hash, 'admin', auth.uid()
+  ) returning id into saved_publication_id;
+  insert into private.competition_publication_registrations (
+    publication_id, competition_id, registration_id, fingerprint
+  )
+  select saved_publication_id, competition.id, registration.id,
+    private.publication_registration_fingerprint(registration.id)
+  from public.team_registrations registration
+  where registration.competition_id = competition.id
+    and registration.status in ('confirmed', 'completed');
+  insert into private.competition_publication_roster_entries (
+    publication_id, competition_id, roster_entry_id, fingerprint
+  )
+  select saved_publication_id, competition.id, entry.id,
+    private.publication_roster_fingerprint(entry.id)
+  from public.roster_entries entry
+  where entry.competition_id = competition.id and entry.status = 'active';
+  insert into private.competition_publication_games (
+    publication_id, competition_id, game_id, fingerprint
+  )
+  select saved_publication_id, competition.id, game.id,
+    private.publication_game_fingerprint(game.id)
+  from public.games game
+  where game.competition_id = competition.id
+    and game.status in ('scheduled', 'live', 'final')
+    and (select count(*) from public.game_participants participant
+      where participant.game_id = game.id) = 2;
+  update public.competitions
+  set status = 'published', published_at = coalesce(published_at, now()),
+    current_publication_id = saved_publication_id
+  where id = competition.id;
+  insert into public.admin_mutation_audit(action, entity_type, entity_id, metadata)
+  values (
+    'competition_published', 'competition', competition.id,
+    jsonb_build_object(
+      'publicationId', saved_publication_id,
+      'version', p_expected_version + 1,
+      'confirmedTeams', (review ->> 'confirmedTeams')::integer,
+      'eligibleGames', (review ->> 'eligibleGames')::integer
+    )
+  );
+  return saved_publication_id;
+end;
+$$;
+
+revoke all on function public.admin_publish_competition(bigint,integer,boolean)
+from public, anon, authenticated;
+grant execute on function public.admin_publish_competition(bigint,integer,boolean)
+to authenticated;

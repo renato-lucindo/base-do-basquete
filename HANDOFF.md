@@ -16,8 +16,8 @@ OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
 BASE_COMMIT: 8ac62209a636be757d96270eef9dc6b27c8735c0
-HEAD_COMMIT: 794490d4c960428f2b077c3c40d106cbe9b7e5f7 (confirmado no worktree manual-stage4-v3-review em 09/10/2026; delta estatistico WIP preservado)
-HEAD_FUNCIONAL: d10d048922525eb06d5b14152469170359d7d994 (CI verde)
+HEAD_COMMIT: 06ffcd73ffa11393ce0e49091b00b72f86bd3314 (reconciliado por fast-forward em 10/10/2026; veja checkpoint 21)
+HEAD_FUNCIONAL: b6fbf6bb2234102dd6bc9ed09fca14908cbb39de (CI/pgTAP verde; correção focal de republicação em andamento)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
@@ -281,3 +281,12 @@ Regressoes propostas: SQL no fixture Basketball Site com remocao temporaria de s
 Nenhuma migration foi aplicada no Supabase compartilhado e nenhum merge foi realizado. EVIDENCIA_GIT: HEAD funcional `b6fbf6bb2234102dd6bc9ed09fca14908cbb39de`, Stage 4 Validation 38055387765 SUCCESS com 49 arquivos/1392 pgTAP e 9 arquivos/329 testes no replay historico; CI 38055390398 SUCCESS (gate, banco, acessibilidade e replay), CodeQL 38055390386 SUCCESS e preview 38055390392 SUCCESS. Regressoes SQL executadas em PostgreSQL descartavel. PENDENTE: obter pareceres independentes renovados de `statistics-domain-reviewer` e `database-security-reviewer` no novo artefato, reconciliar QA e somente entao decidir sobre o BLOCK_RELEASE. A baseline historica de CI nao representa dump fiel do compartilhado.
 
 PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=PR #72/Actions e .agents/statistics-domain-reviewer.md; ACAO=verificar pgTAP completo e focal, CI, preview e CodeQL no commit corrigido; ajustar qualquer falha, solicitar pareceres independentes renovados e registrar resultados na PR; CRITERIO_DE_CONCLUSAO=regressoes verdes no SHA corrigido e parecer estatistico capaz de levantar o BLOCK_RELEASE, mantendo draft e Supabase compartilhado intactos.
+
+## 21. Reconciliação local e republicação após revisão — 10/10/2026
+
+O worktree manual-stage4-v3-review avançou conservadoramente de d8af620 para 06ffcd7, incorporando as correções remotas existentes 2984f6c..b6fbf6b sem descartar mudanças. Actions no HEAD 06ffcd7: Stage4 38055861393 (49/1392 pgTAP + 9/329 histórico), CI 38055863749, CodeQL 38055863758 e preview 38055863745 SUCCESS. Vitest local estatístico: 10 arquivos/64 testes PASS. Revisões independentes renovadas de segurança e estatística emitiram APPROVE_WITH_NON_BLOCKING_NOTES no 06ffcd7; estatística revogou expressamente o BLOCK_RELEASE anterior.
+
+A investigação complementar identificou caso ainda não coberto: revisão só de notas/penalidades muda officialResultSubmissionId/fingerprint, mas pode não mudar o snapshot JSON. Review/publicação manual compara somente JSON e pode retornar a versão antiga sem renovar fingerprints. WRITE_LOCK segue do project-maintainer para corrigir focalmente review.changed e idempotência da republicação dentro da migration Stage4 ainda não aplicada, com regressão de notas/penalidades, visibilidade anon e retry. Pareceres serão renovados para o delta antes do fechamento; QA aguarda. Nenhuma migration remota/merge/Etapa5.
+
+PROXIMO_PASSO_EXATO: em 20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql e manual_scoresheet_v2_revisions.test.sql, corrigir detecção de fingerprints alterados e comprovar republicação real restaura acesso público sem mutar snapshots anteriores; conferir pgTAP no Actions e renovar estatística/segurança/QA.
+Correção focal preparada: revisão editorial compara fingerprints dos jogos da publicação vigente; publicação só retorna idempotentemente quando review.changed=false. Adicionadas 16 asserções pgTAP (plano 60) de republicação de notas/penalidades, retry, leitura anon e snapshots imutáveis. Gate local npm run check PASS (formatação/lint/typecheck/Vitest/runbooks/agentes/build/segredos); pgTAP novo pendente no Actions. QA independente confirmou o novo P1 no 06ffcd7; seu bloqueio permanece até evidência e renovação focal.
