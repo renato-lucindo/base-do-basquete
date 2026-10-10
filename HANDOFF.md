@@ -219,3 +219,19 @@ ARQUIVO_OU_SERVICO: PR #72, workflow .github/workflows/stage4-validation.yml, Gi
 ACAO: publicar o delta estatístico com commit na branch da PR #72; executar e conferir pgTAP focal e completo em PostgreSQL descartável no Actions, documentando run IDs e resultados no REVIEW_PACKET; pedir revisão independente de segurança e estatísticas no mesmo SHA e preservar a PR draft enquanto houver BLOCK_RELEASE.
 CRITERIO_DE_CONCLUSAO: jobs de validação do HEAD publicado concluídos e evidenciados, pareceres críticos reais sem bloqueios; sem migrations no Supabase compartilhado, merge na main ou início da Etapa 5.
 ```
+
+## 17. Correção focal de permissão no pgTAP — 09/10/2026
+
+- Estado reconciliado: PR #72 aberta/draft em `3baf771b78b369c30ae0bd039b504db5b7487e37`, worktree `manual-stage4-v3-review` inicialmente limpo, `WRITE_LOCK` ativo do `project-maintainer` na unidade `MANUAL-SCORESHEET-V2-FIBA2024`.
+- GitHub Actions **Stage 4 Validation 38016040274** falhou em `manual_scoresheet_v2_atomic_create.test.sql`: durante o teste de criação, o papel `authenticated` tentou selecionar `submission_id` da projeção pública, embora a migration conceda SELECT apenas para `game_id` e `free_throw_summary`. A execução marcou 16 de 37 asserts nesse arquivo e terminou em falha. Isso é uma incompatibilidade do teste com a proteção de coluna privada, não motivo para ampliar o grant.
+- Correção focal: em `supabase/tests/database/manual_scoresheet_v2_atomic_create.test.sql`, a asserção interna de vínculo entre projeção e submissão ativa executa temporariamente como owner do teste (`reset role`) e restaura imediatamente `authenticated`. O SELECT de `submission_id` continua proibido a `anon` e `authenticated`; migration e regras de RLS não foram alteradas.
+- Gate SQL de regressão pendente de reexecução em PostgreSQL descartável do GitHub Actions após push do commit de correção. Resultados e SHA definitivo devem constar no REVIEW_PACKET da PR. Evidência local anterior (500 Vitest, typecheck, build, lint, formatação e varredura de segredos) continua válida para o código inalterado; a alteração atual afeta somente o pgTAP.
+- Risco remanescente CRITICO: aprovação independente de `database-security-reviewer` e `statistics-domain-reviewer` no SHA final, com BLOCK_RELEASE estatístico anterior ainda aberto; cobertura QA/acessibilidade conforme REVIEW_PACKET. A baseline reconstruída no CI não equivale a clone fiel do Supabase compartilhado. PR permanece draft; sem migrations compartilhadas, merge em main, produção ou Etapa 5.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72, .github/workflows/stage4-validation.yml e CI no GitHub Actions
+ACAO: commitar e enviar a correção focal de pgTAP; verificar execução completa dos 37 asserts em manual_scoresheet_v2_atomic_create.test.sql, suíte SQL integral e jobs CI/Stage 4 Validation/CodeQL no novo SHA; atualizar REVIEW_PACKET com evidências e solicitar pareceres independentes de banco/segurança e estatística.
+CRITERIO_DE_CONCLUSAO: SQL/CI verdes e resultados registrados no SHA final, sem BLOCK_RELEASE e com pareceres críticos válidos antes de encerrar Etapa 4; PR draft e Supabase compartilhado preservados.
+```

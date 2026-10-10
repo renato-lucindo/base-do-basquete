@@ -200,6 +200,8 @@ select is(
   1::bigint,
   'initial manual confirmation materializes one collective public projection'
 );
+-- submission_id is private: inspect it as the test owner, never as authenticated.
+reset role;
 select is(
   (select projection.submission_id
    from public.manual_scoresheet_public_statistics_projection projection
@@ -208,6 +210,7 @@ select is(
    where submission.game_id=(select game_id from manual_v2_result) and submission.status='active'),
   'initial collective projection references the active submission'
 );
+set local role authenticated;
 select results_eq(
   $actual$select free_throw_summary #>> '{home,conceded}',
            free_throw_summary #>> '{away,charged}',
