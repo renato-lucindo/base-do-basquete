@@ -17,6 +17,7 @@ import {
   type TeamSide,
 } from "../modules/scoresheet/domain";
 import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
+import { ManualScoresheetSetupWizard } from "../modules/scoresheet/setup-wizard";
 import type { Json } from "../types/database.generated";
 import type { Route } from "./+types/admin.competitions.$competitionId.scoresheets.new";
 
@@ -144,6 +145,8 @@ export function meta() {
 }
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
+  const wizardMode =
+    new URL(request.url).searchParams.get("modo") === "existente" ? "existing" : "setup";
   const competitionId = parseId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const { env } = context.get(cloudflareContext);
@@ -336,6 +339,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       idempotencyKey: crypto.randomUUID(),
       games,
       registrations,
+      wizardMode,
       requiresFallbackReason,
       unavailableIssue,
     },
@@ -608,6 +612,29 @@ export function ScoresheetUnavailableState({
 }
 
 export default function NewManualScoresheet({ loaderData, actionData }: Route.ComponentProps) {
+  if (loaderData.wizardMode === "setup") {
+    if (loaderData.registrations.length < 2) {
+      return (
+        <main className="admin-shell">
+          <section className="admin-welcome">
+            <h1>Equipes insuficientes</h1>
+            <p>
+              É necessário ter duas equipes confirmadas com atletas inscritos para configurar a
+              súmula.
+            </p>
+          </section>
+        </main>
+      );
+    }
+    return (
+      <ManualScoresheetSetupWizard
+        competitionId={loaderData.competition.id}
+        competitionName={loaderData.competition.display_name}
+        registrations={loaderData.registrations}
+        hasExistingGames={loaderData.games.length > 0}
+      />
+    );
+  }
   if (loaderData.unavailableIssue) {
     return (
       <ScoresheetUnavailableState

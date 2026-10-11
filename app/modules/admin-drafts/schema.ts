@@ -3,6 +3,7 @@ import { z } from "zod";
 export const ADMIN_DRAFT_SCHEMA_VERSION = 1 as const;
 export const ADMIN_DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const MANUAL_SCORESHEET_DRAFT_EDITOR_VERSION = "v2" as const;
+export const MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION = "v3-setup" as const;
 
 export type AdminDraftFlow = "roster" | "manual-scoresheet" | "boxscore-review";
 

@@ -331,3 +331,9 @@ ARQUIVO_OU_SERVICO: PR #72 e docs/plan/sumula-manual-v2/05-wizard-jogo-equipes.m
 ACAO: manter PR draft e checkpoint aprovado da Etapa 4; na próxima unidade explicitamente autorizada, reconciliar Git/HANDOFF e reassumir write lock antes de implementar a configuração restaurável do wizard conforme Etapa 5. Aplicação compartilhada de migrations e merge permanecem fora deste escopo.
 CRITERIO_DE_CONCLUSAO: esta entrega se encerra com HANDOFF/PR consistentes, commit documental publicado, artefato 86934cc verde e pareceres válidos; continuação de interface exige seu próprio escopo, testes e checkpoint.
 ```
+
+## 23. Etapa 5 — wizard de jogo e equipes (11/10/2026)
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-FIBA2024-STAGE5; BRANCH=codex/manual-stage4-v3-review; HEAD_COMMIT=c45e112c2af03eb395ef22bda6f3c1191be22d53; STATUS=ACTIVE; SCOPE=etapas Jogo e Equipes do wizard, rascunho localStorage, metadata, atletas/roster, titular/capitão, comissão técnica e oficiais; testes focais e gate. EXCLUSO=Supabase compartilhado, migrations remotas, merge na main, deploy em produção e etapas 6–10.
+
+O commit c45e112 foi reconciliado em worktree limpo antes da abertura. Etapa 4 concluída conforme seção 22. Próximo checkpoint: configurar e restaurar o wizard integralmente sem escrita de rascunho no servidor, com validação UI, testes e HANDOFF final.
