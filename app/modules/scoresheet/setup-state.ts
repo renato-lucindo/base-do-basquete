@@ -22,7 +22,8 @@ export interface SetupStaff {
 }
 
 export interface ScoresheetSetup {
-  step: 1 | 2;
+  step: 1 | 2 | 3;
+  stats: Record<string, string>;
   game: ManualGamePayload;
   registrationIds: Record<TeamSide, number>;
   slots: Record<TeamSide, EditorSlot[]>;
@@ -43,6 +44,7 @@ export function emptySetupSlots(): EditorSlot[] {
 export function createScoresheetSetup(): ScoresheetSetup {
   return {
     step: 1,
+    stats: {},
     game: { date: "", time: "", venue: "", gameNumber: "", phaseRound: "", notes: "" },
     registrationIds: { home: 0, away: 0 },
     slots: { home: emptySetupSlots(), away: emptySetupSlots() },
@@ -71,6 +73,9 @@ export function selectSetupTeam(
       [side]: buildPrefillSlots(registration.roster, registration.previous),
     },
     staff: { ...current.staff, [side]: { coach: null, assistant: "" } },
+    stats: Object.fromEntries(
+      Object.entries(current.stats).filter(([key]) => !key.startsWith(`${side}-`)),
+    ),
   };
 }
 
@@ -126,8 +131,17 @@ export function selectSetupPlayer(
   )
     return current;
   const candidate = roster.find((item) => item.rosterEntryId === rosterEntryId);
+  const previous = current.slots[side].find((slot) => slot.slotNumber === slotNumber);
+  const resetStats = previous?.rosterEntryId !== rosterEntryId;
   const updated: ScoresheetSetup = {
     ...current,
+    stats: resetStats
+      ? Object.fromEntries(
+          Object.entries(current.stats).filter(
+            ([key]) => !key.startsWith(`${side}-${slotNumber}-`),
+          ),
+        )
+      : current.stats,
     slots: {
       ...current.slots,
       [side]: current.slots[side].map((slot) =>
@@ -291,7 +305,8 @@ const coachSchema = z.object({
 });
 const staffSchema = z.object({ coach: coachSchema.nullable(), assistant: z.string().max(160) });
 const setupSchema = z.object({
-  step: z.union([z.literal(1), z.literal(2)]),
+  step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  stats: z.record(z.string(), z.string().max(40)).optional(),
   game: z.object({
     date: z.string().max(10),
     time: z.string().max(5).nullish(),
@@ -315,7 +330,7 @@ export function restoreScoresheetSetup(
 ): ScoresheetSetup | null {
   const result = setupSchema.safeParse(raw);
   if (!result.success) return null;
-  const setup = result.data as ScoresheetSetup;
+  const setup: ScoresheetSetup = { ...result.data, stats: result.data.stats ?? {} };
   for (const side of sides) {
     const registrationId = setup.registrationIds[side];
     if (setup.slots[side].some((slot, index) => slot.slotNumber !== index + 1)) return null;
@@ -341,6 +356,16 @@ export function restoreScoresheetSetup(
         captain.playerName !== coach.name)
     )
       return null;
+  }
+  for (const key of Object.keys(setup.stats)) {
+    const match = /^(home|away)-(1[0-2]|[1-9])-([1-4])-(two|three|free|fouls)$/.exec(key);
+    if (!match) return null;
+    const [, side, slotNumber] = match;
+    if (!side || !slotNumber) return null;
+    const slot = setup.slots[side as TeamSide].find(
+      (entry) => entry.slotNumber === Number(slotNumber),
+    );
+    if (!slot || slot.rosterEntryId === null) return null;
   }
   return setup;
 }

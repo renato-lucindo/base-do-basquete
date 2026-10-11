@@ -1024,6 +1024,14 @@ a {
   gap: 24px;
 }
 
+.scoresheet-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.scoresheet-step {
+  min-width: 0;
+}
+
 .scoresheet-step[hidden] {
   display: none;
 }
@@ -5841,6 +5849,18 @@ body {
   font-size: 0.78rem;
 }
 
+@media (max-width: 560px) {
+  .scoresheet-shell .admin-wizard ol {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .scoresheet-shell .admin-wizard li {
+    min-width: 0;
+    flex: 1 1 calc(50% - 3px);
+  }
+}
+
 .admin-draft-notice,
 .roster-suggestion {
   display: flex;
@@ -6610,7 +6630,9 @@ body {
 
 .compact-grid-section {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+  min-width: 0;
   margin-top: 14px;
 }
 
@@ -6632,6 +6654,7 @@ body {
 }
 
 .compact-grid-scroll {
+  position: relative;
   max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 9px;

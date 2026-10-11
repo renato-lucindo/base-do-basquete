@@ -13,6 +13,8 @@ const registrations: ScoresheetRegistration[] = [
     roster: [
       { rosterEntryId: 1, playerName: "Ana Atleta", jerseyNumber: "7" },
       { rosterEntryId: 2, playerName: "Bruna Atleta", jerseyNumber: "8" },
+      { rosterEntryId: 4, playerName: "Davi Atleta", jerseyNumber: "12" },
+      { rosterEntryId: 5, playerName: "Eva Atleta", jerseyNumber: "00" },
     ],
   },
   {

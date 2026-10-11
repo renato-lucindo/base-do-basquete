@@ -9,6 +9,7 @@ import type { AdminDraft } from "../admin-drafts/schema";
 import { MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION } from "../admin-drafts/schema";
 import { normalizeGameJersey, OFFICIAL_ROLES, type TeamSide, validateTeamSlots } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
+import { FastScoringPanel } from "./fast-scoring-panel";
 import {
   createScoresheetSetup,
   editSetupCoach,
@@ -136,32 +137,25 @@ function ScoresheetSetupWizardSession({
     if (issues.length) window.requestAnimationFrame(() => errorRef.current?.focus());
   };
 
-  const goToStep = (next: 1 | 2) => {
+  const goToStep = (next: 1 | 2 | 3) => {
     if (draftBlocked) return;
-    if (next === 2) {
-      const issues = validateSetupGame(setup, registrations);
-      if (issues.length) {
-        focusValidationErrors(issues);
-        return;
-      }
+    const issues =
+      next === 1
+        ? []
+        : [
+            ...validateSetupGame(setup, registrations),
+            ...(next === 3 ? validateSetupTeams(setup, registrations) : []),
+          ];
+    if (issues.length) {
+      focusValidationErrors(issues);
+      return;
     }
     update((current) => ({ ...current, step: next }));
+    if (next === 3)
+      setFeedback(
+        "Configuração válida. Lance os pontos abaixo; o rascunho permanece neste navegador.",
+      );
     window.requestAnimationFrame(() => headingRef.current?.focus());
-  };
-
-  const verifySetup = () => {
-    if (draftBlocked) return;
-    const issues = [
-      ...validateSetupGame(setup, registrations),
-      ...validateSetupTeams(setup, registrations),
-    ];
-    focusValidationErrors(issues);
-    setFeedback(
-      issues.length === 0
-        ? "Configuração válida e salva neste navegador. O lançamento rápido será habilitado na Etapa 6."
-        : null,
-    );
-    if (!issues.length) setChanged(true);
   };
 
   const teamSelectionError = errors.includes("Selecione duas equipes inscritas e diferentes.");
@@ -193,7 +187,7 @@ function ScoresheetSetupWizardSession({
           current={setup.step}
           labels={steps}
           onSelect={(value) => {
-            if (value === 1 || value === 2) goToStep(value);
+            if (value === 1 || value === 2 || value === 3) goToStep(value);
           }}
         />
         <UnsavedChangesGuard active={changed} />
@@ -648,11 +642,43 @@ function ScoresheetSetupWizardSession({
               <button className="button button-ghost" type="button" onClick={() => goToStep(1)}>
                 Voltar para jogo
               </button>
-              <button className="button button-primary" type="button" onClick={verifySetup}>
-                Conferir configuração
+              <button className="button button-primary" type="button" onClick={() => goToStep(3)}>
+                Continuar para lançamentos
               </button>
             </div>
           </section>
+          {setup.step === 3 ? (
+            <section className="scoresheet-step" aria-labelledby="scoresheet-scoring-heading">
+              <h2
+                className="scoresheet-step-heading"
+                id="scoresheet-scoring-heading"
+                ref={headingRef}
+                tabIndex={-1}
+              >
+                Lançamentos
+              </h2>
+              <p>Transcreva pontos por camisa e período. Os lançamentos ficam no rascunho local.</p>
+              <FastScoringPanel
+                slots={setup.slots}
+                registrations={registrations}
+                registrationIds={setup.registrationIds}
+                stats={setup.stats}
+                onChange={(key, value) =>
+                  update((current) => {
+                    const stats = { ...current.stats };
+                    if (value === undefined) delete stats[key];
+                    else stats[key] = value;
+                    return { ...current, stats };
+                  })
+                }
+              />
+              <div className="wizard-actions">
+                <button className="button button-ghost" type="button" onClick={() => goToStep(2)}>
+                  Voltar para equipes
+                </button>
+              </div>
+            </section>
+          ) : null}
         </div>
       </section>
     </main>

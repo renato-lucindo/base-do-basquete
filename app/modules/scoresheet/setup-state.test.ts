@@ -173,3 +173,41 @@ describe("manual scoresheet stage 5 setup", () => {
     expect(restoreScoresheetSetup(staleCaptain, registrations)).toBeNull();
   });
 });
+
+describe("stage 6 draft statistics", () => {
+  it("restores legacy setup drafts and preserves valid counters", () => {
+    const initial = validSetup();
+    const legacy = { ...initial, stats: undefined };
+    expect(restoreScoresheetSetup(legacy, registrations)?.stats).toEqual({});
+    const withScores = {
+      ...initial,
+      step: 3,
+      stats: { "home-1-1-two": "2", "away-1-4-free": "1" },
+    };
+    expect(restoreScoresheetSetup(withScores, registrations)?.stats).toEqual(withScores.stats);
+    expect(
+      restoreScoresheetSetup(
+        { ...withScores, stats: { "home-1-1-two": "texto incompleto" } },
+        registrations,
+      )?.stats,
+    ).toEqual({ "home-1-1-two": "texto incompleto" });
+    expect(
+      restoreScoresheetSetup({ ...withScores, stats: { "home-1-5-two": "1" } }, registrations),
+    ).toBeNull();
+    expect(
+      restoreScoresheetSetup({ ...withScores, stats: { "home-9-1-two": "1" } }, registrations),
+    ).toBeNull();
+  });
+
+  it("drops only the changed team or player counters", () => {
+    let setup = validSetup();
+    setup = {
+      ...setup,
+      stats: { "home-1-1-two": "1", "home-2-1-free": "2", "away-1-1-three": "1" },
+    };
+    setup = selectSetupPlayer(setup, "home", 1, null, homeRegistration.roster);
+    expect(setup.stats).toEqual({ "home-2-1-free": "2", "away-1-1-three": "1" });
+    setup = selectSetupTeam(setup, "away", homeRegistration);
+    expect(setup.stats).toEqual({ "home-2-1-free": "2" });
+  });
+});

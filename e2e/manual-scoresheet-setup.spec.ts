@@ -89,7 +89,7 @@ test("focuses validation errors and identifies every starter and captain control
   await expect(
     page.getByRole("checkbox", { name: "Titular — Visitante, slot 1", exact: true }),
   ).toHaveCount(1);
-  await page.getByRole("button", { name: "Conferir configuração" }).click();
+  await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
   await expect(page.getByRole("alert")).toBeFocused();
   const homeAthlete = page
     .locator("fieldset.lineup-panel")
@@ -117,7 +117,7 @@ test("focuses validation errors and identifies every starter and captain control
   const coach = teams.nth(0).getByRole("textbox", { name: "Técnico" });
   await coach.pressSequentially("Ana Silva");
   await expect(coach).toHaveValue("Ana Silva");
-  await page.getByRole("button", { name: "Conferir configuração" }).click();
+  await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Configuração válida" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
@@ -161,3 +161,113 @@ for (const width of [320, 390, 720, 1280]) {
     expect(dimension.pageWidth).toBeLessThanOrEqual(dimension.viewportWidth);
   });
 }
+
+async function enterScoring(page: import("@playwright/test").Page) {
+  await chooseGame(page);
+  await page.getByRole("button", { name: "Continuar para equipes" }).click();
+  const teams = page.locator("fieldset.lineup-panel");
+  await teams
+    .nth(0)
+    .getByRole("combobox", { name: /Atleta.*slot 1$/ })
+    .selectOption("1");
+  await teams
+    .nth(1)
+    .getByRole("combobox", { name: /Atleta.*slot 1$/ })
+    .selectOption("3");
+  await teams
+    .nth(0)
+    .getByRole("combobox", { name: /Atleta.*slot 2$/ })
+    .selectOption("4");
+  await teams
+    .nth(0)
+    .getByRole("combobox", { name: /Atleta.*slot 3$/ })
+    .selectOption("5");
+  await page.getByRole("radio", { name: "Capitão — Mandante, slot 1", exact: true }).check();
+  await page.getByRole("radio", { name: "Capitão — Visitante, slot 1", exact: true }).check();
+  await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
+  await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeVisible();
+}
+
+test("keyboard scoring supports 12 Enter 2 Enter, literal 00, errors, Escape, undo and grid correction", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.focus();
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  const points = page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" });
+  await expect(points).toBeFocused();
+  await points.fill("4");
+  await points.press("Enter");
+  await expect(page.locator("#fast-scoring-error")).toContainText("Valor inválido");
+  await points.fill("2");
+  await points.press("Enter");
+  await expect(jersey).toBeFocused();
+  await expect(page.getByRole("status").filter({ hasText: "Camisa 12: +2" })).toBeVisible();
+  const twoPoints = page.getByRole("textbox", { name: "2P de Davi Atleta" });
+  await expect(twoPoints).toHaveValue("1");
+  await jersey.fill("00");
+  await jersey.press("Enter");
+  await expect(
+    page.getByRole("textbox", { name: "Pontos da camisa 00 (1, 2 ou 3)" }),
+  ).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(jersey).toBeFocused();
+  await jersey.fill("00");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 00 (1, 2 ou 3)" }).fill("3");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "3P de Eva Atleta" })).toHaveValue("1");
+  await page.keyboard.press("Control+z");
+  await expect(page.getByRole("textbox", { name: "3P de Eva Atleta" })).toHaveValue("0");
+  await expect(twoPoints).toHaveValue("1");
+  await twoPoints.fill("3");
+  await expect(twoPoints).toHaveValue("3");
+  await expect(page.getByRole("button", { name: /Desfazer último/ })).toBeDisabled();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("saves scoring stats in a local draft and restores them on reload", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("1");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "LL de Davi Atleta" })).toHaveValue("1");
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"home-3-1-free":"1"');
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar" }).click();
+  await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "LL de Davi Atleta" })).toHaveValue("1");
+  await expect(page.getByText("Nenhum lançamento nesta sessão.")).toBeVisible();
+});
+
+test("switches visitor and period with keyboard and keeps the scoring view within 320px", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const team = page.getByRole("combobox", { name: "Equipe para lançamento rápido" });
+  await team.selectOption("away");
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  await period.selectOption("2");
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("9");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 9 (1, 2 ou 3)" }).fill("1");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "LL de Carla Atleta" })).toHaveValue("1");
+  await expect(page.locator('input[name="stat-away-1-1-free"]')).toHaveCount(0);
+  const dimension = await page.evaluate(() => ({
+    pageWidth: document.documentElement.scrollWidth,
+    viewportWidth: document.documentElement.clientWidth,
+  }));
+  expect(dimension.pageWidth).toBeLessThanOrEqual(dimension.viewportWidth);
+});
