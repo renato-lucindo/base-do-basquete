@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import {
-  breakCaptainPlaceholderLink,
   buildPrefillSlots,
   type EditorSlot,
   isIsoLocalDate,
@@ -202,7 +201,7 @@ export function editSetupCoach(
       ...current.staff,
       [side]: {
         ...current.staff[side],
-        coach: breakCaptainPlaceholderLink(current.staff[side].coach ?? undefined, name) ?? null,
+        coach: name === "" ? null : { role: "coach", name, origin: "manual" },
       },
     },
   };

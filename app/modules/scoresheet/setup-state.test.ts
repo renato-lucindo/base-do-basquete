@@ -84,6 +84,22 @@ describe("manual scoresheet stage 5 setup", () => {
     expect(setup.staff.home.coach).toBeNull();
   });
 
+  it("preserves spaces while typing coach names and breaks the captain link", () => {
+    let setup = linkSetupCaptainToCoach(validSetup(), "home", homeRegistration.roster);
+    for (const letter of "Ana Silva") {
+      setup = editSetupCoach(
+        setup,
+        "home",
+        (setup.staff.home.coach?.origin === "manual" ? setup.staff.home.coach.name : "") + letter,
+      );
+    }
+    expect(setup.staff.home.coach).toEqual({ role: "coach", name: "Ana Silva", origin: "manual" });
+    setup = editSetupCoach(setup, "home", "Ana Silva ");
+    expect(setup.staff.home.coach?.name).toBe("Ana Silva ");
+    setup = editSetupCoach(setup, "home", "");
+    expect(setup.staff.home.coach).toBeNull();
+  });
+
   it("limits selection to registered players and rejects duplicate jerseys", () => {
     let setup = validSetup();
     expect(selectSetupPlayer(setup, "home", 3, 3, homeRegistration.roster)).toEqual(setup);

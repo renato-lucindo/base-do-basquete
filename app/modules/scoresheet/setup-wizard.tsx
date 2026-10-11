@@ -46,27 +46,34 @@ export function ManualScoresheetSetupWizard({
   );
   const [setup, setSetup] = useState<ScoresheetSetup>(createScoresheetSetup);
   const [availableDraft, setAvailableDraft] = useState<AdminDraft<ScoresheetSetup> | null>(null);
+  const [draftDecision, setDraftDecision] = useState<"checking" | "pending" | "resolved">(
+    "checking",
+  );
   const [changed, setChanged] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const draftBlocked = draftDecision !== "resolved";
 
   useEffect(() => {
     const result = readAdminDraft<ScoresheetSetup>(draftIdentity);
-    if (result.status === "available") setAvailableDraft(result.draft);
+    setAvailableDraft(result.status === "available" ? result.draft : null);
+    setDraftDecision(result.status === "available" ? "pending" : "resolved");
   }, [draftIdentity]);
 
   useEffect(() => {
-    if (!changed) return;
+    if (!changed || draftBlocked) return;
     const timer = window.setTimeout(() => {
       setSavedAt(saveAdminDraft(draftIdentity, setup));
       setChanged(false);
     }, 400);
     return () => window.clearTimeout(timer);
-  }, [changed, draftIdentity, setup]);
+  }, [changed, draftBlocked, draftIdentity, setup]);
 
   const update = (change: (current: ScoresheetSetup) => ScoresheetSetup) => {
+    if (draftBlocked) return;
     setSetup(change);
     setChanged(true);
     setErrors([]);
@@ -85,20 +92,31 @@ export function ManualScoresheetSetupWizard({
       setFeedback("Configuração restaurada deste navegador.");
     }
     setAvailableDraft(null);
+    setDraftDecision("resolved");
+    setChanged(false);
+    setErrors([]);
   };
 
   const discardDraft = () => {
     removeAdminDraft(draftIdentity);
     setAvailableDraft(null);
+    setDraftDecision("resolved");
+    setChanged(false);
     setSavedAt(null);
     setFeedback("Rascunho anterior descartado.");
   };
 
+  const focusValidationErrors = (issues: string[]) => {
+    setErrors(issues);
+    if (issues.length) window.requestAnimationFrame(() => errorRef.current?.focus());
+  };
+
   const goToStep = (next: 1 | 2) => {
+    if (draftBlocked) return;
     if (next === 2) {
       const issues = validateSetupGame(setup, registrations);
       if (issues.length) {
-        setErrors(issues);
+        focusValidationErrors(issues);
         return;
       }
     }
@@ -107,11 +125,12 @@ export function ManualScoresheetSetupWizard({
   };
 
   const verifySetup = () => {
+    if (draftBlocked) return;
     const issues = [
       ...validateSetupGame(setup, registrations),
       ...validateSetupTeams(setup, registrations),
     ];
-    setErrors(issues);
+    focusValidationErrors(issues);
     setFeedback(
       issues.length === 0
         ? "Configuração válida e salva neste navegador. O lançamento rápido será habilitado na Etapa 6."
@@ -157,7 +176,7 @@ export function ManualScoresheetSetupWizard({
           />
         ) : null}
         {errors.length ? (
-          <div id="setup-errors" role="alert" className="form-error">
+          <div id="setup-errors" role="alert" className="form-error" ref={errorRef} tabIndex={-1}>
             <strong>Revise a configuração:</strong>
             <ul>
               {errors.map((message) => (
@@ -177,7 +196,15 @@ export function ManualScoresheetSetupWizard({
           </p>
         ) : null}
 
-        <div className="scoresheet-form">
+        {draftBlocked ? (
+          <p className="admin-note" role="status">
+            {draftDecision === "checking"
+              ? "Verificando rascunho salvo…"
+              : "Restaure ou descarte o rascunho anterior para editar a configuração."}
+          </p>
+        ) : null}
+
+        <div className="scoresheet-form" inert={draftBlocked}>
           <section
             className="scoresheet-step"
             hidden={setup.step !== 1}
@@ -422,6 +449,10 @@ export function ManualScoresheetSetupWizard({
                               }
                             />{" "}
                             Titular
+                            <span className="sr-only">
+                              {" "}
+                              — {label}, slot {slot.slotNumber}
+                            </span>
                           </label>
                           <label>
                             <input
@@ -441,6 +472,10 @@ export function ManualScoresheetSetupWizard({
                               }
                             />{" "}
                             Capitão
+                            <span className="sr-only">
+                              {" "}
+                              — {label}, slot {slot.slotNumber}
+                            </span>
                           </label>
                         </div>
                       ))}
