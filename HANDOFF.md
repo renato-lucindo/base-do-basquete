@@ -334,6 +334,22 @@ CRITERIO_DE_CONCLUSAO: esta entrega se encerra com HANDOFF/PR consistentes, comm
 
 ## 23. Etapa 5 — wizard de jogo e equipes (11/10/2026)
 
-WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-FIBA2024-STAGE5; BRANCH=codex/manual-stage4-v3-review; HEAD_COMMIT=c45e112c2af03eb395ef22bda6f3c1191be22d53; STATUS=ACTIVE; SCOPE=etapas Jogo e Equipes do wizard, rascunho localStorage, metadata, atletas/roster, titular/capitão, comissão técnica e oficiais; testes focais e gate. EXCLUSO=Supabase compartilhado, migrations remotas, merge na main, deploy em produção e etapas 6–10.
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-FIBA2024-STAGE5; BRANCH=codex/manual-stage4-v3-review; HEAD_COMMIT=e21c918f5d35370fe7dce9327cebf77e5921df1b; STATUS=RELEASED; SCOPE=etapas Jogo e Equipes do wizard, rascunho localStorage, metadata, atletas/roster, titular/capitão, comissão técnica e oficiais; testes focais e gate. EXCLUSO=Supabase compartilhado, migrations remotas, merge na main, deploy em produção e etapas 6–10.
 
 O commit c45e112 foi reconciliado em worktree limpo antes da abertura. Etapa 4 concluída conforme seção 22. Próximo checkpoint: configurar e restaurar o wizard integralmente sem escrita de rascunho no servidor, com validação UI, testes e HANDOFF final.
+
+### Checkpoint funcional Etapa 5 — `e21c918` (11/10/2026)
+
+- **Implementado:** wizard local nas etapas Jogo e Equipes, com mandante/visitante, data obrigatória, horário/local/número/rodada/observações opcionais, até 12 atletas por equipe, números de camisa, titulares, capitão, comissão técnica e oficiais recolhíveis. Vínculo `captain_placeholder` acompanha troca do capitão e é desfeito em edição manual. O editor anterior permanece acessível por `?modo=existente`.
+- **Rascunho:** editor versionado `v3-setup`, armazenado somente no `localStorage`, com retomada/descarte, validação de elenco ao restaurar, autosave e aviso de alterações não salvas. A configuração nova não envia POST; confirmação definitiva e lançamentos integram as etapas posteriores.
+- **Verificação local:** Vitest focal 4 arquivos/50 testes PASS antes do incremento de fixture; `npm run typecheck` PASS; gate único `npm run check` **PASS** em 11/10/2026: 60 arquivos/507 Vitest, formatação, lint (avisos preexistentes), typecheck, runbooks, agentes, build e verificação de segredos (740 arquivos). `git diff --check` PASS. O banco não foi alterado; pgTAP de Etapa 4 permanece em evidência anterior, sem mudanças SQL nesta etapa.
+- **Risco:** MODERADO (wizard de interface e estado local). `database-security-reviewer`, `statistics-domain-reviewer` e `boxscore-domain-reviewer`: WAIVED **somente para o delta da Etapa 5**, pois nenhum contrato, fórmula, autoridade, migration, RLS ou backend foi modificado. `accessibility-ui-reviewer` e QA: revisão focal pendente, pois o teste de renderização SSR e os testes do estado não cobrem navegação interativa de teclado e viewport. Nenhum parecer independente foi presumido.
+- **Estado de entrega:** código e testes commitados em `e21c918`; evidências GitHub Actions no SHA publicado e review packet da Etapa 5 devem ser verificados na PR #72. Etapas 6–10 e merge continuam pendentes.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR #72 no GitHub Actions; app/modules/scoresheet/setup-wizard.tsx; docs/plan/sumula-manual-v2/06-lancamento-rapido-pontos.md
+ACAO: verificar os checks de CI/preview no commit publicado da Etapa 5 e coletar a revisão focal de acessibilidade/QA do wizard; corrigir achados relevantes antes de declarar este checkpoint aprovado. Somente depois abrir nova unidade com write lock para a Etapa 6 (lançamento de pontos por teclado e integração com o estado local), sem merge, produção ou migrations compartilhadas.
+CRITERIO_DE_CONCLUSAO: checks da PR #72 verdes no SHA publicado, teste de restauração e navegação do wizard verificados, riscos de UI avaliados, HANDOFF e REVIEW_PACKET da Etapa 5 atualizados.
+```
