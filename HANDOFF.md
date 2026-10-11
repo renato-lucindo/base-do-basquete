@@ -353,3 +353,30 @@ ARQUIVO_OU_SERVICO: PR #72 no GitHub Actions; app/modules/scoresheet/setup-wizar
 ACAO: verificar os checks de CI/preview no commit publicado da Etapa 5 e coletar a revisão focal de acessibilidade/QA do wizard; corrigir achados relevantes antes de declarar este checkpoint aprovado. Somente depois abrir nova unidade com write lock para a Etapa 6 (lançamento de pontos por teclado e integração com o estado local), sem merge, produção ou migrations compartilhadas.
 CRITERIO_DE_CONCLUSAO: checks da PR #72 verdes no SHA publicado, teste de restauração e navegação do wizard verificados, riscos de UI avaliados, HANDOFF e REVIEW_PACKET da Etapa 5 atualizados.
 ```
+
+## 24. Correções da revisão da Etapa 5 (11/10/2026)
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE5-REVIEW-FIXES; BRANCH=codex/manual-stage4-v3-review (destino remoto da PR: codex/manual-scoresheet-v2); BASE_COMMIT=49b08ca51ed04398e4cc8da7882ee38a1d05a2a1; CODE_HEAD_COMMIT=aaf19ae27cbd57d197d92d156bdde9e6a46286ca; STATUS=RELEASED; SCOPE=rascunho, nome do técnico, acessibilidade dos controles, foco de validação, testes focais e gate PR #72. EXCLUSO=Supabase compartilhado, migrations remotas, merge main, produção, Etapas 6–10.
+
+Objetivo: corrigir quatro achados da revisão REQUEST_CHANGES no HEAD `49b08ca`. Aceite: testes de estado/UI, gate aplicável, HANDOFF atualizado e renovação da revisão independente antes da Etapa 6.
+
+Resultado no commit funcional `aaf19ae`: (1) leitura do rascunho local bloqueia a edição e o autosave até a decisão explícita de restaurar/descartar, preservando a versão anterior; (2) edição do nome do técnico preserva espaços durante a digitação e rompe o vínculo com o capitão; (3) os controles de titular e capitão incluem equipe e número do slot no nome acessível; (4) os erros de validação recebem foco e são anunciados. Fixture Playwright isolada, sem Supabase, cobre os quatro problemas.
+
+Validação local em 11/10/2026: `npm run check` **PASS** (formatação, lint sem erros bloqueantes, typecheck, Vitest **60 arquivos/508 testes**, runbooks, configuração de agentes, build client/SSR e varredura de segredos de **743 arquivos versionados**). `PLAYWRIGHT_BASE_URL=http://127.0.0.1:1 npx playwright test e2e/manual-scoresheet-setup.spec.ts --workers=1` **PASS 6/6**: rascunho e retomada, foco e nomes acessíveis, digitação de técnico, axe sem violações reportadas na fixture e reflow em 320/390/720/1280 px. `git diff --cached --check` PASS no commit de código. Avisos preexistentes não bloqueantes do Biome foram preservados fora do escopo.
+
+REVIEW_PACKET — correções Etapa 5:
+- WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE5-REVIEW-FIXES
+- BRANCH_REMOTA: codex/manual-scoresheet-v2 (PR #72, permanece DRAFT)
+- BASE_COMMIT: 49b08ca51ed04398e4cc8da7882ee38a1d05a2a1
+- CODE_HEAD_COMMIT: aaf19ae27cbd57d197d92d156bdde9e6a46286ca (o checkpoint documental posterior não altera o código revisado)
+- CRITERIOS_DE_ACEITE: proteger rascunho, preservar espaços de técnico, distinguir nomes dos controles e focalizar os erros; testes locais e CI publicados; revisões independentes de UI/acessibilidade e QA.
+- ARQUIVOS_DO_DELTA: app/modules/scoresheet/setup-state.ts; app/modules/scoresheet/setup-state.test.ts; app/modules/scoresheet/setup-wizard.tsx; e2e/fixtures/manual-scoresheet-setup.fixture.tsx; e2e/fixtures/manual-scoresheet-setup.html; e2e/manual-scoresheet-setup.spec.ts; HANDOFF.md.
+- ESCOPO_NEGATIVO: migrations, Supabase compartilhado, main/merge, produção, Etapas 6–10.
+- RISCO_RESIDUAL: aguardam checks GitHub Actions no SHA publicado, parecer independente accessibility-ui-reviewer e qa-reviewer; cobertura axe restrita à fixture local. Não atribuir parecer aprovado antes da revisão.
+- WRITE_LOCK_OWNER: RELEASED (project-maintainer); revisões subsequentes read-only até nova unidade de correção.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer (coordenação, sem lock de escrita durante revisão)
+ARQUIVO_OU_SERVICO: GitHub PR #72 — checks GitHub Actions e review packet da Etapa 5.
+ACAO: validar CI, PostgreSQL descartável/pgTAP se acionado, preview e CodeQL no HEAD publicado; obter revisão independente de accessibility-ui-reviewer e qa-reviewer referente ao delta `49b08ca..HEAD`; registrar pareceres e só então decidir o fechamento da Etapa 5. Corrigir novos achados mediante nova unidade e write lock, sem iniciar Etapa 6.
+CRITERIO_DE_CONCLUSAO: SHA de revisão publicado e rastreado, checks da PR verdes, pareceres independentes emitidos sem bloqueios ativos e HANDOFF atualizado com evidências reais; PR permanece DRAFT.
