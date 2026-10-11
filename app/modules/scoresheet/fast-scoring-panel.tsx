@@ -90,8 +90,17 @@ export function FastScoringPanel({
   const historyId = useRef(0);
   const jerseyRef = useRef<HTMLInputElement>(null);
   const pointsRef = useRef<HTMLInputElement>(null);
+  const previousStageRef = useRef(entryState.stage);
+  const preserveContextFocusRef = useRef(false);
 
   useEffect(() => {
+    // The wizard owns initial focus on the step heading; only transitions move it.
+    if (previousStageRef.current === entryState.stage) return;
+    previousStageRef.current = entryState.stage;
+    if (preserveContextFocusRef.current) {
+      preserveContextFocusRef.current = false;
+      return;
+    }
     const request = window.requestAnimationFrame(() => {
       if (entryState.stage === "jersey") jerseyRef.current?.focus();
       else pointsRef.current?.focus();
@@ -199,9 +208,13 @@ export function FastScoringPanel({
   };
 
   const switchContext = (nextSide: TeamSide, nextPeriod: number) => {
+    if (entryState.stage === "value") preserveContextFocusRef.current = true;
     setSide(nextSide);
     setPeriodNumber(nextPeriod);
-    cancel();
+    setEntryState(cancelFastEntry());
+    setJerseyText("");
+    setPointsText("");
+    setError("");
     setStatus(
       `Pronto para ${nextSide === "home" ? "mandante" : "visitante"}, ${periodLabel(nextPeriod)}. Digite a camisa.`,
     );

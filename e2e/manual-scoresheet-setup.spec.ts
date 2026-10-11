@@ -186,6 +186,7 @@ async function enterScoring(page: import("@playwright/test").Page) {
   await page.getByRole("radio", { name: "Capitão — Visitante, slot 1", exact: true }).check();
   await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
   await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeFocused();
 }
 
 test("keyboard scoring supports 12 Enter 2 Enter, literal 00, errors, Escape, undo and grid correction", async ({
@@ -244,6 +245,7 @@ test("saves scoring stats in a local draft and restores them on reload", async (
   await page.reload();
   await page.getByRole("button", { name: "Restaurar" }).click();
   await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeFocused();
   await expect(page.getByRole("textbox", { name: "LL de Davi Atleta" })).toHaveValue("1");
   await expect(page.getByText("Nenhum lançamento nesta sessão.")).toBeVisible();
 });
@@ -255,10 +257,24 @@ test("switches visitor and period with keyboard and keeps the scoring view withi
   await page.goto(fixtureUrl);
   await enterScoring(page);
   const team = page.getByRole("combobox", { name: "Equipe para lançamento rápido" });
+  await team.focus();
   await team.selectOption("away");
+  await expect(team).toBeFocused();
   const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  await period.focus();
   await period.selectOption("2");
+  await expect(period).toBeFocused();
   const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("9");
+  await jersey.press("Enter");
+  await expect(page.getByRole("textbox", { name: "Pontos da camisa 9 (1, 2 ou 3)" })).toBeFocused();
+  await period.focus();
+  await period.selectOption("3");
+  await expect(period).toBeFocused();
+  await expect(jersey).toBeEnabled();
+  await expect(jersey).toHaveValue("");
+  await period.selectOption("2");
+  await expect(period).toBeFocused();
   await jersey.fill("9");
   await jersey.press("Enter");
   await page.getByRole("textbox", { name: "Pontos da camisa 9 (1, 2 ou 3)" }).fill("1");
