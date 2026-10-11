@@ -250,6 +250,72 @@ test("saves scoring stats in a local draft and restores them on reload", async (
   await expect(page.getByText("Nenhum lançamento nesta sessão.")).toBeVisible();
 });
 
+test("records FIBA 2024 fouls, announces GD, blocks later fouls and keeps same-period scoring", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await foul.fill("12t");
+  await foul.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "T registrada" })).toBeVisible();
+  await expect(foul).toBeFocused();
+  await foul.fill("12 u2");
+  await foul.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "GD T+U" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "GD T+U" })).toBeVisible();
+  await foul.fill("12P");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("GD");
+  await foul.fill("00P");
+  await foul.press("Enter");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Camisa 00: P registrada" }),
+  ).toBeVisible();
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("2");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toHaveValue("1");
+  await page.getByRole("combobox", { name: "Período para lançamento rápido" }).selectOption("2");
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("1");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#fast-scoring-error")).toContainText("pontos posteriores bloqueados");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("persists bench and coach fouls without a player and restores semantic draft", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const target = page.getByRole("combobox", { name: "Alvo da falta" });
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await target.selectOption("bench");
+  await foul.fill("c1");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("Use B1");
+  await foul.fill("b1");
+  await foul.press("Enter");
+  await target.selectOption("coach");
+  await foul.fill("C1");
+  await foul.press("Enter");
+  await expect(page.getByText("Faltas registradas: 2")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"kind":"bench"');
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar" }).click();
+  await expect(page.getByText("Faltas registradas: 2")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Faltas semânticas registradas" })).toContainText(
+    "técnico: C1",
+  );
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test("switches visitor and period with keyboard and keeps the scoring view within 320px", async ({
   page,
 }) => {

@@ -657,12 +657,17 @@ function ScoresheetSetupWizardSession({
               >
                 Lançamentos
               </h2>
-              <p>Transcreva pontos por camisa e período. Os lançamentos ficam no rascunho local.</p>
+              <p>
+                Transcreva pontos e faltas por camisa e período. Os lançamentos ficam no rascunho
+                local.
+              </p>
               <FastScoringPanel
                 slots={setup.slots}
                 registrations={registrations}
                 registrationIds={setup.registrationIds}
                 stats={setup.stats}
+                fouls={setup.fouls}
+                onFoulsChange={(fouls) => update((current) => ({ ...current, fouls }))}
                 onChange={(key, value) =>
                   update((current) => {
                     const stats = { ...current.stats };

@@ -1,6 +1,12 @@
 import type { KeyboardEvent } from "react";
 
-import { calculatePoints, type EditorSlot, type RosterCandidate, type TeamSide } from "./domain";
+import {
+  calculatePoints,
+  type EditorSlot,
+  type RosterCandidate,
+  type SemanticFoulPayload,
+  type TeamSide,
+} from "./domain";
 
 const compactFields = [
   ["two", "2P"],
@@ -17,6 +23,8 @@ interface CompactScoresheetGridProps {
   periodCount: number;
   periodNumber: number;
   stats: Record<string, string>;
+  semanticFouls?: SemanticFoulPayload[];
+  registrationId?: number;
   disqualificationFor: (
     side: TeamSide,
     slotNumber: number,
@@ -36,6 +44,8 @@ export function CompactScoresheetGrid({
   periodCount,
   periodNumber,
   stats,
+  semanticFouls,
+  registrationId,
   disqualificationFor,
   onChange,
 }: CompactScoresheetGridProps) {
@@ -104,6 +114,26 @@ export function CompactScoresheetGrid({
                   {compactFields.map(([field, label], columnIndex) => {
                     const key = statKey(side, slot.slotNumber, periodNumber, field);
                     const fouls = field === "fouls";
+                    if (fouls && semanticFouls) {
+                      const playerFouls = semanticFouls.filter(
+                        (foul) =>
+                          foul.target.kind === "player" &&
+                          foul.target.registrationId === registrationId &&
+                          foul.target.rosterEntryId === slot.rosterEntryId &&
+                          foul.periodNumber === periodNumber,
+                      );
+                      const legacy = stats[key];
+                      return (
+                        <td key={field}>
+                          <output
+                            aria-label={`Faltas de ${player?.playerName} em ${periodNumber <= 4 ? `Q${periodNumber}` : `OT${periodNumber - 4}`}`}
+                          >
+                            {playerFouls.map((foul) => foul.originalNotation).join(", ") || "—"}
+                            {legacy ? ` (legado: ${legacy})` : ""}
+                          </output>
+                        </td>
+                      );
+                    }
                     return (
                       <td key={field}>
                         <label>

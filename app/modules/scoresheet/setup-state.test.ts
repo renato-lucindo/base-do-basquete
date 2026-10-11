@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { adminDraftKey, createAdminDraft, parseAdminDraft } from "../admin-drafts/schema";
+import { prepareQuickFoul } from "./fast-scoring-panel";
 import type { ScoresheetRegistration } from "./editor";
 import {
   createScoresheetSetup,
@@ -209,5 +210,69 @@ describe("stage 6 draft statistics", () => {
     expect(setup.stats).toEqual({ "home-2-1-free": "2", "away-1-1-three": "1" });
     setup = selectSetupTeam(setup, "away", homeRegistration);
     expect(setup.stats).toEqual({ "home-2-1-free": "2" });
+  });
+});
+
+describe("stage 7 semantic foul drafts", () => {
+  it("restores older drafts without fouls and validates newer semantic events", () => {
+    const original = validSetup();
+    const legacy = { ...original, fouls: undefined };
+    expect(restoreScoresheetSetup(legacy, registrations)?.fouls).toEqual([]);
+    const quick = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00u2");
+    if (!quick.ok) throw new Error(quick.message);
+    const saved = { ...original, step: 3 as const, fouls: [quick.entry] };
+    expect(restoreScoresheetSetup(saved, registrations)?.fouls).toEqual(saved.fouls);
+    const wrongNotation = structuredClone(saved);
+    wrongNotation.fouls[0]!.penaltyFtCount = 0;
+    expect(restoreScoresheetSetup(wrongNotation, registrations)).toBeNull();
+    const wrongPlayerNotation = structuredClone(saved);
+    wrongPlayerNotation.fouls[0]!.originalNotation = "B1";
+    wrongPlayerNotation.fouls[0]!.type = "T";
+    wrongPlayerNotation.fouls[0]!.penaltyFtCount = 1;
+    expect(restoreScoresheetSetup(wrongPlayerNotation, registrations)).toBeNull();
+    const unknownRegistration = structuredClone(saved);
+    unknownRegistration.fouls[0]!.target.registrationId = 99;
+    expect(restoreScoresheetSetup(unknownRegistration, registrations)).toBeNull();
+    const unselectedPlayer = structuredClone(saved);
+    unselectedPlayer.fouls[0]!.target.rosterEntryId = 999;
+    expect(restoreScoresheetSetup(unselectedPlayer, registrations)).toBeNull();
+    const invalidPeriod = structuredClone(saved);
+    invalidPeriod.fouls[0]!.periodNumber = 5;
+    expect(restoreScoresheetSetup(invalidPeriod, registrations)).toBeNull();
+    const duplicateSequence = { ...saved, fouls: [quick.entry, { ...quick.entry }] };
+    expect(restoreScoresheetSetup(duplicateSequence, registrations)).toBeNull();
+  });
+
+  it("rejects player fouls after GD and drops fouls only for affected player or team", () => {
+    const original = validSetup();
+    const playerD = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00D");
+    if (!playerD.ok) throw new Error(playerD.message);
+    const later = {
+      ...playerD.entry,
+      sequenceNumber: 2,
+      type: "P" as const,
+      originalNotation: "P",
+      penaltyFtCount: 0,
+    };
+    expect(
+      restoreScoresheetSetup({ ...original, fouls: [playerD.entry, later] }, registrations),
+    ).toBeNull();
+    const bench = prepareQuickFoul([playerD.entry], original.slots.home, 10, 1, "bench", "B1");
+    if (!bench.ok) throw new Error(bench.message);
+    const away = prepareQuickFoul(
+      [playerD.entry, bench.entry],
+      original.slots.away,
+      20,
+      1,
+      "player",
+      "7P",
+    );
+    if (!away.ok) throw new Error(away.message);
+    const saved = { ...original, fouls: [playerD.entry, bench.entry, away.entry] };
+    expect(restoreScoresheetSetup(saved, registrations)).not.toBeNull();
+    const replacedPlayer = selectSetupPlayer(saved, "home", 1, null, homeRegistration.roster);
+    expect(replacedPlayer.fouls).toEqual([bench.entry, away.entry]);
+    const changedTeam = selectSetupTeam(saved, "home", awayRegistration);
+    expect(changedTeam.fouls).toEqual([away.entry]);
   });
 });

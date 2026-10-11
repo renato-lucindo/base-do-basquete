@@ -5,10 +5,15 @@ import {
   beginFastEntry,
   cancelFastEntry,
   completeFastScoreEntry,
+  evaluateDisqualification,
+  hasFoulAfterDisqualification,
   normalizeGameJersey,
+  parseFastFoulEntry,
+  parseFoulNotation,
   periodLabel,
   type EditorSlot,
   type FastEntryState,
+  type SemanticFoulPayload,
   type TeamSide,
 } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
@@ -64,12 +69,113 @@ export function prepareQuickScore(
   };
 }
 
+export type QuickFoulTarget = "player" | "bench" | "coach" | "assistant_1";
+export type QuickFoulResult =
+  | { ok: true; entry: SemanticFoulPayload; disqualification: string | null }
+  | { ok: false; message: string };
+
+export function prepareQuickFoul(
+  fouls: SemanticFoulPayload[],
+  slots: EditorSlot[],
+  registrationId: number,
+  periodNumber: number,
+  target: QuickFoulTarget,
+  text: string,
+): QuickFoulResult {
+  if (
+    !Number.isSafeInteger(registrationId) ||
+    registrationId <= 0 ||
+    !Number.isSafeInteger(periodNumber) ||
+    periodNumber < 1 ||
+    periodNumber > 4
+  ) {
+    return { ok: false, message: "Selecione uma equipe e um período válidos." };
+  }
+  if (fouls.length >= 1000) return { ok: false, message: "Limite de faltas do rascunho atingido." };
+
+  const parsed = target === "player" ? parseFastFoulEntry(text) : null;
+  const notation = target === "coach" ? "C1" : "B1";
+  const nonPlayer = target === "player" ? null : parseFoulNotation(text);
+  if (target === "player" && !parsed) {
+    return { ok: false, message: "Falta inválida. Use camisa e código, como 12U2 ou 12 T1." };
+  }
+  if (target !== "player" && (!nonPlayer || nonPlayer.originalNotation !== notation)) {
+    return { ok: false, message: `Falta inválida. Use ${notation} para o alvo selecionado.` };
+  }
+
+  const matching = parsed
+    ? slots.filter(
+        (slot) => slot.rosterEntryId !== null && slot.jerseyNumber === parsed.jerseyNumber,
+      )
+    : [];
+  if (parsed && matching.length !== 1) {
+    return {
+      ok: false,
+      message: matching.length
+        ? "Há camisas duplicadas. Corrija o elenco."
+        : `Camisa ${parsed.jerseyNumber} não encontrada nesta equipe.`,
+    };
+  }
+  const rosterEntryId = matching[0]?.rosterEntryId;
+  const previous =
+    rosterEntryId == null
+      ? []
+      : fouls.filter(
+          (foul) =>
+            foul.target.kind === "player" &&
+            foul.target.registrationId === registrationId &&
+            foul.target.rosterEntryId === rosterEntryId,
+        );
+  if (evaluateDisqualification(previous)) {
+    return { ok: false, message: "Atleta já desqualificado (GD); novas faltas bloqueadas." };
+  }
+
+  const sequenceNumber =
+    Math.max(
+      0,
+      ...fouls
+        .filter((foul) => foul.periodNumber === periodNumber)
+        .map((foul) => foul.sequenceNumber),
+    ) + 1;
+  if (sequenceNumber > 1000)
+    return { ok: false, message: "Limite de sequência de faltas atingido." };
+  const entry: SemanticFoulPayload = {
+    periodNumber,
+    sequenceNumber,
+    ...(parsed?.foul ?? nonPlayer!),
+    target: parsed
+      ? { kind: "player", registrationId, rosterEntryId: rosterEntryId! }
+      : target === "bench"
+        ? { kind: "bench", registrationId }
+        : {
+            kind: "staff",
+            registrationId,
+            staffRole: target === "coach" ? "coach" : "assistant_1",
+          },
+  };
+  const updatedPlayerFouls = [...previous, entry].filter((foul) => foul.target.kind === "player");
+  if (rosterEntryId != null && hasFoulAfterDisqualification(updatedPlayerFouls)) {
+    return {
+      ok: false,
+      message: "Esta falta criaria registros posteriores à desqualificação (GD).",
+    };
+  }
+  return {
+    ok: true,
+    entry,
+    disqualification:
+      rosterEntryId == null ? null : (evaluateDisqualification(updatedPlayerFouls)?.reason ?? null),
+  };
+}
+
 interface FastScoringPanelProps {
   slots: Record<TeamSide, EditorSlot[]>;
   registrations: ScoresheetRegistration[];
   registrationIds: Record<TeamSide, number>;
   stats: Record<string, string>;
+  fouls: SemanticFoulPayload[];
   onChange: (key: string, value: string | undefined) => void;
+  onFoulsChange: (next: SemanticFoulPayload[]) => void;
 }
 
 export function FastScoringPanel({
@@ -77,7 +183,9 @@ export function FastScoringPanel({
   registrations,
   registrationIds,
   stats,
+  fouls,
   onChange,
+  onFoulsChange,
 }: FastScoringPanelProps) {
   const [side, setSide] = useState<TeamSide>("home");
   const [periodNumber, setPeriodNumber] = useState(1);
@@ -86,6 +194,11 @@ export function FastScoringPanel({
   const [pointsText, setPointsText] = useState("");
   const [status, setStatus] = useState("Digite a camisa e pressione Enter.");
   const [error, setError] = useState("");
+  const [foulTarget, setFoulTarget] = useState<QuickFoulTarget>("player");
+  const [foulText, setFoulText] = useState("");
+  const [foulError, setFoulError] = useState("");
+  const [foulStatus, setFoulStatus] = useState("Pronto para registrar falta.");
+  const foulRef = useRef<HTMLInputElement>(null);
   const [history, setHistory] = useState<Array<QuickScoreHistoryItem & { id: number }>>([]);
   const historyId = useRef(0);
   const jerseyRef = useRef<HTMLInputElement>(null);
@@ -148,6 +261,26 @@ export function FastScoringPanel({
       setError("Valor inválido. Digite 1, 2 ou 3 pontos.");
       return;
     }
+    const rosterEntryId = slots[side].find(
+      (slot) => slot.rosterEntryId !== null && slot.jerseyNumber === entry.jerseyNumber,
+    )?.rosterEntryId;
+    const gd =
+      rosterEntryId == null
+        ? null
+        : evaluateDisqualification(
+            fouls.filter(
+              (foul) =>
+                foul.target.kind === "player" &&
+                foul.target.registrationId === registrationIds[side] &&
+                foul.target.rosterEntryId === rosterEntryId,
+            ),
+          );
+    if (gd && periodNumber > gd.periodNumber) {
+      setError(
+        `Atleta desqualificado em ${periodLabel(gd.periodNumber)}; pontos posteriores bloqueados.`,
+      );
+      return;
+    }
     const result = prepareQuickScore(
       stats,
       slots[side],
@@ -196,8 +329,49 @@ export function FastScoringPanel({
     jerseyRef.current?.focus();
   };
 
+  const submitFoul = () => {
+    const result = prepareQuickFoul(
+      fouls,
+      slots[side],
+      registrationIds[side],
+      periodNumber,
+      foulTarget,
+      foulText,
+    );
+    if (!result.ok) {
+      setFoulError(result.message);
+      return;
+    }
+    onFoulsChange([...fouls, result.entry]);
+    setFoulText("");
+    setFoulError("");
+    setFoulStatus(
+      `${
+        foulTarget === "player"
+          ? `Camisa ${parseFastFoulEntry(foulText)?.jerseyNumber}`
+          : foulTarget === "bench"
+            ? "Banco"
+            : foulTarget === "coach"
+              ? "Técnico"
+              : "Assistente"
+      }: ` +
+        `${result.entry.originalNotation} registrada em ${periodLabel(periodNumber)}.` +
+        (result.disqualification ? ` GD ${result.disqualification}.` : ""),
+    );
+    foulRef.current?.focus();
+  };
+
   const onKeyboard = (event: KeyboardEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest(".compact-grid-section")) return;
+    if (event.target === foulRef.current) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setFoulText("");
+        setFoulError("");
+        setFoulStatus("Entrada de falta cancelada.");
+      }
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
       event.preventDefault();
       undo();
@@ -215,6 +389,7 @@ export function FastScoringPanel({
     setJerseyText("");
     setPointsText("");
     setError("");
+    setFoulError("");
     setStatus(
       `Pronto para ${nextSide === "home" ? "mandante" : "visitante"}, ${periodLabel(nextPeriod)}. Digite a camisa.`,
     );
@@ -256,6 +431,91 @@ export function FastScoringPanel({
             ))}
           </select>
         </label>
+      </fieldset>
+      <fieldset className="scoresheet-header-grid">
+        <legend>Faltas rápidas — FIBA 2024</legend>
+        <label>
+          Alvo da falta
+          <select
+            value={foulTarget}
+            onChange={(event) => {
+              setFoulTarget(event.target.value as QuickFoulTarget);
+              setFoulText("");
+              setFoulError("");
+            }}
+          >
+            <option value="player">Atleta</option>
+            <option value="bench">Banco</option>
+            <option value="coach">Técnico</option>
+            <option value="assistant_1">1º assistente</option>
+          </select>
+        </label>
+        <label>
+          Código da falta
+          <input
+            ref={foulRef}
+            type="text"
+            autoComplete="off"
+            maxLength={6}
+            value={foulText}
+            aria-invalid={Boolean(foulError)}
+            aria-describedby={foulError ? "fast-foul-error" : "fast-foul-help"}
+            onChange={(event) => {
+              setFoulText(event.target.value);
+              setFoulError("");
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                submitFoul();
+              }
+            }}
+          />
+        </label>
+        <div className="wizard-actions">
+          <button className="button button-ghost" type="button" onClick={submitFoul}>
+            Registrar falta
+          </button>
+        </div>
+        <p className="admin-note" id="fast-foul-help">
+          Atleta: 12U2, 12 U2 ou 00T1; banco e assistente: B1; técnico: C1. Equipe e período seguem
+          os seletores acima. Enter registra; Esc limpa.
+        </p>
+        {foulError ? (
+          <p className="form-error" role="alert" id="fast-foul-error">
+            {foulError}
+          </p>
+        ) : null}
+        <p className="admin-note" role="status" aria-live="polite">
+          {foulStatus}
+        </p>
+        <div>
+          <strong>Faltas registradas: {fouls.length}</strong>
+          <ol aria-label="Faltas semânticas registradas">
+            {fouls
+              .slice(-10)
+              .reverse()
+              .map((foul) => (
+                <li key={`${foul.periodNumber}-${foul.sequenceNumber}`}>
+                  {periodLabel(foul.periodNumber)} —{" "}
+                  {foul.target.registrationId === registrationIds.home ? "Mandante" : "Visitante"} —{" "}
+                  {foul.target.kind === "player"
+                    ? `atleta #${
+                        slots[
+                          foul.target.registrationId === registrationIds.home ? "home" : "away"
+                        ].find((slot) => slot.rosterEntryId === foul.target.rosterEntryId)
+                          ?.jerseyNumber ?? "?"
+                      }`
+                    : foul.target.kind === "bench"
+                      ? "banco"
+                      : foul.target.staffRole === "coach"
+                        ? "técnico"
+                        : "assistente"}
+                  : {foul.originalNotation}
+                </li>
+              ))}
+          </ol>
+        </div>
       </fieldset>
       <fieldset className="scoresheet-header-grid">
         <legend>
@@ -379,7 +639,22 @@ export function FastScoringPanel({
             periodCount={4}
             periodNumber={periodNumber}
             stats={stats}
-            disqualificationFor={() => null}
+            semanticFouls={fouls}
+            registrationId={registrationIds[value]}
+            disqualificationFor={(_side, slotNumber) => {
+              const rosterEntryId = slots[value].find(
+                (slot) => slot.slotNumber === slotNumber,
+              )?.rosterEntryId;
+              if (rosterEntryId == null) return null;
+              return evaluateDisqualification(
+                fouls.filter(
+                  (foul) =>
+                    foul.target.kind === "player" &&
+                    foul.target.registrationId === registrationIds[value] &&
+                    foul.target.rosterEntryId === rosterEntryId,
+                ),
+              );
+            }}
             onChange={(key, value) => {
               onChange(key, value);
               setHistory([]);

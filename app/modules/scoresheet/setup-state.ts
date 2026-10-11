@@ -2,12 +2,17 @@ import { z } from "zod";
 
 import {
   buildPrefillSlots,
+  FOUL_RULES_VERSION,
+  hasFoulAfterDisqualification,
   type EditorSlot,
   isIsoLocalDate,
   isLocalTime,
+  isValidSemanticFoulTarget,
   type ManualGamePayload,
+  type SemanticFoulPayload,
   normalizeGameJersey,
   OFFICIAL_ROLES,
+  parseFoulNotation,
   type OfficialRole,
   resolveCaptainPlaceholder,
   type TeamSide,
@@ -24,6 +29,7 @@ export interface SetupStaff {
 export interface ScoresheetSetup {
   step: 1 | 2 | 3;
   stats: Record<string, string>;
+  fouls: SemanticFoulPayload[];
   game: ManualGamePayload;
   registrationIds: Record<TeamSide, number>;
   slots: Record<TeamSide, EditorSlot[]>;
@@ -45,6 +51,7 @@ export function createScoresheetSetup(): ScoresheetSetup {
   return {
     step: 1,
     stats: {},
+    fouls: [],
     game: { date: "", time: "", venue: "", gameNumber: "", phaseRound: "", notes: "" },
     registrationIds: { home: 0, away: 0 },
     slots: { home: emptySetupSlots(), away: emptySetupSlots() },
@@ -75,6 +82,9 @@ export function selectSetupTeam(
     staff: { ...current.staff, [side]: { coach: null, assistant: "" } },
     stats: Object.fromEntries(
       Object.entries(current.stats).filter(([key]) => !key.startsWith(`${side}-`)),
+    ),
+    fouls: current.fouls.filter(
+      (foul) => foul.target.registrationId !== current.registrationIds[side],
     ),
   };
 }
@@ -142,6 +152,15 @@ export function selectSetupPlayer(
           ),
         )
       : current.stats,
+    fouls:
+      resetStats && previous?.rosterEntryId != null
+        ? current.fouls.filter(
+            (foul) =>
+              foul.target.kind !== "player" ||
+              foul.target.registrationId !== current.registrationIds[side] ||
+              foul.target.rosterEntryId !== previous.rosterEntryId,
+          )
+        : current.fouls,
     slots: {
       ...current.slots,
       [side]: current.slots[side].map((slot) =>
@@ -304,9 +323,24 @@ const coachSchema = z.object({
   linkedCaptainRosterEntryId: z.number().int().positive().optional(),
 });
 const staffSchema = z.object({ coach: coachSchema.nullable(), assistant: z.string().max(160) });
+const foulSchema = z.object({
+  periodNumber: z.number().int().min(1).max(4),
+  sequenceNumber: z.number().int().positive().max(1000),
+  type: z.enum(["P", "T", "U", "D"]),
+  penaltyFtCount: z.number().int().min(0).max(3),
+  originalNotation: z.string().max(3),
+  rulesVersion: z.literal(FOUL_RULES_VERSION),
+  target: z.object({
+    kind: z.enum(["player", "bench", "staff", "team"]),
+    registrationId: z.number().int().positive(),
+    rosterEntryId: z.number().int().positive().optional(),
+    staffRole: z.enum(["coach", "assistant_1"]).optional(),
+  }),
+});
 const setupSchema = z.object({
   step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   stats: z.record(z.string(), z.string().max(40)).optional(),
+  fouls: z.array(foulSchema).max(1000).optional(),
   game: z.object({
     date: z.string().max(10),
     time: z.string().max(5).nullish(),
@@ -330,7 +364,11 @@ export function restoreScoresheetSetup(
 ): ScoresheetSetup | null {
   const result = setupSchema.safeParse(raw);
   if (!result.success) return null;
-  const setup: ScoresheetSetup = { ...result.data, stats: result.data.stats ?? {} };
+  const setup: ScoresheetSetup = {
+    ...result.data,
+    stats: result.data.stats ?? {},
+    fouls: result.data.fouls ?? [],
+  };
   for (const side of sides) {
     const registrationId = setup.registrationIds[side];
     if (setup.slots[side].some((slot, index) => slot.slotNumber !== index + 1)) return null;
@@ -366,6 +404,38 @@ export function restoreScoresheetSetup(
       (entry) => entry.slotNumber === Number(slotNumber),
     );
     if (!slot || slot.rosterEntryId === null) return null;
+  }
+  const sequences = new Set<string>();
+  const foulsByPlayer = new Map<string, SemanticFoulPayload[]>();
+  for (const foul of setup.fouls) {
+    const key = `${foul.periodNumber}:${foul.sequenceNumber}`;
+    if (sequences.has(key) || !isValidSemanticFoulTarget(foul.target)) return null;
+    sequences.add(key);
+    const notation = parseFoulNotation(foul.originalNotation);
+    if (
+      !notation ||
+      notation.type !== foul.type ||
+      notation.penaltyFtCount !== foul.penaltyFtCount ||
+      notation.originalNotation !== foul.originalNotation
+    )
+      return null;
+    const side = sides.find((item) => setup.registrationIds[item] === foul.target.registrationId);
+    if (!side) return null;
+    if (foul.target.kind === "player") {
+      if (foul.originalNotation === "C1" || foul.originalNotation === "B1") return null;
+      if (!setup.slots[side].some((slot) => slot.rosterEntryId === foul.target.rosterEntryId))
+        return null;
+      const playerKey = `${foul.target.registrationId}:${foul.target.rosterEntryId}`;
+      foulsByPlayer.set(playerKey, [...(foulsByPlayer.get(playerKey) ?? []), foul]);
+    } else if (foul.target.kind === "bench" && foul.originalNotation !== "B1") return null;
+    else if (
+      foul.target.kind === "staff" &&
+      foul.originalNotation !== (foul.target.staffRole === "coach" ? "C1" : "B1")
+    )
+      return null;
+  }
+  for (const playerFouls of foulsByPlayer.values()) {
+    if (hasFoulAfterDisqualification(playerFouls)) return null;
   }
   return setup;
 }
