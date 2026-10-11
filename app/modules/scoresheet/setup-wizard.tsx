@@ -7,7 +7,7 @@ import { UnsavedChangesGuard } from "../../components/admin/unsaved-changes-guar
 import { readAdminDraft, removeAdminDraft, saveAdminDraft } from "../admin-drafts/client";
 import type { AdminDraft } from "../admin-drafts/schema";
 import { MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION } from "../admin-drafts/schema";
-import { OFFICIAL_ROLES, type TeamSide } from "./domain";
+import { normalizeGameJersey, OFFICIAL_ROLES, type TeamSide, validateTeamSlots } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
 import {
   createScoresheetSetup,
@@ -25,17 +25,23 @@ import {
 const sides: TeamSide[] = ["home", "away"];
 const steps = ["Jogo", "Equipes", "Lançamentos", "Revisão"] as const;
 
-export function ManualScoresheetSetupWizard({
-  competitionId,
-  competitionName,
-  registrations,
-  hasExistingGames,
-}: {
+interface ScoresheetSetupWizardProps {
   competitionId: number;
   competitionName: string;
   registrations: ScoresheetRegistration[];
   hasExistingGames: boolean;
-}) {
+}
+
+export function ManualScoresheetSetupWizard(props: ScoresheetSetupWizardProps) {
+  return <ScoresheetSetupWizardSession key={props.competitionId} {...props} />;
+}
+
+function ScoresheetSetupWizardSession({
+  competitionId,
+  competitionName,
+  registrations,
+  hasExistingGames,
+}: ScoresheetSetupWizardProps) {
   const draftIdentity = useMemo(
     () => ({
       flow: "manual-scoresheet" as const,
@@ -55,6 +61,9 @@ export function ManualScoresheetSetupWizard({
   const [errors, setErrors] = useState<string[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const pendingSaveRef = useRef<{ identity: typeof draftIdentity; setup: ScoresheetSetup } | null>(
+    null,
+  );
   const draftBlocked = draftDecision !== "resolved";
 
   useEffect(() => {
@@ -67,10 +76,24 @@ export function ManualScoresheetSetupWizard({
     if (!changed || draftBlocked) return;
     const timer = window.setTimeout(() => {
       setSavedAt(saveAdminDraft(draftIdentity, setup));
+      pendingSaveRef.current = null;
       setChanged(false);
     }, 400);
     return () => window.clearTimeout(timer);
   }, [changed, draftBlocked, draftIdentity, setup]);
+
+  // Keep the latest committed draft available for cleanup during internal router navigation.
+  useEffect(() => {
+    pendingSaveRef.current = changed && !draftBlocked ? { identity: draftIdentity, setup } : null;
+  }, [changed, draftBlocked, draftIdentity, setup]);
+
+  useEffect(
+    () => () => {
+      const pending = pendingSaveRef.current;
+      if (pending) saveAdminDraft(pending.identity, pending.setup);
+    },
+    [],
+  );
 
   const update = (change: (current: ScoresheetSetup) => ScoresheetSetup) => {
     if (draftBlocked) return;
@@ -95,6 +118,7 @@ export function ManualScoresheetSetupWizard({
     setDraftDecision("resolved");
     setChanged(false);
     setErrors([]);
+    window.requestAnimationFrame(() => headingRef.current?.focus());
   };
 
   const discardDraft = () => {
@@ -104,6 +128,7 @@ export function ManualScoresheetSetupWizard({
     setChanged(false);
     setSavedAt(null);
     setFeedback("Rascunho anterior descartado.");
+    window.requestAnimationFrame(() => headingRef.current?.focus());
   };
 
   const focusValidationErrors = (issues: string[]) => {
@@ -138,6 +163,10 @@ export function ManualScoresheetSetupWizard({
     );
     if (!issues.length) setChanged(true);
   };
+
+  const teamSelectionError = errors.includes("Selecione duas equipes inscritas e diferentes.");
+  const dateError = errors.includes("Informe uma data de jogo válida.");
+  const timeError = errors.includes("Informe um horário válido ou deixe vazio.");
 
   return (
     <main className="admin-shell scoresheet-shell">
@@ -225,7 +254,8 @@ export function ManualScoresheetSetupWizard({
                   {side === "home" ? "Mandante" : "Visitante"}
                   <select
                     value={setup.registrationIds[side]}
-                    aria-describedby={errors.length ? "setup-errors" : undefined}
+                    aria-invalid={teamSelectionError || undefined}
+                    aria-describedby={teamSelectionError ? "setup-game-teams-error" : undefined}
                     onChange={(event) => {
                       const selected = registrations.find(
                         (team) => team.id === Number(event.target.value),
@@ -248,13 +278,19 @@ export function ManualScoresheetSetupWizard({
                   </select>
                 </label>
               ))}
+              {teamSelectionError ? (
+                <p id="setup-game-teams-error" className="form-error">
+                  Selecione duas equipes inscritas e diferentes.
+                </p>
+              ) : null}
               <label>
                 Data do jogo (obrigatória)
                 <input
                   type="date"
                   required
                   value={setup.game.date}
-                  aria-describedby={errors.length ? "setup-errors" : undefined}
+                  aria-invalid={dateError || undefined}
+                  aria-describedby={dateError ? "setup-game-date-error" : undefined}
                   onChange={(event) =>
                     update((current) => ({
                       ...current,
@@ -262,11 +298,16 @@ export function ManualScoresheetSetupWizard({
                     }))
                   }
                 />
+                {dateError ? (
+                  <span id="setup-game-date-error">Informe uma data de jogo válida.</span>
+                ) : null}
               </label>
               <label>
                 Horário (opcional)
                 <input
                   type="time"
+                  aria-invalid={timeError || undefined}
+                  aria-describedby={timeError ? "setup-game-time-error" : undefined}
                   value={setup.game.time ?? ""}
                   onChange={(event) =>
                     update((current) => ({
@@ -275,6 +316,9 @@ export function ManualScoresheetSetupWizard({
                     }))
                   }
                 />
+                {timeError ? (
+                  <span id="setup-game-time-error">Informe um horário válido ou deixe vazio.</span>
+                ) : null}
               </label>
               <label>
                 Local (opcional)
@@ -359,11 +403,45 @@ export function ManualScoresheetSetupWizard({
                   setup.slots[side].map((slot) => slot.rosterEntryId).filter((id) => id !== null),
                 );
                 const label = side === "home" ? "Mandante" : "Visitante";
+                const sideErrors = errors.filter((message) => message.startsWith(label + ":"));
+                const sideErrorId = "setup-" + side + "-lineup-error";
+                const activeSlots = setup.slots[side].filter((slot) => slot.rosterEntryId !== null);
+                const slotIssues = sideErrors.length ? validateTeamSlots(setup.slots[side]) : [];
+                const invalidPlayerSlots = new Set<number>();
+                const invalidJerseySlots = new Set<number>();
+                const invalidCaptainSlots = new Set<number>();
+                if (slotIssues.includes("roster_size") && activeSlots.length === 0)
+                  invalidPlayerSlots.add(1);
+                for (const slot of activeSlots) {
+                  const rosterId = slot.rosterEntryId;
+                  if (
+                    (team && !team.roster.some((player) => player.rosterEntryId === rosterId)) ||
+                    (slotIssues.includes("duplicate_player") &&
+                      activeSlots.filter((item) => item.rosterEntryId === rosterId).length > 1)
+                  )
+                    invalidPlayerSlots.add(slot.slotNumber);
+                  const jersey = normalizeGameJersey(slot.jerseyNumber);
+                  if (
+                    jersey === null ||
+                    (slotIssues.includes("duplicate_jersey") &&
+                      activeSlots.filter(
+                        (item) => normalizeGameJersey(item.jerseyNumber) === jersey,
+                      ).length > 1)
+                  )
+                    invalidJerseySlots.add(slot.slotNumber);
+                  if (slotIssues.includes("captain_required"))
+                    invalidCaptainSlots.add(slot.slotNumber);
+                }
                 return (
                   <fieldset className="lineup-panel" key={side}>
                     <legend>
                       {label}: {team?.teamName}
                     </legend>
+                    {sideErrors.length ? (
+                      <p id={sideErrorId} className="form-error">
+                        {sideErrors.join(" ")}
+                      </p>
+                    ) : null}
                     <div className="slot-grid">
                       {setup.slots[side].map((slot) => (
                         <div className="slot-row" key={`${side}-${slot.slotNumber}`}>
@@ -374,6 +452,10 @@ export function ManualScoresheetSetupWizard({
                               {label}, slot {slot.slotNumber}
                             </span>
                             <select
+                              aria-invalid={invalidPlayerSlots.has(slot.slotNumber) || undefined}
+                              aria-describedby={
+                                invalidPlayerSlots.has(slot.slotNumber) ? sideErrorId : undefined
+                              }
                               value={slot.rosterEntryId ?? ""}
                               onChange={(event) => {
                                 const id = event.target.value ? Number(event.target.value) : null;
@@ -412,6 +494,10 @@ export function ManualScoresheetSetupWizard({
                               maxLength={2}
                               inputMode="numeric"
                               placeholder="00"
+                              aria-invalid={invalidJerseySlots.has(slot.slotNumber) || undefined}
+                              aria-describedby={
+                                invalidJerseySlots.has(slot.slotNumber) ? sideErrorId : undefined
+                              }
                               disabled={slot.rosterEntryId === null}
                               value={slot.jerseyNumber}
                               onChange={(event) =>
@@ -457,6 +543,10 @@ export function ManualScoresheetSetupWizard({
                           <label>
                             <input
                               type="radio"
+                              aria-invalid={invalidCaptainSlots.has(slot.slotNumber) || undefined}
+                              aria-describedby={
+                                invalidCaptainSlots.has(slot.slotNumber) ? sideErrorId : undefined
+                              }
                               name={`${side}-captain`}
                               disabled={slot.rosterEntryId === null}
                               checked={Boolean(slot.isCaptain)}

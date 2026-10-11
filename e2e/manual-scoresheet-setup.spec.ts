@@ -6,6 +6,7 @@ import { createServer, type ViteDevServer } from "vite";
 let server: ViteDevServer;
 let fixtureUrl: string;
 const draftKey = "base-do-basquete:admin-draft:v1:manual-scoresheet:100:new:v3-setup";
+const secondDraftKey = "base-do-basquete:admin-draft:v1:manual-scoresheet:200:new:v3-setup";
 
 test.describe.configure({ mode: "serial" });
 
@@ -46,12 +47,14 @@ test("protects a stored draft until explicit restore or discard", async ({ page 
   await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveValue("");
   await page.waitForTimeout(650);
   expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toBe(original);
-  await page.getByRole("button", { name: "Restaurar" }).click();
+  await page.getByRole("button", { name: "Restaurar" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Jogo", exact: true })).toBeFocused();
   await expect(page.locator(".scoresheet-form")).not.toHaveAttribute("inert");
   await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveValue("2026-10-15");
   expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toBe(original);
   await page.reload();
-  await page.getByRole("button", { name: "Descartar" }).click();
+  await page.getByRole("button", { name: "Descartar" }).press("Space");
+  await expect(page.getByRole("heading", { name: "Jogo", exact: true })).toBeFocused();
   expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toBeNull();
   await expect(page.locator(".scoresheet-form")).not.toHaveAttribute("inert");
 });
@@ -64,8 +67,13 @@ test("focuses validation errors and identifies every starter and captain control
   await expect(page.getByRole("alert")).toBeFocused();
   await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveAttribute(
     "aria-describedby",
-    "setup-errors",
+    "setup-game-date-error",
   );
+  await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(page.locator("#setup-game-date-error")).toContainText("data de jogo válida");
   await chooseGame(page);
   await page.getByRole("button", { name: "Continuar para equipes" }).click();
   await expect(page.getByRole("heading", { name: "Equipes", exact: true })).toBeFocused();
@@ -83,6 +91,18 @@ test("focuses validation errors and identifies every starter and captain control
   ).toHaveCount(1);
   await page.getByRole("button", { name: "Conferir configuração" }).click();
   await expect(page.getByRole("alert")).toBeFocused();
+  const homeAthlete = page
+    .locator("fieldset.lineup-panel")
+    .nth(0)
+    .getByRole("combobox", { name: /Atleta.*slot 1$/ });
+  await expect(homeAthlete).not.toHaveAttribute("aria-invalid", "true");
+  const homeCaptain = page.getByRole("radio", {
+    name: "Capitão — Mandante, slot 1",
+    exact: true,
+  });
+  await expect(homeCaptain).toHaveAttribute("aria-invalid", "true");
+  await expect(homeCaptain).toHaveAttribute("aria-describedby", "setup-home-lineup-error");
+  await expect(page.locator("#setup-home-lineup-error")).toContainText("capitão");
   const teams = page.locator("fieldset.lineup-panel");
   await teams
     .nth(0)
@@ -100,6 +120,32 @@ test("focuses validation errors and identifies every starter and captain control
   await page.getByRole("button", { name: "Conferir configuração" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Configuração válida" })).toBeVisible();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("isolates competition state and flushes edits during internal navigation", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await chooseGame(page);
+  await page.getByLabel("Local (opcional)").fill("Ginásio da competição 100");
+  await page.getByRole("link", { name: "Competição 200" }).click();
+  await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveValue("");
+  expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toContain(
+    "Ginásio da competição 100",
+  );
+  await chooseGame(page);
+  await page.getByLabel("Local (opcional)").fill("Ginásio da competição 200");
+  await page.getByRole("link", { name: "Sair da configuração" }).click();
+  await expect(page.getByText("Outra tela")).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), secondDraftKey)).toContain(
+    "Ginásio da competição 200",
+  );
+  await page.getByRole("link", { name: "Voltar à competição 100" }).click();
+  await expect(page.getByRole("complementary", { name: "Rascunho recuperável" })).toBeVisible();
+  await expect(page.getByLabel("Data do jogo (obrigatória)")).toHaveValue("");
+  await page.getByRole("button", { name: "Restaurar" }).press("Enter");
+  await expect(page.getByLabel("Local (opcional)")).toHaveValue("Ginásio da competição 100");
+  await expect(page.getByRole("heading", { name: "Jogo", exact: true })).toBeFocused();
 });
 
 for (const width of [320, 390, 720, 1280]) {
