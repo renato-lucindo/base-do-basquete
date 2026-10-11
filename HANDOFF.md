@@ -404,3 +404,57 @@ RESPONSAVEL: project-maintainer, mediante abertura de nova unidade para Etapa 6.
 ARQUIVO_OU_SERVICO: docs/plan/sumula-manual-v2/06-lancamento-rapido-pontos.md e app/modules/scoresheet/.
 ACAO: antes de qualquer desenvolvimento da Etapa 6, reconciliar Git/HANDOFF/PR #72, adquirir novo write lock e implementar apenas a unidade aprovada do lancamento rapido conforme o plano, preservando os riscos P3 para cobertura adicional quando aplicavel. PR segue DRAFT, sem merge ou migration em Supabase compartilhado.
 CRITERIO_DE_CONCLUSAO: checkpoint da Etapa 5 versionado e publicado na PR #72 com evidencias e pareceres no SHA 7b41989; proxima unidade possui escopo proprio, testes e revisoes proporcionais.
+
+## 26. Etapa 6 — lançamento rápido de pontos (11/10/2026)
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE6-FAST-SCORING; BRANCH=codex/manual-stage4-v3-review (remoto: codex/manual-scoresheet-v2; PR #72 DRAFT); BASE_COMMIT=6dd5c57a4990148c3ac6c74466c1fc8a1177b151; HEAD_COMMIT=6dd5c57a4990148c3ac6c74466c1fc8a1177b151; STATUS=ACTIVE; SCOPE=wizard etapa Lançamentos, pontos 1/2/3 com entrada por teclado, camisa 00 literal, foco, Esc, Ctrl+Z, histórico local curto, grade de correções, estado persistido no rascunho, testes e gate. EXCLUSO=Etapas 7–10, faltas rápidas, migrations/Supabase compartilhado, merge main e produção.
+
+Objetivo: completar o checkpoint de docs/plan/sumula-manual-v2/06-lancamento-rapido-pontos.md. Critérios de aceite: fluxo 12 Enter 2 Enter, seleção prévia de equipe/período, validação, foco restaurado, feedback acessível, undo limitado e grade editável sem servidor; testes focais e gate no código final, publicação na PR draft e revisão proporcional. O estado inicial foi reconciliado: worktree limpo, HEAD 6dd5c57, etapas 4 e 5 encerradas. O script auxiliar inspect-work-unit.mjs falhou com TypeError ao ler stderr indefinido; git status/log foram verificados diretamente.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: app/modules/scoresheet/setup-wizard.tsx, setup-state.ts, novo painel de pontos e testes; PR #72
+ACAO: implementar lançamento rápido e histórico local, executar testes/CI, registrar review packet, fazer commit/push e verificar checks sem merge/migration compartilhada.
+CRITERIO_DE_CONCLUSAO: entrada completa pelo teclado, rascunho restaurável e edição da grade testados, gate verde e HEAD da PR rastreado; write lock liberado após revisão.
+
+### REVIEW_PACKET — Etapa 6 / código publicado (11/10/2026)
+
+- WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE6-FAST-SCORING.
+- BRANCH: codex/manual-stage4-v3-review (remoto codex/manual-scoresheet-v2, PR #72 OPEN/DRAFT).
+- BASE_COMMIT: 6dd5c57a4990148c3ac6c74466c1fc8a1177b151.
+- HEAD_COMMIT: 37edaeecc72f5654f9e6accd268e9da1753906b0 (commit de código da Etapa 6; o HEAD documental posterior não altera o artefato).
+- OBJETIVO: lançar conversões de LL/2P/3P exclusivamente pelo teclado após escolher equipe/período, permitindo correções na grade, desfazer e rascunho local restaurável.
+- CRITERIOS_DE_ACEITE: 12 Enter 2 Enter, camisa 00 literal, só 1/2/3 pontos, Esc, Ctrl+Z, foco automático, feedback acessível, histórico de até 10 lançamentos, separação por equipe/período, grade editável, persistência sem servidor e reflow em 320px.
+- ESCOPO: painel de lançamentos, setup-state/wizard, fixture e E2E, responsividade CSS.
+- ESCOPO_NEGATIVO: Etapas 7–10, faltas rápidas, banco ou migrations do Supabase compartilhado, alterações no backend/RLS/RPC, merge main e produção.
+- ARQUIVOS_ALTERADOS: app/modules/scoresheet/fast-scoring-panel.tsx e .test.ts; setup-state.ts e .test.ts; setup-wizard.tsx; app/app.css; e2e/fixtures/manual-scoresheet-setup.fixture.tsx; e2e/manual-scoresheet-setup.spec.ts; HANDOFF.md (checkpoint documental).
+- MIGRATIONS: nenhuma nova, nenhuma aplicada ao Supabase compartilhado.
+- AMBIENTE_VALIDADO: worktree Windows, navegador Playwright da fixture, builds locais e PostgreSQL descartável nos workflows GitHub Actions; sem execução no Supabase compartilhado.
+- RISK_LEVEL: MODERADO. RISK_JUSTIFICATION: somente componentes de UI/estado de rascunho no localStorage e CSS; sem escrita servidor, autoridade estatística do banco, privilégios, contratos de ingestão, autenticação ou migrations. Consequências são limitadas ao rascunho local e à experiência de digitação; revisão de banco e estatística CRITICA não é acionada por este delta.
+- REVIEW_DECISIONS: accessibility-ui-reviewer=REQUIRED (Playwright focal verifica foco, Esc, teclado, axe, labels, anúncios e viewport 320px); qa-reviewer=REQUIRED (Vitest de estado/histórico e fluxo E2E, draft restaurado, edição na grade, gate completo e CI); database-security-reviewer=WAIVED (nenhum código de servidor, autorização, SQL, migration, grants ou RLS); statistics-domain-reviewer=WAIVED (não altera fórmulas, agregações ou autoridades persistentes; campos de conversões já existentes); boxscore-domain-reviewer=WAIVED (parser/contratos/importadores inalterados); performance-investigator=WAIVED (sem alteração backend, consultas ou trabalho pesado novo). Revisão independente focal acionada para a interação de teclado/undo; automação complementa os pareceres, sem inventar aprovação.
+- REQUIRED_REVIEWERS: accessibility-ui-reviewer e qa-reviewer neste delta de interação de teclado/undo; nenhum especialista CRITICO de banco/estatística acionado. REVIEW_APPROVER: project-maintainer, responsável pelo write lock e classificação de risco.
+- TESTES_EXECUTADOS: gate local npm run check PASS em 11/10/2026 (format, lint sem erros bloqueantes, typecheck, Vitest 61 arquivos/512 testes, runbooks/agentes, build client/SSR, varredura de segredos em 745 arquivos); Playwright focal 10/10 PASS (entrada, 00, undo/edição, rascunho, axe, keyboard e 320/390/720/1280px); git diff --cached --check PASS antes do commit funcional. Nenhuma migration local de Stage 6.
+- EVIDENCIAS: código 37edaee publicado em 11/10/2026; CI https://github.com/renato-lucindo/base-do-basquete/actions/runs/38178193565 ; Stage 4 Validation (pgTAP descartável) https://github.com/renato-lucindo/base-do-basquete/actions/runs/38178189299 ; Preview https://github.com/renato-lucindo/base-do-basquete/actions/runs/38178193535 ; CodeQL https://github.com/renato-lucindo/base-do-basquete/actions/runs/38178193534 (todos os quatro workflows concluíram SUCCESS em 11/10/2026 no SHA funcional 37edaee; Stage 4 Validation executou pgTAP/upgrade histórico em PostgreSQL descartável; CI incluiu gate, database, accessibility e remote_history_upgrade).
+- RISCOS_CONHECIDOS: acessibilidade de uma interação de dois estágios e reversão de mudanças exige revisão independente focal; risco de estado local, reflow e perda por fechamento abrupto limitado ao navegador.
+- WAIVERS/RISCOS_RESIDUAIS: histórico Ctrl+Z mantém somente os últimos 10 eventos nesta montagem e é zerado após edição manual/reload; localStorage possui debounce e pode perder último evento em fechamento abrupto; teste axe na fixture não substitui auditoria WCAG integral/zoom 200%; interface prepara conversões locais sem submissão autoritativa, prevista para etapa posterior. Riscos P3 não bloqueantes, sem extrapolar escopo.
+- WRITE_LOCK_OWNER: project-maintainer (ACTIVE até verificar GitHub Actions e versionar o HANDOFF de encerramento).
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer.
+ARQUIVO_OU_SERVICO: GitHub Actions do código 37edaee, PR #72, HANDOFF.md.
+ACAO: conferir conclusão dos quatro workflows no SHA funcional, investigar falhas se houver, registrar resultados reais neste HANDOFF e comentário de revisão na PR, commit/push documental, verificar branch sincronizada e liberar write lock. Não iniciar Etapa 7.
+CRITERIO_DE_CONCLUSAO: checks CI/pgTAP/preview/CodeQL concluídos sem bloqueio no artefato aprovado; PR OPEN/DRAFT; HANDOFF publicado com SHA e próxima ação concreta; worktree limpo e sincronizado.
+
+### Revisão independente do SHA 37edaee — bloqueio focal de acessibilidade (11/10/2026)
+
+- QA independente (Kant, 01a12cf7-43f1-7ca2-b51e-dc6fd3db4d31): APPROVE_WITH_NON_BLOCKING_NOTES; BASE_COMMIT=6dd5c57; COMMIT_REVISADO=37edaee; REVIEWED_AT=11/10/2026. Nenhum P0/P1 funcional; P3 cobertura de limite de 10 eventos/troca de contexto, localStorage 400ms e zoom 200%. Nota de escopo: a grade existente ainda exibe edição de faltas, enquanto lançamento rápido de faltas pertence à Etapa 7.
+- Acessibilidade independente (Pauli, 01a12cf7-3955-7c11-af30-5110debeb13b): REQUEST_CHANGES; BASE_COMMIT=6dd5c57; COMMIT_REVISADO=37edaee; REVIEWED_AT=2026-10-11T19:03:54-03:00. P2 conflito de foco no início/restauração de Lançamentos entre RAF do wizard (setup-wizard.tsx:158) e RAF automático do painel (fast-scoring-panel.tsx:94-100); exige foco inicial no título e teste Playwright na transição/restauração. P3 switchContext muda imediatamente foco dos seletores para camisa, interrompendo uso das setas. Revisor realizou inspeção read-only; tentou testes locais, bloqueados por EPERM de spawn/test-results, mas verificou os quatro workflows remotos SUCCESS.
+- GATES REMOTOS CONFIRMADOS no 37edaee: CI 38178193565 SUCCESS (accessibility/database/gate/remote_history_upgrade); Stage 4 Validation 38178189299 SUCCESS (security+statistics pgTAP, focused remote-history, QA); Preview 38178193535 SUCCESS; CodeQL 38178193534 SUCCESS. Banco somente PostgreSQL descartável de CI.
+- TENTATIVA DE CORRECAO: uma primeira edição local via PowerShell falhou antes da gravação ao procurar contexto CRLF em arquivo com LF; verificação posterior confirmou arquivo inalterado. A tentativa corrigida foi recusada pela revisão automática da ferramenta com 'blocked by OpenAI because we could not determine the safety status of the request'. Correção P2 não foi aplicada. Não atribuir o erro a teste ou ao projeto.
+- REVIEW_DECISIONS atuais: accessibility-ui-reviewer=REQUIRED, parecer REQUEST_CHANGES bloqueante; qa-reviewer=REQUIRED, APPROVE_WITH_NON_BLOCKING_NOTES válido apenas para 37edaee; demais waivers limitados ao delta de UI. STATUS: BLOCKED_REVIEW, WRITE_LOCK_OWNER=project-maintainer (ACTIVE); Stage 6 ainda não está encerrada, PR #72 OPEN/DRAFT.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer, após autorização aceita pela revisão da ferramenta.
+ARQUIVO_OU_SERVICO: app/modules/scoresheet/fast-scoring-panel.tsx; e2e/manual-scoresheet-setup.spec.ts; PR #72/HANDOFF.md.
+ACAO: suprimir o autofocus do painel na montagem para preservar o foco do título, manter foco no seletor ao alternar equipe/período, adicionar E2E para foco na transição e após restauração, rodar teste focal e gate aplicável, commit/push na branch da PR e obter nova revisão independente de acessibilidade no novo SHA.
+CRITERIO_DE_CONCLUSAO: P2 formalmente corrigido e revogado por novo parecer, testes e quatro workflows verdes no SHA corrigido, revisão QA incremental quando aplicável, HANDOFF de encerramento publicado, write lock liberado; sem merge/main, Etapa 7, produção ou migrations compartilhadas.
