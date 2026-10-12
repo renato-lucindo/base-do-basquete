@@ -133,7 +133,7 @@ const setup = fixtureSql
   // Keep stdout reserved for the JSON result consumed by this harness.
   .replace(
     /select pg_temp\.create_final_competition\(([\s\S]*?)\);/,
-    "do $$begin perform pg_temp.create_final_competition($1); end$$;",
+    (_, args) => `do $$begin perform pg_temp.create_final_competition(${args}); end$$;`,
   );
 const fixture = JSON.parse(
   await run(`begin; set constraints all deferred;
