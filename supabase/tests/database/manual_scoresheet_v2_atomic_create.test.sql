@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(41);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -412,6 +412,17 @@ select throws_ok(
   )$$,
   'BD207','BDB_DATA_AFTER_DISQUALIFICATION',
   'early Q3 disqualification continues to reject later Q4 scoring'
+);
+select throws_ok(
+  $$select public.admin_create_manual_scoresheet_v2(
+    jsonb_set(
+      jsonb_set((select payload from manual_v2_payloads where name='ot_after_gd'),
+        '{idempotencyKey}','"98310000-0000-4000-8000-000000000012"'::jsonb),
+      '{fouls,3,periodNumber}','5'::jsonb
+    )
+  )$$,
+  'BD219','BDB_INVALID_SEMANTIC_FOUL',
+  'OT1 scoring period does not permit a separate period 5 foul group'
 );
 reset role;
 

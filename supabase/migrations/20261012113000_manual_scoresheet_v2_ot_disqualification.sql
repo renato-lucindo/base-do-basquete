@@ -305,7 +305,7 @@ begin
         raise exception using errcode='BD219', message='BDB_INVALID_SEMANTIC_FOUL';
       end;
     end if;
-    if period_number not between 1 and period_count or foul_sequence <= 0
+    if period_number not between 1 and 4 or foul_sequence <= 0
       or foul_registration_id not in (home_registration_id, away_registration_id)
       or foul_target_kind not in ('player','bench','staff','team')
       or foul_type not in ('P','T','U','D')
