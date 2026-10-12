@@ -4,9 +4,9 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: Etapa 9 em implementação, a partir de 9821248. Etapa 8 concluída e verificada. PR #72 OPEN/DRAFT; sem migrations no Supabase compartilhado, merge ou produção. Estado operacional vigente na seção 33.**
+**Checkpoint atual: Etapa 9 concluída; Etapa 10 em reconciliação final. PR #72 OPEN/DRAFT. Artefato funcional 80a3335; HEAD local inicial desta retomada 8365534; head remoto 84f4510. Estado operacional nas seções 35–37. Sem migrations compartilhadas, merge ou produção.**
 
-A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. A unidade `MANUAL-SCORESHEET-V2-STAGE8-CONFIRM` foi concluída. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
+A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a unidade ativa é `MANUAL-SCORESHEET-V2-STAGE10-GATE`. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
 A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e foi reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0` pelo merge `6beb49c`, que integrou a governança documental da PR #71. O conflito ficou restrito a este arquivo; a resolução adotou o novo formato compacto do handoff.
 
@@ -15,18 +15,18 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE9-REVISION
+WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE10-GATE
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: 98212482e4c316ba0517df70fa9e2d9696f79641
-HEAD_COMMIT: consultar Git; implementação da Etapa 9 em andamento
-HEAD_FUNCIONAL: pendente de gates e pareceres próprios da Etapa 9
-SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
+BASE_COMMIT: 84f4510083a4c684f99193be9916530c391d4e15
+HEAD_COMMIT: consultar Git; retomada da Etapa 10 em 83655344b8ef9093a7019f7e4f20c93df11981f2
+HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
+SCOPE: packet final, reconciliação documental de pareceres/gates, plano de rollout/rollback e publicação de evidências na mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
 STATUS: ACTIVE
 ```
 
-As quatro especialidades aprovaram a Etapa 8; bloqueios estatísticos, QA e acessibilidade expressamente revogados (seção 32). O parecer de acessibilidade em 61f3536 continua válido para UI inalterada em eddc2cb. Os registros de etapas anteriores abaixo são históricos. PR permanece draft; Etapas 9 e 10 pendentes.
+As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
 
 ## 3. Checkpoints concluídos
 
@@ -821,3 +821,11 @@ RESPONSAVEL: project-maintainer.
 ARQUIVO_OU_SERVICO: PR #72, REVIEW_PACKET e docs/execution da súmula manual.
 ACAO: consolidar evidências finais, validar HEAD final, registrar rollout/rollback e concluir o gate da PR.
 CRITERIO_DE_CONCLUSAO: packet final aprovado, pareceres válidos no mesmo commit e ausência de bloqueios funcionais.
+
+## 37. Reconciliação efetiva da Etapa 10 (12/10/2026)
+
+- HEAD local inicial `83655344b8ef9093a7019f7e4f20c93df11981f2`, árvore limpa; os commits `3b6560e` e `8365534` ainda não haviam sido enviados. PR #72 OPEN/DRAFT em `84f4510083a4c684f99193be9916530c391d4e15`, base main `27d917a1ce4a404ced091fd3ca660113c215ca92`; fetch read-only confirmado.
+- Resumo inicial e lock estavam desatualizados na Etapa 9. Corrigidos para a unidade ativa Etapa 10, preservando o histórico. O relatório anterior era um esboço: não havia publicação nem novo parecer no SHA documental, e rollout/rollback precisavam de procedimento concreto.
+- Checks do head remoto 84f4510 falhos antes de iniciar por cobrança; annotation GitHub conferida. CI/Preview/CodeQL do artefato funcional80a3335 continuam SUCCESS. Delta desde esse artefato exclusivamente documental, confirmado por git diff.
+- WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE10-GATE; STATUS=ACTIVE. Escopo: completar packet, plano operacional, acompanhamento DEV, revisão incremental e publicação. Sem código/dependências/workflows novos, merge, DDL/DML compartilhado ou produção.
+- PROXIMO_PASSO_EXATO: finalizar docs/execution/manual-scoresheet-stage10-final-gate.md com campos do contrato, evidências e plano de rollout/rollback; validar documentação, fixar commit, publicar packet e obter QA incremental da reconciliação. Manter resultado remoto real explícito.
