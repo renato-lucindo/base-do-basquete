@@ -807,3 +807,17 @@ RESPONSAVEL: project-maintainer.
 ARQUIVO_OU_SERVICO: docs/plan/sumula-manual-v2/10-gate-e-fechamento-pr.md e PR #72.
 ACAO: abrir unidade Etapa10, fixar HEAD e preparar packet final da PR; reconciliar pareceres das etapas anteriores por domínio, artefato e ambiente, reutilizando os gates verdes e o QA local autorizado sem repetições desnecessárias. Documentar o check remoto indisponível e plano de rollout/rollback antes de recomendar qualquer integração. Abrir acompanhamento separado dos avisos DEV sem misturar correção de dependências com o fechamento funcional.
 CRITERIO_DE_CONCLUSAO: packet final e pareceres obrigatórios aplicáveis ao artefato final, evidências íntegras e ausência de bloqueios funcionais; qualquer operação de merge/main, migrations compartilhadas ou produção continua fora do escopo desta entrega.
+
+## 36. Início da Etapa10 — gate e fechamento da PR #72 (12/10/2026)
+
+- Etapa9 encerrada com QA local autorizado e pareceres válidos no artefato funcional `80a3335`.
+- WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE10-GATE; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE.
+- HEAD atual: `84f4510` (`docs: record authorized local QA and close stage 9`).
+- Ação da Etapa10: preparar packet final da PR #72, reconciliar pareceres por domínio e registrar plano de integração/rollback.
+- Restrições mantidas: sem merge na main, sem migrations no Supabase compartilhado e sem produção.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer.
+ARQUIVO_OU_SERVICO: PR #72, REVIEW_PACKET e docs/execution da súmula manual.
+ACAO: consolidar evidências finais, validar HEAD final, registrar rollout/rollback e concluir o gate da PR.
+CRITERIO_DE_CONCLUSAO: packet final aprovado, pareceres válidos no mesmo commit e ausência de bloqueios funcionais.
