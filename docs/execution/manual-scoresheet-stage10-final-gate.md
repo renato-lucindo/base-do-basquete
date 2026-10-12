@@ -58,7 +58,7 @@ Logs completos sanitizados: [check](evidence/manual-scoresheet-stage9-local-qa/n
 | Acessibilidade Hegel01a1316e-e843-77c0-aee5-53dc3f050eb0 | 80a3335;2026-10-12T15:49:05-03:00 | APPROVE_WITH_NON_BLOCKING_NOTES; revoga checkbox/foco/nomes; execução própria4/4 |
 | QA Archimedes01a1316e-e9d2-7681-8088-18a92e500f46 | 5e4badf;2026-10-12T19:21:06Z | APPROVE_WITH_NON_BLOCKING_NOTES para Etapa9; revoga bloqueio operacional após QA local autorizado |
 
-Relatórios integrais: [especialistas e histórico QA](manual-scoresheet-stage9-final-review.md), [renovação QA](manual-scoresheet-stage9-local-qa.md). Etapas anteriores permanecem rastreáveis nas seções3–32 do HANDOFF; os deltas da Etapa9 foram cobertos por novos pareceres, sem usar aprovação antiga para autorizar alteração posterior. A revisão incremental da Etapa10 será registrada com SHA/data/resultados reais. Não alegar aprovação de merge por herança.
+Relatórios integrais: [especialistas e histórico QA](manual-scoresheet-stage9-final-review.md), [renovação QA](manual-scoresheet-stage9-local-qa.md). Etapas anteriores permanecem rastreáveis nas seções3–32 do HANDOFF; os deltas da Etapa9 foram cobertos por novos pareceres, sem usar aprovação antiga para autorizar alteração posterior. A revisão incremental da Etapa10 consta integralmente abaixo, vinculada a9ca4065; o commit posterior apenas registra o resultado. Não alegar aprovação de merge por herança.
 
 ## Migrations e preflight futuro
 
@@ -95,6 +95,58 @@ A preparação do schema e a homologação precedem a ativação da nova aplica�
 
 ## Readiness e continuidade
 
-Aceite funcional da Etapa9: preservado. Pacote documental da Etapa10: aguardando publicação/revisão incremental. **Merge/rollout: NOT_READY**, por checks remotos não aprovados, preflight desatualizado e homologação/recuperação compartilhadas ainda pendentes. Isso não reabre testes funcionais já aprovados nem transforma falha de cobrança em falha de código.
+Aceite funcional da Etapa9: preservado. Pacote documental da Etapa10: publicado e APPROVE_WITH_NON_BLOCKING_NOTES pelo QA em9ca4065; fechamento documental READY. O checkpoint de integração da Etapa10 permanece pendente. **Merge/rollout: NOT_READY**, por checks remotos não aprovados, preflight desatualizado e homologação/recuperação compartilhadas ainda pendentes. Isso não reabre testes funcionais já aprovados nem transforma falha de cobrança em falha de código.
 
 Acompanhamentos separados e critérios: [manual-scoresheet-stage10-followups.md](manual-scoresheet-stage10-followups.md).
+
+## Validação e publicação da unidade documental
+
+- [REVIEW_PACKET publicado](https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134227073), HEAD9ca4065ce89358cf5007ee78aa933cbfbf659cda. Push explícito para a branch correta da PR confirmado; commits locais3b6560e/8365534 preservados e publicados.
+- `git diff --check` PASS; integridade Markdown PASS para3 arquivos/10 links locais, UTF-8/LF/newline final. Biome não processa Markdown nesta configuração; a tentativa focal informou0 arquivos e não é contabilizada como PASS.
+- `check-runbooks` PASS5 arquivos; `check-agent-configuration` PASS7 subagents/7 skills/21 cenários de skills/21 de roteamento. Scan de segredos PASS769 arquivos. Sem repetir build, Vitest, E2E ou pgTAP do artefato inalterado.
+- Inspeção read-only de app/SQL/dependências/scripts/workflows/governança confirmou identidade com80a3335. Inspeção de manifesto/script confirmou62+6=68 contra guard66; nenhum SQL executado.
+- Runs no SHA9ca4065: [CI38319647006](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38319647006), [CodeQL38319647010](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38319647010), [Preview38319647190](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38319647190), [Stage438319640755](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38319640755): FAILURE. Jobs falhos têm0 etapas, runner vazio e annotation de cobrança; dependentes SKIPPED. Eventuais novos runs do commit que registra este parecer devem ser consultados, sem antecipar resultado nem invalidar ficticiamente o artefato funcional.
+
+## Parecer QA incremental integral
+
+Agente Archimedes: `01a1316e-e9d2-7681-8088-18a92e500f46`.
+
+**PARECER: APPROVE_WITH_NON_BLOCKING_NOTES — somente para o fechamento documental.**
+
+```text
+WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE10-GATE
+BASE_COMMIT: 84f4510083a4c684f99193be9916530c391d4e15
+COMMIT_REVISADO: 9ca4065ce89358cf5007ee78aa933cbfbf659cda
+ARTEFATO_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b
+REVIEWED_AT: 2026-10-12T22:59:49Z
+GIT_STATUS_ANTES: limpo
+GIT_STATUS_DEPOIS: limpo
+```
+
+Confirmei o [REVIEW_PACKET publicado](https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134227073), o diff documental e a PR **OPEN/DRAFT, MERGEABLE** no SHA fixado. Código, migrations, dependências, testes e workflows permanecem iguais ao artefato funcional aprovado.
+
+Os pareceres de Harvey, Schrodinger e Hegel continuam aplicáveis por domínio. Meu aceite local de `5e4badf` também permanece válido: não houve mudança funcional nem redução da cobertura. Os antigos achados seguem resolvidos.
+
+Não encontrei novo bloqueante documental. Confirmei estas pendências corretamente delimitadas:
+
+- **Checks recentes:** CI `38319647006`, CodeQL `38319647010`, Preview `38319647190` e Stage4 `38319640755` falharam. Os seis jobs consultados têm **zero etapas executadas** e anotação de cobrança/limite. Nenhum SUCCESS anterior valida ficticiamente esses runs.
+- **Preflight:** manifesto com **62 aplicadas + 6 pendentes = 68**; gerador ainda exige **66** e anuncia quatro pendentes. O defeito conhecido está registrado e impede usar esse procedimento para rollout; não invalida a evidência distinta de reconstrução histórica.
+- **Integração/recuperação:** o plano exige checks no SHA final, reconciliação remota, ensaio representativo, backup recuperável, compatibilidade entre aplicação/schema e homologação AAL2. Prevê schema antes da aplicação, candidata sem tráfego e rollback do Worker condicionado à compatibilidade, sem presumir reversão do banco. Esses requisitos estão planejados, ainda não comprovados.
+
+| Readiness | Resultado |
+| --- | --- |
+| Packet documental | **READY** para registrar este parecer e encerrar a entrega documental |
+| Merge | **NOT_READY** — checks obrigatórios e condições de integração pendentes |
+| Rollout | **NOT_READY** — preflight, reconciliação, homologação e recuperação pendentes |
+
+Executei somente inspeções Git/documentais, consultas remotas de leitura e `git diff --check`, aprovado. Não repeti testes/build/pgTAP porque o artefato permaneceu inalterado; não executei o gerador nem operações compartilhadas.
+
+```text
+SKILL_RESULT:
+SKILL: running-release-gate
+STATUS: PASS
+SCOPE: revisão documental incremental da Etapa 10
+RESIDUAL_RISKS: merge e rollout NOT_READY
+```
+
+**Próximo passo exato:** project-maintainer registrar este parecer e os runs atuais no relatório/HANDOFF, encerrando apenas a entrega documental. Manter os acompanhamentos de preflight, tooling e integração/release com seus critérios existentes, sem dispensar gates ou autorizar merge, migrations ou produção.

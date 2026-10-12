@@ -4,9 +4,9 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: Etapa 9 concluída; Etapa 10 em reconciliação final. PR #72 OPEN/DRAFT. Artefato funcional 80a3335; HEAD local inicial desta retomada 8365534; head remoto 84f4510. Estado operacional nas seções 35–37. Sem migrations compartilhadas, merge ou produção.**
+**Checkpoint atual: entrega documental da Etapa 10 aprovada e publicada; integração/rollout NOT_READY. Etapa 9 concluída. PR #72 OPEN/DRAFT; artefato funcional80a3335, packet revisado9ca4065. Estado vigente na seção38; HEAD de publicação deve ser consultado no Git/PR. Sem migrations compartilhadas, merge ou produção.**
 
-A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a unidade ativa é `MANUAL-SCORESHEET-V2-STAGE10-GATE`. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
+A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a entrega documental `MANUAL-SCORESHEET-V2-STAGE10-GATE` foi concluída, com integração pendente. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
 A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e foi reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0` pelo merge `6beb49c`, que integrou a governança documental da PR #71. O conflito ficou restrito a este arquivo; a resolução adotou o novo formato compacto do handoff.
 
@@ -18,12 +18,12 @@ OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE10-GATE
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
 BASE_COMMIT: 84f4510083a4c684f99193be9916530c391d4e15
-HEAD_COMMIT: consultar Git; retomada da Etapa 10 em 83655344b8ef9093a7019f7e4f20c93df11981f2
+HEAD_COMMIT: consultar Git; packet revisado em 9ca4065ce89358cf5007ee78aa933cbfbf659cda; delta posterior registra o parecer
 HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
 SCOPE: packet final, reconciliação documental de pareceres/gates, plano de rollout/rollback e publicação de evidências na mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
-STATUS: ACTIVE
+STATUS: RELEASED
 ```
 
 As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
@@ -829,3 +829,20 @@ CRITERIO_DE_CONCLUSAO: packet final aprovado, pareceres válidos no mesmo commit
 - Checks do head remoto 84f4510 falhos antes de iniciar por cobrança; annotation GitHub conferida. CI/Preview/CodeQL do artefato funcional80a3335 continuam SUCCESS. Delta desde esse artefato exclusivamente documental, confirmado por git diff.
 - WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE10-GATE; STATUS=ACTIVE. Escopo: completar packet, plano operacional, acompanhamento DEV, revisão incremental e publicação. Sem código/dependências/workflows novos, merge, DDL/DML compartilhado ou produção.
 - PROXIMO_PASSO_EXATO: finalizar docs/execution/manual-scoresheet-stage10-final-gate.md com campos do contrato, evidências e plano de rollout/rollback; validar documentação, fixar commit, publicar packet e obter QA incremental da reconciliação. Manter resultado remoto real explícito.
+
+## 38. Etapa 10 — packet publicado e revisão documental concluída (12/10/2026)
+
+- Packet completo publicado na PR72: https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134227073; COMMIT_REVISADO9ca4065ce89358cf5007ee78aa933cbfbf659cda; ARTEFATO_FUNCIONAL80a33355d98dc351214d825557323fa29ebf957b. Commits3b6560e/8365534 preservados e enviados para origin/codex/manual-scoresheet-v2 junto da reconciliação.
+- Relatório final: docs/execution/manual-scoresheet-stage10-final-gate.md. Parecer QA Archimedes01a1316e-e9d2-7681-8088-18a92e500f46: APPROVE_WITH_NON_BLOCKING_NOTES,2026-10-12T22:59:49Z, somente fechamento documental. Confirma validade dos três especialistas e do QA local anterior por identidade do artefato; íntegra no relatório. Packet READY; merge/rollout NOT_READY.
+- Check documental: diff --check PASS; integridade Markdown3 arquivos/10 links/UTF-8/LF PASS; runbooks5 PASS; agentes7/skills7/cenários21+21 PASS; scan769 PASS. Biome ignorou Markdown (0 arquivos), explicitamente não contado como PASS. Suítes/build/pgTAP não repetidos porque código/SQL/dependências/workflows não mudaram.
+- Checks de9ca4065: CI38319647006, CodeQL38319647010, Preview38319647190, Stage438319640755 FAILURE; falhos sem etapas/runner, annotation de cobrança conferida pelo mantenedor e QA. Dependentes SKIPPED. Não alegar checks verdes no novo HEAD. Gates funcionais verdes do80a3335 e logs locais5e4badf permanecem rastreáveis.
+- Pendência de rollout descoberta: scripts/supabase-stage4-reconcile-overlay.mjs ainda exige66 arquivos e anuncia4 pendentes; manifesto contém62+6=68. Confirmado por inspeção read-only, sem SQL. Deve ser corrigido/testado em unidade própria antes do preflight; script e migrations preservados nesta entrega documental.
+- Acompanhamento separado em docs/execution/manual-scoresheet-stage10-followups.md: preflight bloqueante; seis pacotes high DEV como nota não bloqueante do aceite funcional; integração/release condicionadas a checks, reconciliação, ensaio de backup/compatibilidade e homologação autenticada. Plano concreto de ordem schema/aplicação e recuperação está no packet. Nenhuma issue externa pressuposta.
+- SKILL_RESULT: managing-base-work-unit PASS; running-release-gate PASS no escopo documental; READINESS_PACKET=READY; READINESS_MERGE=NOT_READY; READINESS_ROLLOUT=NOT_READY. Etapa10 teve sua entrega documental concluída; o checkpoint de integração do plano não foi declarado verde.
+- WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE10-GATE; STATUS=RELEASED. Delta final registra somente resultados e parecer; será publicado por commit próprio, com SHA final/checks reais no comentário de encerramento da PR. Sem alterações no Supabase compartilhado, merge ou produção.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer.
+ARQUIVO_OU_SERVICO: scripts/supabase-stage4-reconcile-overlay.mjs; docs/execution/supabase-stage4-remote-migration-history.json; PR72/Actions.
+ACAO: abrir unidade MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT, corrigir contagem/mensagem para o manifesto atual, validar overlay68 arquivos e rejeição de inventário inesperado; obter revisão proporcional e reconciliar histórico read-only antes de planejar aplicação. Reexecutar checks remotos somente após capacidade da conta restabelecida; manter acompanhamento DEV separado.
+CRITERIO_DE_CONCLUSAO: gerador/testes e plano dry-run coerentes com as seis pendentes e histórico atualizado, pareceres aplicáveis e checks obrigatórios válidos no SHA a integrar. Merge/main, migrations compartilhadas e produção continuam fora desta entrega; não fazer bypass.
