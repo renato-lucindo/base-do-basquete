@@ -257,6 +257,10 @@
     "season_division_model",
     "edition_creation_workflow"
   ],
+  "localVersionAliases": {
+    "season_division_model": "20261002144945_season_division_model.sql",
+    "edition_creation_workflow": "20261005124828_edition_creation_workflow.sql"
+  },
   "legacyLocalExcluded": [
     "single_admin_auth",
     "player_profile_foundation",

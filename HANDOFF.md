@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: entrega documental da Etapa 10 aprovada e publicada; integração/rollout NOT_READY. Etapa 9 concluída. PR #72 OPEN/DRAFT; artefato funcional80a3335, packet revisado9ca4065. Estado vigente na seção38; HEAD de publicação deve ser consultado no Git/PR. Sem migrations compartilhadas, merge ou produção.**
+**Checkpoint atual: correção do preflight validada localmente e em dry-run remoto; revisões banco/QA pendentes no novo SHA. Integração/rollout NOT_READY. Estado vigente na seção39; PR72 OPEN/DRAFT. Sem migrations compartilhadas, merge ou produção.**
 
 A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a entrega documental `MANUAL-SCORESHEET-V2-STAGE10-GATE` foi concluída, com integração pendente. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -15,15 +15,15 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE10-GATE
+WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
 BASE_COMMIT: 84f4510083a4c684f99193be9916530c391d4e15
 HEAD_COMMIT: consultar Git; packet revisado em 9ca4065ce89358cf5007ee78aa933cbfbf659cda; delta posterior registra o parecer
 HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
-SCOPE: packet final, reconciliação documental de pareceres/gates, plano de rollout/rollback e publicação de evidências na mesma PR
+SCOPE: corrigir/testar gerador de preflight, inventário remoto read-only, dry-run e ensaios isolados viáveis; gates/revisão/publicação na PR72
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
-REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
-STATUS: RELEASED
+REQUIRED_REVIEWERS: database-security-reviewer, qa-reviewer (preflight operacional; demais domínios funcionais inalterados)
+STATUS: ACTIVE
 ```
 
 As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
@@ -846,3 +846,18 @@ RESPONSAVEL: project-maintainer.
 ARQUIVO_OU_SERVICO: scripts/supabase-stage4-reconcile-overlay.mjs; docs/execution/supabase-stage4-remote-migration-history.json; PR72/Actions.
 ACAO: abrir unidade MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT, corrigir contagem/mensagem para o manifesto atual, validar overlay68 arquivos e rejeição de inventário inesperado; obter revisão proporcional e reconciliar histórico read-only antes de planejar aplicação. Reexecutar checks remotos somente após capacidade da conta restabelecida; manter acompanhamento DEV separado.
 CRITERIO_DE_CONCLUSAO: gerador/testes e plano dry-run coerentes com as seis pendentes e histórico atualizado, pareceres aplicáveis e checks obrigatórios válidos no SHA a integrar. Merge/main, migrations compartilhadas e produção continuam fora desta entrega; não fazer bypass.
+
+## 39. Preflight e pendências operacionais — unidade ativa (12/10/2026)
+
+- Autorização do responsável: “faça o quie falta”. Base4ece9e7210ebf91e24007099a2b42654edd778e8, árvore limpa e PR72 OPEN/DRAFT nesse SHA. Restrições de merge/main e migrations compartilhadas mantidas; execução local/read-only já autorizada.
+- WORK_UNIT=MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE. Aceite: gerador consistente com68 arquivos/seis pendentes, rejeição de inventário inesperado, dry-run verificado sem escrita, revisão proporcional e evidências publicadas. Sem modificar migrations, dados compartilhados, dependências ou proteção de branch.
+- Lista remota consultada read-only:62 migrations, última20261005140504; seis pendentes continuam ausentes. CLI instalada2.118.0; db push--help confirma--project-ref/--workdir/--dry-run e alerta sobre Vault; usar também--skip-vault na prévia. Docker não encontrado no PATH/caminho padrão; PostgreSQL17 existe e será inspecionado sem alterar instalação.
+- PROXIMO_PASSO_EXATO: corrigir contagem/mensagem e comando de prévia do gerador; adicionar regressões de geração real e rejeição de inventário inesperado, executar gate e dry-run read-only, avaliar ensaio isolado disponível e obter revisão banco/QA no SHA fixo.
+
+### Preflight estabilizado para revisão (12/10/2026)
+
+- Gerador corrigido: total/mensagem derivados do manifesto62+6=68; aliases locais explícitos para as duas versões históricas; marcadores remotos preservados; comando dry-run inclui--skip-vault. SQLs/migrations e lista applied imutáveis.
+- Vitest focal4/4 PASS; gate completo68 arquivos/568 testes PASS (320 warnings/27 infos), build/typecheck/runbooks/agentes/scan770. Dry-run remoto EXIT0 propõe exatamente seis migrations, sem seeds/roles. Listagem posterior corresponde integralmente às62 applied, última20261005140504, sem as seis pendentes.
+- Relatório/REVIEW_PACKET em docs/execution/manual-scoresheet-preflight-review.md; logs sanitizados em docs/execution/evidence/manual-scoresheet-preflight/. Revisores banco e QA serão acionados no commit fixo; especialistas de estatística/UI não são afetados pelo delta operacional.
+- Homologação/recuperação isoladas ainda não executáveis neste host: sem Docker/binários PostgreSQL/servidores encontrados; Supabase só lista main, que não é ambiente isolado. Não criar ambiente pago nem aplicar no compartilhado para contornar. Cobrança GitHub será conferida nos runs após push.
+- PROXIMO_PASSO_EXATO: publicar correção/evidências na PR72, obter pareceres banco/QA, conferir Actions; registrar resultado real e pendências externas. Sem repetir o gate completo após delta documental.

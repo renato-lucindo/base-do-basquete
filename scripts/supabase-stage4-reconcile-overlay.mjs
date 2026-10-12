@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Reconcile CLI migration filenames without changing project schema or history.
 // Stage 4 / PR #72: deliberately produces a disposable --workdir.
-import { copyFile, mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +33,11 @@ for (const file of files) {
 const remoteNames = new Set(manifest.applied.map((item) => item.name));
 check(remoteNames.size === 62, "Duplicate remote migration names");
 const expectedRemoteOnly = new Set(manifest.remoteOnly);
+const localVersionAliases = manifest.localVersionAliases ?? {};
+for (const [name, filename] of Object.entries(localVersionAliases)) {
+  check(expectedRemoteOnly.has(name), "Unexpected historical alias: " + name);
+  check(byName.get(name) === filename, "Historical local migration alias changed: " + name);
+}
 const expectedExcluded = new Set(manifest.legacyLocalExcluded);
 const expectedPending = new Set(
   manifest.stage4Pending.map((file) => file.replace(/^\d{14}_|\.sql$/g, "")),
@@ -50,7 +55,10 @@ for (const name of expectedPending)
     "Stage 4 migration missing or already included in remote history: " + name,
   );
 for (const name of expectedRemoteOnly)
-  check(!byName.has(name), "Previously remote-only migration now exists locally: " + name);
+  check(
+    !byName.has(name) || localVersionAliases[name] === byName.get(name),
+    "Previously remote-only migration now exists locally without an audited alias: " + name,
+  );
 
 const overlayRoot = await mkdtemp(path.join(tmpdir(), "bdb-stage4-reconcile-"));
 const target = path.join(overlayRoot, "supabase", "migrations");
@@ -68,7 +76,7 @@ for (const applied of manifest.applied) {
   check(!versions.has(applied.version), "Duplicate remote version: " + applied.version);
   versions.add(applied.version);
   const filename = applied.version + "_" + applied.name + ".sql";
-  if (byName.has(applied.name)) {
+  if (byName.has(applied.name) && !expectedRemoteOnly.has(applied.name)) {
     await copyFile(path.join(source, byName.get(applied.name)), path.join(target, filename));
   } else {
     check(expectedRemoteOnly.has(applied.name), "Unknown remote-only migration: " + applied.name);
@@ -91,9 +99,12 @@ for (const filename of manifest.stage4Pending) {
   await copyFile(path.join(source, filename), path.join(target, filename));
 }
 const created = (await readdir(target)).filter((filename) => filename.endsWith(".sql"));
-check(created.length === 66, "Unexpected generated migration count: " + created.length);
+const expectedCount = manifest.applied.length + manifest.stage4Pending.length;
+check(created.length === expectedCount, "Unexpected generated migration count: " + created.length);
 console.log("Prepared a temporary Supabase migration overlay at: " + overlayRoot);
-console.log("Remote applied baseline: 62; Stage 4 pending: 4; excluded legacy local files: 6.");
+console.log(
+  `Remote applied baseline: ${manifest.applied.length}; Stage 4 pending: ${manifest.stage4Pending.length}; excluded legacy local files: ${manifest.legacyLocalExcluded.length}.`,
+);
 console.log("No database, history, local migration file, or Git state was modified.");
 console.log("Verify current remote migration history before using this baseline.");
 console.log("Read-only preview command:");
@@ -102,5 +113,5 @@ console.log(
     overlayRoot +
     '" db push --project-ref ' +
     manifest.projectRef +
-    " --dry-run",
+    " --dry-run --skip-vault",
 );
