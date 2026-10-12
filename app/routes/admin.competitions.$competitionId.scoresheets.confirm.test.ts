@@ -74,6 +74,24 @@ describe("stage 8 create route", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
+  it("requires explicit Q4 completion even with a valid tied score before OT", async () => {
+    rpc.mockResolvedValue({ data: 42, error: null });
+    const draft = validDraft();
+    draft.periodCount = 5;
+    draft.stats["away-1-4-two"] = "1";
+    draft.stats["home-1-5-two"] = "1";
+    const rejected = await action(requestForDraft(draft));
+    expect(rejected).toMatchObject({ data: { error: expect.stringContaining("concluído") } });
+    expect(rpc).not.toHaveBeenCalled();
+    draft.completedPeriods = [4];
+    const accepted = await action(requestForDraft(draft));
+    expect(accepted).toMatchObject({ data: { confirmedGameId: 42 } });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc.mock.calls.at(0)?.[1]?.p_payload?.periods).toHaveLength(5);
+    // Completion is the operator's workflow attestation checked by this action.
+    // The SQL transaction independently validates cumulative ties and final score.
+  });
+
   it("does not claim success or clear the draft on a failed RPC", async () => {
     rpc.mockResolvedValue({ data: null, error: { code: "BD209" } });
     const result = await action(requestForDraft(validDraft()));

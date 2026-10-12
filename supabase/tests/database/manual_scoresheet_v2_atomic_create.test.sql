@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(40);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -337,6 +337,83 @@ select throws_ok(
   $anon$select public.admin_create_manual_scoresheet_v2('{}'::jsonb)$anon$,
   '42501',null,'anon cannot execute the v2 creation RPC'
 );
+
+
+-- Q4 and OT foul notation is deliberately one disqualification group.
+-- The SQL writer must accept scoring in OT after a Q4-group GD; Q1-Q3 GD
+-- still rejects points in subsequent periods.
+reset role;
+insert into manual_v2_payloads(name,payload)
+select 'ot_after_gd',
+  jsonb_set(
+    jsonb_set(
+      jsonb_set(payload,
+        '{idempotencyKey}','"98310000-0000-4000-8000-000000000010"'::jsonb),
+      '{periods}',
+      (jsonb_set(payload,'{periods,3,stats,1,freeThrowMade}','1'::jsonb)->'periods')
+        || '[{"periodNumber":5,"stats":[
+          {"rosterEntryId":9831,"twoPointMade":1,"threePointMade":0,"freeThrowMade":0},
+          {"rosterEntryId":9832,"twoPointMade":0,"threePointMade":0,"freeThrowMade":0}
+        ]}]'::jsonb
+    ),
+    '{fouls}',
+    (payload->'fouls') || '[{
+      "periodNumber":4,"sequenceNumber":1,
+      "target":{"kind":"player","registrationId":9831,"rosterEntryId":9831},
+      "type":"D","penaltyFtCount":0,"originalNotation":"D","rulesVersion":"FIBA_2024"
+    }]'::jsonb
+  )
+from manual_v2_payloads where name='base';
+
+insert into manual_v2_payloads(name,payload)
+select 'early_gd',
+  jsonb_set(
+    jsonb_set(
+      jsonb_set(payload,
+        '{idempotencyKey}','"98310000-0000-4000-8000-000000000011"'::jsonb),
+      '{periods,3,stats,0,twoPointMade}','1'::jsonb
+    ),
+    '{fouls}',
+    (payload->'fouls') || '[{
+      "periodNumber":3,"sequenceNumber":1,
+      "target":{"kind":"player","registrationId":9831,"rosterEntryId":9831},
+      "type":"D","penaltyFtCount":0,"originalNotation":"D","rulesVersion":"FIBA_2024"
+    }]'::jsonb
+  )
+from manual_v2_payloads where name='base';
+
+create temp table manual_v2_ot_game(game_id bigint);
+grant select, insert on manual_v2_ot_game to authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub',(select user_id from private.admin_accounts),
+    'role','authenticated','aal','aal2')::text,
+  true
+);
+set local role authenticated;
+
+select lives_ok(
+  $$insert into manual_v2_ot_game(game_id)
+    select public.admin_create_manual_scoresheet_v2(
+      (select payload from manual_v2_payloads where name='ot_after_gd')
+    )$$,
+  'OT scoring after a grouped Q4 disqualification persists atomically'
+);
+select is(
+  (select disqualified_at_period from public.game_roster_slots
+    where game_id=(select game_id from manual_v2_ot_game)
+      and roster_entry_id=9831),
+  4::smallint,
+  'Q4/OT disqualification retains shared period 4 in persisted roster'
+);
+select throws_ok(
+  $$select public.admin_create_manual_scoresheet_v2(
+    (select payload from manual_v2_payloads where name='early_gd')
+  )$$,
+  'BD207','BDB_DATA_AFTER_DISQUALIFICATION',
+  'early Q3 disqualification continues to reject later Q4 scoring'
+);
+reset role;
 
 select * from finish();
 rollback;

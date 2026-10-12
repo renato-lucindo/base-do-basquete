@@ -1032,6 +1032,20 @@ a {
   min-width: 0;
 }
 
+.scoresheet-review-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.scoresheet-review-table table {
+  width: 100%;
+}
+
+.scoresheet-review-table:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 .scoresheet-step[hidden] {
   display: none;
 }

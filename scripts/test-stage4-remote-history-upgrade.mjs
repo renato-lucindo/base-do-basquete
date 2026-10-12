@@ -133,5 +133,5 @@ for (const pending of manifest.stage4Pending) {
   );
   check(filenames.includes(pending), "Missing pending Stage 4 migration");
 }
-// The CI workflow adds only the four pending migrations *after* bootstrapping.
+// The CI workflow adds pending Stage 4 migrations and the OT patch after bootstrapping.
 console.log(overlay);

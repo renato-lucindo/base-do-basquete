@@ -78,16 +78,28 @@ test("focuses validation errors and identifies every starter and captain control
   await page.getByRole("button", { name: "Continuar para equipes" }).click();
   await expect(page.getByRole("heading", { name: "Equipes", exact: true })).toBeFocused();
   await expect(
-    page.getByRole("radio", { name: "Capitão — Mandante, slot 1", exact: true }),
+    page.getByRole("radio", {
+      name: "Capitão — Mandante, slot 1",
+      exact: true,
+    }),
   ).toHaveCount(1);
   await expect(
-    page.getByRole("radio", { name: "Capitão — Visitante, slot 1", exact: true }),
+    page.getByRole("radio", {
+      name: "Capitão — Visitante, slot 1",
+      exact: true,
+    }),
   ).toHaveCount(1);
   await expect(
-    page.getByRole("checkbox", { name: "Titular — Mandante, slot 1", exact: true }),
+    page.getByRole("checkbox", {
+      name: "Titular — Mandante, slot 1",
+      exact: true,
+    }),
   ).toHaveCount(1);
   await expect(
-    page.getByRole("checkbox", { name: "Titular — Visitante, slot 1", exact: true }),
+    page.getByRole("checkbox", {
+      name: "Titular — Visitante, slot 1",
+      exact: true,
+    }),
   ).toHaveCount(1);
   await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
   await expect(page.getByRole("alert")).toBeFocused();
@@ -203,7 +215,9 @@ test("review confirmation preserves the draft on failure and clears it only afte
   await page.getByRole("button", { name: "Revisar e confirmar" }).click();
   await expect(page.getByRole("heading", { name: "Revisão final" })).toBeFocused();
   await expect(
-    page.getByRole("table", { name: "Parciais por período e placar acumulado" }),
+    page.getByRole("table", {
+      name: "Parciais por período e placar acumulado",
+    }),
   ).toBeVisible();
   await expect(page.getByText("Técnico: Técnico Azul")).toBeVisible();
   await page.evaluate(() => sessionStorage.setItem("fixture-fail-confirm", "1"));
@@ -215,12 +229,59 @@ test("review confirmation preserves the draft on failure and clears it only afte
   await page.evaluate(() => sessionStorage.removeItem("fixture-fail-confirm"));
   await page.getByRole("button", { name: "Confirmar e gravar súmula" }).click();
   await expect(page.getByText("Súmula confirmada e gravada. Jogo #42.")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Revisão final" })).toBeFocused();
   await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey)).toBeNull();
   const keys = await page.evaluate(
     () => JSON.parse(sessionStorage.getItem("fixture-submission-keys") ?? "[]") as string[],
   );
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBe(keys[1]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("associates fallback reason errors and reflows the confirmation at 320px and 200% zoom", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.goto(fixtureUrl);
+  await page.getByRole("link", { name: "Competição 200" }).click();
+  await enterScoring(page);
+  await page.getByRole("textbox", { name: "2P de Ana Atleta" }).fill("1");
+  await page.getByRole("button", { name: "Voltar para equipes" }).click();
+  await page.getByRole("textbox", { name: "Técnico", exact: true }).nth(0).fill("Técnico Azul");
+  await page.getByRole("textbox", { name: "Técnico", exact: true }).nth(1).fill("Técnico Vermelho");
+  await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
+  await page.getByRole("button", { name: "Revisar e confirmar" }).click();
+  const reason = page.getByRole("textbox", {
+    name: "Motivo da súmula emergencial (obrigatório)",
+  });
+  await page.getByRole("button", { name: "Confirmar e gravar súmula" }).click();
+  await expect(page.getByRole("alert")).toBeFocused();
+  await expect(reason).toHaveAttribute("aria-invalid", "true");
+  await expect(reason).toHaveAttribute("aria-describedby", "setup-fallback-reason-error");
+  await expect(page.locator("#setup-fallback-reason-error")).toContainText("10 a 500 caracteres");
+  await reason.fill("Motivo emergencial documentado");
+  await expect(reason).not.toHaveAttribute("aria-invalid", "true");
+  await expect(
+    page.getByRole("table", {
+      name: "Parciais por período e placar acumulado",
+    }),
+  ).toBeVisible();
+  const assertReflow = async () => {
+    const dimensions = await page.evaluate(() => ({
+      pageWidth: document.documentElement.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth,
+    }));
+    expect(dimensions.pageWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
+  };
+  await assertReflow();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.setViewportSize({ width: 640, height: 780 });
+  await page.evaluate(() => {
+    document.documentElement.style.zoom = "2";
+  });
+  await assertReflow();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
@@ -233,7 +294,9 @@ test("keyboard scoring supports 12 Enter 2 Enter, literal 00, errors, Escape, un
   await jersey.focus();
   await jersey.fill("12");
   await jersey.press("Enter");
-  const points = page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" });
+  const points = page.getByRole("textbox", {
+    name: "Pontos da camisa 12 (1, 2 ou 3)",
+  });
   await expect(points).toBeFocused();
   await points.fill("4");
   await points.press("Enter");
@@ -325,7 +388,9 @@ test("records FIBA 2024 fouls, announces GD, blocks later fouls and keeps same-p
 test("rejects retroactive GD when a later quarter already contains points", async ({ page }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   await period.selectOption("3");
   const jersey = page.getByRole("textbox", { name: "Número da camisa" });
   await jersey.fill("12");
@@ -344,7 +409,9 @@ test("rejects retroactive GD when a later quarter already contains points", asyn
 test("repairs invalid legacy foul cells in the grid and resumes FIBA entry", async ({ page }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const legacy = page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q1" });
+  const legacy = page.getByRole("textbox", {
+    name: "Faltas legadas de Davi Atleta em Q1",
+  });
   const foul = page.getByRole("textbox", { name: "Código da falta" });
   await legacy.fill("T,?");
   await expect(legacy).toHaveAttribute("aria-invalid", "true");
@@ -366,7 +433,9 @@ test("accepts a backdated foul before GD and blocks a same-period foul after GD"
 }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   const foul = page.getByRole("textbox", { name: "Código da falta" });
   await period.selectOption("3");
   await foul.fill("12D");
@@ -416,11 +485,16 @@ test("unlocks OT only on cumulative ties and preserves OT drafts after correctio
 }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   const jersey = page.getByRole("textbox", { name: "Número da camisa" });
   await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
   await period.selectOption("4");
-  const q4Complete = page.getByRole("checkbox", { name: "Q4 concluído", exact: true });
+  const q4Complete = page.getByRole("checkbox", {
+    name: "Q4 concluído",
+    exact: true,
+  });
   await q4Complete.check();
   await expect(page.getByRole("button", { name: "Adicionar OT1", exact: true })).toBeDisabled();
   await expect(period.locator("option")).toHaveCount(4);
@@ -483,7 +557,9 @@ test("shares Q4/OT fouls and permits grouped GD scoring while blocking later fou
   await page.setViewportSize({ width: 320, height: 780 });
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   const foul = page.getByRole("textbox", { name: "Código da falta" });
   await period.selectOption("4");
   await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
@@ -492,7 +568,9 @@ test("shares Q4/OT fouls and permits grouped GD scoring while blocking later fou
   await page.getByRole("checkbox", { name: "Q4 concluído", exact: true }).check();
   await page.getByRole("button", { name: "Adicionar OT1", exact: true }).click();
   await expect(
-    page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q4/OT" }),
+    page.getByRole("textbox", {
+      name: "Faltas legadas de Davi Atleta em Q4/OT",
+    }),
   ).toHaveValue("U2");
   await foul.fill("12T1");
   await foul.press("Enter");
@@ -537,7 +615,9 @@ test("blocks OT points after early GD and requires completion for every OT up to
 }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   await period.selectOption("3");
   const foul = page.getByRole("textbox", { name: "Código da falta" });
   await foul.fill("12D");
@@ -574,11 +654,15 @@ test("rejects legacy GD conflicting with later points and restores all accepted 
 }) => {
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   await period.selectOption("3");
   await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
   await period.selectOption("2");
-  const legacy = page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q2" });
+  const legacy = page.getByRole("textbox", {
+    name: "Faltas legadas de Davi Atleta em Q2",
+  });
   await legacy.fill("D");
   await expect(legacy).toHaveValue("");
   await expect(legacy).toHaveAttribute("aria-invalid", "true");
@@ -631,7 +715,9 @@ test("switches visitor and period with keyboard and keeps the scoring view withi
   await page.setViewportSize({ width: 320, height: 780 });
   await page.goto(fixtureUrl);
   await enterScoring(page);
-  const team = page.getByRole("combobox", { name: "Equipe para lançamento rápido" });
+  const team = page.getByRole("combobox", {
+    name: "Equipe para lançamento rápido",
+  });
   const foul = page.getByRole("textbox", { name: "Código da falta" });
   await foul.fill("12U2");
   await team.focus();
@@ -639,7 +725,9 @@ test("switches visitor and period with keyboard and keeps the scoring view withi
   await expect(team).toBeFocused();
   await expect(foul).toHaveValue("");
   await foul.fill("9P");
-  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const period = page.getByRole("combobox", {
+    name: "Período para lançamento rápido",
+  });
   await period.focus();
   await period.selectOption("2");
   await expect(period).toBeFocused();

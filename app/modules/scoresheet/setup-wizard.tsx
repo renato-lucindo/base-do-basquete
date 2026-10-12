@@ -36,6 +36,8 @@ import {
 
 const sides: TeamSide[] = ["home", "away"];
 const steps = ["Jogo", "Equipes", "Lançamentos", "Revisão"] as const;
+const FALLBACK_REASON_ERROR =
+  "Informe um motivo com 10 a 500 caracteres para a súmula emergencial.";
 
 interface ScoresheetSetupWizardProps {
   competitionId: number;
@@ -78,9 +80,10 @@ function ScoresheetSetupWizardSession({
   const [errors, setErrors] = useState<string[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
-  const pendingSaveRef = useRef<{ identity: typeof draftIdentity; setup: ScoresheetSetup } | null>(
-    null,
-  );
+  const pendingSaveRef = useRef<{
+    identity: typeof draftIdentity;
+    setup: ScoresheetSetup;
+  } | null>(null);
   const draftBlocked = draftDecision !== "resolved";
   const confirmedGameId = fetcher.data?.confirmedGameId;
 
@@ -88,6 +91,7 @@ function ScoresheetSetupWizardSession({
     if (!confirmedGameId) return;
     pendingSaveRef.current = null;
     removeAdminDraft(draftIdentity);
+    setErrors([]);
     setChanged(false);
     setSavedAt(null);
     window.requestAnimationFrame(() => headingRef.current?.focus());
@@ -131,7 +135,10 @@ function ScoresheetSetupWizardSession({
 
   const update = (change: (current: ScoresheetSetup) => ScoresheetSetup) => {
     if (draftBlocked || confirmedGameId || fetcher.state !== "idle") return;
-    setSetup((current) => ({ ...change(current), submissionKey: crypto.randomUUID() }));
+    setSetup((current) => ({
+      ...change(current),
+      submissionKey: crypto.randomUUID(),
+    }));
     setChanged(true);
     setErrors([]);
     setFeedback(null);
@@ -202,7 +209,7 @@ function ScoresheetSetupWizardSession({
       ...buildSetupConfirmation(setup, competitionId).issues,
       ...(requiresFallbackReason &&
       (setup.fallbackReason.trim().length < 10 || setup.fallbackReason.trim().length > 500)
-        ? ["Informe um motivo com 10 a 500 caracteres para a súmula emergencial."]
+        ? [FALLBACK_REASON_ERROR]
         : []),
     ];
     if (issues.length) return focusValidationErrors(issues);
@@ -216,6 +223,7 @@ function ScoresheetSetupWizardSession({
   const teamSelectionError = errors.includes("Selecione duas equipes inscritas e diferentes.");
   const dateError = errors.includes("Informe uma data de jogo válida.");
   const timeError = errors.includes("Informe um horário válido ou deixe vazio.");
+  const fallbackReasonError = errors.includes(FALLBACK_REASON_ERROR);
 
   return (
     <main className="admin-shell scoresheet-shell">
@@ -556,7 +564,10 @@ function ScoresheetSetupWizardSession({
                                     ...current.slots,
                                     [side]: current.slots[side].map((item) =>
                                       item.slotNumber === slot.slotNumber
-                                        ? { ...item, jerseyNumber: event.target.value }
+                                        ? {
+                                            ...item,
+                                            jerseyNumber: event.target.value,
+                                          }
                                         : item,
                                     ),
                                   },
@@ -576,7 +587,10 @@ function ScoresheetSetupWizardSession({
                                     ...current.slots,
                                     [side]: current.slots[side].map((item) =>
                                       item.slotNumber === slot.slotNumber
-                                        ? { ...item, isStarter: event.target.checked }
+                                        ? {
+                                            ...item,
+                                            isStarter: event.target.checked,
+                                          }
                                         : item,
                                     ),
                                   },
@@ -662,7 +676,10 @@ function ScoresheetSetupWizardSession({
                               ...current,
                               staff: {
                                 ...current.staff,
-                                [side]: { ...current.staff[side], assistant: event.target.value },
+                                [side]: {
+                                  ...current.staff[side],
+                                  assistant: event.target.value,
+                                },
                               },
                             }))
                           }
@@ -685,7 +702,10 @@ function ScoresheetSetupWizardSession({
                       onChange={(event) =>
                         update((current) => ({
                           ...current,
-                          officials: { ...current.officials, [role]: event.target.value },
+                          officials: {
+                            ...current.officials,
+                            [role]: event.target.value,
+                          },
                         }))
                       }
                     />
@@ -781,37 +801,40 @@ function ScoresheetSetupWizardSession({
                     <dd>{setup.game.notes || "Nenhuma"}</dd>
                   </dl>
                   <h3>Placar e parciais</h3>
-                  <table>
-                    <caption>Parciais por período e placar acumulado</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">Período</th>
-                        <th scope="col">Mandante</th>
-                        <th scope="col">Visitante</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {Array.from({ length: setup.periodCount }, (_, index) => index + 1).map(
-                        (period) => {
-                          const score = quickScoreThroughPeriod(setup.stats, period);
-                          const previous = quickScoreThroughPeriod(setup.stats, period - 1);
-                          return (
-                            <tr key={period}>
-                              <th scope="row">{periodLabel(period)}</th>
-                              <td>
-                                {(score?.home ?? 0) - (previous?.home ?? 0)} (total{" "}
-                                {score?.home ?? "—"})
-                              </td>
-                              <td>
-                                {(score?.away ?? 0) - (previous?.away ?? 0)} (total{" "}
-                                {score?.away ?? "—"})
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )}
-                    </tbody>
-                  </table>
+                  {/* biome-ignore lint/a11y/noNoninteractiveTabindex: overflow regions must be keyboard-focusable */}
+                  <section className="scoresheet-review-table" aria-label="Parciais" tabIndex={0}>
+                    <table>
+                      <caption>Parciais por período e placar acumulado</caption>
+                      <thead>
+                        <tr>
+                          <th scope="col">Período</th>
+                          <th scope="col">Mandante</th>
+                          <th scope="col">Visitante</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: setup.periodCount }, (_, index) => index + 1).map(
+                          (period) => {
+                            const score = quickScoreThroughPeriod(setup.stats, period);
+                            const previous = quickScoreThroughPeriod(setup.stats, period - 1);
+                            return (
+                              <tr key={period}>
+                                <th scope="row">{periodLabel(period)}</th>
+                                <td>
+                                  {(score?.home ?? 0) - (previous?.home ?? 0)} (total{" "}
+                                  {score?.home ?? "—"})
+                                </td>
+                                <td>
+                                  {(score?.away ?? 0) - (previous?.away ?? 0)} (total{" "}
+                                  {score?.away ?? "—"})
+                                </td>
+                              </tr>
+                            );
+                          },
+                        )}
+                      </tbody>
+                    </table>
+                  </section>
                   {sides.map((side) => {
                     const registration = registrations.find(
                       (item) => item.id === setup.registrationIds[side],
@@ -896,10 +919,20 @@ function ScoresheetSetupWizardSession({
                         value={setup.fallbackReason}
                         minLength={10}
                         maxLength={500}
+                        aria-invalid={fallbackReasonError || undefined}
+                        aria-describedby={
+                          fallbackReasonError ? "setup-fallback-reason-error" : undefined
+                        }
                         onChange={(event) =>
-                          update((current) => ({ ...current, fallbackReason: event.target.value }))
+                          update((current) => ({
+                            ...current,
+                            fallbackReason: event.target.value,
+                          }))
                         }
                       />
+                      {fallbackReasonError ? (
+                        <span id="setup-fallback-reason-error">{FALLBACK_REASON_ERROR}</span>
+                      ) : null}
                     </label>
                   ) : null}
                   <div className="wizard-actions">

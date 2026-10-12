@@ -41,6 +41,7 @@ function FixtureWizard() {
         hasExistingGames={false}
         registrations={registrations}
         csrfToken="fixture-csrf"
+        requiresFallbackReason={id === 200}
       />
     </>
   );
