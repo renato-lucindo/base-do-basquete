@@ -306,6 +306,47 @@ test("rejects retroactive GD when a later quarter already contains points", asyn
   await expect(page.getByText("Faltas registradas: 0")).toBeVisible();
 });
 
+test("repairs invalid legacy foul cells in the grid and resumes FIBA entry", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const legacy = page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q1" });
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await legacy.fill("T,?");
+  await expect(legacy).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("Revise os códigos legados, separados por vírgula")).toBeVisible();
+  await foul.fill("12P");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("legadas incompletas");
+
+  await legacy.fill("T");
+  await expect(legacy).not.toHaveAttribute("aria-invalid", "true");
+  await foul.fill("12U2");
+  await foul.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "GD T+U" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("accepts a backdated foul before GD and blocks a same-period foul after GD", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await period.selectOption("3");
+  await foul.fill("12D");
+  await foul.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "GD D" })).toBeVisible();
+  await period.selectOption("2");
+  await foul.fill("12P");
+  await foul.press("Enter");
+  await expect(page.getByRole("status").filter({ hasText: "P registrada" })).toBeVisible();
+  await period.selectOption("3");
+  await foul.fill("12P");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("posteriores");
+});
+
 test("persists bench and coach fouls without a player and restores semantic draft", async ({
   page,
 }) => {

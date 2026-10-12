@@ -181,6 +181,28 @@ describe("quick foul entry and FIBA 2024 GD", () => {
     });
   });
 
+  it("allows an earlier-period foul before an existing GD but rejects a newly earlier GD", () => {
+    const disqualifying = submit([], "12D", "player", 3);
+    if (!disqualifying.ok) throw new Error(disqualifying.message);
+    expect(submit([disqualifying.entry], "12P", "player", 2)).toMatchObject({
+      ok: true,
+      disqualification: "D",
+    });
+    expect(submit([disqualifying.entry], "12P", "player", 3)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("posteriores"),
+    });
+
+    const technical = submit([], "12T", "player", 1);
+    if (!technical.ok) throw new Error(technical.message);
+    const laterD = submit([technical.entry], "12D", "player", 3);
+    if (!laterD.ok) throw new Error(laterD.message);
+    expect(submit([technical.entry, laterD.entry], "12T", "player", 2)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("posteriores"),
+    });
+  });
+
   it("rejects retroactive GD with later scoring, but accepts scoring in the GD period", () => {
     const futurePoints = { "home-1-3-two": "1" };
     expect(submit([], "12D", "player", 2, 10, futurePoints)).toMatchObject({

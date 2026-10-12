@@ -2,8 +2,10 @@ import { z } from "zod";
 
 import {
   buildPrefillSlots,
+  evaluateDisqualification,
   FOUL_RULES_VERSION,
   hasFoulAfterDisqualification,
+  hasRecordedPointsAfterPeriod,
   type EditorSlot,
   isIsoLocalDate,
   isLocalTime,
@@ -13,6 +15,7 @@ import {
   normalizeGameJersey,
   OFFICIAL_ROLES,
   parseFoulNotation,
+  playerFoulsForDisqualification,
   type OfficialRole,
   resolveCaptainPlaceholder,
   type TeamSide,
@@ -406,7 +409,6 @@ export function restoreScoresheetSetup(
     if (!slot || slot.rosterEntryId === null) return null;
   }
   const sequences = new Set<string>();
-  const foulsByPlayer = new Map<string, SemanticFoulPayload[]>();
   for (const foul of setup.fouls) {
     const key = `${foul.periodNumber}:${foul.sequenceNumber}`;
     if (sequences.has(key) || !isValidSemanticFoulTarget(foul.target)) return null;
@@ -425,8 +427,6 @@ export function restoreScoresheetSetup(
       if (foul.originalNotation === "C1" || foul.originalNotation === "B1") return null;
       if (!setup.slots[side].some((slot) => slot.rosterEntryId === foul.target.rosterEntryId))
         return null;
-      const playerKey = `${foul.target.registrationId}:${foul.target.rosterEntryId}`;
-      foulsByPlayer.set(playerKey, [...(foulsByPlayer.get(playerKey) ?? []), foul]);
     } else if (foul.target.kind === "bench" && foul.originalNotation !== "B1") return null;
     else if (
       foul.target.kind === "staff" &&
@@ -434,8 +434,24 @@ export function restoreScoresheetSetup(
     )
       return null;
   }
-  for (const playerFouls of foulsByPlayer.values()) {
-    if (hasFoulAfterDisqualification(playerFouls)) return null;
+  for (const side of sides) {
+    for (const slot of setup.slots[side]) {
+      if (slot.rosterEntryId === null) continue;
+      const playerFouls = playerFoulsForDisqualification(
+        setup.stats,
+        setup.fouls,
+        side,
+        slot,
+        setup.registrationIds[side],
+      );
+      // An unfinished legacy cell remains editable after restore. Quick foul entry
+      // rejects it until repaired; only complete entries can be reconciled here.
+      if (playerFouls === null) continue;
+      if (hasFoulAfterDisqualification(playerFouls)) return null;
+      const gd = evaluateDisqualification(playerFouls);
+      if (gd && hasRecordedPointsAfterPeriod(setup.stats, side, slot.slotNumber, gd.periodNumber))
+        return null;
+    }
   }
   return setup;
 }

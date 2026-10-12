@@ -2,6 +2,7 @@ import type { KeyboardEvent } from "react";
 
 import {
   calculatePoints,
+  parseFoulCodes,
   type EditorSlot,
   type RosterCandidate,
   type SemanticFoulPayload,
@@ -122,15 +123,42 @@ export function CompactScoresheetGrid({
                           foul.target.rosterEntryId === slot.rosterEntryId &&
                           foul.periodNumber === periodNumber,
                       );
-                      const legacy = stats[key];
+                      const legacy = stats[key] ?? "";
+                      const invalidLegacy = parseFoulCodes(legacy) === null;
+                      const errorId = `legacy-fouls-error-${side}-${slot.slotNumber}-${periodNumber}`;
+                      const period =
+                        periodNumber <= 4 ? `Q${periodNumber}` : `OT${periodNumber - 4}`;
                       return (
                         <td key={field}>
                           <output
-                            aria-label={`Faltas de ${player?.playerName} em ${periodNumber <= 4 ? `Q${periodNumber}` : `OT${periodNumber - 4}`}`}
+                            aria-label={`Faltas rápidas de ${player?.playerName} em ${period}`}
                           >
                             {playerFouls.map((foul) => foul.originalNotation).join(", ") || "—"}
-                            {legacy ? ` (legado: ${legacy})` : ""}
                           </output>
+                          <label>
+                            <span className="sr-only">
+                              Faltas legadas de {player?.playerName} em {period}
+                            </span>
+                            <input
+                              aria-label={`Faltas legadas de ${player?.playerName} em ${period}`}
+                              name={`stat-${key}`}
+                              inputMode="text"
+                              placeholder="P,T"
+                              value={legacy}
+                              aria-invalid={invalidLegacy || undefined}
+                              aria-describedby={invalidLegacy ? errorId : undefined}
+                              data-grid-side={side}
+                              data-grid-row={rowIndex}
+                              data-grid-column={columnIndex}
+                              onKeyDown={moveVertically}
+                              onChange={(event) => onChange(key, event.currentTarget.value)}
+                            />
+                          </label>
+                          {invalidLegacy ? (
+                            <span className="form-error" id={errorId}>
+                              Revise os códigos legados, separados por vírgula (ex.: P,T).
+                            </span>
+                          ) : null}
                         </td>
                       );
                     }

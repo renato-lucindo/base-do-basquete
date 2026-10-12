@@ -132,10 +132,6 @@ export function prepareQuickFoul(
       message: "Corrija as faltas legadas incompletas antes de lançar outra falta.",
     };
   }
-  if (evaluateDisqualification(previous)) {
-    return { ok: false, message: "Atleta já desqualificado (GD); novas faltas bloqueadas." };
-  }
-
   const sequenceNumber =
     Math.max(
       0,
@@ -159,7 +155,10 @@ export function prepareQuickFoul(
             staffRole: target === "coach" ? "coach" : "assistant_1",
           },
   };
-  const updatedPlayerFouls = rosterEntryId == null ? [] : [...previous, entry];
+  const updatedPlayerFouls =
+    rosterEntryId == null
+      ? []
+      : [...previous, { ...entry, sequenceNumber: entry.sequenceNumber + 20 }];
   if (rosterEntryId != null && hasFoulAfterDisqualification(updatedPlayerFouls)) {
     return {
       ok: false,

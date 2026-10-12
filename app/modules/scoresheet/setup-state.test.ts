@@ -214,6 +214,64 @@ describe("stage 6 draft statistics", () => {
 });
 
 describe("stage 7 semantic foul drafts", () => {
+  it("reconciles legacy and quick fouls with GD and later scores during restore", () => {
+    const original = validSetup();
+    const disqualified = prepareQuickFoul(
+      [],
+      original.slots.home,
+      10,
+      2,
+      "player",
+      "00D",
+      {},
+      "home",
+    );
+    if (!disqualified.ok) throw new Error(disqualified.message);
+    expect(
+      restoreScoresheetSetup(
+        { ...original, fouls: [disqualified.entry], stats: { "home-1-3-two": "1" } },
+        registrations,
+      ),
+    ).toBeNull();
+    expect(
+      restoreScoresheetSetup(
+        { ...original, fouls: [disqualified.entry], stats: { "home-1-2-two": "1" } },
+        registrations,
+      ),
+    ).not.toBeNull();
+
+    const personal = prepareQuickFoul([], original.slots.home, 10, 3, "player", "00P", {}, "home");
+    if (!personal.ok) throw new Error(personal.message);
+    expect(
+      restoreScoresheetSetup(
+        {
+          ...original,
+          fouls: [personal.entry],
+          stats: { "home-1-1-fouls": "T", "home-1-2-fouls": "U" },
+        },
+        registrations,
+      ),
+    ).toBeNull();
+    expect(
+      restoreScoresheetSetup(
+        { ...original, stats: { "home-1-1-fouls": "D", "home-1-3-fouls": "P" } },
+        registrations,
+      ),
+    ).toBeNull();
+    expect(
+      restoreScoresheetSetup(
+        { ...original, stats: { "home-1-1-fouls": "P", "home-1-3-fouls": "D" } },
+        registrations,
+      ),
+    ).not.toBeNull();
+
+    // Preserve a partial legacy draft so the operator can repair it in the grid.
+    expect(
+      restoreScoresheetSetup({ ...original, stats: { "home-1-1-fouls": "T,?" } }, registrations)
+        ?.stats["home-1-1-fouls"],
+    ).toBe("T,?");
+  });
+
   it("restores older drafts without fouls and validates newer semantic events", () => {
     const original = validSetup();
     const legacy = { ...original, fouls: undefined };
