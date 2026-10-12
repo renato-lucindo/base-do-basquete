@@ -129,7 +129,12 @@ const setup = fixtureSql
     fixtureSql.indexOf("insert into public.competition_series"),
     fixtureSql.indexOf("create function pg_temp.v2_revision("),
   )
-  .replace(/\b983([1-4])\b/g, "1983$1");
+  .replace(/\b983([1-4])\b/g, "1983$1")
+  // Keep stdout reserved for the JSON result consumed by this harness.
+  .replace(
+    /select pg_temp\.create_final_competition\(([\s\S]*?)\);/,
+    "do $$begin perform pg_temp.create_final_competition($1); end$$;",
+  );
 const fixture = JSON.parse(
   await run(`begin; set constraints all deferred;
 do $$begin perform set_config('bdb.allow_internal_ingestion_game','on',true); end$$;
