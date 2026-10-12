@@ -376,6 +376,164 @@ test("persists bench and coach fouls without a player and restores semantic draf
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test("unlocks OT only on cumulative ties and preserves OT drafts after corrections", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
+  await period.selectOption("4");
+  const q4Complete = page.getByRole("checkbox", { name: "Q4 concluído", exact: true });
+  await q4Complete.check();
+  await expect(page.getByRole("button", { name: "Adicionar OT1", exact: true })).toBeDisabled();
+  await expect(period.locator("option")).toHaveCount(4);
+  await page.getByRole("textbox", { name: "2P de Carla Atleta" }).fill("1");
+  await page.getByRole("textbox", { name: "LL de Davi Atleta" }).fill("?");
+  await expect(page.getByRole("button", { name: "Adicionar OT1", exact: true })).toBeDisabled();
+  await page.getByRole("textbox", { name: "LL de Davi Atleta" }).fill("");
+  await expect(q4Complete).not.toBeChecked();
+  await expect(page.getByRole("button", { name: "Adicionar OT1", exact: true })).toBeDisabled();
+  await q4Complete.press("Space");
+  // Adding OT also cancels an unfinished keyboard entry and focuses the selector.
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("button", { name: "Adicionar OT1", exact: true }).press("Enter");
+  await expect(period).toHaveValue("5");
+  await expect(period).toBeFocused();
+  await expect(jersey).toHaveValue("");
+  await expect(jersey).toBeEnabled();
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("3");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Adicionar OT2", exact: true })).toBeDisabled();
+  const row = page.getByRole("row").filter({ hasText: "Davi Atleta" });
+  await expect(row.getByRole("cell", { name: "5", exact: true })).toBeVisible();
+  await jersey.press("Control+z");
+  await expect(page.getByRole("textbox", { name: "3P de Davi Atleta" })).toHaveValue("0");
+  await expect(page.getByRole("button", { name: "Adicionar OT2", exact: true })).toBeDisabled();
+  await page.getByRole("checkbox", { name: "OT1 concluído", exact: true }).check();
+  await expect(page.getByRole("button", { name: "Adicionar OT2", exact: true })).toBeEnabled();
+  await page.getByRole("textbox", { name: "3P de Davi Atleta" }).fill("1");
+  await page.getByRole("textbox", { name: "3P de Carla Atleta" }).fill("1");
+  await expect(
+    page.getByRole("checkbox", { name: "OT1 concluído", exact: true }),
+  ).not.toBeChecked();
+  await page.getByRole("checkbox", { name: "OT1 concluído", exact: true }).check();
+  await page.getByRole("button", { name: "Adicionar OT2", exact: true }).press("Space");
+  await expect(period).toHaveValue("6");
+  await expect(period).toBeFocused();
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"periodCount":6');
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click();
+  await expect(period.locator("option")).toHaveCount(6);
+  await period.selectOption("5");
+  await expect(page.getByRole("textbox", { name: "3P de Davi Atleta" })).toHaveValue("1");
+  await period.selectOption("1");
+  await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("2");
+  await expect(page.getByRole("button", { name: "Adicionar OT3", exact: true })).toBeDisabled();
+  await expect(page.locator("#fast-overtime-help")).toContainText("preservados");
+  await period.selectOption("5");
+  await expect(page.getByRole("textbox", { name: "3P de Davi Atleta" })).toHaveValue("1");
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("shares Q4/OT fouls and permits grouped GD scoring while blocking later fouls", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await period.selectOption("4");
+  await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
+  await page.getByRole("textbox", { name: "2P de Carla Atleta" }).fill("1");
+  await page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q4/OT" }).fill("U2");
+  await page.getByRole("checkbox", { name: "Q4 concluído", exact: true }).check();
+  await page.getByRole("button", { name: "Adicionar OT1", exact: true }).click();
+  await expect(
+    page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q4/OT" }),
+  ).toHaveValue("U2");
+  await foul.fill("12T1");
+  await foul.press("Enter");
+  await expect(page.getByRole("cell", { name: "GD T+U" })).toBeVisible();
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("2");
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toHaveValue("1");
+  await foul.fill("12P");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("GD");
+  await period.selectOption("4");
+  await expect(
+    page.locator('output[aria-label="Faltas rápidas de Davi Atleta em Q4/OT"]'),
+  ).toHaveText("T1");
+  await expect(page.getByText("Faltas registradas: 1")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"periodNumber":4');
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click();
+  await period.selectOption("5");
+  await expect(page.getByRole("cell", { name: "GD T+U" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toHaveValue("1");
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toBeEnabled();
+  await page.getByRole("combobox", { name: "Alvo da falta" }).selectOption("coach");
+  await foul.fill("C1");
+  await foul.press("Enter");
+  await expect(page.getByText("Faltas registradas: 2")).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  const dimension = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    viewport: document.documentElement.clientWidth,
+  }));
+  expect(dimension.width).toBeLessThanOrEqual(dimension.viewport);
+});
+
+test("blocks OT points after early GD and requires completion for every OT up to OT8", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  await period.selectOption("3");
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await foul.fill("12D");
+  await foul.press("Enter");
+  await period.selectOption("4");
+  await page.getByRole("textbox", { name: "2P de Ana Atleta" }).fill("1");
+  await page.getByRole("textbox", { name: "2P de Carla Atleta" }).fill("1");
+  await page.getByRole("checkbox", { name: "Q4 concluído", exact: true }).check();
+  await page.getByRole("button", { name: "Adicionar OT1", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toBeDisabled();
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("2");
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#fast-scoring-error")).toContainText("pontos posteriores bloqueados");
+  for (let ot = 1; ot < 8; ot += 1) {
+    await expect(
+      page.getByRole("button", { name: `Adicionar OT${ot + 1}`, exact: true }),
+    ).toBeDisabled();
+    await page.getByRole("checkbox", { name: `OT${ot} concluído`, exact: true }).check();
+    await page.getByRole("button", { name: `Adicionar OT${ot + 1}`, exact: true }).click();
+    await expect(period).toHaveValue(String(ot + 5));
+  }
+  await page.getByRole("checkbox", { name: "OT8 concluído", exact: true }).check();
+  await expect(
+    page.getByRole("button", { name: "Limite de OT atingido", exact: true }),
+  ).toBeDisabled();
+  await expect(period.locator("option")).toHaveCount(12);
+});
+
 test("switches visitor and period with keyboard and keeps the scoring view within 320px", async ({
   page,
 }) => {

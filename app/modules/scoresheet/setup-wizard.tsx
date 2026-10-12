@@ -19,6 +19,7 @@ import {
   selectSetupCaptain,
   selectSetupPlayer,
   selectSetupTeam,
+  updateSetupStat,
   validateSetupGame,
   validateSetupTeams,
 } from "./setup-state";
@@ -662,20 +663,26 @@ function ScoresheetSetupWizardSession({
                 local.
               </p>
               <FastScoringPanel
+                periodCount={setup.periodCount}
+                completedPeriods={setup.completedPeriods}
+                onPeriodCompletionChange={(period, completed) =>
+                  update((current) => ({
+                    ...current,
+                    completedPeriods: completed
+                      ? [...new Set([...current.completedPeriods, period])].sort((a, b) => a - b)
+                      : current.completedPeriods.filter((item) => item < period),
+                  }))
+                }
+                onPeriodCountChange={(periodCount) =>
+                  update((current) => ({ ...current, periodCount }))
+                }
                 slots={setup.slots}
                 registrations={registrations}
                 registrationIds={setup.registrationIds}
                 stats={setup.stats}
                 fouls={setup.fouls}
                 onFoulsChange={(fouls) => update((current) => ({ ...current, fouls }))}
-                onChange={(key, value) =>
-                  update((current) => {
-                    const stats = { ...current.stats };
-                    if (value === undefined) delete stats[key];
-                    else stats[key] = value;
-                    return { ...current, stats };
-                  })
-                }
+                onChange={(key, value) => update((current) => updateSetupStat(current, key, value))}
               />
               <div className="wizard-actions">
                 <button className="button button-ghost" type="button" onClick={() => goToStep(2)}>

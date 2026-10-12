@@ -39,6 +39,7 @@ A súmula continuará independente do fluxo de boxscore. O modelo de pontuação
 ### Lançamento rápido
 
 - Usuário escolhe **período + equipe** uma vez e pode trabalhar somente com teclado.
+- Pontos separados por Q1–Q4 e OT1–OT8. Adicionar OT1 exige confirmação explícita de Q4 concluído e empate no placar acumulado até Q4; cada OT seguinte exige confirmação e empate acumulado até o OT anterior. Editar pontos retira a confirmação do período afetado (ou Q4 para Q1–Q3) e dos seguintes; dados de OT existentes são preservados para correção. As confirmações ficam no rascunho e não substituem validação autoritativa na confirmação final.
 - Pontuação mantém o fluxo de dois passos:
   - `12 Enter 2 Enter`
   - `87 Enter 1 Enter`
@@ -87,7 +88,7 @@ As regras de GD devem trabalhar sobre o **tipo da falta**, independentemente da 
 - 2 U → GD;
 - T + U → GD.
 
-Após o evento que gera GD, impedir outra falta daquele atleta. Dados de períodos posteriores à desqualificação também permanecem inválidos. Pontuação dentro do mesmo período não deve ser rejeitada apenas pela ordem de transcrição, pois a súmula manual não terá cronologia global suficiente para afirmar se ocorreu antes ou depois da falta.
+Após o evento que gera GD, impedir outra falta daquele atleta. Faltas de Q4 e de todas as prorrogações pertencem a um único grupo Q4/OT, representado pelo período 4 e uma sequência compartilhada; a pontuação permanece separada por período. GD em Q1–Q3 invalida pontos de períodos posteriores, inclusive OT. GD no grupo Q4/OT permite transcrever pontos de Q4 e de qualquer OT, pois não existe cronologia global suficiente para afirmar se ocorreram antes ou depois da falta. Esse agrupamento deve ser observado também na integração autoritativa da confirmação final (Etapa 8).
 
 Os números das penalidades devem permitir calcular separadamente **LL de penalidade concedidos e recebidos**, sem confundir esse número com `freeThrowMade`.
 

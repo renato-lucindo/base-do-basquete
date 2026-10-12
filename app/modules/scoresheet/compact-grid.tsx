@@ -8,6 +8,7 @@ import {
   type SemanticFoulPayload,
   type TeamSide,
 } from "./domain";
+import { quickFoulPeriod, quickFoulPeriodLabel, quickScoreBlockedByGd } from "./quick-periods";
 
 const compactFields = [
   ["two", "2P"],
@@ -94,7 +95,10 @@ export function CompactScoresheetGrid({
               const player = roster.find((item) => item.rosterEntryId === slot.rosterEntryId);
               const disqualification = disqualificationFor(side, slot.slotNumber);
               const locked = Boolean(
-                disqualification && periodNumber > disqualification.periodNumber,
+                disqualification &&
+                  (semanticFouls
+                    ? quickScoreBlockedByGd(periodNumber, disqualification.periodNumber)
+                    : periodNumber > disqualification.periodNumber),
               );
               let total = 0;
               try {
@@ -113,21 +117,22 @@ export function CompactScoresheetGrid({
                   <th scope="row">{slot.jerseyNumber || "—"}</th>
                   <td>{player?.playerName ?? "Atleta"}</td>
                   {compactFields.map(([field, label], columnIndex) => {
-                    const key = statKey(side, slot.slotNumber, periodNumber, field);
                     const fouls = field === "fouls";
+                    const fieldPeriod =
+                      fouls && semanticFouls ? quickFoulPeriod(periodNumber) : periodNumber;
+                    const key = statKey(side, slot.slotNumber, fieldPeriod, field);
                     if (fouls && semanticFouls) {
                       const playerFouls = semanticFouls.filter(
                         (foul) =>
                           foul.target.kind === "player" &&
                           foul.target.registrationId === registrationId &&
                           foul.target.rosterEntryId === slot.rosterEntryId &&
-                          foul.periodNumber === periodNumber,
+                          foul.periodNumber === fieldPeriod,
                       );
                       const legacy = stats[key] ?? "";
                       const invalidLegacy = parseFoulCodes(legacy) === null;
                       const errorId = `legacy-fouls-error-${side}-${slot.slotNumber}-${periodNumber}`;
-                      const period =
-                        periodNumber <= 4 ? `Q${periodNumber}` : `OT${periodNumber - 4}`;
+                      const period = quickFoulPeriodLabel(periodNumber);
                       return (
                         <td key={field}>
                           <output

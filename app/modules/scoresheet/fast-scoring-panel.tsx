@@ -19,6 +19,13 @@ import {
   type TeamSide,
 } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
+import {
+  MAX_SCORESHEET_PERIODS,
+  quickFoulPeriod,
+  quickFoulPeriodLabel,
+  quickOvertimeEligibility,
+  quickScoreBlockedByGd,
+} from "./quick-periods";
 
 const sides: TeamSide[] = ["home", "away"];
 const historyLimit = 10;
@@ -45,6 +52,13 @@ export function prepareQuickScore(
   jerseyNumber: string,
   points: 1 | 2 | 3,
 ): QuickScoreResult {
+  if (
+    !Number.isSafeInteger(periodNumber) ||
+    periodNumber < 1 ||
+    periodNumber > MAX_SCORESHEET_PERIODS
+  ) {
+    return { ok: false, message: "Selecione um período válido." };
+  }
   const matching = slots.filter(
     (slot) => slot.rosterEntryId !== null && slot.jerseyNumber === jerseyNumber,
   );
@@ -91,11 +105,12 @@ export function prepareQuickFoul(
     registrationId <= 0 ||
     !Number.isSafeInteger(periodNumber) ||
     periodNumber < 1 ||
-    periodNumber > 4
+    periodNumber > MAX_SCORESHEET_PERIODS
   ) {
     return { ok: false, message: "Selecione uma equipe e um período válidos." };
   }
   if (fouls.length >= 1000) return { ok: false, message: "Limite de faltas do rascunho atingido." };
+  periodNumber = quickFoulPeriod(periodNumber);
 
   const parsed = target === "player" ? parseFastFoulEntry(text) : null;
   const notation = target === "coach" ? "C1" : "B1";
@@ -184,6 +199,10 @@ export function prepareQuickFoul(
 }
 
 interface FastScoringPanelProps {
+  periodCount: number;
+  onPeriodCountChange: (next: number) => void;
+  completedPeriods: number[];
+  onPeriodCompletionChange: (periodNumber: number, completed: boolean) => void;
   slots: Record<TeamSide, EditorSlot[]>;
   registrations: ScoresheetRegistration[];
   registrationIds: Record<TeamSide, number>;
@@ -194,6 +213,10 @@ interface FastScoringPanelProps {
 }
 
 export function FastScoringPanel({
+  periodCount,
+  onPeriodCountChange,
+  completedPeriods,
+  onPeriodCompletionChange,
   slots,
   registrations,
   registrationIds,
@@ -214,6 +237,8 @@ export function FastScoringPanel({
   const [foulError, setFoulError] = useState("");
   const [foulStatus, setFoulStatus] = useState("Pronto para registrar falta.");
   const foulRef = useRef<HTMLInputElement>(null);
+  const periodRef = useRef<HTMLSelectElement>(null);
+  const overtime = quickOvertimeEligibility(stats, periodCount, completedPeriods);
   const [history, setHistory] = useState<Array<QuickScoreHistoryItem & { id: number }>>([]);
   const historyId = useRef(0);
   const jerseyRef = useRef<HTMLInputElement>(null);
@@ -287,7 +312,7 @@ export function FastScoringPanel({
       return;
     }
     const gd = evaluateDisqualification(playerFouls);
-    if (gd && periodNumber > gd.periodNumber) {
+    if (gd && quickScoreBlockedByGd(periodNumber, gd.periodNumber)) {
       setError(
         `Atleta desqualificado em ${periodLabel(gd.periodNumber)}; pontos posteriores bloqueados.`,
       );
@@ -369,7 +394,7 @@ export function FastScoringPanel({
               ? "Técnico"
               : "Assistente"
       }: ` +
-        `${result.entry.originalNotation} registrada em ${periodLabel(periodNumber)}.` +
+        `${result.entry.originalNotation} registrada em ${quickFoulPeriodLabel(periodNumber)}.` +
         (result.disqualification ? ` GD ${result.disqualification}.` : ""),
     );
     foulRef.current?.focus();
@@ -436,17 +461,58 @@ export function FastScoringPanel({
         <label>
           Período para lançamento rápido
           <select
+            ref={periodRef}
             value={periodNumber}
             onChange={(event) => switchContext(side, Number(event.target.value))}
           >
-            {[1, 2, 3, 4].map((value) => (
+            {Array.from({ length: periodCount }, (_, index) => index + 1).map((value) => (
               <option key={value} value={value}>
                 {periodLabel(value)}
               </option>
             ))}
           </select>
         </label>
+        <div className="wizard-actions">
+          <button
+            className="button button-ghost"
+            type="button"
+            disabled={!overtime.canAdd}
+            aria-describedby="fast-overtime-help"
+            onClick={() => {
+              if (!quickOvertimeEligibility(stats, periodCount, completedPeriods).canAdd) return;
+              const next = periodCount + 1;
+              onPeriodCountChange(next);
+              switchContext(side, next);
+              periodRef.current?.focus();
+            }}
+          >
+            {periodCount < MAX_SCORESHEET_PERIODS
+              ? `Adicionar OT${periodCount - 3}`
+              : "Limite de OT atingido"}
+          </button>
+        </div>
       </fieldset>
+      {periodNumber >= 4 ? (
+        <label>
+          <input
+            type="checkbox"
+            checked={completedPeriods.includes(periodNumber)}
+            onChange={(event) =>
+              onPeriodCompletionChange(periodNumber, event.currentTarget.checked)
+            }
+            aria-describedby="fast-period-completion-help"
+          />{" "}
+          {periodLabel(periodNumber)} concluído
+        </label>
+      ) : null}
+      <p id="fast-period-completion-help" className="admin-note">
+        Confirme o período após conferir a pontuação das duas equipes. Alterar pontos retira a
+        confirmação desse período e dos seguintes.
+      </p>
+      <p id="fast-overtime-help" className="admin-note" role="status">
+        {overtime.message}
+      </p>
+      <p className="admin-note">Faltas de Q4 e todas as prorrogações ficam agrupadas em Q4/OT.</p>
       <fieldset className="scoresheet-header-grid">
         <legend>Faltas rápidas — FIBA 2024</legend>
         <label>
@@ -512,7 +578,7 @@ export function FastScoringPanel({
               .reverse()
               .map((foul) => (
                 <li key={`${foul.periodNumber}-${foul.sequenceNumber}`}>
-                  {periodLabel(foul.periodNumber)} —{" "}
+                  {quickFoulPeriodLabel(foul.periodNumber)} —{" "}
                   {foul.target.registrationId === registrationIds.home ? "Mandante" : "Visitante"} —{" "}
                   {foul.target.kind === "player"
                     ? `atleta #${
@@ -651,7 +717,7 @@ export function FastScoringPanel({
             teamName={registration?.teamName ?? (value === "home" ? "Mandante" : "Visitante")}
             slots={slots[value]}
             roster={registration?.roster ?? []}
-            periodCount={4}
+            periodCount={periodCount}
             periodNumber={periodNumber}
             stats={stats}
             semanticFouls={fouls}

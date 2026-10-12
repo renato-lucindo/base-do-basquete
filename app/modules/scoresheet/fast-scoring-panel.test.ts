@@ -14,6 +14,18 @@ const slots: EditorSlot[] = [
 ];
 
 describe("quick scoring conversion counters", () => {
+  it("records OT1 and OT8 separately and rejects invalid periods", () => {
+    expect(prepareQuickScore({}, slots, "home", 5, "12", 2)).toMatchObject({
+      ok: true,
+      entry: { key: "home-1-5-two", next: "1" },
+    });
+    expect(prepareQuickScore({}, slots, "away", 12, "00", 1)).toMatchObject({
+      ok: true,
+      entry: { key: "away-2-12-free", next: "1" },
+    });
+    for (const period of [0, 13, 4.5, Number.NaN])
+      expect(prepareQuickScore({}, slots, "home", period, "12", 2)).toMatchObject({ ok: false });
+  });
   it("keeps jersey 00 as text and increments the correct period/side/category", () => {
     const result = prepareQuickScore({}, slots, "home", 1, "00", 3);
     expect(result).toEqual({
@@ -69,6 +81,33 @@ describe("quick foul entry and FIBA 2024 GD", () => {
     stats: Record<string, string> = {},
     side: "home" | "away" = "home",
   ) => prepareQuickFoul(fouls, slots, registrationId, period, target, value, stats, side);
+
+  it("shares Q4/OT sequence and GD without inventing an OT foul period", () => {
+    const q4 = submit([], "12U2", "player", 4);
+    if (!q4.ok) throw new Error(q4.message);
+    const ot = submit([q4.entry], "12T1", "player", 5, 10, { "home-1-5-two": "1" });
+    expect(ot).toMatchObject({
+      ok: true,
+      entry: { periodNumber: 4, sequenceNumber: 2 },
+      disqualification: "T+U",
+    });
+    if (!ot.ok) throw new Error(ot.message);
+    expect(submit([q4.entry, ot.entry], "12P", "player", 6)).toMatchObject({ ok: false });
+    for (const target of ["bench", "coach", "assistant_1"] as const) {
+      expect(
+        submit([q4.entry, ot.entry], target === "coach" ? "C1" : "B1", target, 12),
+      ).toMatchObject({
+        ok: true,
+        entry: { periodNumber: 4, sequenceNumber: 3, target: { registrationId: 10 } },
+      });
+    }
+    expect(submit([], "12D", "player", 3, 10, { "home-1-5-free": "1" })).toMatchObject({
+      ok: false,
+    });
+    expect(submit([], "12D", "player", 4, 10, { "home-1-5-free": "1" })).toMatchObject({
+      ok: true,
+    });
+  });
 
   it("accepts spaced and lowercase FIBA notation, keeping literal 00 and global period sequence", () => {
     const first = submit([], "12u2");
@@ -144,7 +183,7 @@ describe("quick foul entry and FIBA 2024 GD", () => {
     expect(submit([], "C1", "bench")).toMatchObject({ ok: false });
     expect(submit([], "12X2")).toMatchObject({ ok: false });
     expect(submit([], "99T")).toMatchObject({ ok: false });
-    expect(submit([], "12P", "player", 5)).toMatchObject({ ok: false });
+    expect(submit([], "12P", "player", 13)).toMatchObject({ ok: false });
     expect(submit([], "12P", "player", 1, 0)).toMatchObject({ ok: false });
   });
 

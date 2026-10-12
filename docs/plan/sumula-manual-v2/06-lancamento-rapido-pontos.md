@@ -14,6 +14,7 @@ Permitir transcrição de pontuação com fluxo principal integralmente por tecl
 - Implementar `Esc` para cancelar entrada parcial.
 - Implementar `Ctrl+Z` e histórico curto local.
 - Manter a grade existente para correções.
+- Suportar Q1–Q4 e OT1–OT8 por botão Adicionar OT. OT1 exige Q4 explicitamente concluído e empate acumulado; OT seguinte exige a mesma conferência no OT anterior. Confirmações e períodos adicionados são restauráveis; editar pontos, desfazer ou trocar elenco/equipe invalida confirmações afetadas, preservando dados para correção.
 - Garantir operação integral por teclado e feedback acessível.
 
 ## Checkpoint

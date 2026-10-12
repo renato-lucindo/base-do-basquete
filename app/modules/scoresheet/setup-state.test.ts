@@ -11,6 +11,7 @@ import {
   selectSetupCaptain,
   selectSetupPlayer,
   selectSetupTeam,
+  updateSetupStat,
   validateSetupGame,
   validateSetupTeams,
 } from "./setup-state";
@@ -176,6 +177,45 @@ describe("manual scoresheet stage 5 setup", () => {
 });
 
 describe("stage 6 draft statistics", () => {
+  it("invalidates affected completion confirmations on points, undo and lineup changes", () => {
+    const saved = {
+      ...validSetup(),
+      periodCount: 6,
+      completedPeriods: [4, 5, 6],
+      stats: { "home-1-5-two": "1" },
+    };
+    expect(updateSetupStat(saved, "home-1-5-two", "2").completedPeriods).toEqual([4]);
+    expect(updateSetupStat(saved, "home-1-5-two", undefined).completedPeriods).toEqual([4]);
+    expect(updateSetupStat(saved, "away-1-1-three", "1").completedPeriods).toEqual([]);
+    expect(updateSetupStat(saved, "home-1-4-fouls", "U2").completedPeriods).toEqual([4, 5, 6]);
+    expect(updateSetupStat(saved, "home-1-5-two", "1")).toBe(saved);
+    expect(
+      selectSetupPlayer(saved, "home", 1, null, homeRegistration.roster).completedPeriods,
+    ).toEqual([]);
+    expect(selectSetupTeam(saved, "away", homeRegistration).completedPeriods).toEqual([]);
+    expect(restoreScoresheetSetup(saved, registrations)?.completedPeriods).toEqual([4, 5, 6]);
+    for (const completedPeriods of [[4, 4], [3], [7]])
+      expect(restoreScoresheetSetup({ ...saved, completedPeriods }, registrations)).toBeNull();
+  });
+  it("restores OT points and empty added periods while retaining legacy drafts", () => {
+    const initial = validSetup();
+    expect(
+      restoreScoresheetSetup({ ...initial, periodCount: undefined }, registrations)?.periodCount,
+    ).toBe(4);
+    expect(restoreScoresheetSetup({ ...initial, periodCount: 6 }, registrations)?.periodCount).toBe(
+      6,
+    );
+    const ot = { ...initial, periodCount: undefined, stats: { "home-1-12-three": "1" } };
+    expect(restoreScoresheetSetup(ot, registrations)).toMatchObject({
+      periodCount: 12,
+      stats: ot.stats,
+    });
+    for (const periodCount of [3, 13, 4.5])
+      expect(restoreScoresheetSetup({ ...initial, periodCount }, registrations)).toBeNull();
+    expect(
+      restoreScoresheetSetup({ ...initial, stats: { "home-1-5-fouls": "P" } }, registrations),
+    ).toBeNull();
+  });
   it("restores legacy setup drafts and preserves valid counters", () => {
     const initial = validSetup();
     const legacy = { ...initial, stats: undefined };
@@ -193,7 +233,7 @@ describe("stage 6 draft statistics", () => {
       )?.stats,
     ).toEqual({ "home-1-1-two": "texto incompleto" });
     expect(
-      restoreScoresheetSetup({ ...withScores, stats: { "home-1-5-two": "1" } }, registrations),
+      restoreScoresheetSetup({ ...withScores, stats: { "home-1-13-two": "1" } }, registrations),
     ).toBeNull();
     expect(
       restoreScoresheetSetup({ ...withScores, stats: { "home-9-1-two": "1" } }, registrations),
@@ -214,6 +254,24 @@ describe("stage 6 draft statistics", () => {
 });
 
 describe("stage 7 semantic foul drafts", () => {
+  it("restores GD with Q4/OT scoring but rejects OT points after earlier GD", () => {
+    const original = validSetup();
+    const gd = prepareQuickFoul([], original.slots.home, 10, 5, "player", "00D", {}, "home");
+    if (!gd.ok) throw new Error(gd.message);
+    const saved = {
+      ...original,
+      periodCount: 6,
+      fouls: [gd.entry],
+      stats: { "home-1-5-two": "1", "home-1-6-free": "1" },
+    };
+    expect(restoreScoresheetSetup(saved, registrations)).toMatchObject(saved);
+    expect(
+      restoreScoresheetSetup(
+        { ...saved, fouls: [{ ...gd.entry, periodNumber: 3 }] },
+        registrations,
+      ),
+    ).toBeNull();
+  });
   it("reconciles legacy and quick fouls with GD and later scores during restore", () => {
     const original = validSetup();
     const disqualified = prepareQuickFoul(

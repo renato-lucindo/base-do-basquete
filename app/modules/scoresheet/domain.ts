@@ -587,7 +587,10 @@ export function hasRecordedPointsAfterPeriod(
   slotNumber: number,
   periodNumber: number,
 ): boolean {
-  for (let period = periodNumber + 1; period <= 4; period += 1) {
+  // Quick-entry fouls group Q4 and every OT together. Their relative scoring
+  // chronology is unknown; only GD in Q1-Q3 proves later scoring invalid.
+  if (periodNumber >= 4) return false;
+  for (let period = periodNumber + 1; period <= 12; period += 1) {
     for (const field of ["two", "three", "free"]) {
       const value = stats[`${side}-${slotNumber}-${period}-${field}`]?.trim();
       // Non-empty, incomplete draft counters are preserved and treated conservatively.

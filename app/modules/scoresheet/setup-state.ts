@@ -23,6 +23,7 @@ import {
   validateTeamSlots,
 } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
+import { MAX_SCORESHEET_PERIODS } from "./quick-periods";
 
 export interface SetupStaff {
   coach: TeamStaffPayload | null;
@@ -31,6 +32,8 @@ export interface SetupStaff {
 
 export interface ScoresheetSetup {
   step: 1 | 2 | 3;
+  periodCount: number;
+  completedPeriods: number[];
   stats: Record<string, string>;
   fouls: SemanticFoulPayload[];
   game: ManualGamePayload;
@@ -53,6 +56,8 @@ export function emptySetupSlots(): EditorSlot[] {
 export function createScoresheetSetup(): ScoresheetSetup {
   return {
     step: 1,
+    periodCount: 4,
+    completedPeriods: [],
     stats: {},
     fouls: [],
     game: { date: "", time: "", venue: "", gameNumber: "", phaseRound: "", notes: "" },
@@ -77,6 +82,7 @@ export function selectSetupTeam(
   if (current.registrationIds[side] === registration.id) return current;
   return {
     ...current,
+    completedPeriods: [],
     registrationIds: { ...current.registrationIds, [side]: registration.id },
     slots: {
       ...current.slots,
@@ -148,6 +154,7 @@ export function selectSetupPlayer(
   const resetStats = previous?.rosterEntryId !== rosterEntryId;
   const updated: ScoresheetSetup = {
     ...current,
+    completedPeriods: resetStats ? [] : current.completedPeriods,
     stats: resetStats
       ? Object.fromEntries(
           Object.entries(current.stats).filter(
@@ -312,6 +319,25 @@ export function validateSetupTeams(
   return errors;
 }
 
+export function updateSetupStat(
+  current: ScoresheetSetup,
+  key: string,
+  value: string | undefined,
+): ScoresheetSetup {
+  if (current.stats[key] === value) return current;
+  const stats = { ...current.stats };
+  if (value === undefined) delete stats[key];
+  else stats[key] = value;
+  const match = /^(home|away)-(1[0-2]|[1-9])-(1[0-2]|[1-9])-(two|three|free)$/.exec(key);
+  return {
+    ...current,
+    stats,
+    completedPeriods: match
+      ? current.completedPeriods.filter((period) => period < Math.max(4, Number(match[3])))
+      : current.completedPeriods,
+  };
+}
+
 const slotSchema = z.object({
   slotNumber: z.number().int().min(1).max(12),
   rosterEntryId: z.number().int().positive().nullable(),
@@ -342,6 +368,8 @@ const foulSchema = z.object({
 });
 const setupSchema = z.object({
   step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  periodCount: z.number().int().min(4).max(MAX_SCORESHEET_PERIODS).default(4),
+  completedPeriods: z.array(z.number().int().min(4).max(MAX_SCORESHEET_PERIODS)).max(9).default([]),
   stats: z.record(z.string(), z.string().max(40)).optional(),
   fouls: z.array(foulSchema).max(1000).optional(),
   game: z.object({
@@ -399,15 +427,22 @@ export function restoreScoresheetSetup(
       return null;
   }
   for (const key of Object.keys(setup.stats)) {
-    const match = /^(home|away)-(1[0-2]|[1-9])-([1-4])-(two|three|free|fouls)$/.exec(key);
+    const match = /^(home|away)-(1[0-2]|[1-9])-(1[0-2]|[1-9])-(two|three|free|fouls)$/.exec(key);
     if (!match) return null;
-    const [, side, slotNumber] = match;
+    const [, side, slotNumber, period, field] = match;
+    if (field === "fouls" && Number(period) > 4) return null;
+    setup.periodCount = Math.max(setup.periodCount, Number(period));
     if (!side || !slotNumber) return null;
     const slot = setup.slots[side as TeamSide].find(
       (entry) => entry.slotNumber === Number(slotNumber),
     );
     if (!slot || slot.rosterEntryId === null) return null;
   }
+  if (
+    new Set(setup.completedPeriods).size !== setup.completedPeriods.length ||
+    setup.completedPeriods.some((period) => period > setup.periodCount)
+  )
+    return null;
   const sequences = new Set<string>();
   for (const foul of setup.fouls) {
     const key = `${foul.periodNumber}:${foul.sequenceNumber}`;

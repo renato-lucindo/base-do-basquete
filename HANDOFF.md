@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual (10/10/2026): pendências estatísticas P1/P2 e republicação corrigidas; Etapa 4 backend aprovada e verificada no artefato 86934cc. PR #72 permanece draft, sem migrations no Supabase compartilhado, merge ou início da Etapa 5.**
+**Checkpoint atual (11/10/2026): Etapa 7 em correção de overtime no lançamento rápido; HEAD inicial fb114cf, worktree limpo na retomada e quatro workflows SUCCESS. PR #72 OPEN/DRAFT; revisões críticas independentes ainda pendentes. Sem migrations no Supabase compartilhado, merge ou produção. Os checkpoints anteriores abaixo são históricos; estado operacional vigente nesta retomada consta ao final.**
 
 A unidade ativa é `MANUAL-SCORESHEET-V2-FIBA2024`, na branch `codex/manual-scoresheet-v2` e PR draft #72. O objetivo é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -576,3 +576,22 @@ RESPONSAVEL: project-maintainer.
 ARQUIVO_OU_SERVICO: .agents/boxscore-domain-reviewer.md, .agents/statistics-domain-reviewer.md, PR #72, HANDOFF.md.
 ACAO: obter dois pareceres independentes read-only completos (FIBA e estatistica) vinculados ao commit funcional 6d45a96 apos normalizacao da capacidade; corrigir eventuais achados e revalidar o delta; registrar vereditos e revisar o REVIEW_PACKET na PR. Confirmar que nao houve mudanca funcional apos os quatro Actions verdes. Somente se ambos aprovarem e nenhum gate estiver bloqueado, liberar WRITE_LOCK e documentar encerramento da Etapa 7. Manter PR OPEN/DRAFT, sem migration no Supabase compartilhado, merge na main ou Etapa 8.
 CRITERIO_DE_CONCLUSAO: ambos pareceres criticos validos sem bloqueio, Actions SUCCESS no artefato funcional, HANDOFF/PR sincronizados, worktree limpo e write lock liberado.
+
+## 29. Retomada — overtime condicionado a empate (11/10/2026)
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE7-FAST-FOULS; BRANCH=codex/manual-stage4-v3-review (upstream origin/codex/manual-scoresheet-v2); BASE_COMMIT=50cee7532df6e37372ffd69f1e09db1e90314d7c; HEAD_INICIAL=fb114cfb7216da0afefe05365b4534d3c3e42202; STATUS=ACTIVE.
+
+- Escopo autorizado: corrigir overtime no painel rápido, rascunho, grade, regras de GD e testes. OT1 depende de empate acumulado até Q4; OT seguinte depende de empate acumulado até o OT anterior. Preservar dados em correções posteriores e sinalizar inconsistências.
+- Decisões do responsável: botão Adicionar OT até OT8; faltas agrupadas Q4/OT no período 4; GD nesse grupo permite transcrição dos pontos Q4/OT sem cronologia global, mantendo proibição de novas faltas após GD. GD em Q1–Q3 continua bloqueando pontos posteriores, inclusive OT.
+- Estado reconciliado: worktree inicialmente limpo, GitHub PR #72 OPEN/DRAFT no fb114cf; CI 38195313231, Stage 4 Validation 38195309503, Preview 38195313289 e CodeQL 38195313370 SUCCESS. Supabase Preview SKIPPED. Nenhuma alteração remota nesta retomada.
+- Risco CRITICO pela semântica GD/FIBA; revisores independentes statistics-domain e boxscore-domain REQUIRED. QA/acessibilidade por testes focais e Actions; sem alteração SQL/RLS/Auth/servidor. Pareceres anteriores não aprovam a nova correção.
+- Próximo passo exato: implementar e testar pontuação OT, faltas Q4/OT e liberação por empate no painel/rascunho; rodar gate, publicar na branch da PR, verificar Actions/pgTAP descartável e obter revisões críticas no SHA final. Sem Supabase compartilhado, merge, produção ou Etapa 8.
+
+### Delta de overtime pronto para gate local
+
+- Decisão complementar explícita do responsável: exigir confirmação de período concluído, além do empate. Campo completedPeriods persistido no rascunho; versões anteriores recebem [] e periodCount=4, inferindo períodos com pontos já registrados. Alterar pontos/undo invalida confirmações do período afetado e posteriores; trocar atleta/equipe retira confirmações para nova conferência. Faltas Q4/OT mantêm o grupo 4 e não alteram essas confirmações de pontuação.
+- Implementação local: Q1–Q4/OT1–OT8, contador compartilhado entre equipes, liberação por empate acumulado e confirmação Q4/OT anterior; correções preservam dados existentes e sinalizam inconsistências. GD em Q4/OT permite pontos do grupo sem cronologia global; GD Q1–Q3 impede pontos posteriores até OT8. Sem alteração em APIs/SQL/servidor; contrato autoritativo para integração da Etapa 8 registrado no plano.
+- Testes focais: Vitest 4 arquivos/77 testes PASS; Playwright wizard 17/17 PASS com confirmação explícita + cenário focal adicional OT8/GD 1/1 PASS (18 cenários no total). Incluem axe, teclado, foco, 320/390/720/1280px, totais, undo, correções e restauração. Artefatos Playwright em TEMP, sem arquivos gerados no repositório.
+- Gate consolidado e revisões críticas do novo SHA ainda pendentes. Próximo passo: executar npm run check, criar commit e publicar na branch da PR #72; obter pareceres independentes FIBA/estatística e verificar CI, pgTAP descartável, Preview e CodeQL. Não encerrar Etapa 7 antes dessas evidências.
+
+- Gate local consolidado do delta OT: npm run check PASS (formatação, lint sem erros bloqueantes, typecheck, suíte Vitest, runbooks/agentes, build client/SSR e scan de segredos 747 arquivos). Nenhuma mudança funcional após esse gate. Totais exatos da suíte e SHA serão registrados no REVIEW_PACKET publicado. git diff --check PASS. QA/acessibilidade AUTOMATED pela cobertura focal e Actions ainda a verificar; FIBA/estatística REQUIRED, aguardando novo parecer independente no commit funcional.
