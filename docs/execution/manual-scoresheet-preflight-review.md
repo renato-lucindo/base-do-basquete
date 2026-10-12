@@ -67,10 +67,10 @@ P3 do QA sobre identificação do lock corrigido no fechamento: base4ece9e7, com
 
 ## Banco — Harvey (parecer integral)
 
-PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**  
-WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT  
-BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8  
-COMMIT_REVISADO: 9acc5370564230211004491e79a679a2a95ec8ad  
+PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**
+WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT
+BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8
+COMMIT_REVISADO: 9acc5370564230211004491e79a679a2a95ec8ad
 REVIEWED_AT: 2026-10-12T23:13:16Z
 
 ESCOPO_REVISADO: gerador, manifesto, quatro regressões e evidências do [REVIEW_PACKET](https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134384991).
@@ -97,23 +97,23 @@ ACHADOS: nenhum novo P0–P3 no escopo focal.
 
 RISCOS_RESIDUAIS: overlay serve exclusivamente à comparação de histórico; não comprova equivalência do schema nem permite bootstrap. Revalidar o inventário remoto antes de qualquer aplicação.
 
-READINESS_PREFLIGHT_TECNICO: **READY**.  
-READINESS_MERGE: **NOT_READY**.  
+READINESS_PREFLIGHT_TECNICO: **READY**.
+READINESS_MERGE: **NOT_READY**.
 READINESS_ROLLOUT: **NOT_READY**. Homologação autenticada e recuperação representativa continuam pendentes. CI do SHA revisado falhou sem iniciar o gate; annotation confirma restrição de faturamento/limite. Este parecer não aprova rollout.
 
-GIT_STATUS_ANTES: limpo.  
+GIT_STATUS_ANTES: limpo.
 GIT_STATUS_DEPOIS: limpo; HEAD fixo preservado. Sem mutação versionada ou remota.
 
-SKILL_RESULT:  
-SKILL: reviewing-supabase-changes  
-STATUS: PASS no preflight focal.  
-HEAD_COMMIT: 9acc5370564230211004491e79a679a2a95ec8ad  
+SKILL_RESULT:
+SKILL: reviewing-supabase-changes
+STATUS: PASS no preflight focal.
+HEAD_COMMIT: 9acc5370564230211004491e79a679a2a95ec8ad
 GATES_OMITTED: gate completo e SQL/UI inalterados; homologação/recuperação indisponíveis.
 
-PROXIMO_PASSO_EXATO:  
-RESPONSAVEL: project-maintainer  
-ARQUIVO_OU_SERVICO: PR72, HANDOFF e ambiente isolado de homologação.  
-ACAO: registrar o parecer; concluir QA focal, restabelecer Actions e produzir evidências autenticadas e de recuperação em ambiente isolado.  
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: PR72, HANDOFF e ambiente isolado de homologação.
+ACAO: registrar o parecer; concluir QA focal, restabelecer Actions e produzir evidências autenticadas e de recuperação em ambiente isolado.
 CRITERIO_DE_CONCLUSAO: pareceres e gates válidos, inventário revalidado e ensaios operacionais aprovados antes de recomendar rollout.
 
 ## QA — Archimedes (parecer integral)
