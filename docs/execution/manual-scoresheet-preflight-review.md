@@ -55,4 +55,118 @@ Plano de aplicação/recuperação: [packet da Etapa10](manual-scoresheet-stage1
 
 ## Revisões e estado remoto
 
-Pareceres de banco/QA no commit fixo e checks da PR serão registrados após publicação. Não há aprovação antecipada. O gerador/testes/dry-run estão verdes; prontidão de integração e rollout continua condicionada aos gates e ambientes descritos.
+Pareceres de banco/QA no commit9acc537: APPROVE_WITH_NON_BLOCKING_NOTES. Preflight técnico READY; merge/rollout NOT_READY. Packet publicado em https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134384991. Resultados integrais abaixo; delta posterior registra somente os resultados e alinha o lock.
+
+### Actions e condição de ambiente
+
+No9acc537: [CI38320813742](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38320813742), [Preview38320813661](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38320813661), [CodeQL38320813647](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38320813647), [Stage438320807932](https://github.com/renato-lucindo/base-do-basquete/actions/runs/38320807932) FAILURE. Um job falho de cada workflow inspecionado:zero etapas e annotation de pagamento/limite. Não reexecutados repetidamente sem mudança da capacidade.
+
+Responsável respondeu expressamente “Ainda não há ambiente isolado”. Homologação autenticada/recuperação aguardam provisionamento de um ambiente próprio; não usar a main como substituto. Cobrança é pendência operacional externa; nenhuma configuração financeira ou proteção foi alterada. O próximo passo não é aplicar migrations no compartilhado.
+
+P3 do QA sobre identificação do lock corrigido no fechamento: base4ece9e7, commit revisado9acc537 e unidade MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT. Nenhum delta funcional após os pareceres.
+
+## Banco — Harvey (parecer integral)
+
+PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**  
+WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT  
+BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8  
+COMMIT_REVISADO: 9acc5370564230211004491e79a679a2a95ec8ad  
+REVIEWED_AT: 2026-10-12T23:13:16Z
+
+ESCOPO_REVISADO: gerador, manifesto, quatro regressões e evidências do [REVIEW_PACKET](https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134384991).
+
+**PROBLEMA_TECNICO: RESOLVIDO.** A contagem deriva de `62+6=68`, mantendo o guard explícito da baseline62. Os aliases locais `season_division_model@20261002144945` e `edition_creation_workflow@20261005124828` são conferidos por filename exato. Os três históricos especiais sempre geram placeholders com exceção, sem copiar/reaplicar seu SQL local.
+
+MIGRATIONS: nenhuma criada ou alterada. Lista `applied` preservada. Consulta remota própria confirmou igualdade integral, inclusive ordem, com as62 entradas do manifesto; última `20261005140504`; seis pendentes ausentes.
+
+RLS_E_GRANTS: inalterados; análise funcional SQL anterior não repetida.
+
+INTEGRIDADE_E_TRANSACOES: rejeições preservadas para inventário desconhecido, migration pendente ausente e alias alterado. O gerador apenas prepara arquivos temporários e imprime a prévia. Comando contém `--dry-run --skip-vault`; confirmei ambos na CLI instalada2.118.0. A função de prévia de `--dry-run` também está documentada pela [Supabase](https://supabase.com/docs/reference/cli/supabase-db-push).
+
+PRIVACIDADE: sem nova exposição identificada no delta ou nos logs examinados.
+
+TESTES_E_EVIDENCIAS:
+
+- Execução própria: **4/4 regressões PASS**, sintaxe Node e `git diff --check` PASS.
+- Testes verificam68 filenames exatos, conteúdo das seis pendentes preservado, placeholders protegidos e rejeições esperadas.
+- Log versionado do dry-run: exatamente seis pendentes, `dryRun=true`, `seeds=[]`, `roles=[]`.
+- Log do gate: **68 arquivos/568 testes PASS**. Hashes SHA256 dos dois logs conferem com o relatório.
+- Gate completo, dry-run remoto, SQL e UI não foram repetidos.
+
+ACHADOS: nenhum novo P0–P3 no escopo focal.
+
+RISCOS_RESIDUAIS: overlay serve exclusivamente à comparação de histórico; não comprova equivalência do schema nem permite bootstrap. Revalidar o inventário remoto antes de qualquer aplicação.
+
+READINESS_PREFLIGHT_TECNICO: **READY**.  
+READINESS_MERGE: **NOT_READY**.  
+READINESS_ROLLOUT: **NOT_READY**. Homologação autenticada e recuperação representativa continuam pendentes. CI do SHA revisado falhou sem iniciar o gate; annotation confirma restrição de faturamento/limite. Este parecer não aprova rollout.
+
+GIT_STATUS_ANTES: limpo.  
+GIT_STATUS_DEPOIS: limpo; HEAD fixo preservado. Sem mutação versionada ou remota.
+
+SKILL_RESULT:  
+SKILL: reviewing-supabase-changes  
+STATUS: PASS no preflight focal.  
+HEAD_COMMIT: 9acc5370564230211004491e79a679a2a95ec8ad  
+GATES_OMITTED: gate completo e SQL/UI inalterados; homologação/recuperação indisponíveis.
+
+PROXIMO_PASSO_EXATO:  
+RESPONSAVEL: project-maintainer  
+ARQUIVO_OU_SERVICO: PR72, HANDOFF e ambiente isolado de homologação.  
+ACAO: registrar o parecer; concluir QA focal, restabelecer Actions e produzir evidências autenticadas e de recuperação em ambiente isolado.  
+CRITERIO_DE_CONCLUSAO: pareceres e gates válidos, inventário revalidado e ensaios operacionais aprovados antes de recomendar rollout.
+
+## QA — Archimedes (parecer integral)
+
+**PARECER: APPROVE_WITH_NON_BLOCKING_NOTES — QA do preflight local.**
+
+```text
+WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT
+BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8
+COMMIT_REVISADO: 9acc5370564230211004491e79a679a2a95ec8ad
+REVIEWED_AT: 2026-10-12T23:13:40Z
+GIT_STATUS_ANTES: limpo
+GIT_STATUS_DEPOIS: limpo
+```
+
+Confirmei o packet publicado e executei somente o teste focal: **4/4 PASS**. As regressões exercitam o gerador real:
+
+1. Geração dos 68 filenames esperados, seis pendentes com conteúdo preservado e marcadores históricos protegidos.
+2. Rejeição de migration local não auditada.
+3. Rejeição de pendente ausente.
+4. Rejeição de alias histórico com versão alterada.
+
+O log versionado confirma **68 arquivos/568 testes PASS**, build e scan770 concluídos. Os hashes dos dois logs correspondem aos publicados.
+
+O dry-run registra **exatamente as seis pendentes**, `dryRun=true`, `seeds=[]` e `roles=[]`. Conferi no help da CLI2.118.0 que `--skip-vault` desabilita a atualização de Vault; a função de prévia de `--dry-run` também consta na [referência oficial](https://supabase.com/docs/reference/cli/supabase-db-push).
+
+Consultei apenas o inventário remoto: **62 migrations**, última `20261005140504`, com igualdade integral de versão/nome e ordem frente ao manifesto. Não executei SQL nem repeti o dry-run.
+
+**Achados:** nenhum novo bloqueante técnico de QA. Nota **P3** em `HANDOFF.md:20–21`: o lock da unidade nova ainda aponta base `84f4510` e packet `9ca4065`; alinhar ao base/HEAD deste parecer no fechamento. A seção39 e o packet já identificam corretamente a unidade.
+
+Os pareceres anteriores de estatística/UI e o aceite funcional de `80a3335` permanecem aplicáveis: SQL, aplicação, dependências e workflows não mudaram. **A revisão nova de banco/preflight de Harvey ainda estava em andamento**; a aprovação antiga da feature não a substitui.
+
+| Readiness | Resultado |
+| --- | --- |
+| Gerador/preflight local, domínio QA | **READY** |
+| Fechamento da unidade | Aguardando parecer de banco e registro final |
+| Merge | **NOT_READY** — checks remotos não aprovados |
+| Rollout | **NOT_READY** — homologação autenticada e ensaio de recuperação pendentes |
+
+Confirmei o gate remoto atual como **FAILURE, zero etapas, por cobrança**. O aceite local não transforma esse check em SUCCESS. O overlay permanece impróprio para bootstrap.
+
+Não repeti gate completo, build, pgTAP ou UI; nenhuma mutação versionada ou compartilhada.
+
+```text
+SKILL_RESULT:
+SKILL: running-release-gate
+STATUS: PASS
+SCOPE: QA incremental do preflight local
+RESIDUAL_RISKS: parecer de banco, Actions e ensaio operacional pendentes
+```
+
+**Próximo passo exato:** project-maintainer incorporar este parecer, alinhar o lock e consolidar o resultado de Harvey. Encerrar o preflight somente com ambos os pareceres válidos, preservando as pendências de merge/rollout e sem aplicar migrations.
+
+### Consolidação do mantenedor
+
+Os dois pareceres acima são válidos no mesmo9acc537. O parecer de Harvey encerra a condição de banco ainda pendente quando o QA concluiu sua análise; não há achados bloqueantes. P3 documental corrigido. A unidade de preflight está concluída; as condições operacionais de integração/release permanecem abertas. Skills managing-base-work-unit/reviewing-supabase-changes/running-release-gate PASS no escopo preflight; merge/rollout NOT_READY.

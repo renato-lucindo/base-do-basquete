@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: correção do preflight validada localmente e em dry-run remoto; revisões banco/QA pendentes no novo SHA. Integração/rollout NOT_READY. Estado vigente na seção39; PR72 OPEN/DRAFT. Sem migrations compartilhadas, merge ou produção.**
+**Checkpoint atual: preflight corrigido, testado e aprovado por banco/QA em9acc537. Integração/rollout NOT_READY por cobrança GitHub e ausência de ambiente isolado, confirmada pelo responsável. Estado vigente na seção40; PR72 OPEN/DRAFT. Sem migrations compartilhadas, merge ou produção.**
 
 A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a entrega documental `MANUAL-SCORESHEET-V2-STAGE10-GATE` foi concluída, com integração pendente. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -17,13 +17,13 @@ WRITE_LOCK:
 OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: 84f4510083a4c684f99193be9916530c391d4e15
-HEAD_COMMIT: consultar Git; packet revisado em 9ca4065ce89358cf5007ee78aa933cbfbf659cda; delta posterior registra o parecer
+BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8
+HEAD_COMMIT: consultar Git; preflight revisado em 9acc5370564230211004491e79a679a2a95ec8ad; delta posterior registra os pareceres
 HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
 SCOPE: corrigir/testar gerador de preflight, inventário remoto read-only, dry-run e ensaios isolados viáveis; gates/revisão/publicação na PR72
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, qa-reviewer (preflight operacional; demais domínios funcionais inalterados)
-STATUS: ACTIVE
+STATUS: RELEASED
 ```
 
 As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
@@ -861,3 +861,19 @@ CRITERIO_DE_CONCLUSAO: gerador/testes e plano dry-run coerentes com as seis pend
 - Relatório/REVIEW_PACKET em docs/execution/manual-scoresheet-preflight-review.md; logs sanitizados em docs/execution/evidence/manual-scoresheet-preflight/. Revisores banco e QA serão acionados no commit fixo; especialistas de estatística/UI não são afetados pelo delta operacional.
 - Homologação/recuperação isoladas ainda não executáveis neste host: sem Docker/binários PostgreSQL/servidores encontrados; Supabase só lista main, que não é ambiente isolado. Não criar ambiente pago nem aplicar no compartilhado para contornar. Cobrança GitHub será conferida nos runs após push.
 - PROXIMO_PASSO_EXATO: publicar correção/evidências na PR72, obter pareceres banco/QA, conferir Actions; registrar resultado real e pendências externas. Sem repetir o gate completo após delta documental.
+
+## 40. Preflight concluído — pendências externas preservadas (12/10/2026)
+
+- Correção funcional9acc5370564230211004491e79a679a2a95ec8ad publicada na branch correta da PR72; packet https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6134384991. Gate68 arquivos/568 testes PASS, focal4/4, dry-run remoto exatamente seis pendentes, inventário compartilhado62 inalterado; scan final773 PASS. Logs versionados e hashes conferidos por ambos os revisores.
+- Banco Harvey01a1316d-b10c-7db2-b4f9-377dab45dec0: APPROVE_WITH_NON_BLOCKING_NOTES,2026-10-12T23:13:16Z; problema técnico RESOLVIDO, preflight READY. QA Archimedes01a1316e-e9d2-7681-8088-18a92e500f46: APPROVE_WITH_NON_BLOCKING_NOTES,2026-10-12T23:13:40Z; focal próprio4/4 e logs/inventário confirmados. Ambos no mesmo9acc537; pareceres integrais em docs/execution/manual-scoresheet-preflight-review.md. A condição de parecer banco pendente mencionada pelo QA foi satisfeita pelo resultado de Harvey.
+- P3 documental do QA corrigido: lock inicial agora aponta BASE4ece9e7 e COMMIT_REVISADO9acc537. Delta após revisão somente documental, sem repetir suítes/build/SQL de artefatos inalterados.
+- Actions9acc537: CI38320813742, Preview38320813661, CodeQL38320813647, Stage438320807932 FAILURE; falho inspecionado em cada workflow sem etapas, annotation de cobrança. Não foi feita nova tentativa repetitiva nem alterada cobrança/proteção.
+- Responsável respondeu “Ainda não há ambiente isolado”. Homologação autenticada e ensaio representativo de recuperação não foram executados. Não usar main/shared como alternativa nem presumir que pgTAP descarta a necessidade operacional. Não há ambiente Docker/PostgreSQL disponível identificado no host nem branch Supabase isolada.
+- Unidade MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT concluída; WRITE_LOCK OWNER=project-maintainer; STATUS=RELEASED. SKILL_RESULT managing-base-work-unit/reviewing-supabase-changes/running-release-gate PASS no preflight. READINESS_PREFLIGHT=READY; READINESS_MERGE/ROLLOUT=NOT_READY. Sem migrações compartilhadas, merge, produção, pagamento ou alteração de dependências.
+- Acompanhamento DEV separado preservado. Próximo passo não é aplicar a feature no compartilhado; primeiro capacidade dos Actions e ambiente de ensaio. SHA/checks reais do commit documental de encerramento serão registrados no comentário da PR.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: responsável da conta GitHub para cobrança; project-maintainer para ambiente de homologação.
+ARQUIVO_OU_SERVICO: GitHub Billing & plans/Actions PR72; ambiente Supabase isolado a disponibilizar; docs/execution/manual-scoresheet-stage10-final-gate.md.
+ACAO: restabelecer capacidade dos jobs sem reduzir gates; disponibilizar ambiente isolado representativo, registrar alvo/custo/backup e executar nele o plano de schema/compatibilidade, login/MFA AAL2, criação/revisão/retry/CAS, histórico/auditoria e ensaio de recuperação; revalidar inventário read-only antes de qualquer aplicação futura.
+CRITERIO_DE_CONCLUSAO: checks obrigatórios válidos no SHA final e evidências autenticadas/recuperação aprovadas no ambiente isolado, com revisões proporcionais. Migrations compartilhadas, merge/main e produção permanecem fora desta entrega; não fazer bypass.
