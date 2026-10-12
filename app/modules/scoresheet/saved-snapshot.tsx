@@ -1,6 +1,33 @@
+import { useEffect, useRef } from "react";
 import { type ManualScoresheetV2Payload, periodLabel } from "./domain";
 import type { ScoresheetRegistration } from "./editor";
 import { savedScoresheetScore } from "./setup-revision";
+
+export function SavedScoresheetHistoryView({
+  title,
+  description,
+  payload,
+  registrations,
+  className,
+}: {
+  title: string;
+  description?: string;
+  payload: ManualScoresheetV2Payload;
+  registrations: ScoresheetRegistration[];
+  className?: string;
+}) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), []);
+  return (
+    <main className={className}>
+      <h1 ref={headingRef} tabIndex={-1}>
+        {title}
+      </h1>
+      {description ? <p>{description}</p> : null}
+      <SavedScoresheetSnapshot payload={payload} registrations={registrations} />
+    </main>
+  );
+}
 
 export function SavedScoresheetSnapshot({
   payload,
@@ -69,19 +96,33 @@ export function SavedScoresheetSnapshot({
       ))}
       <h3>Faltas (Q4 e OT agrupados)</h3>
       <ul>
-        {payload.fouls.map((foul) => (
-          <li key={`${foul.periodNumber}:${foul.sequenceNumber}`}>
-            {periodLabel(foul.periodNumber)} · {foul.originalNotation} ·{" "}
-            {foul.target.kind === "player"
-              ? `Atleta ${foul.target.rosterEntryId}`
+        {payload.fouls.map((foul) => {
+          const team = payload.teams.find(
+            (item) => item.registrationId === foul.target.registrationId,
+          );
+          const registration = registrations.find((item) => item.id === foul.target.registrationId);
+          const slot =
+            foul.target.kind === "player"
+              ? team?.slots.find((item) => item.rosterEntryId === foul.target.rosterEntryId)
+              : undefined;
+          const player = registration?.roster.find(
+            (item) => item.rosterEntryId === slot?.rosterEntryId,
+          );
+          const target =
+            foul.target.kind === "player"
+              ? `${player?.playerName ?? `Atleta ${foul.target.rosterEntryId}`} (camisa ${slot?.jerseyNumber ?? "não informada"})`
               : foul.target.kind === "staff"
                 ? foul.target.staffRole === "coach"
                   ? "Técnico"
                   : "Assistente"
-                : "Banco/equipe"}{" "}
-            · Equipe {foul.target.registrationId}
-          </li>
-        ))}
+                : "Banco/equipe";
+          return (
+            <li key={`${foul.periodNumber}:${foul.sequenceNumber}`}>
+              {periodLabel(foul.periodNumber)} · {foul.originalNotation} · {target} ·{" "}
+              {registration?.teamName ?? `Equipe ${foul.target.registrationId}`}
+            </li>
+          );
+        })}
       </ul>
       {!payload.fouls.length ? <p>Nenhuma falta registrada.</p> : null}
       <h3>Oficiais</h3>

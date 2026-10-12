@@ -46,6 +46,7 @@ const sides: TeamSide[] = ["home", "away"];
 const steps = ["Jogo", "Equipes", "Lançamentos", "Revisão"] as const;
 const FALLBACK_REASON_ERROR =
   "Informe um motivo com 10 a 500 caracteres para a súmula emergencial.";
+const REVISION_CONFIRMATION_ERROR = "Confirme que revisou as alterações antes de gravar.";
 
 interface ScoresheetSetupWizardProps {
   competitionId: number;
@@ -107,6 +108,7 @@ function ScoresheetSetupWizardSession({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const pageHeadingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const pendingSaveRef = useRef<{
     identity: typeof draftIdentity;
@@ -114,6 +116,10 @@ function ScoresheetSetupWizardSession({
   } | null>(null);
   const draftBlocked = draftDecision !== "resolved";
   const confirmedGameId = fetcher.data?.confirmedGameId;
+
+  useEffect(() => {
+    if (revision) pageHeadingRef.current?.focus();
+  }, [revision]);
 
   useEffect(() => {
     if (!confirmedGameId) return;
@@ -249,7 +255,7 @@ function ScoresheetSetupWizardSession({
         issues.push(REVISION_REASON_ERROR);
       if (!revisionDiff(setup, revision).length)
         issues.push("Altere ao menos um dado antes de gravar uma revisão.");
-      if (!revisionConfirmed) issues.push("Confirme que revisou as alterações antes de gravar.");
+      if (!revisionConfirmed) issues.push(REVISION_CONFIRMATION_ERROR);
     }
     if (issues.length) return focusValidationErrors(issues);
     const form = new FormData();
@@ -282,7 +288,7 @@ function ScoresheetSetupWizardSession({
       </header>
       <section className="admin-welcome">
         <p className="eyebrow">{competitionName}</p>
-        <h1>
+        <h1 ref={pageHeadingRef} tabIndex={revision ? -1 : undefined}>
           {revision ? `Revisar súmula do jogo #${revision.gameId}` : "Configurar jogo e equipes"}
         </h1>
         <p>
@@ -895,11 +901,23 @@ function ScoresheetSetupWizardSession({
                       <label>
                         <input
                           type="checkbox"
+                          required
                           checked={revisionConfirmed}
+                          aria-invalid={errors.includes(REVISION_CONFIRMATION_ERROR) || undefined}
+                          aria-describedby={
+                            errors.includes(REVISION_CONFIRMATION_ERROR)
+                              ? "revision-confirmation-error"
+                              : undefined
+                          }
                           onChange={(event) => setRevisionConfirmed(event.target.checked)}
                         />{" "}
                         Revisei as alterações e confirmo a gravação de uma nova versão.
                       </label>
+                      {errors.includes(REVISION_CONFIRMATION_ERROR) ? (
+                        <p id="revision-confirmation-error" className="form-error">
+                          {REVISION_CONFIRMATION_ERROR}
+                        </p>
+                      ) : null}
                     </section>
                   ) : null}
                   <dl>

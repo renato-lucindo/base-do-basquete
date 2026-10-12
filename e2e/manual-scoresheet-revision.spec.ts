@@ -50,6 +50,14 @@ test("requires reason and confirmation, exposes diff and supports keyboard retry
     "aria-invalid",
     "true",
   );
+  await expect(page.getByRole("checkbox", { name: /Revisei as alterações/ })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(page.getByRole("checkbox", { name: /Revisei as alterações/ })).toHaveAttribute(
+    "aria-describedby",
+    "revision-confirmation-error",
+  );
   await page.getByLabel("Motivo da revisão (obrigatório)").fill("Corrigir o local da partida");
   await page.getByRole("checkbox", { name: /Revisei as alterações/ }).press("Space");
   await page.evaluate(() => sessionStorage.setItem("fixture-fail-confirm", "1"));
@@ -66,7 +74,7 @@ test("requires reason and confirmation, exposes diff and supports keyboard retry
   );
   expect(keys).toHaveLength(2);
   expect(keys[0]).toBe(keys[1]);
-  expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBeNull();
+  await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), key)).toBeNull();
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 test("restores the reason and draft, requires new confirmation after editing, isolates bases", async ({
@@ -103,13 +111,16 @@ test("renders an older immutable snapshot with names, scoring and no save contro
   await page.getByRole("link", { name: "Consultar versão anterior" }).click();
   await expect(
     page.getByRole("heading", { name: "Versão anterior — somente consulta" }),
-  ).toBeVisible();
+  ).toBeFocused();
   await expect(page.getByRole("region", { name: "Conteúdo da versão salva" })).toContainText(
     "Ana Atleta (capitão)",
   );
   await expect(page.getByText("2 × 0", { exact: true })).toBeVisible();
+  await expect(page.getByText("Q4 · T1 · Ana Atleta (camisa 7) · Equipe Azul")).toBeVisible();
   await expect(page.getByRole("button", { name: /gravar/ })).toHaveCount(0);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+  await page.getByRole("link", { name: "Abrir versão ativa" }).press("Enter");
+  await expect(page.getByRole("heading", { name: "Revisar súmula do jogo #42" })).toBeFocused();
 });
 test("keeps the revision readable at narrow width and 200% text zoom", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });

@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(60);
+select plan(66);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -37,6 +37,11 @@ overriding system value values
   (9832, 'Atleta Sumula V2 Fora', 'atleta-sumula-v2-fora');
 insert into private.player_private(player_id,sex,sex_review_required)
 values(9831,'male',false),(9832,'male',false);
+-- A previously unseen inactive roster entry must never enter a revision.
+insert into public.players(id,full_name,slug) overriding system value
+  values(9834,'Atleta Inativo Não Inscrito','atleta-inativo-nao-inscrito');
+insert into private.player_private(player_id,sex,sex_review_required)
+  values(9834,'male',false);
 insert into public.team_registrations
   (id, competition_id, team_id, status, confirmed_at)
 overriding system value values
@@ -48,6 +53,9 @@ insert into public.roster_entries
 overriding system value values
   (9831, 9831, 9831, 9831, '00', 'active'),
   (9832, 9831, 9832, 9832, '0', 'active');
+insert into public.roster_entries
+  (id,competition_id,registration_id,player_id,jersey_number,status)
+  overriding system value values(9834,9831,9831,9834,'24','inactive');
 insert into public.competition_ruleset_revisions
   (id, competition_id, revision_number, structure_kind, status)
 overriding system value values
@@ -155,6 +163,11 @@ $$;
 
 select ok(
   pg_get_functiondef('public.admin_revise_manual_scoresheet_v2(jsonb)'::regprocedure)
+    not like '%game_record.source%',
+  'revision uses six active domain authorities independently of games.source'
+);
+select ok(
+  pg_get_functiondef('public.admin_revise_manual_scoresheet_v2(jsonb)'::regprocedure)
     like '%pg_advisory_xact_lock%',
   'revision uses a transaction-scoped lock'
 );
@@ -248,6 +261,21 @@ select is((select count(*) from public.game_data_submissions where game_id=(sele
 select is((select coalesce(sum(points),0) from public.game_period_scores
   where game_id=(select game_id from manual_v2_result) and registration_id=9832),
   1::bigint,'failed revisions preserve the original live score');
+reset role;
+update public.competitions set status='archived' where id=9831;
+set local role authenticated;
+select throws_ok(
+  $$select public.admin_revise_manual_scoresheet_v2(
+    pg_temp.v2_revision('98310000-0000-4000-8000-000000000020','Revisão bloqueada'))$$,
+  'BR032','BDB_ACTIVE_COMPETITION_REQUIRED',
+  'archived competition rejects revision from direct RPC'
+);
+reset role;
+select is((select count(*) from public.game_data_submissions
+  where game_id=(select game_id from manual_v2_result)),1::bigint,
+  'rejected archival revision preserves active base submission');
+update public.competitions set status='published' where id=9831;
+set local role authenticated;
 select lives_ok(
   $$select public.admin_revise_manual_scoresheet_v2(
     pg_temp.v2_revision('98310000-0000-4000-8000-000000000016','Observação revisada'))$$,
@@ -382,11 +410,31 @@ reset role;
 select set_config('request.jwt.claims',
   json_build_object('sub',(select user_id from private.admin_accounts),'role','authenticated','aal','aal2')::text,true);
 set local role authenticated;
+select throws_ok(
+  $bad$select public.admin_revise_manual_scoresheet_v2(
+    jsonb_insert(
+      pg_temp.v2_revision_current_penalty('98310000-0000-4000-8000-000000000019'),
+      '{teams,0,slots,1}',
+      '{"slotNumber":2,"rosterEntryId":9834,"jerseyNumber":"24","isStarter":false,"isCaptain":false}'::jsonb
+    ))$bad$,
+  'BD204','BDB_INVALID_SLOT',
+  'revision rejects newly introduced inactive roster member'
+);
+select is((select count(*) from public.game_data_submissions
+  where game_id=(select game_id from manual_v2_result)),2::bigint,
+  'rejected inactive-roster revision leaves submission history unchanged');
+reset role;
+update public.roster_entries set status='inactive' where id=9831;
+set local role authenticated;
 select lives_ok(
   $$select public.admin_revise_manual_scoresheet_v2(
     pg_temp.v2_revision_current_penalty('98310000-0000-4000-8000-000000000018'))$$,
   'second revision changes penalty with current CAS'
 );
+select is((select count(*) from public.game_roster_slots
+  where game_id=(select game_id from manual_v2_result) and roster_entry_id=9831),
+  1::bigint,
+  'historical inactive roster member remains on saved game after revision');
 select is((select penalty_free_throws from public.manual_scoresheet_revisions r
   join public.game_data_submissions s on s.id=r.submission_id
   where s.game_id=(select game_id from manual_v2_result) and s.submission_version=3),

@@ -270,7 +270,8 @@
     "20261007161000_manual_scoresheet_v2_atomic_create.sql",
     "20261008090000_manual_scoresheet_v2_revisions.sql",
     "20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql",
-    "20261012113000_manual_scoresheet_v2_ot_disqualification.sql"
+    "20261012113000_manual_scoresheet_v2_ot_disqualification.sql",
+    "20261012174500_manual_scoresheet_v2_revision_guards.sql"
   ],
   "differences": [
     "canonical_model: remote SQL lacks indexes present locally, policies have different role targets",

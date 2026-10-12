@@ -5,7 +5,7 @@ import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import type { ManualScoresheetV2Payload } from "../modules/scoresheet/domain";
 import { loadRevisionRegistrations } from "../modules/scoresheet/revision-context.server";
-import { SavedScoresheetSnapshot } from "../modules/scoresheet/saved-snapshot";
+import { SavedScoresheetHistoryView } from "../modules/scoresheet/saved-snapshot";
 import { buildSetupRevision, REVISION_REASON_ERROR } from "../modules/scoresheet/setup-revision";
 import { parseScoresheetSetup } from "../modules/scoresheet/setup-state";
 import { ManualScoresheetSetupWizard } from "../modules/scoresheet/setup-wizard";
@@ -32,7 +32,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   if (!gameId) throw new Response("Jogo não encontrado", { status: 404 });
   const auth = await requireAdminAal2(request, context.get(cloudflareContext).env);
   const [game, submissions, authority, revisions] = await Promise.all([
-    auth.client.from("games").select("id,competition_id,status,source").eq("id", gameId).single(),
+    auth.client.from("games").select("id,competition_id,status").eq("id", gameId).single(),
     auth.client
       .from("game_data_submissions")
       .select("id,submission_version,status,submitted_at,submitted_by")
@@ -84,7 +84,6 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const editable =
     !selectedId &&
     game.data.status === "final" &&
-    game.data.source === "manual" &&
     competition.data.status !== "archived" &&
     domains.every((domain) =>
       authority.data.some((entry) => entry.domain === domain && entry.submission_id === active.id),
@@ -179,7 +178,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     } as unknown as Json,
   });
   const status = saved.error
-    ? saved.error.code === "BD221" || saved.error.code === "BD704"
+    ? saved.error.code === "BD221" || saved.error.code === "BD704" || saved.error.code === "BR032"
       ? 409
       : saved.error.code === "BD401"
         ? 403
@@ -199,6 +198,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         "Outra versão foi salva. Seu rascunho foi preservado. Abra a versão ativa em outra aba, compare e reaplique suas alterações antes de tentar novamente.",
       BD704:
         "A autoridade dos dados mudou. Seu rascunho foi preservado; revise a fonte ativa antes de prosseguir.",
+      BR032: "Esta edição está arquivada. A revisão não pode ser gravada.",
       BD209:
         "A chave desta revisão já foi usada com outro conteúdo. Revise os dados antes de reenviar.",
       BD223: "Altere ao menos um dado antes de gravar uma revisão.",
@@ -248,19 +248,14 @@ export default function SavedScoresheetRoute({ loaderData }: Route.ComponentProp
           revision={base}
         />
       ) : (
-        <main className="admin-shell">
-          <h1>
-            Súmula do jogo #{base.gameId} — versão {base.version}
-          </h1>
-          <p>
-            Consulta somente. Para editar, abra a versão ativa com todos os domínios sob autoridade
-            da súmula manual.
-          </p>
-          <SavedScoresheetSnapshot
-            payload={base.payload}
-            registrations={loaderData.registrations}
-          />
-        </main>
+        <SavedScoresheetHistoryView
+          key={base.submissionId}
+          className="admin-shell"
+          title={`Súmula do jogo #${base.gameId} — versão ${base.version}`}
+          description="Consulta somente. Para editar, abra a versão ativa com todos os domínios sob autoridade da súmula manual."
+          payload={base.payload}
+          registrations={loaderData.registrations}
+        />
       )}
       <section className="admin-shell" aria-labelledby="scoresheet-history-heading">
         <h2 id="scoresheet-history-heading">Histórico de versões</h2>

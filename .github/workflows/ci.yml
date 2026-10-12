@@ -82,13 +82,14 @@ jobs:
         run: echo "root=$(node scripts/test-stage4-remote-history-upgrade.mjs)" >> "$GITHUB_OUTPUT"
       - name: Start a disposable PostgreSQL database from remote migration SQL
         run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" db start
-      - name: Apply pending Stage 4 migrations and OT compatibility patch to existing schema
+      - name: Apply pending Stage 4 migrations, OT patch, and revision guards to existing schema
         run: |
           cp supabase/migrations/20261006223000_manual_scoresheet_v2.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           cp supabase/migrations/20261007161000_manual_scoresheet_v2_atomic_create.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           cp supabase/migrations/20261008090000_manual_scoresheet_v2_revisions.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           cp supabase/migrations/20261008140000_manual_scoresheet_v2_collective_ft_public_projection.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           cp supabase/migrations/20261012113000_manual_scoresheet_v2_ot_disqualification.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
+          cp supabase/migrations/20261012174500_manual_scoresheet_v2_revision_guards.sql "${{ steps.overlay.outputs.root }}/supabase/migrations/"
           npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" migration up
       - name: Verify focused stage 4 and imported boxscore pgTAP regressions
         run: npx --no-install supabase --workdir "${{ steps.overlay.outputs.root }}" test db --local

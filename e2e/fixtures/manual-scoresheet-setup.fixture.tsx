@@ -5,7 +5,8 @@ import type { ScoresheetRegistration } from "../../app/modules/scoresheet/editor
 import { ManualScoresheetSetupWizard } from "../../app/modules/scoresheet/setup-wizard";
 import { buildSetupConfirmation } from "../../app/modules/scoresheet/setup-confirmation";
 import { createScoresheetSetup } from "../../app/modules/scoresheet/setup-state";
-import { SavedScoresheetSnapshot } from "../../app/modules/scoresheet/saved-snapshot";
+import { SavedScoresheetHistoryView } from "../../app/modules/scoresheet/saved-snapshot";
+import { FOUL_RULES_VERSION } from "../../app/modules/scoresheet/domain";
 import "../../app/app.css";
 
 const registrations: ScoresheetRegistration[] = [
@@ -58,6 +59,17 @@ saved.slots.away[0] = { slotNumber: 1, rosterEntryId: 3, jerseyNumber: "9", isCa
 saved.staff.home.coach = { role: "coach", name: "Treinador Azul", origin: "manual" };
 saved.staff.away.coach = { role: "coach", name: "Treinador Vermelho", origin: "manual" };
 saved.stats["home-1-4-two"] = "1";
+saved.fouls = [
+  {
+    periodNumber: 4,
+    sequenceNumber: 1,
+    type: "T",
+    penaltyFtCount: 1,
+    originalNotation: "T1",
+    rulesVersion: FOUL_RULES_VERSION,
+    target: { kind: "player", registrationId: 10, rosterEntryId: 1 },
+  },
+];
 const savedPayload = buildSetupConfirmation(saved, 100).payload!;
 
 function FixtureRevision() {
@@ -118,11 +130,16 @@ const router = createMemoryRouter(
     {
       path: "/history/:submissionId",
       element: (
-        <main>
-          <h1>Versão anterior — somente consulta</h1>
-          <SavedScoresheetSnapshot payload={savedPayload} registrations={registrations} />
-          <Link to="/revision/80">Abrir versão ativa</Link>
-        </main>
+        <>
+          <SavedScoresheetHistoryView
+            title="Versão anterior — somente consulta"
+            payload={savedPayload}
+            registrations={registrations}
+          />
+          <nav aria-label="Navegação de versões">
+            <Link to="/revision/80">Abrir versão ativa</Link>
+          </nav>
+        </>
       ),
     },
     {
