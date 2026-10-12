@@ -18,6 +18,14 @@ import {
 import type { ScoresheetRegistration } from "./editor";
 import { FastScoringPanel } from "./fast-scoring-panel";
 import { buildSetupConfirmation } from "./setup-confirmation";
+import {
+  buildSetupRevision,
+  revisionDiff,
+  REVISION_REASON_ERROR,
+  savedScoresheetScore,
+  setupFromSavedScoresheet,
+  type ScoresheetRevisionBase,
+} from "./setup-revision";
 import { periodLabel } from "./domain";
 import { quickScoreThroughPeriod } from "./quick-periods";
 import {
@@ -46,10 +54,20 @@ interface ScoresheetSetupWizardProps {
   hasExistingGames: boolean;
   csrfToken?: string;
   requiresFallbackReason?: boolean;
+  revision?: ScoresheetRevisionBase;
 }
 
 export function ManualScoresheetSetupWizard(props: ScoresheetSetupWizardProps) {
-  return <ScoresheetSetupWizardSession key={props.competitionId} {...props} />;
+  return (
+    <ScoresheetSetupWizardSession
+      key={
+        props.revision
+          ? `${props.revision.gameId}:${props.revision.submissionId}`
+          : props.competitionId
+      }
+      {...props}
+    />
+  );
 }
 
 function ScoresheetSetupWizardSession({
@@ -59,17 +77,27 @@ function ScoresheetSetupWizardSession({
   hasExistingGames,
   csrfToken = "",
   requiresFallbackReason = false,
+  revision,
 }: ScoresheetSetupWizardProps) {
   const fetcher = useFetcher<{ error?: string; confirmedGameId?: number }>();
+  const revisionGameId = revision?.gameId;
+  const revisionSubmissionId = revision?.submissionId;
   const draftIdentity = useMemo(
     () => ({
       flow: "manual-scoresheet" as const,
       competitionId,
-      editorVersion: MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION,
+      entityId: revisionGameId,
+      editorVersion:
+        revisionSubmissionId !== undefined
+          ? `v3-revision-${revisionSubmissionId}`
+          : MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION,
     }),
-    [competitionId],
+    [competitionId, revisionGameId, revisionSubmissionId],
   );
-  const [setup, setSetup] = useState<ScoresheetSetup>(createScoresheetSetup);
+  const [setup, setSetup] = useState<ScoresheetSetup>(() =>
+    revision ? setupFromSavedScoresheet(revision.payload) : createScoresheetSetup(),
+  );
+  const [revisionConfirmed, setRevisionConfirmed] = useState(false);
   const [availableDraft, setAvailableDraft] = useState<AdminDraft<ScoresheetSetup> | null>(null);
   const [draftDecision, setDraftDecision] = useState<"checking" | "pending" | "resolved">(
     "checking",
@@ -100,9 +128,11 @@ function ScoresheetSetupWizardSession({
   useEffect(() => {
     if (fetcher.data?.error) {
       setErrors([fetcher.data.error]);
-      window.requestAnimationFrame(() => errorRef.current?.focus());
     }
   }, [fetcher.data]);
+  useEffect(() => {
+    if (errors.length) errorRef.current?.focus();
+  }, [errors]);
 
   useEffect(() => {
     const result = readAdminDraft<ScoresheetSetup>(draftIdentity);
@@ -140,6 +170,7 @@ function ScoresheetSetupWizardSession({
       submissionKey: crypto.randomUUID(),
     }));
     setChanged(true);
+    setRevisionConfirmed(false);
     setErrors([]);
     setFeedback(null);
   };
@@ -154,6 +185,7 @@ function ScoresheetSetupWizardSession({
       return;
     } else {
       setSetup(restored);
+      setRevisionConfirmed(false);
       setSavedAt(availableDraft.savedAt);
       setFeedback("Configuração restaurada deste navegador.");
     }
@@ -176,7 +208,6 @@ function ScoresheetSetupWizardSession({
 
   const focusValidationErrors = (issues: string[]) => {
     setErrors(issues);
-    if (issues.length) window.requestAnimationFrame(() => errorRef.current?.focus());
   };
 
   const goToStep = (next: 1 | 2 | 3 | 4) => {
@@ -212,11 +243,24 @@ function ScoresheetSetupWizardSession({
         ? [FALLBACK_REASON_ERROR]
         : []),
     ];
+    if (revision) {
+      issues.push(...buildSetupRevision(setup, revision).issues);
+      if (setup.revisionReason.trim().length < 10 || setup.revisionReason.trim().length > 500)
+        issues.push(REVISION_REASON_ERROR);
+      if (!revisionDiff(setup, revision).length)
+        issues.push("Altere ao menos um dado antes de gravar uma revisão.");
+      if (!revisionConfirmed) issues.push("Confirme que revisou as alterações antes de gravar.");
+    }
     if (issues.length) return focusValidationErrors(issues);
     const form = new FormData();
-    form.set("intent", "confirm-manual-v2");
+    form.set("intent", revision ? "revise-manual-v2" : "confirm-manual-v2");
     form.set("csrfToken", csrfToken);
     form.set("setup", JSON.stringify(setup));
+    if (revision) {
+      form.set("baseSubmissionId", String(revision.submissionId));
+      form.set("basePayloadHash", revision.payloadHash);
+      form.set("revisionConfirmed", String(revisionConfirmed));
+    }
     fetcher.submit(form, { method: "post" });
   };
 
@@ -224,6 +268,8 @@ function ScoresheetSetupWizardSession({
   const dateError = errors.includes("Informe uma data de jogo válida.");
   const timeError = errors.includes("Informe um horário válido ou deixe vazio.");
   const fallbackReasonError = errors.includes(FALLBACK_REASON_ERROR);
+  const revisedPayload = revision ? buildSetupRevision(setup, revision).payload : null;
+  const changes = revision ? revisionDiff(setup, revision) : [];
 
   return (
     <main className="admin-shell scoresheet-shell">
@@ -236,10 +282,13 @@ function ScoresheetSetupWizardSession({
       </header>
       <section className="admin-welcome">
         <p className="eyebrow">{competitionName}</p>
-        <h1>Configurar jogo e equipes</h1>
+        <h1>
+          {revision ? `Revisar súmula do jogo #${revision.gameId}` : "Configurar jogo e equipes"}
+        </h1>
         <p>
-          Preencha a configuração da partida. Até a confirmação final, os dados ficam somente neste
-          navegador.
+          {revision
+            ? `Editando a versão ${revision.version}. Mandante e visitante permanecem fixos. Uma nova versão será gravada após a confirmação.`
+            : "Preencha a configuração da partida. Até a confirmação final, os dados ficam somente neste navegador."}
         </p>
         {hasExistingGames ? (
           <p>
@@ -311,6 +360,7 @@ function ScoresheetSetupWizardSession({
                   {side === "home" ? "Mandante" : "Visitante"}
                   <select
                     value={setup.registrationIds[side]}
+                    disabled={Boolean(revision)}
                     aria-invalid={teamSelectionError || undefined}
                     aria-describedby={teamSelectionError ? "setup-game-teams-error" : undefined}
                     onChange={(event) => {
@@ -775,7 +825,15 @@ function ScoresheetSetupWizardSession({
               </h2>
               {confirmedGameId ? (
                 <div role="status">
-                  <p>Súmula confirmada e gravada. Jogo #{confirmedGameId}.</p>
+                  <p>
+                    {revision
+                      ? "Revisão gravada em uma nova versão."
+                      : "Súmula confirmada e gravada."}{" "}
+                    Jogo #{confirmedGameId}.
+                  </p>
+                  <Link to={`/admin/games/${confirmedGameId}/scoresheet`}>
+                    Abrir súmula salva e histórico
+                  </Link>
                   <Link
                     className="button button-primary"
                     to={`/admin/competitions/${competitionId}`}
@@ -785,7 +843,65 @@ function ScoresheetSetupWizardSession({
                 </div>
               ) : (
                 <>
-                  <p>Confira os dados antes de gravar a súmula e finalizar a partida.</p>
+                  <p>
+                    {revision
+                      ? "Confira as alterações antes de gravar uma nova versão da súmula."
+                      : "Confira os dados antes de gravar a súmula e finalizar a partida."}
+                  </p>
+                  {revision ? (
+                    <section aria-labelledby="revision-diff-heading">
+                      <h3 id="revision-diff-heading">Alterações desta revisão</h3>
+                      <p>
+                        Placar anterior: {savedScoresheetScore(revision.payload)}. Placar revisado:{" "}
+                        {revisedPayload
+                          ? savedScoresheetScore(revisedPayload)
+                          : "Revise os lançamentos"}
+                        .
+                      </p>
+                      {changes.length ? (
+                        <ul>
+                          {changes.map((item) => (
+                            <li key={item.path}>
+                              <strong>{item.label}</strong>: {item.before} → {item.after}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Nenhuma alteração.</p>
+                      )}
+                      <label>
+                        Motivo da revisão (obrigatório)
+                        <textarea
+                          value={setup.revisionReason}
+                          minLength={10}
+                          maxLength={500}
+                          aria-invalid={errors.includes(REVISION_REASON_ERROR) || undefined}
+                          aria-describedby={
+                            errors.includes(REVISION_REASON_ERROR)
+                              ? "revision-reason-error"
+                              : undefined
+                          }
+                          onChange={(event) =>
+                            update((current) => ({
+                              ...current,
+                              revisionReason: event.target.value,
+                            }))
+                          }
+                        />
+                        {errors.includes(REVISION_REASON_ERROR) ? (
+                          <span id="revision-reason-error">{REVISION_REASON_ERROR}</span>
+                        ) : null}
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={revisionConfirmed}
+                          onChange={(event) => setRevisionConfirmed(event.target.checked)}
+                        />{" "}
+                        Revisei as alterações e confirmo a gravação de uma nova versão.
+                      </label>
+                    </section>
+                  ) : null}
                   <dl>
                     <dt>Data e horário</dt>
                     <dd>
@@ -949,7 +1065,11 @@ function ScoresheetSetupWizardSession({
                       onClick={confirm}
                       disabled={fetcher.state !== "idle"}
                     >
-                      {fetcher.state === "idle" ? "Confirmar e gravar súmula" : "Gravando súmula…"}
+                      {fetcher.state === "idle"
+                        ? revision
+                          ? "Confirmar e gravar revisão"
+                          : "Confirmar e gravar súmula"
+                        : "Gravando súmula…"}
                     </button>
                   </div>
                 </>

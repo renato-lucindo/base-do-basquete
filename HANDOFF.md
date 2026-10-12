@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: Etapa 8 concluída no código eddc2cb, com quatro domínios revisados sem bloqueios e CI/Stage4/Preview/CodeQL SUCCESS. Etapa 9 autorizada, ainda não iniciada. PR #72 OPEN/DRAFT; sem migrations no Supabase compartilhado, merge ou produção. Estado operacional vigente na seção 32.**
+**Checkpoint atual: Etapa 9 em implementação, a partir de 9821248. Etapa 8 concluída e verificada. PR #72 OPEN/DRAFT; sem migrations no Supabase compartilhado, merge ou produção. Estado operacional vigente na seção 33.**
 
 A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. A unidade `MANUAL-SCORESHEET-V2-STAGE8-CONFIRM` foi concluída. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -15,15 +15,15 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE8-CONFIRM
+WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE9-REVISION
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: cbd50d4f98ce18b3860679a155d22e8f264f3152
-HEAD_COMMIT: eddc2cb17bbd6c8912b05370e0d01221bce332e2 (artefato revisado; consultar Git para commit documental deste fechamento)
-HEAD_FUNCIONAL: eddc2cb17bbd6c8912b05370e0d01221bce332e2 (gates verdes e pareceres válidos; Etapa 8 concluída)
+BASE_COMMIT: 98212482e4c316ba0517df70fa9e2d9696f79641
+HEAD_COMMIT: consultar Git; implementação da Etapa 9 em andamento
+HEAD_FUNCIONAL: pendente de gates e pareceres próprios da Etapa 9
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
-STATUS: RELEASED (Etapa 8 entregue; abrir unidade própria para a Etapa 9 já autorizada)
+STATUS: ACTIVE
 ```
 
 As quatro especialidades aprovaram a Etapa 8; bloqueios estatísticos, QA e acessibilidade expressamente revogados (seção 32). O parecer de acessibilidade em 61f3536 continua válido para UI inalterada em eddc2cb. Os registros de etapas anteriores abaixo são históricos. PR permanece draft; Etapas 9 e 10 pendentes.
@@ -707,3 +707,22 @@ RESPONSAVEL: project-maintainer.
 ARQUIVO_OU_SERVICO: docs/plan/sumula-manual-v2/09-edicao-sumula-existente.md, app/modules/scoresheet/setup-wizard.tsx, app/routes.ts, nova rota administrativa de súmula salva, public.admin_revise_manual_scoresheet_v2 e PR #72.
 ACAO: abrir unidade própria Etapa9 já autorizada, com WRITE_LOCK ativo; carregar snapshot/submissão ativa, disponibilizar edição com equipes imutáveis, diff legível/impacto no placar, motivo e confirmação; enviar baseSubmissionId/hash e revisionKey para conflito otimista/idempotência; preservar draft por jogo/base e consultar histórico imutável. Implementar interface/servidor/testes e renovar os pareceres dos domínios afetados antes da Etapa10. Não aplicar migrations compartilhadas nem fazer merge/produção.
 CRITERIO_DE_CONCLUSAO: criar e revisar como fluxos completos, conflito não sobrescreve dados, motivo obrigatório, histórico consultável, gate/tests/Actions verdes no novo artefato e pareceres válidos; Etapas9 e10 ainda não iniciadas neste fechamento.
+
+## 33. Etapa 9 — revisão de súmula salva
+
+- WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE9-REVISION; project-maintainer é o único escritor.
+- Base local e remota reconciliada: 98212482e4c316ba0517df70fa9e2d9696f79641; worktree inicialmente limpo; PR #72 OPEN/DRAFT.
+- Objetivo/aceite: abrir snapshot ativo, editar os campos permitidos com equipes imutáveis, comparar alterações e placar, exigir motivo e confirmação, enviar baseSubmissionId/hash e revisionKey à RPC existente, preservar rascunho em conflito e consultar histórico imutável.
+- Escopo: rota/interface de revisão, conversão de snapshot, contrato tipado da RPC existente, navegação, testes e evidências da etapa. Risco CRITICO: persistência, concorrência e publicação estatística.
+- Revisores obrigatórios: banco/segurança, estatística, acessibilidade e QA; pareceres da Etapa 8 não aprovam mudanças desta unidade.
+- Escopo negativo: sem migrations no Supabase compartilhado, merge, produção, parser PDF ou fluxo de conflito com boxscore.
+- Próximo passo exato: implementar rota de súmula salva e modo de revisão do wizard; validar round-trip, CAS/idempotência, diff, histórico, teclado e preservação do draft, depois gates/Actions e pareceres independentes no SHA estabilizado.
+
+### Checkpoint de implementação da Etapa 9 — 12/10/2026
+
+- Rota administrativa de súmula salva com autenticação AAL2, origem/CSRF, histórico de versões somente leitura e editor da submissão ativa quando os seis domínios de autoridade permanecem na súmula manual. Gravação por `admin_revise_manual_scoresheet_v2` existente, enviando `baseSubmissionId`/hash, `revisionKey` estável e motivo. Erros de concorrência preservam rascunho; confirmação obrigatória, diff de campos, impacto no placar e identidade imutável.
+- O contexto de revisão recupera também inscrição e atleta presentes no snapshot mesmo após ficarem inativos, preservando a possibilidade de consultar e corrigir partidas históricas; atletas inativos que não constam do snapshot permanecem fora das opções. O loader também exige `games.source=manual` para habilitar edição.
+- Vitest focal: 3 arquivos / 15 testes PASS (round-trip, OT, autorização, conflito otimista, retry, histórico e elenco histórico); Playwright focal: 4/4 PASS (teclado, diff, motivo, draft, conflito, consulta imutável, viewport 390px e zoom 200%, axe sem violações nos cenários focais).
+- Gate local `npm run check` PASS: 67 arquivos/562 testes Vitest, formatação, lint com avisos preexistentes sem erros bloqueantes, typecheck, runbooks, contrato de agentes, build client/SSR e scan de segredos em 760 arquivos. Antes do gate, normalizado newline de `test-results/.last-run.json` gerado pelo Playwright; a primeira tentativa do gate havia parado unicamente nesse arquivo efêmero. `git diff --check` PASS (aviso de CRLF em HANDOFF); não foram executadas migrations em ambiente compartilhado.
+- SKILL_RESULT: managing-base-work-unit=PASS; validating-basketball-statistics=PASS nos testes de conversão/pontuação/OT focais, revisão independente pendente; validating-accessibility-ui=PASS nos fluxos browser focais, revisão independente pendente; reviewing-supabase-changes=PENDING avaliação especializada (sem delta SQL); running-release-gate=PENDING Actions e pareceres do novo SHA. WRITE_LOCK project-maintainer permanece ACTIVE, PR #72 OPEN/DRAFT.
+- PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=branch origin/codex/manual-scoresheet-v2 e PR #72/Actions; ACAO=commit/push do checkpoint Etapa9, confirmar CI, Stage4 Validation (pgTAP descartável), Preview e CodeQL no novo SHA, obter e registrar revisão independente de banco/segurança, estatística, acessibilidade e QA; CRITERIO_DE_CONCLUSAO=checks verdes e pareceres válidos sem bloqueantes antes de fechar a Etapa9 e abrir a Etapa10. Não fazer merge, produção ou Supabase compartilhado.

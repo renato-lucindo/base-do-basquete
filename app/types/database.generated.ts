@@ -2105,6 +2105,36 @@ export type Database = {
           },
         ];
       };
+      manual_scoresheet_submission_payloads: {
+        Row: {
+          submission_id: number;
+          game_id: number;
+          payload: Json;
+          payload_hash: string;
+          created_by: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      manual_scoresheet_revisions: {
+        Row: {
+          id: number;
+          game_id: number;
+          submission_id: number;
+          base_submission_id: number;
+          base_payload_hash: string;
+          reason: string;
+          diff: Json;
+          penalty_free_throws: Json;
+          revised_by: string;
+          revised_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       game_data_submissions: {
         Row: {
           created_at: string;
@@ -5036,6 +5066,10 @@ export type Database = {
         Returns: number;
       };
       admin_create_manual_scoresheet_v2: {
+        Args: { p_payload: Json };
+        Returns: number;
+      };
+      admin_revise_manual_scoresheet_v2: {
         Args: { p_payload: Json };
         Returns: number;
       };

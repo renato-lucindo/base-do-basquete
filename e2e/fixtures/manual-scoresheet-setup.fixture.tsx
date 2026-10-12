@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import { createMemoryRouter, Link, RouterProvider, useParams } from "react-router";
 import type { ScoresheetRegistration } from "../../app/modules/scoresheet/editor";
 import { ManualScoresheetSetupWizard } from "../../app/modules/scoresheet/setup-wizard";
+import { buildSetupConfirmation } from "../../app/modules/scoresheet/setup-confirmation";
+import { createScoresheetSetup } from "../../app/modules/scoresheet/setup-state";
+import { SavedScoresheetSnapshot } from "../../app/modules/scoresheet/saved-snapshot";
 import "../../app/app.css";
 
 const registrations: ScoresheetRegistration[] = [
@@ -47,8 +50,81 @@ function FixtureWizard() {
   );
 }
 
+const saved = createScoresheetSetup();
+saved.game = { date: "2026-10-12", venue: "Ginásio original", notes: "Versão original" };
+saved.registrationIds = { home: 10, away: 20 };
+saved.slots.home[0] = { slotNumber: 1, rosterEntryId: 1, jerseyNumber: "7", isCaptain: true };
+saved.slots.away[0] = { slotNumber: 1, rosterEntryId: 3, jerseyNumber: "9", isCaptain: true };
+saved.staff.home.coach = { role: "coach", name: "Treinador Azul", origin: "manual" };
+saved.staff.away.coach = { role: "coach", name: "Treinador Vermelho", origin: "manual" };
+saved.stats["home-1-4-two"] = "1";
+const savedPayload = buildSetupConfirmation(saved, 100).payload!;
+
+function FixtureRevision() {
+  const { submissionId } = useParams();
+  return (
+    <>
+      <nav aria-label="Versões de teste">
+        <Link to="/revision/80">Versão ativa</Link>
+        {" · "}
+        <Link to="/revision/81">Versão atualizada</Link>
+        {" · "}
+        <Link to="/history/79">Consultar versão anterior</Link>
+      </nav>
+      <ManualScoresheetSetupWizard
+        competitionId={100}
+        competitionName="Campeonato fixture"
+        registrations={registrations}
+        hasExistingGames={false}
+        csrfToken="fixture-csrf"
+        revision={{
+          gameId: 42,
+          submissionId: Number(submissionId),
+          version: Number(submissionId) - 78,
+          payloadHash: "a".repeat(32),
+          payload: savedPayload,
+        }}
+      />
+    </>
+  );
+}
 const router = createMemoryRouter(
   [
+    {
+      path: "/revision/:submissionId",
+      Component: FixtureRevision,
+      action: async ({ request }) => {
+        const form = await request.formData();
+        const setup = JSON.parse(String(form.get("setup")));
+        const keys = JSON.parse(
+          sessionStorage.getItem("fixture-submission-keys") ?? "[]",
+        ) as string[];
+        sessionStorage.setItem(
+          "fixture-submission-keys",
+          JSON.stringify([...keys, setup.submissionKey]),
+        );
+        if (
+          form.get("intent") !== "revise-manual-v2" ||
+          form.get("revisionConfirmed") !== "true" ||
+          setup.revisionReason.trim().length < 10
+        )
+          return { error: "Confirmação inválida" };
+        if (sessionStorage.getItem("fixture-fail-confirm") === "1")
+          return { error: "Outra versão foi salva. Seu rascunho foi preservado." };
+        return { confirmedGameId: 42 };
+      },
+      shouldRevalidate: () => false,
+    },
+    {
+      path: "/history/:submissionId",
+      element: (
+        <main>
+          <h1>Versão anterior — somente consulta</h1>
+          <SavedScoresheetSnapshot payload={savedPayload} registrations={registrations} />
+          <Link to="/revision/80">Abrir versão ativa</Link>
+        </main>
+      ),
+    },
     {
       path: "/competition/:competitionId",
       Component: FixtureWizard,
@@ -79,7 +155,13 @@ const router = createMemoryRouter(
       ),
     },
   ],
-  { initialEntries: ["/competition/100"] },
+  {
+    initialEntries: [
+      new URLSearchParams(window.location.search).has("revision")
+        ? "/revision/80"
+        : "/competition/100",
+    ],
+  },
 );
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing fixture root");

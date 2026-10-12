@@ -167,6 +167,7 @@ export interface ManualScoresheetV2Payload {
 
 export interface ManualScoresheetRevisionPayload extends ManualScoresheetV2Payload {
   gameId: number;
+  revisionKey: string;
   baseSubmissionId: number;
   basePayloadHash: string;
   revisionReason: string;
@@ -253,6 +254,7 @@ export function buildManualScoresheetDiff(
   add("game.gameNumber", "Número do jogo", before.game.gameNumber, after.game.gameNumber);
   add("game.phaseRound", "Fase/rodada", before.game.phaseRound, after.game.phaseRound);
   add("game.notes", "Observações", before.game.notes, after.game.notes);
+  add("periods.length", "Quantidade de períodos", before.periods.length, after.periods.length);
 
   for (const side of ["home", "away"] as const) {
     const beforeTeam = before.teams.find((team) => team.side === side);
@@ -274,6 +276,12 @@ export function buildManualScoresheetDiff(
         );
         continue;
       }
+      add(
+        `teams.${side}.slots.${rosterEntryId}.slotNumber`,
+        `${sideLabel} · atleta ${rosterEntryId} · posição na lista`,
+        previous.slotNumber,
+        next.slotNumber,
+      );
       add(
         `teams.${side}.slots.${rosterEntryId}.jerseyNumber`,
         `${sideLabel} · atleta ${rosterEntryId} · camisa`,
@@ -301,6 +309,12 @@ export function buildManualScoresheetDiff(
         `${sideLabel} · ${role === "coach" ? "técnico" : "1º assistente"}`,
         previous ? `${previous.name} (${previous.origin})` : null,
         next ? `${next.name} (${next.origin})` : null,
+      );
+      add(
+        `teams.${side}.staff.${role}.linkedCaptainRosterEntryId`,
+        `${sideLabel} · vínculo do técnico com o capitão`,
+        previous?.linkedCaptainRosterEntryId,
+        next?.linkedCaptainRosterEntryId,
       );
     }
   }
@@ -364,7 +378,7 @@ export function buildManualScoresheetDiff(
     const target =
       foul.target.kind === "player"
         ? `#${jerseyByRoster.get(foul.target.rosterEntryId ?? -1) ?? foul.target.rosterEntryId}`
-        : foul.target.kind === "bench"
+        : foul.target.kind === "bench" || foul.target.kind === "team"
           ? "Banco"
           : foul.target.staffRole === "coach"
             ? "Técnico"

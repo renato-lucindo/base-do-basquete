@@ -34,6 +34,7 @@ export interface ScoresheetSetup {
   step: 1 | 2 | 3 | 4;
   submissionKey: string;
   fallbackReason: string;
+  revisionReason: string;
   periodCount: number;
   completedPeriods: number[];
   stats: Record<string, string>;
@@ -60,6 +61,7 @@ export function createScoresheetSetup(): ScoresheetSetup {
     step: 1,
     submissionKey: crypto.randomUUID(),
     fallbackReason: "",
+    revisionReason: "",
     periodCount: 4,
     completedPeriods: [],
     stats: {},
@@ -377,6 +379,7 @@ const setupSchema = z.object({
     .uuid()
     .default(() => crypto.randomUUID()),
   fallbackReason: z.string().max(500).default(""),
+  revisionReason: z.string().max(500).default(""),
   periodCount: z.number().int().min(4).max(MAX_SCORESHEET_PERIODS).default(4),
   completedPeriods: z.array(z.number().int().min(4).max(MAX_SCORESHEET_PERIODS)).max(9).default([]),
   stats: z.record(z.string(), z.string().max(40)).optional(),

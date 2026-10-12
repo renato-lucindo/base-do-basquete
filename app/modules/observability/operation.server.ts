@@ -16,7 +16,8 @@ export type OperationalName =
   | "roster.replace"
   | "scoresheet"
   | "scoresheet.save"
-  | "scoresheet.v2.confirm";
+  | "scoresheet.v2.confirm"
+  | "scoresheet.v2.revise";
 
 export interface OperationalContext {
   competitionId?: number;

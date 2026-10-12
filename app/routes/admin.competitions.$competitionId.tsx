@@ -284,19 +284,20 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const fallbackResult = competitionGameIds.length
     ? await auth.client
         .from("game_data_submissions")
-        .select("id,game_id,fallback_finalized_at")
+        .select("id,game_id,role,fallback_finalized_at")
         .in("game_id", competitionGameIds)
         .eq("source_type", "manual_scoresheet")
-        .eq("role", "fallback")
         .eq("status", "active")
         .order("submitted_at", { ascending: false })
     : { data: [], error: null };
   if (fallbackResult.error) throw new Error("Competition source fallback query failed");
   const gameNumbers = new Map(gamesResult.data.map((game) => [game.id, game.game_number]));
-  const sourceFallbacks = fallbackResult.data.map((fallback) => ({
-    ...fallback,
-    gameNumber: gameNumbers.get(fallback.game_id) ?? null,
-  }));
+  const sourceFallbacks = fallbackResult.data
+    .filter((entry) => entry.role === "fallback")
+    .map((fallback) => ({
+      ...fallback,
+      gameNumber: gameNumbers.get(fallback.game_id) ?? null,
+    }));
 
   const teamIds = registrationsResult.data.map((registration) => registration.team_id);
   const previousRegistrationsResult = teamIds.length
@@ -482,6 +483,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         gameCount: gamesResult.count ?? 0,
       }),
       sourceFallbacks,
+      savedManualGames: fallbackResult.data.map((entry) => ({
+        gameId: entry.game_id,
+        gameNumber: gameNumbers.get(entry.game_id),
+      })),
       savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
       changedRegistrationId: parseId(new URL(request.url).searchParams.get("changedRegistration")),
       registrationOutcome: new URL(request.url).searchParams.get("registrationOutcome"),
@@ -1129,6 +1134,24 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               Revisar exceções
             </Link>
           </article>
+          {loaderData.savedManualGames.length ? (
+            <article>
+              <h2>Súmulas manuais salvas</h2>
+              <p>
+                Consulte o histórico e revise súmulas v2. Súmulas antigas sem snapshot v2 precisam
+                de tratamento próprio.
+              </p>
+              <ul>
+                {loaderData.savedManualGames.map((game) => (
+                  <li key={game.gameId}>
+                    <Link to={`/admin/games/${game.gameId}/scoresheet`}>
+                      Súmula do jogo {game.gameNumber ?? `#${game.gameId}`}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ) : null}
           {loaderData.dataActions.scoresheet ? (
             <article>
               <h2>{loaderData.dataActions.scoresheet.label}</h2>
