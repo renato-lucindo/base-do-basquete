@@ -15,13 +15,15 @@ const queries: Array<{ table: string; filters: Record<string, unknown> }> = [];
 let payload = savedFixture();
 let authorities: Array<{ domain: string; submission_id: number }>;
 let snapshotHash = "a".repeat(32);
+let gameSource = "manual";
+let competitionStatus = "draft";
 function from(table: string) {
   const filters: Record<string, unknown> = {};
   queries.push({ table, filters });
   const result = () => {
     const rows: Record<string, unknown> = {
-      games: { id: 42, competition_id: 100, status: "final", source: "manual" },
-      competitions: { display_name: "Campeonato", status: "draft" },
+      games: { id: 42, competition_id: 100, status: "final", source: gameSource },
+      competitions: { display_name: "Campeonato", status: competitionStatus },
       game_data_submissions: [
         {
           id: 80,
@@ -97,6 +99,8 @@ beforeEach(() => {
   queries.length = 0;
   payload = savedFixture();
   snapshotHash = "a".repeat(32);
+  gameSource = "manual";
+  competitionStatus = "draft";
   authorities = [
     "official_result",
     "period_scores",
@@ -180,6 +184,41 @@ describe("stage 9 revision route", () => {
       history: [{ reason: "Correção anterior" }, { reason: "Criação da súmula" }],
     });
     expect(result.init?.headers).toMatchObject({ "Cache-Control": "private, no-store" });
+  });
+  it("uses effective domains when the legacy game source differs", async () => {
+    gameSource = "fiba";
+    const result = await loader({
+      ...args(),
+      request: new Request("https://example.test/admin/games/42/scoresheet"),
+    });
+    expect(result.data.editable).toBe(true);
+    authorities[0]!.submission_id = 90;
+    expect(
+      (
+        await loader({
+          ...args(),
+          request: new Request("https://example.test/admin/games/42/scoresheet"),
+        })
+      ).data.editable,
+    ).toBe(false);
+  });
+  it("shows archived editions as read-only and reports RPC rejection", async () => {
+    competitionStatus = "archived";
+    expect(
+      (
+        await loader({
+          ...args(),
+          request: new Request("https://example.test/admin/games/42/scoresheet"),
+        })
+      ).data.editable,
+    ).toBe(false);
+    rpc.mockResolvedValue({ data: null, error: { code: "BR032" } });
+    const result = await action(args());
+    expect(result).toMatchObject({
+      init: { status: 409 },
+      data: { error: expect.stringContaining("arquivada") },
+    });
+    expect(result.data).not.toHaveProperty("confirmedGameId");
   });
   it("makes a previous version read-only and rejects cross-game history IDs", async () => {
     const input = args();

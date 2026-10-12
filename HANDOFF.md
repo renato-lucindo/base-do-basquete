@@ -756,3 +756,9 @@ CRITERIO_DE_CONCLUSAO: criar e revisar como fluxos completos, conflito não sobr
 - Gate local e Playwright 4/4 já aprovados para o artefato 9073c85. Não repetir suíte/build para este ajuste exclusivamente documental. SQL ainda depende do pgTAP descartável; pareceres prévios REQUEST_CHANGES não estão encerrados.
 - WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE9-REVISION; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE. RISK_LEVEL=CRITICO. REQUIRED_REVIEWERS=banco/segurança, estatística, acessibilidade e QA. Sem dispensa de achados.
 - PROXIMO_PASSO_EXATO: enviar HEAD para `origin/codex/manual-scoresheet-v2`, publicar REVIEW_PACKET na PR #72, verificar Actions/pgTAP/preview no novo SHA e renovar quatro pareceres independentes. Validar concorrência real entre conexões se a evidência existente não cobrir; corrigir falhas até gates e pareceres verdes. Escopo negativo: sem merge, migration compartilhada ou produção.
+
+### Evidência complementar de concorrência — 12/10/2026
+
+- Adicionado `scripts/test-manual-scoresheet-revision-concurrency.mjs`, restrito a CI=true e ao container PostgreSQL descartável do projeto. Duas conexões aguardam uma barreira de lock real antes de executar a RPC. Cobre retry idêntico (uma versão/auditoria) e CAS divergente (um vencedor/conflito, seis autoridades consistentes, histórico e notas preservados). Incluído em CI e Stage4; execução remota ainda pendente.
+- Duas regressões Vitest na rota cobrem origem legada distinta com seis autoridades válidas, autoridade divergente e edição arquivada/erro BR032. `npm run check` PASS após o delta: 67 arquivos/564 testes, build/typecheck/formato/lint e scan762. Evidência Playwright 4/4 preservada: nenhum componente UI mudou neste delta.
+- PR #72 já recebeu 6a8958b em `codex/manual-scoresheet-v2`; novas evidências de concorrência serão publicadas em commit próprio, com REVIEW_PACKET e renovação dos quatro pareceres no SHA resultante.

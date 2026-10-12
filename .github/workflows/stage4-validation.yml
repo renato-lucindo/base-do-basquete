@@ -33,6 +33,7 @@ jobs:
         run: |
           node scripts/test-preset-concurrency.mjs
           node scripts/test-boxscore-team-resolution-concurrency.mjs
+          node scripts/test-manual-scoresheet-revision-concurrency.mjs
 
   remote_history_upgrade:
     name: Remote-history upgrade (focused pgTAP)

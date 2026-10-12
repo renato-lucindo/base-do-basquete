@@ -64,6 +64,8 @@ jobs:
         run: node scripts/test-preset-concurrency.mjs
       - name: Verify boxscore team-resolution concurrency on disposable database
         run: node scripts/test-boxscore-team-resolution-concurrency.mjs
+      - name: Verify manual scoresheet revision concurrency on disposable database
+        run: node scripts/test-manual-scoresheet-revision-concurrency.mjs
       - name: Verify named RPC arguments through PostgREST
         run: node scripts/test-season-division-rpc-contract.mjs
   remote_history_upgrade:
