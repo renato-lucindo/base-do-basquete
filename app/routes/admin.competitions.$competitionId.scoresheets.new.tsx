@@ -18,6 +18,8 @@ import {
 } from "../modules/scoresheet/domain";
 import { ManualScoresheetEditor } from "../modules/scoresheet/editor";
 import { ManualScoresheetSetupWizard } from "../modules/scoresheet/setup-wizard";
+import { buildSetupConfirmation } from "../modules/scoresheet/setup-confirmation";
+import { parseScoresheetSetup } from "../modules/scoresheet/setup-state";
 import type { Json } from "../types/database.generated";
 import type { Route } from "./+types/admin.competitions.$competitionId.scoresheets.new";
 
@@ -123,6 +125,14 @@ function mapScoresheetError(code: string | undefined): string {
       return "O jogo está empatado. Adicione uma prorrogação antes de encerrar.";
     case "BD209":
       return "A chave desta submissão já foi usada com outro conteúdo.";
+    case "BD216":
+      return "Selecione exatamente um capitão em cada equipe.";
+    case "BD217":
+      return "Revise a comissão técnica das equipes.";
+    case "BD218":
+      return "Revise os oficiais da partida.";
+    case "BD219":
+      return "Revise as faltas anotadas para a partida.";
     case "BD710":
       return "O jogo precisa estar vinculado a um confronto válido.";
     case "BD711":
@@ -357,6 +367,51 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const auth = await requireAdminAal2(request, env);
   const formData = await request.formData();
   assertCsrfToken(formData, auth.payload.csrfToken);
+
+  if (formData.get("intent") === "confirm-manual-v2") {
+    const raw = formData.get("setup");
+    if (typeof raw !== "string" || raw.length > 150_000)
+      return badRequest("O rascunho é inválido ou excede o tamanho permitido.");
+    let decoded: unknown;
+    try {
+      decoded = JSON.parse(raw);
+    } catch {
+      return badRequest("O rascunho enviado é inválido.");
+    }
+    const setup = parseScoresheetSetup(decoded);
+    if (!setup) return badRequest("Revise os dados do rascunho antes de confirmar.");
+    const confirmation = buildSetupConfirmation(setup, competitionId);
+    if (!confirmation.payload) return badRequest(confirmation.issues.join(" "));
+    const result = await auth.client.rpc("admin_create_manual_scoresheet_v2", {
+      p_payload: confirmation.payload as unknown as Json,
+    });
+    if (result.error) {
+      logOperationalEvent({
+        correlationId,
+        durationMs: Date.now() - startedAt,
+        operation: "scoresheet.v2.confirm",
+        outcome: "failure",
+        status: 400,
+        context: { competitionId, errorCode: result.error.code },
+      });
+      return data(
+        { error: mapScoresheetError(result.error.code) },
+        { status: result.error.code === "BD401" ? 403 : 400 },
+      );
+    }
+    logOperationalEvent({
+      correlationId,
+      durationMs: Date.now() - startedAt,
+      operation: "scoresheet.v2.confirm",
+      outcome: "success",
+      status: 200,
+      context: { competitionId, entityId: result.data },
+    });
+    return data(
+      { confirmedGameId: result.data },
+      { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+    );
+  }
 
   const idempotencyKey = String(formData.get("idempotencyKey") ?? "");
   const gameId = parseId(formData.get("gameId"));
@@ -632,6 +687,8 @@ export default function NewManualScoresheet({ loaderData, actionData }: Route.Co
         competitionName={loaderData.competition.display_name}
         registrations={loaderData.registrations}
         hasExistingGames={loaderData.games.length > 0}
+        csrfToken={loaderData.csrfToken}
+        requiresFallbackReason={loaderData.requiresFallbackReason}
       />
     );
   }
@@ -647,7 +704,7 @@ export default function NewManualScoresheet({ loaderData, actionData }: Route.Co
 
   return (
     <ManualScoresheetEditor
-      actionError={actionData?.error}
+      actionError={actionData && "error" in actionData ? actionData.error : undefined}
       competitionId={loaderData.competition.id}
       competitionName={loaderData.competition.display_name}
       csrfToken={loaderData.csrfToken}

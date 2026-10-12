@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useFetcher } from "react-router";
 
 import { AdminDraftNotice } from "../../components/admin/admin-draft-notice";
 import { AdminWizardSteps } from "../../components/admin/admin-wizard-steps";
@@ -7,9 +7,19 @@ import { UnsavedChangesGuard } from "../../components/admin/unsaved-changes-guar
 import { readAdminDraft, removeAdminDraft, saveAdminDraft } from "../admin-drafts/client";
 import type { AdminDraft } from "../admin-drafts/schema";
 import { MANUAL_SCORESHEET_SETUP_DRAFT_EDITOR_VERSION } from "../admin-drafts/schema";
-import { normalizeGameJersey, OFFICIAL_ROLES, type TeamSide, validateTeamSlots } from "./domain";
+import {
+  evaluateDisqualification,
+  normalizeGameJersey,
+  OFFICIAL_ROLES,
+  playerFoulsForDisqualification,
+  type TeamSide,
+  validateTeamSlots,
+} from "./domain";
 import type { ScoresheetRegistration } from "./editor";
 import { FastScoringPanel } from "./fast-scoring-panel";
+import { buildSetupConfirmation } from "./setup-confirmation";
+import { periodLabel } from "./domain";
+import { quickScoreThroughPeriod } from "./quick-periods";
 import {
   createScoresheetSetup,
   editSetupCoach,
@@ -32,6 +42,8 @@ interface ScoresheetSetupWizardProps {
   competitionName: string;
   registrations: ScoresheetRegistration[];
   hasExistingGames: boolean;
+  csrfToken?: string;
+  requiresFallbackReason?: boolean;
 }
 
 export function ManualScoresheetSetupWizard(props: ScoresheetSetupWizardProps) {
@@ -43,7 +55,10 @@ function ScoresheetSetupWizardSession({
   competitionName,
   registrations,
   hasExistingGames,
+  csrfToken = "",
+  requiresFallbackReason = false,
 }: ScoresheetSetupWizardProps) {
+  const fetcher = useFetcher<{ error?: string; confirmedGameId?: number }>();
   const draftIdentity = useMemo(
     () => ({
       flow: "manual-scoresheet" as const,
@@ -67,6 +82,23 @@ function ScoresheetSetupWizardSession({
     null,
   );
   const draftBlocked = draftDecision !== "resolved";
+  const confirmedGameId = fetcher.data?.confirmedGameId;
+
+  useEffect(() => {
+    if (!confirmedGameId) return;
+    pendingSaveRef.current = null;
+    removeAdminDraft(draftIdentity);
+    setChanged(false);
+    setSavedAt(null);
+    window.requestAnimationFrame(() => headingRef.current?.focus());
+  }, [confirmedGameId, draftIdentity]);
+
+  useEffect(() => {
+    if (fetcher.data?.error) {
+      setErrors([fetcher.data.error]);
+      window.requestAnimationFrame(() => errorRef.current?.focus());
+    }
+  }, [fetcher.data]);
 
   useEffect(() => {
     const result = readAdminDraft<ScoresheetSetup>(draftIdentity);
@@ -98,8 +130,8 @@ function ScoresheetSetupWizardSession({
   );
 
   const update = (change: (current: ScoresheetSetup) => ScoresheetSetup) => {
-    if (draftBlocked) return;
-    setSetup(change);
+    if (draftBlocked || confirmedGameId || fetcher.state !== "idle") return;
+    setSetup((current) => ({ ...change(current), submissionKey: crypto.randomUUID() }));
     setChanged(true);
     setErrors([]);
     setFeedback(null);
@@ -140,14 +172,15 @@ function ScoresheetSetupWizardSession({
     if (issues.length) window.requestAnimationFrame(() => errorRef.current?.focus());
   };
 
-  const goToStep = (next: 1 | 2 | 3) => {
+  const goToStep = (next: 1 | 2 | 3 | 4) => {
     if (draftBlocked) return;
     const issues =
       next === 1
         ? []
         : [
             ...validateSetupGame(setup, registrations),
-            ...(next === 3 ? validateSetupTeams(setup, registrations) : []),
+            ...(next >= 3 ? validateSetupTeams(setup, registrations) : []),
+            ...(next === 4 ? buildSetupConfirmation(setup, competitionId).issues : []),
           ];
     if (issues.length) {
       focusValidationErrors(issues);
@@ -159,6 +192,25 @@ function ScoresheetSetupWizardSession({
         "Configuração válida. Lance os pontos abaixo; o rascunho permanece neste navegador.",
       );
     window.requestAnimationFrame(() => headingRef.current?.focus());
+  };
+
+  const confirm = () => {
+    if (draftBlocked || confirmedGameId || fetcher.state !== "idle") return;
+    const issues = [
+      ...validateSetupGame(setup, registrations),
+      ...validateSetupTeams(setup, registrations),
+      ...buildSetupConfirmation(setup, competitionId).issues,
+      ...(requiresFallbackReason &&
+      (setup.fallbackReason.trim().length < 10 || setup.fallbackReason.trim().length > 500)
+        ? ["Informe um motivo com 10 a 500 caracteres para a súmula emergencial."]
+        : []),
+    ];
+    if (issues.length) return focusValidationErrors(issues);
+    const form = new FormData();
+    form.set("intent", "confirm-manual-v2");
+    form.set("csrfToken", csrfToken);
+    form.set("setup", JSON.stringify(setup));
+    fetcher.submit(form, { method: "post" });
   };
 
   const teamSelectionError = errors.includes("Selecione duas equipes inscritas e diferentes.");
@@ -190,10 +242,10 @@ function ScoresheetSetupWizardSession({
           current={setup.step}
           labels={steps}
           onSelect={(value) => {
-            if (value === 1 || value === 2 || value === 3) goToStep(value);
+            if (value === 1 || value === 2 || value === 3 || value === 4) goToStep(value);
           }}
         />
-        <UnsavedChangesGuard active={changed} />
+        <UnsavedChangesGuard active={changed && !confirmedGameId} />
         {availableDraft ? (
           <AdminDraftNotice
             savedAt={availableDraft.savedAt}
@@ -690,7 +742,185 @@ function ScoresheetSetupWizardSession({
                 <button className="button button-ghost" type="button" onClick={() => goToStep(2)}>
                   Voltar para equipes
                 </button>
+                <button className="button button-primary" type="button" onClick={() => goToStep(4)}>
+                  Revisar e confirmar
+                </button>
               </div>
+            </section>
+          ) : null}
+          {setup.step === 4 ? (
+            <section className="scoresheet-step" aria-labelledby="scoresheet-review-heading">
+              <h2 id="scoresheet-review-heading" ref={headingRef} tabIndex={-1}>
+                Revisão final
+              </h2>
+              {confirmedGameId ? (
+                <div role="status">
+                  <p>Súmula confirmada e gravada. Jogo #{confirmedGameId}.</p>
+                  <Link
+                    className="button button-primary"
+                    to={`/admin/competitions/${competitionId}`}
+                  >
+                    Voltar à edição
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <p>Confira os dados antes de gravar a súmula e finalizar a partida.</p>
+                  <dl>
+                    <dt>Data e horário</dt>
+                    <dd>
+                      {setup.game.date} {setup.game.time || "Horário não informado"}
+                    </dd>
+                    <dt>Local</dt>
+                    <dd>{setup.game.venue || "Não informado"}</dd>
+                    <dt>Número do jogo</dt>
+                    <dd>{setup.game.gameNumber || "Não informado"}</dd>
+                    <dt>Fase/rodada</dt>
+                    <dd>{setup.game.phaseRound || "Não informada"}</dd>
+                    <dt>Observações</dt>
+                    <dd>{setup.game.notes || "Nenhuma"}</dd>
+                  </dl>
+                  <h3>Placar e parciais</h3>
+                  <table>
+                    <caption>Parciais por período e placar acumulado</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col">Período</th>
+                        <th scope="col">Mandante</th>
+                        <th scope="col">Visitante</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: setup.periodCount }, (_, index) => index + 1).map(
+                        (period) => {
+                          const score = quickScoreThroughPeriod(setup.stats, period);
+                          const previous = quickScoreThroughPeriod(setup.stats, period - 1);
+                          return (
+                            <tr key={period}>
+                              <th scope="row">{periodLabel(period)}</th>
+                              <td>
+                                {(score?.home ?? 0) - (previous?.home ?? 0)} (total{" "}
+                                {score?.home ?? "—"})
+                              </td>
+                              <td>
+                                {(score?.away ?? 0) - (previous?.away ?? 0)} (total{" "}
+                                {score?.away ?? "—"})
+                              </td>
+                            </tr>
+                          );
+                        },
+                      )}
+                    </tbody>
+                  </table>
+                  {sides.map((side) => {
+                    const registration = registrations.find(
+                      (item) => item.id === setup.registrationIds[side],
+                    );
+                    const active = setup.slots[side].filter((slot) => slot.rosterEntryId !== null);
+                    return (
+                      <section key={side}>
+                        <h3>
+                          {side === "home" ? "Mandante" : "Visitante"}: {registration?.teamName}
+                        </h3>
+                        <p>
+                          Elenco:{" "}
+                          {active
+                            .map(
+                              (slot) =>
+                                `#${slot.jerseyNumber} ${registration?.roster.find((player) => player.rosterEntryId === slot.rosterEntryId)?.playerName ?? "Atleta"}${slot.isCaptain ? " (capitão)" : ""}${slot.isStarter ? " (titular)" : ""}`,
+                            )
+                            .join("; ")}
+                        </p>
+                        <p>
+                          Técnico: {setup.staff[side].coach?.name || "—"}. Assistente:{" "}
+                          {setup.staff[side].assistant || "—"}.
+                        </p>
+                        <p>
+                          Faltas rápidas:{" "}
+                          {
+                            setup.fouls.filter(
+                              (foul) => foul.target.registrationId === setup.registrationIds[side],
+                            ).length
+                          }
+                          . Faltas da grade:{" "}
+                          {active.reduce(
+                            (sum, slot) =>
+                              sum +
+                              [1, 2, 3, 4].reduce(
+                                (total, period) =>
+                                  total +
+                                  (setup.stats[`${side}-${slot.slotNumber}-${period}-fouls`]
+                                    ?.split(",")
+                                    .filter(Boolean).length ?? 0),
+                                0,
+                              ),
+                            0,
+                          )}
+                          .
+                        </p>
+                        <p>
+                          Desqualificações (GD):{" "}
+                          {active
+                            .flatMap((slot) => {
+                              const recorded = playerFoulsForDisqualification(
+                                setup.stats,
+                                setup.fouls,
+                                side,
+                                slot,
+                                setup.registrationIds[side],
+                              );
+                              const gd = recorded ? evaluateDisqualification(recorded) : null;
+                              return gd
+                                ? [
+                                    `#${slot.jerseyNumber} (${gd.reason}, ${periodLabel(gd.periodNumber)})`,
+                                  ]
+                                : [];
+                            })
+                            .join("; ") || "Nenhuma"}
+                          .
+                        </p>
+                      </section>
+                    );
+                  })}
+                  <h3>Oficiais</h3>
+                  <p>
+                    {Object.entries(setup.officials)
+                      .filter(([, name]) => name.trim())
+                      .map(([role, name]) => `${role}: ${name}`)
+                      .join("; ") || "Não informados"}
+                  </p>
+                  {requiresFallbackReason ? (
+                    <label>
+                      Motivo da súmula emergencial (obrigatório)
+                      <textarea
+                        value={setup.fallbackReason}
+                        minLength={10}
+                        maxLength={500}
+                        onChange={(event) =>
+                          update((current) => ({ ...current, fallbackReason: event.target.value }))
+                        }
+                      />
+                    </label>
+                  ) : null}
+                  <div className="wizard-actions">
+                    <button
+                      className="button button-ghost"
+                      type="button"
+                      onClick={() => goToStep(3)}
+                    >
+                      Voltar para lançamentos
+                    </button>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      onClick={confirm}
+                      disabled={fetcher.state !== "idle"}
+                    >
+                      {fetcher.state === "idle" ? "Confirmar e gravar súmula" : "Gravando súmula…"}
+                    </button>
+                  </div>
+                </>
+              )}
             </section>
           ) : null}
         </div>

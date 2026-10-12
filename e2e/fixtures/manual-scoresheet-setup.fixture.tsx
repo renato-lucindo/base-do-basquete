@@ -40,6 +40,7 @@ function FixtureWizard() {
         competitionName={"Campeonato fixture " + id}
         hasExistingGames={false}
         registrations={registrations}
+        csrfToken="fixture-csrf"
       />
     </>
   );
@@ -47,7 +48,26 @@ function FixtureWizard() {
 
 const router = createMemoryRouter(
   [
-    { path: "/competition/:competitionId", Component: FixtureWizard },
+    {
+      path: "/competition/:competitionId",
+      Component: FixtureWizard,
+      action: async ({ request }) => {
+        const form = await request.formData();
+        if (form.get("intent") !== "confirm-manual-v2" || form.get("csrfToken") !== "fixture-csrf")
+          return { error: "Requisição de teste inválida" };
+        const setup = JSON.parse(String(form.get("setup")));
+        const keys = JSON.parse(
+          sessionStorage.getItem("fixture-submission-keys") ?? "[]",
+        ) as string[];
+        sessionStorage.setItem(
+          "fixture-submission-keys",
+          JSON.stringify([...keys, setup.submissionKey]),
+        );
+        if (sessionStorage.getItem("fixture-fail-confirm") === "1")
+          return { error: "Falha de gravação simulada" };
+        return { confirmedGameId: 42 };
+      },
+    },
     {
       path: "/done",
       element: (

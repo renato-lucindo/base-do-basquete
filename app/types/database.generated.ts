@@ -5035,6 +5035,10 @@ export type Database = {
         Args: { p_payload: Json };
         Returns: number;
       };
+      admin_create_manual_scoresheet_v2: {
+        Args: { p_payload: Json };
+        Returns: number;
+      };
       admin_create_player: {
         Args: {
           p_allow_similar?: boolean;

@@ -31,7 +31,9 @@ export interface SetupStaff {
 }
 
 export interface ScoresheetSetup {
-  step: 1 | 2 | 3;
+  step: 1 | 2 | 3 | 4;
+  submissionKey: string;
+  fallbackReason: string;
   periodCount: number;
   completedPeriods: number[];
   stats: Record<string, string>;
@@ -56,6 +58,8 @@ export function emptySetupSlots(): EditorSlot[] {
 export function createScoresheetSetup(): ScoresheetSetup {
   return {
     step: 1,
+    submissionKey: crypto.randomUUID(),
+    fallbackReason: "",
     periodCount: 4,
     completedPeriods: [],
     stats: {},
@@ -367,7 +371,12 @@ const foulSchema = z.object({
   }),
 });
 const setupSchema = z.object({
-  step: z.union([z.literal(1), z.literal(2), z.literal(3)]),
+  step: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  submissionKey: z
+    .string()
+    .uuid()
+    .default(() => crypto.randomUUID()),
+  fallbackReason: z.string().max(500).default(""),
   periodCount: z.number().int().min(4).max(MAX_SCORESHEET_PERIODS).default(4),
   completedPeriods: z.array(z.number().int().min(4).max(MAX_SCORESHEET_PERIODS)).max(9).default([]),
   stats: z.record(z.string(), z.string().max(40)).optional(),
@@ -388,6 +397,13 @@ const setupSchema = z.object({
   staff: z.object({ home: staffSchema, away: staffSchema }),
   officials: z.record(z.enum(OFFICIAL_ROLES), z.string().max(160)),
 });
+
+export function parseScoresheetSetup(raw: unknown): ScoresheetSetup | null {
+  const parsed = setupSchema.safeParse(raw);
+  return parsed.success
+    ? { ...parsed.data, stats: parsed.data.stats ?? {}, fouls: parsed.data.fouls ?? [] }
+    : null;
+}
 
 export function restoreScoresheetSetup(
   raw: unknown,

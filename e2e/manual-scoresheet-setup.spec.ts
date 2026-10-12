@@ -189,6 +189,41 @@ async function enterScoring(page: import("@playwright/test").Page) {
   await expect(page.getByRole("heading", { name: "Lançamentos", exact: true })).toBeFocused();
 }
 
+test("review confirmation preserves the draft on failure and clears it only after successful retry", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  await page.getByRole("button", { name: "Voltar para equipes" }).click();
+  const teams = page.locator("fieldset.lineup-panel");
+  await teams.nth(0).getByRole("textbox", { name: "Técnico" }).fill("Técnico Azul");
+  await teams.nth(1).getByRole("textbox", { name: "Técnico" }).fill("Técnico Vermelho");
+  await page.getByRole("button", { name: "Continuar para lançamentos" }).click();
+  await page.getByRole("textbox", { name: "2P de Ana Atleta" }).fill("1");
+  await page.getByRole("button", { name: "Revisar e confirmar" }).click();
+  await expect(page.getByRole("heading", { name: "Revisão final" })).toBeFocused();
+  await expect(
+    page.getByRole("table", { name: "Parciais por período e placar acumulado" }),
+  ).toBeVisible();
+  await expect(page.getByText("Técnico: Técnico Azul")).toBeVisible();
+  await page.evaluate(() => sessionStorage.setItem("fixture-fail-confirm", "1"));
+  await page.getByRole("button", { name: "Confirmar e gravar súmula" }).click();
+  await expect(page.getByRole("alert")).toContainText("Falha de gravação simulada");
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .not.toBeNull();
+  await page.evaluate(() => sessionStorage.removeItem("fixture-fail-confirm"));
+  await page.getByRole("button", { name: "Confirmar e gravar súmula" }).click();
+  await expect(page.getByText("Súmula confirmada e gravada. Jogo #42.")).toBeVisible();
+  await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey)).toBeNull();
+  const keys = await page.evaluate(
+    () => JSON.parse(sessionStorage.getItem("fixture-submission-keys") ?? "[]") as string[],
+  );
+  expect(keys).toHaveLength(2);
+  expect(keys[0]).toBe(keys[1]);
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
 test("keyboard scoring supports 12 Enter 2 Enter, literal 00, errors, Escape, undo and grid correction", async ({
   page,
 }) => {
