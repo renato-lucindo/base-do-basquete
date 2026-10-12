@@ -550,6 +550,53 @@ export function parseFoulCodes(value: FormDataEntryValue | null): FoulCode[] | n
   return codes as FoulCode[];
 }
 
+// Legacy grid codes and quick-entry events are separate recorded fouls. Keep each
+// exactly once, with legacy codes preceding quick entries in the same period.
+// Never deduplicate by notation: two identical T or U fouls are still two events.
+export function playerFoulsForDisqualification(
+  stats: Record<string, string>,
+  semanticFouls: SemanticFoulPayload[],
+  side: TeamSide,
+  slot: EditorSlot,
+  registrationId: number,
+): FoulInput[] | null {
+  if (slot.rosterEntryId === null) return [];
+  const combined: FoulInput[] = [];
+  for (let period = 1; period <= 4; period += 1) {
+    const codes = parseFoulCodes(stats[`${side}-${slot.slotNumber}-${period}-fouls`] ?? "");
+    if (!codes) return null; // An unfinished legacy cell must be corrected before a new foul.
+    codes.forEach((code, index) => {
+      combined.push({ periodNumber: period, sequenceNumber: index + 1, code });
+    });
+  }
+  for (const foul of semanticFouls) {
+    if (
+      foul.target.kind === "player" &&
+      foul.target.registrationId === registrationId &&
+      foul.target.rosterEntryId === slot.rosterEntryId
+    ) {
+      combined.push({ ...foul, sequenceNumber: foul.sequenceNumber + 20 });
+    }
+  }
+  return combined;
+}
+
+export function hasRecordedPointsAfterPeriod(
+  stats: Record<string, string>,
+  side: TeamSide,
+  slotNumber: number,
+  periodNumber: number,
+): boolean {
+  for (let period = periodNumber + 1; period <= 4; period += 1) {
+    for (const field of ["two", "three", "free"]) {
+      const value = stats[`${side}-${slotNumber}-${period}-${field}`]?.trim();
+      // Non-empty, incomplete draft counters are preserved and treated conservatively.
+      if (value && (Number(value) > 0 || !/^(?:0|[1-9][0-9]?)$/.test(value))) return true;
+    }
+  }
+  return false;
+}
+
 export function parseSemanticFoulList(
   value: FormDataEntryValue | null,
 ): Array<Omit<SemanticFoulEvent, "periodNumber" | "sequenceNumber">> | null {

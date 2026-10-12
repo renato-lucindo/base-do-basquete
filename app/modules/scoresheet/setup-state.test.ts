@@ -218,7 +218,7 @@ describe("stage 7 semantic foul drafts", () => {
     const original = validSetup();
     const legacy = { ...original, fouls: undefined };
     expect(restoreScoresheetSetup(legacy, registrations)?.fouls).toEqual([]);
-    const quick = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00u2");
+    const quick = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00u2", {}, "home");
     if (!quick.ok) throw new Error(quick.message);
     const saved = { ...original, step: 3 as const, fouls: [quick.entry] };
     expect(restoreScoresheetSetup(saved, registrations)?.fouls).toEqual(saved.fouls);
@@ -245,7 +245,7 @@ describe("stage 7 semantic foul drafts", () => {
 
   it("rejects player fouls after GD and drops fouls only for affected player or team", () => {
     const original = validSetup();
-    const playerD = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00D");
+    const playerD = prepareQuickFoul([], original.slots.home, 10, 1, "player", "00D", {}, "home");
     if (!playerD.ok) throw new Error(playerD.message);
     const later = {
       ...playerD.entry,
@@ -257,7 +257,16 @@ describe("stage 7 semantic foul drafts", () => {
     expect(
       restoreScoresheetSetup({ ...original, fouls: [playerD.entry, later] }, registrations),
     ).toBeNull();
-    const bench = prepareQuickFoul([playerD.entry], original.slots.home, 10, 1, "bench", "B1");
+    const bench = prepareQuickFoul(
+      [playerD.entry],
+      original.slots.home,
+      10,
+      1,
+      "bench",
+      "B1",
+      {},
+      "home",
+    );
     if (!bench.ok) throw new Error(bench.message);
     const away = prepareQuickFoul(
       [playerD.entry, bench.entry],
@@ -266,6 +275,8 @@ describe("stage 7 semantic foul drafts", () => {
       1,
       "player",
       "7P",
+      {},
+      "away",
     );
     if (!away.ok) throw new Error(away.message);
     const saved = { ...original, fouls: [playerD.entry, bench.entry, away.entry] };

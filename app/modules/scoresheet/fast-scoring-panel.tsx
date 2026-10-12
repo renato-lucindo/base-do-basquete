@@ -7,9 +7,11 @@ import {
   completeFastScoreEntry,
   evaluateDisqualification,
   hasFoulAfterDisqualification,
+  hasRecordedPointsAfterPeriod,
   normalizeGameJersey,
   parseFastFoulEntry,
   parseFoulNotation,
+  playerFoulsForDisqualification,
   periodLabel,
   type EditorSlot,
   type FastEntryState,
@@ -81,6 +83,8 @@ export function prepareQuickFoul(
   periodNumber: number,
   target: QuickFoulTarget,
   text: string,
+  stats: Record<string, string>,
+  side: TeamSide,
 ): QuickFoulResult {
   if (
     !Number.isSafeInteger(registrationId) ||
@@ -116,16 +120,18 @@ export function prepareQuickFoul(
         : `Camisa ${parsed.jerseyNumber} não encontrada nesta equipe.`,
     };
   }
-  const rosterEntryId = matching[0]?.rosterEntryId;
+  const matchedSlot = matching[0];
+  const rosterEntryId = matchedSlot?.rosterEntryId;
   const previous =
-    rosterEntryId == null
+    rosterEntryId == null || !matchedSlot
       ? []
-      : fouls.filter(
-          (foul) =>
-            foul.target.kind === "player" &&
-            foul.target.registrationId === registrationId &&
-            foul.target.rosterEntryId === rosterEntryId,
-        );
+      : playerFoulsForDisqualification(stats, fouls, side, matchedSlot, registrationId);
+  if (previous === null) {
+    return {
+      ok: false,
+      message: "Corrija as faltas legadas incompletas antes de lançar outra falta.",
+    };
+  }
   if (evaluateDisqualification(previous)) {
     return { ok: false, message: "Atleta já desqualificado (GD); novas faltas bloqueadas." };
   }
@@ -153,18 +159,28 @@ export function prepareQuickFoul(
             staffRole: target === "coach" ? "coach" : "assistant_1",
           },
   };
-  const updatedPlayerFouls = [...previous, entry].filter((foul) => foul.target.kind === "player");
+  const updatedPlayerFouls = rosterEntryId == null ? [] : [...previous, entry];
   if (rosterEntryId != null && hasFoulAfterDisqualification(updatedPlayerFouls)) {
     return {
       ok: false,
       message: "Esta falta criaria registros posteriores à desqualificação (GD).",
     };
   }
+  const gd = rosterEntryId == null ? null : evaluateDisqualification(updatedPlayerFouls);
+  if (
+    gd &&
+    matchedSlot &&
+    hasRecordedPointsAfterPeriod(stats, side, matchedSlot.slotNumber, gd.periodNumber)
+  ) {
+    return {
+      ok: false,
+      message: "Esta falta criaria GD retroativa com pontos registrados em período posterior.",
+    };
+  }
   return {
     ok: true,
     entry,
-    disqualification:
-      rosterEntryId == null ? null : (evaluateDisqualification(updatedPlayerFouls)?.reason ?? null),
+    disqualification: gd?.reason ?? null,
   };
 }
 
@@ -261,20 +277,17 @@ export function FastScoringPanel({
       setError("Valor inválido. Digite 1, 2 ou 3 pontos.");
       return;
     }
-    const rosterEntryId = slots[side].find(
+    const slot = slots[side].find(
       (slot) => slot.rosterEntryId !== null && slot.jerseyNumber === entry.jerseyNumber,
-    )?.rosterEntryId;
-    const gd =
-      rosterEntryId == null
-        ? null
-        : evaluateDisqualification(
-            fouls.filter(
-              (foul) =>
-                foul.target.kind === "player" &&
-                foul.target.registrationId === registrationIds[side] &&
-                foul.target.rosterEntryId === rosterEntryId,
-            ),
-          );
+    );
+    const playerFouls = slot
+      ? playerFoulsForDisqualification(stats, fouls, side, slot, registrationIds[side])
+      : [];
+    if (playerFouls === null) {
+      setError("Corrija as faltas legadas incompletas antes de lançar pontos.");
+      return;
+    }
+    const gd = evaluateDisqualification(playerFouls);
     if (gd && periodNumber > gd.periodNumber) {
       setError(
         `Atleta desqualificado em ${periodLabel(gd.periodNumber)}; pontos posteriores bloqueados.`,
@@ -337,6 +350,8 @@ export function FastScoringPanel({
       periodNumber,
       foulTarget,
       foulText,
+      stats,
+      side,
     );
     if (!result.ok) {
       setFoulError(result.message);
@@ -388,6 +403,7 @@ export function FastScoringPanel({
     setEntryState(cancelFastEntry());
     setJerseyText("");
     setPointsText("");
+    setFoulText("");
     setError("");
     setFoulError("");
     setStatus(
@@ -642,18 +658,16 @@ export function FastScoringPanel({
             semanticFouls={fouls}
             registrationId={registrationIds[value]}
             disqualificationFor={(_side, slotNumber) => {
-              const rosterEntryId = slots[value].find(
-                (slot) => slot.slotNumber === slotNumber,
-              )?.rosterEntryId;
-              if (rosterEntryId == null) return null;
-              return evaluateDisqualification(
-                fouls.filter(
-                  (foul) =>
-                    foul.target.kind === "player" &&
-                    foul.target.registrationId === registrationIds[value] &&
-                    foul.target.rosterEntryId === rosterEntryId,
-                ),
+              const slot = slots[value].find((slot) => slot.slotNumber === slotNumber);
+              if (!slot) return null;
+              const playerFouls = playerFoulsForDisqualification(
+                stats,
+                fouls,
+                value,
+                slot,
+                registrationIds[value],
               );
+              return playerFouls ? evaluateDisqualification(playerFouls) : null;
             }}
             onChange={(key, value) => {
               onChange(key, value);

@@ -287,6 +287,25 @@ test("records FIBA 2024 fouls, announces GD, blocks later fouls and keeps same-p
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });
 
+test("rejects retroactive GD when a later quarter already contains points", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  await period.selectOption("3");
+  const jersey = page.getByRole("textbox", { name: "Número da camisa" });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  await page.getByRole("textbox", { name: "Pontos da camisa 12 (1, 2 ou 3)" }).fill("2");
+  await page.keyboard.press("Enter");
+  await period.selectOption("2");
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await foul.fill("12D");
+  await foul.press("Enter");
+  await expect(page.locator("#fast-foul-error")).toContainText("GD retroativa");
+  await expect(foul).toHaveValue("12D");
+  await expect(page.getByText("Faltas registradas: 0")).toBeVisible();
+});
+
 test("persists bench and coach fouls without a player and restores semantic draft", async ({
   page,
 }) => {
@@ -323,13 +342,18 @@ test("switches visitor and period with keyboard and keeps the scoring view withi
   await page.goto(fixtureUrl);
   await enterScoring(page);
   const team = page.getByRole("combobox", { name: "Equipe para lançamento rápido" });
+  const foul = page.getByRole("textbox", { name: "Código da falta" });
+  await foul.fill("12U2");
   await team.focus();
   await team.selectOption("away");
   await expect(team).toBeFocused();
+  await expect(foul).toHaveValue("");
+  await foul.fill("9P");
   const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
   await period.focus();
   await period.selectOption("2");
   await expect(period).toBeFocused();
+  await expect(foul).toHaveValue("");
   const jersey = page.getByRole("textbox", { name: "Número da camisa" });
   await jersey.fill("9");
   await jersey.press("Enter");

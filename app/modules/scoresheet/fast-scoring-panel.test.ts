@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import type { EditorSlot, SemanticFoulPayload } from "./domain";
+import {
+  evaluateDisqualification,
+  playerFoulsForDisqualification,
+  type EditorSlot,
+  type SemanticFoulPayload,
+} from "./domain";
 import { prepareQuickFoul, prepareQuickScore } from "./fast-scoring-panel";
 
 const slots: EditorSlot[] = [
@@ -61,7 +66,9 @@ describe("quick foul entry and FIBA 2024 GD", () => {
     target: "player" | "bench" | "coach" | "assistant_1" = "player",
     period = 1,
     registrationId = 10,
-  ) => prepareQuickFoul(fouls, slots, registrationId, period, target, value);
+    stats: Record<string, string> = {},
+    side: "home" | "away" = "home",
+  ) => prepareQuickFoul(fouls, slots, registrationId, period, target, value, stats, side);
 
   it("accepts spaced and lowercase FIBA notation, keeping literal 00 and global period sequence", () => {
     const first = submit([], "12u2");
@@ -139,5 +146,64 @@ describe("quick foul entry and FIBA 2024 GD", () => {
     expect(submit([], "99T")).toMatchObject({ ok: false });
     expect(submit([], "12P", "player", 5)).toMatchObject({ ok: false });
     expect(submit([], "12P", "player", 1, 0)).toMatchObject({ ok: false });
+  });
+
+  it("reconciles legacy and semantic fouls exactly once, including identical notations", () => {
+    const stats = { "home-1-1-fouls": "T,T", "away-1-1-fouls": "D" };
+    const playerSlot = slots[0];
+    if (!playerSlot) throw new Error("missing player slot");
+    const player = playerFoulsForDisqualification(stats, [], "home", playerSlot, 10);
+    expect(player).toHaveLength(2);
+    expect(evaluateDisqualification(player ?? [])).toMatchObject({ reason: "2T", periodNumber: 1 });
+    expect(submit([], "12P", "player", 2, 10, stats)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("GD"),
+    });
+    const first = submit([], "12U2", "player", 1, 10, { "home-1-1-fouls": "T" });
+    expect(first).toMatchObject({ ok: true, disqualification: "T+U" });
+    if (!first.ok) throw new Error(first.message);
+    expect(
+      playerFoulsForDisqualification(
+        { "home-1-1-fouls": "T" },
+        [first.entry],
+        "home",
+        playerSlot,
+        10,
+      ),
+    ).toHaveLength(2);
+    expect(submit([], "12U2", "player", 1, 10, { "away-1-1-fouls": "D" })).toMatchObject({
+      ok: true,
+      disqualification: null,
+    });
+    expect(submit([], "12P", "player", 1, 10, { "home-1-1-fouls": "T,?" })).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("legadas incompletas"),
+    });
+  });
+
+  it("rejects retroactive GD with later scoring, but accepts scoring in the GD period", () => {
+    const futurePoints = { "home-1-3-two": "1" };
+    expect(submit([], "12D", "player", 2, 10, futurePoints)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("GD retroativa"),
+    });
+    expect(submit([], "12D", "player", 2, 10, { "home-1-2-two": "1" })).toMatchObject({
+      ok: true,
+      disqualification: "D",
+    });
+    expect(submit([], "12D", "player", 2, 10, { "away-1-3-two": "1" })).toMatchObject({
+      ok: true,
+      disqualification: "D",
+    });
+    expect(
+      submit([], "12U2", "player", 2, 10, { ...futurePoints, "home-1-1-fouls": "T" }),
+    ).toMatchObject({
+      ok: false,
+      message: expect.stringContaining("GD retroativa"),
+    });
+    expect(submit([], "12P", "player", 2, 10, futurePoints)).toMatchObject({
+      ok: true,
+      disqualification: null,
+    });
   });
 });
