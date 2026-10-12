@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hasRecordedPointsAfterPeriod } from "./domain";
 import {
   quickOvertimeEligibility,
+  quickPlayerGdIssue,
   quickScoreBlockedByGd,
   quickScoreThroughPeriod,
 } from "./quick-periods";
@@ -63,6 +64,24 @@ describe("overtime eligibility from cumulative conversion totals", () => {
 });
 
 describe("GD uses the shared Q4/OT foul group", () => {
+  it("rejects complete legacy edits that would make a saved draft unrestorable", () => {
+    const slot = { slotNumber: 1, rosterEntryId: 12, jerseyNumber: "12" };
+    expect(
+      quickPlayerGdIssue({ "home-1-2-fouls": "D", "home-1-3-two": "1" }, [], "home", slot, 10),
+    ).toContain("pontos registrados");
+    expect(
+      quickPlayerGdIssue({ "home-1-2-fouls": "D", "home-1-3-fouls": "P" }, [], "home", slot, 10),
+    ).toContain("faltas posteriores");
+    expect(
+      quickPlayerGdIssue({ "home-1-2-fouls": "D,?", "home-1-3-two": "1" }, [], "home", slot, 10),
+    ).toBeNull();
+    expect(
+      quickPlayerGdIssue({ "home-1-4-fouls": "D", "home-1-5-two": "1" }, [], "home", slot, 10),
+    ).toBeNull();
+    expect(
+      quickPlayerGdIssue({ "home-1-2-fouls": "D", "away-1-3-two": "1" }, [], "home", slot, 10),
+    ).toBeNull();
+  });
   it("allows group scoring but blocks OT after an earlier GD", () => {
     for (let period = 4; period <= 12; period += 1) {
       expect(quickScoreBlockedByGd(period, 4)).toBe(false);

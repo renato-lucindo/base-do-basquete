@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 import {
   calculatePoints,
@@ -8,7 +8,12 @@ import {
   type SemanticFoulPayload,
   type TeamSide,
 } from "./domain";
-import { quickFoulPeriod, quickFoulPeriodLabel, quickScoreBlockedByGd } from "./quick-periods";
+import {
+  quickFoulPeriod,
+  quickFoulPeriodLabel,
+  quickPlayerGdIssue,
+  quickScoreBlockedByGd,
+} from "./quick-periods";
 
 const compactFields = [
   ["two", "2P"],
@@ -51,6 +56,7 @@ export function CompactScoresheetGrid({
   disqualificationFor,
   onChange,
 }: CompactScoresheetGridProps) {
+  const [legacyErrors, setLegacyErrors] = useState<Record<string, string>>({});
   const active = slots.filter((slot) => slot.rosterEntryId !== null);
   const moveVertically = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Enter") return;
@@ -130,7 +136,12 @@ export function CompactScoresheetGrid({
                           foul.periodNumber === fieldPeriod,
                       );
                       const legacy = stats[key] ?? "";
-                      const invalidLegacy = parseFoulCodes(legacy) === null;
+                      const legacyIssue =
+                        legacyErrors[key] ||
+                        (parseFoulCodes(legacy) === null
+                          ? "Revise os códigos legados, separados por vírgula (ex.: P,T)."
+                          : "");
+                      const invalidLegacy = Boolean(legacyIssue);
                       const errorId = `legacy-fouls-error-${side}-${slot.slotNumber}-${periodNumber}`;
                       const period = quickFoulPeriodLabel(periodNumber);
                       return (
@@ -156,12 +167,23 @@ export function CompactScoresheetGrid({
                               data-grid-row={rowIndex}
                               data-grid-column={columnIndex}
                               onKeyDown={moveVertically}
-                              onChange={(event) => onChange(key, event.currentTarget.value)}
+                              onChange={(event) => {
+                                const value = event.currentTarget.value;
+                                const issue = quickPlayerGdIssue(
+                                  { ...stats, [key]: value },
+                                  semanticFouls,
+                                  side,
+                                  slot,
+                                  registrationId ?? 0,
+                                );
+                                setLegacyErrors((current) => ({ ...current, [key]: issue ?? "" }));
+                                if (!issue) onChange(key, value);
+                              }}
                             />
                           </label>
                           {invalidLegacy ? (
-                            <span className="form-error" id={errorId}>
-                              Revise os códigos legados, separados por vírgula (ex.: P,T).
+                            <span className="form-error" id={errorId} role="alert">
+                              {legacyIssue}
                             </span>
                           ) : null}
                         </td>

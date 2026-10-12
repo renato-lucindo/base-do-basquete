@@ -534,6 +534,62 @@ test("blocks OT points after early GD and requires completion for every OT up to
   await expect(period.locator("option")).toHaveCount(12);
 });
 
+test("rejects legacy GD conflicting with later points and restores all accepted data", async ({
+  page,
+}) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  const period = page.getByRole("combobox", { name: "Período para lançamento rápido" });
+  await period.selectOption("3");
+  await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("1");
+  await period.selectOption("2");
+  const legacy = page.getByRole("textbox", { name: "Faltas legadas de Davi Atleta em Q2" });
+  await legacy.fill("D");
+  await expect(legacy).toHaveValue("");
+  await expect(legacy).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("alert")).toContainText("pontos registrados em período posterior");
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"home-3-3-two":"1"');
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click();
+  await period.selectOption("3");
+  await expect(page.getByRole("textbox", { name: "2P de Davi Atleta" })).toHaveValue("1");
+  await page.getByRole("textbox", { name: "2P de Davi Atleta" }).fill("0");
+  await period.selectOption("2");
+  await legacy.fill("D");
+  await expect(legacy).toHaveValue("D");
+  await expect(legacy).not.toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByRole("cell", { name: "GD D" })).toBeVisible();
+  expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+});
+
+test("preserves an incompatible historical draft until explicit discard", async ({ page }) => {
+  await page.goto(fixtureUrl);
+  await enterScoring(page);
+  await expect
+    .poll(() => page.evaluate((key) => localStorage.getItem(key), draftKey))
+    .toContain('"step":3');
+  const incompatible = await page.evaluate((key) => {
+    const draft = JSON.parse(localStorage.getItem(key)!);
+    draft.data.stats = { "home-3-2-fouls": "D", "home-3-3-two": "1" };
+    const raw = JSON.stringify(draft);
+    localStorage.setItem(key, raw);
+    return raw;
+  }, draftKey);
+  await page.reload();
+  await page.getByRole("button", { name: "Restaurar", exact: true }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "O rascunho foi preservado" }),
+  ).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Rascunho recuperável" })).toBeVisible();
+  await expect(page.locator(".scoresheet-form")).toHaveAttribute("inert", "");
+  await page.waitForTimeout(650);
+  expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toBe(incompatible);
+  await page.getByRole("button", { name: "Descartar", exact: true }).click();
+  expect(await page.evaluate((key) => localStorage.getItem(key), draftKey)).toBeNull();
+});
+
 test("switches visitor and period with keyboard and keeps the scoring view within 320px", async ({
   page,
 }) => {

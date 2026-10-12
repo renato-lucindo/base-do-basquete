@@ -1,4 +1,13 @@
-import { periodLabel, type TeamSide } from "./domain";
+import {
+  evaluateDisqualification,
+  hasFoulAfterDisqualification,
+  hasRecordedPointsAfterPeriod,
+  playerFoulsForDisqualification,
+  periodLabel,
+  type TeamSide,
+  type EditorSlot,
+  type SemanticFoulPayload,
+} from "./domain";
 
 export const MAX_SCORESHEET_PERIODS = 12;
 
@@ -12,6 +21,24 @@ export function quickFoulPeriodLabel(periodNumber: number): string {
 
 export function quickScoreBlockedByGd(periodNumber: number, gdPeriod: number): boolean {
   return quickFoulPeriod(periodNumber) > gdPeriod;
+}
+
+export function quickPlayerGdIssue(
+  stats: Record<string, string>,
+  semanticFouls: SemanticFoulPayload[],
+  side: TeamSide,
+  slot: EditorSlot,
+  registrationId: number,
+): string | null {
+  const fouls = playerFoulsForDisqualification(stats, semanticFouls, side, slot, registrationId);
+  // Partial legacy input stays editable/restorable; validate again when complete.
+  if (fouls === null) return null;
+  if (hasFoulAfterDisqualification(fouls))
+    return "Alteração rejeitada: criaria faltas posteriores à desqualificação (GD). Corrija as faltas antes de aplicar essa alteração.";
+  const gd = evaluateDisqualification(fouls);
+  if (gd && hasRecordedPointsAfterPeriod(stats, side, slot.slotNumber, gd.periodNumber))
+    return "Alteração rejeitada: criaria GD com pontos registrados em período posterior. Confira os pontos e faltas antes de aplicar essa alteração.";
+  return null;
 }
 
 // Empty conversion counters mean zero in the editor. An unfinished non-empty

@@ -109,8 +109,10 @@ function ScoresheetSetupWizardSession({
     if (!availableDraft) return;
     const restored = restoreScoresheetSetup(availableDraft.data, registrations);
     if (!restored) {
-      setFeedback("Rascunho incompatível com os elencos atuais. Revise a configuração novamente.");
-      removeAdminDraft(draftIdentity);
+      setFeedback(
+        "Rascunho incompatível com os elencos ou lançamentos atuais. O rascunho foi preservado; nenhuma informação foi descartada.",
+      );
+      return;
     } else {
       setSetup(restored);
       setSavedAt(availableDraft.savedAt);
