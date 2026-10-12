@@ -4,9 +4,9 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: Etapa 8 em correção de revisão; correções implementadas e gate local aprovado. pgTAP e pareceres renovados aguardam o novo SHA publicado. Etapa 7 concluída. PR #72 OPEN/DRAFT; sem migrations no Supabase compartilhado, merge ou produção. Estado operacional vigente na seção 31.**
+**Checkpoint atual: Etapa 8 concluída no código eddc2cb, com quatro domínios revisados sem bloqueios e CI/Stage4/Preview/CodeQL SUCCESS. Etapa 9 autorizada, ainda não iniciada. PR #72 OPEN/DRAFT; sem migrations no Supabase compartilhado, merge ou produção. Estado operacional vigente na seção 32.**
 
-A unidade ativa é `MANUAL-SCORESHEET-V2-FIBA2024`, na branch `codex/manual-scoresheet-v2` e PR draft #72. O objetivo é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
+A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. A unidade `MANUAL-SCORESHEET-V2-STAGE8-CONFIRM` foi concluída. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
 A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` e foi reconciliada com `origin/main@8ac62209a636be757d96270eef9dc6b27c8735c0` pelo merge `6beb49c`, que integrou a governança documental da PR #71. O conflito ficou restrito a este arquivo; a resolução adotou o novo formato compacto do handoff.
 
@@ -15,18 +15,18 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MANUAL-SCORESHEET-V2-FIBA2024
+WORK_UNIT: MANUAL-SCORESHEET-V2-STAGE8-CONFIRM
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: 27d917a1ce4a404ced091fd3ca660113c215ca92
-HEAD_COMMIT: 86934cc16d8c4662f2a07e30868b6e10eea47c0a (artefato revisado; o commit desta seção 22 é exclusivamente documental, consultar Git)
-HEAD_FUNCIONAL: 86934cc16d8c4662f2a07e30868b6e10eea47c0a (gates verdes e pareceres renovados; Etapa 4 concluída tecnicamente)
+BASE_COMMIT: cbd50d4f98ce18b3860679a155d22e8f264f3152
+HEAD_COMMIT: eddc2cb17bbd6c8912b05370e0d01221bce332e2 (artefato revisado; consultar Git para commit documental deste fechamento)
+HEAD_FUNCIONAL: eddc2cb17bbd6c8912b05370e0d01221bce332e2 (gates verdes e pareceres válidos; Etapa 8 concluída)
 SCOPE: súmula manual v2, domínio FIBA 2024, persistência aditiva, criação/revisão transacional, wizard e lançamento rápido, testes e documentação da mesma PR
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer
-STATUS: RELEASED (checkpoint da Etapa 4 entregue; retomar explicitamente antes de nova escrita)
+STATUS: RELEASED (Etapa 8 entregue; abrir unidade própria para a Etapa 9 já autorizada)
 ```
 
-`statistics-domain-reviewer` está previsto por envolver projeções e isolamento estatístico. Os bloqueios estatístico e de QA da Etapa 4 foram expressamente revogados no artefato 86934cc; veja seção 22. PR permanece draft, com Etapas 5–10 fora deste checkpoint.
+As quatro especialidades aprovaram a Etapa 8; bloqueios estatísticos, QA e acessibilidade expressamente revogados (seção 32). O parecer de acessibilidade em 61f3536 continua válido para UI inalterada em eddc2cb. Os registros de etapas anteriores abaixo são históricos. PR permanece draft; Etapas 9 e 10 pendentes.
 
 ## 3. Checkpoints concluídos
 
@@ -687,3 +687,23 @@ PROXIMO_PASSO_EXATO: integrar `app/modules/scoresheet/setup-wizard.tsx` com `app
 - O writer privado da migration `20261012113000` (ainda não aplicada no compartilhado) agora aceita períodos de falta somente1–4; pontos continuam Q1–Q4/OT1–OT8. Nova assertiva pgTAP exige BD219 para falta no período5 mesmo com OT1 válido. Suíte passa de40 para41 assertivas. Nenhuma alteração em schema/assinatura/importadores/UI.
 - `npm run check` novamente PASS após delta SQL (547 Vitest e demais gates; scan751). `git diff --check` PASS. Browser não repetido por ausência de delta UI; evidências22/22+2/2 locais e31/31 Actions61f3536 preservadas. pgTAP41 ainda pendente no novo SHA a publicar; nenhuma alegação antecipada.
 - REVIEW_DECISIONS: banco/estatística/QA REQUIRED renovação no novo SHA; acessibilidade APPROVE_WITH_NON_BLOCKING_NOTES61f3536 continua aplicável ao artefato UI inalterado, sem reabrir o domínio (contrato de validade). WRITE_LOCK ACTIVE; PR DRAFT e sem shared migrations/merge/produção.
+
+## 32. Encerramento técnico — Etapa 8 / confirmação inicial (12/10/2026)
+
+- BASE_COMMIT `cbd50d4f98ce18b3860679a155d22e8f264f3152`; HEAD_FUNCIONAL `eddc2cb17bbd6c8912b05370e0d01221bce332e2`. Commits corretivos publicados: `61f3536` (GD Q4/OT e feedback/erro acessível) e `eddc2cb` (períodos de faltas SQL1–4). PR #72 verificada OPEN/DRAFT nesse HEAD. Este fechamento altera somente HANDOFF, sem mudança do artefato revisado.
+- Fluxo inicial completo: revisão final, confirmação action AAL2/origem/CSRF, reconstrução autoritativa do payload, RPC transacional e retry com mesma chave. Falhas preservam o draft; sucesso limpa draft/erros e restaura foco. OT requer confirmação explícita de conclusão do período anterior e empate calculado na action; banco recalcula empates acumulados e placar final. Pontos Q1–Q4/OT1–OT8, faltas1–4 com grupo Q4/OT, GD nesse grupo permite pontos OT; GD Q1–Q3 bloqueia pontos posteriores.
+- Gate local final PASS: 64 arquivos/547 Vitest, formatação, lint sem erros bloqueantes (avisos preexistentes), typecheck, runbooks/agentes, build client/SSR e secrets751. Playwright wizard22/22+2/2 focais após ajuste final UI; action/conversão10/10. Browser não repetido localmente após delta exclusivamente SQL; Actions final cobre suite31/31. `git diff --check` PASS. Revisão de banco executou adicionalmente12 testes focais PASS.
+- Actions finais em eddc2cb, todos COMPLETED/SUCCESS: CI https://github.com/renato-lucindo/base-do-basquete/actions/runs/38269440011 (gate, database, accessibility, remote_history_upgrade); Stage4 https://github.com/renato-lucindo/base-do-basquete/actions/runs/38269432057 (49 arquivos/1.412 pgTAP, histórico9 arquivos/349 pgTAP, QA31E2E, Integration sem conflito); Preview https://github.com/renato-lucindo/base-do-basquete/actions/runs/38269440036; CodeQL https://github.com/renato-lucindo/base-do-basquete/actions/runs/38269440017. Supabase Preview SKIPPED esperado. Contagens confirmadas nos resumos filtrados de logs finais. A reconstrução é schema-only e não cópia integral do compartilhado.
+- Banco/segurança Dewey `01a13077-e53c-76c1-bec6-85f92ca851ae`: APPROVE_WITH_NON_BLOCKING_NOTES, COMMIT_REVISADO=eddc2cb, REVIEWED_AT=2026-10-12T12:22:05-03:00. AAL2/CSRF, grants/RLS, writer privado/search_path, atomicidade, rollback e idempotência inspecionados; nenhum bloqueante. Nota: não houve corrida simultânea focal da RPCv2 completa (retry sequencial e lock verificados).
+- Estatística Sartre `01a13077-fcfb-7fa3-a14d-61b2e1c4aa8f`: APPROVE_WITH_NON_BLOCKING_NOTES, COMMIT_REVISADO=eddc2cb, REVIEWED_AT=2026-10-12T12:24:00-03:00. REQUEST_CHANGES expressamente revogado: P1GD Q4/OT e P2falta5 corrigidos; pgTAP1.412 e upgrade verificados. Nenhum bloqueio estatístico aberto.
+- QA Aquinas `01a13078-2ba9-7450-bfbc-3c617d508a50`: APPROVE_WITH_NON_BLOCKING_NOTES, COMMIT_REVISADO=eddc2cb, REVIEWED_AT=2026-10-12T12:21:46-03:00. P1GD revogado, P2 inspecionado corrigido; composição E2E simulado+action tests+pgTAP real aceita como evidência. Gates/especialistas que estavam pendentes na emissão agora concluídos favoravelmente; sem atribuir ao revisor verificação posterior que coube ao mantenedor.
+- Acessibilidade Chandrasekhar `01a13078-13a8-7c22-b9b4-567edcd0fe85`: APPROVE_WITH_NON_BLOCKING_NOTES, COMMIT_REVISADO=61f3536, REVIEWED_AT=2026-10-12 America/Sao_Paulo; P1erro residual/P2associação do motivo formalmente revogados. Parecer válido por domínio em eddc2cb, cujo delta é somente SQL/teste/HANDOFF. Ressalvas: zoomCSS, sem asserção focal de scroll por teclado e resultados locais conferidos documentalmente, sem alegar conformidade WCAG integral.
+- REVIEW_PACKET inicial https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6126961013; incremental final https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6127217431. RISK_LEVEL=CRITICO; quatro revisores obrigatórios atendidos. Boxscore/performance WAIVED somente por ausência de alteração em importação/contratos/cache/consultas públicas. REVIEW_APPROVER=project-maintainer. Nenhuma dispensa de bloqueio anterior.
+- SKILL_RESULT: managing-base-work-unit=PASS; reviewing-supabase-changes=PASS; validating-basketball-statistics=PASS; validating-accessibility-ui=PASS no domínio focal; running-release-gate=READY para concluir Etapa8, não para merge/release da PR inteira. Banco descartável somente; nenhuma migration aplicada no Supabase compartilhado, merge main ou produção.
+- WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-V2-STAGE8-CONFIRM; HEAD_FUNCIONAL=eddc2cb; STATUS=RELEASED. Worktree limpo antes deste delta documental, que será commitado e enviado à mesma branch. Não repetir build/suite/scan após registrar estas evidências, pois o artefato não mudou.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer.
+ARQUIVO_OU_SERVICO: docs/plan/sumula-manual-v2/09-edicao-sumula-existente.md, app/modules/scoresheet/setup-wizard.tsx, app/routes.ts, nova rota administrativa de súmula salva, public.admin_revise_manual_scoresheet_v2 e PR #72.
+ACAO: abrir unidade própria Etapa9 já autorizada, com WRITE_LOCK ativo; carregar snapshot/submissão ativa, disponibilizar edição com equipes imutáveis, diff legível/impacto no placar, motivo e confirmação; enviar baseSubmissionId/hash e revisionKey para conflito otimista/idempotência; preservar draft por jogo/base e consultar histórico imutável. Implementar interface/servidor/testes e renovar os pareceres dos domínios afetados antes da Etapa10. Não aplicar migrations compartilhadas nem fazer merge/produção.
+CRITERIO_DE_CONCLUSAO: criar e revisar como fluxos completos, conflito não sobrescreve dados, motivo obrigatório, histórico consultável, gate/tests/Actions verdes no novo artefato e pareceres válidos; Etapas9 e10 ainda não iniciadas neste fechamento.
