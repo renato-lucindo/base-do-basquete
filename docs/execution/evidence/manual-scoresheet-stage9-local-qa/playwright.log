@@ -1,0 +1,64 @@
+
+> base-do-basquete@0.0.0 test:e2e
+> playwright test
+
+[WebServer] (node:148824) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:158688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 36 tests using 5 workers
+
+(node:158844) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:160520) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:160576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:158240) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:155988) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+16:18:46 [vite] (client) Re-optimizing dependencies because vite config has changed
+16:18:46 [vite] (client) Re-optimizing dependencies because vite config has changed
+  -   1 [chromium] › e2e\accessibility.spec.ts:21:1 › public statistics have no serious axe violations and reflow at 200 percent
+[WebServer] 16:18:49 [vite] (client) [Unhandled rejection] TypeError: Failed to fetch dynamically imported module: http://127.0.0.1:5173/node_modules/@react-router/dev/dist/config/defaults/entry.client.tsx
+[WebServer]
+  ok  2 [chromium] › e2e\accessibility.spec.ts:7:1 › administrative login has no automatically detectable accessibility violations (4.3s)
+  ok  3 [chromium] › e2e\edition-wizard.spec.ts:22:1 › Adulto, Base and Master use native accessible controls (3.4s)
+  ok  6 [chromium] › e2e\edition-wizard.spec.ts:37:1 › keyboard review, preserved values and programmatic validation (1.1s)
+  ok  5 [chromium] › e2e\manual-scoresheet-setup.spec.ts:37:1 › protects a stored draft until explicit restore or discard (4.9s)
+  ok  4 [chromium] › e2e\manual-scoresheet-revision.spec.ts:31:1 › requires reason and confirmation, exposes diff and supports keyboard retry (7.1s)
+  ok  7 [chromium] › e2e\edition-wizard.spec.ts:65:3 › identification reflows at 390px (2.6s)
+  ok 10 [chromium] › e2e\edition-wizard.spec.ts:65:3 › identification reflows at 720px (2.2s)
+  ok  8 [chromium] › e2e\manual-scoresheet-setup.spec.ts:62:1 › focuses validation errors and identifies every starter and captain control (6.2s)
+  ok 11 [chromium] › e2e\edition-wizard.spec.ts:65:3 › identification reflows at 1440px (1.7s)
+  ok 13 [chromium] › e2e\edition-wizard.spec.ts:85:1 › addition inherits context and allows independent dates and divisions (696ms)
+  ok 12 [chromium] › e2e\manual-scoresheet-setup.spec.ts:137:1 › isolates competition state and flushes edits during internal navigation (1.7s)
+  ok 14 [chromium] › e2e\edition-wizard.spec.ts:97:1 › format errors identify the format and navigation does not refocus old errors (1.1s)
+  ok  9 [chromium] › e2e\manual-scoresheet-revision.spec.ts:80:1 › restores the reason and draft, requires new confirmation after editing, isolates bases (6.4s)
+  ok 15 [chromium] › e2e\manual-scoresheet-setup.spec.ts:164:3 › wizard reflows at 320px (982ms)
+  ok 18 [chromium] › e2e\manual-scoresheet-setup.spec.ts:164:3 › wizard reflows at 390px (924ms)
+  ok 17 [chromium] › e2e\manual-scoresheet-revision.spec.ts:107:1 › renders an older immutable snapshot with names, scoring and no save controls (1.8s)
+  ok 16 [chromium] › e2e\edition-wizard.spec.ts:120:1 › invalid division fields are revealed and associated with their errors (2.4s)
+  ok 19 [chromium] › e2e\manual-scoresheet-setup.spec.ts:164:3 › wizard reflows at 720px (1.2s)
+  ok 21 [chromium] › e2e\manual-scoresheet-setup.spec.ts:164:3 › wizard reflows at 1280px (770ms)
+  ok 20 [chromium] › e2e\manual-scoresheet-revision.spec.ts:125:1 › keeps the revision readable at narrow width and 200% text zoom (5.6s)
+  ok 22 [chromium] › e2e\manual-scoresheet-setup.spec.ts:204:1 › review confirmation preserves the draft on failure and clears it only after successful retry (9.9s)
+  ok 23 [chromium] › e2e\manual-scoresheet-setup.spec.ts:243:1 › associates fallback reason errors and reflows the confirmation at 320px and 200% zoom (12.2s)
+  ok 24 [chromium] › e2e\manual-scoresheet-setup.spec.ts:288:1 › keyboard scoring supports 12 Enter 2 Enter, literal 00, errors, Escape, undo and grid correction (2.9s)
+  ok 25 [chromium] › e2e\manual-scoresheet-setup.spec.ts:331:1 › saves scoring stats in a local draft and restores them on reload (2.3s)
+  ok 26 [chromium] › e2e\manual-scoresheet-setup.spec.ts:351:1 › records FIBA 2024 fouls, announces GD, blocks later fouls and keeps same-period scoring (2.6s)
+  ok 27 [chromium] › e2e\manual-scoresheet-setup.spec.ts:388:1 › rejects retroactive GD when a later quarter already contains points (1.2s)
+  ok 28 [chromium] › e2e\manual-scoresheet-setup.spec.ts:409:1 › repairs invalid legacy foul cells in the grid and resumes FIBA entry (2.2s)
+  ok 29 [chromium] › e2e\manual-scoresheet-setup.spec.ts:431:1 › accepts a backdated foul before GD and blocks a same-period foul after GD (1.3s)
+  ok 30 [chromium] › e2e\manual-scoresheet-setup.spec.ts:454:1 › persists bench and coach fouls without a player and restores semantic draft (3.8s)
+  ok 31 [chromium] › e2e\manual-scoresheet-setup.spec.ts:483:1 › unlocks OT only on cumulative ties and preserves OT drafts after corrections (7.5s)
+  ok 32 [chromium] › e2e\manual-scoresheet-setup.spec.ts:554:1 › shares Q4/OT fouls and permits grouped GD scoring while blocking later fouls (9.3s)
+  ok 33 [chromium] › e2e\manual-scoresheet-setup.spec.ts:613:1 › blocks OT points after early GD and requires completion for every OT up to OT8 (3.4s)
+  ok 34 [chromium] › e2e\manual-scoresheet-setup.spec.ts:652:1 › rejects legacy GD conflicting with later points and restores all accepted data (3.3s)
+  ok 35 [chromium] › e2e\manual-scoresheet-setup.spec.ts:686:1 › preserves an incompatible historical draft until explicit discard (2.5s)
+  ok 36 [chromium] › e2e\manual-scoresheet-setup.spec.ts:712:1 › switches visitor and period with keyboard and keeps the scoring view within 320px (5.9s)
+
+  1 skipped
+  35 passed (1.7m)
