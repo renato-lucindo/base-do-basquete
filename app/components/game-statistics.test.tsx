@@ -134,6 +134,7 @@ describe("GameStatistics", () => {
           playerId: 2,
           playerName: "Atleta Dois",
           playerSlug: "atleta-dois",
+          registrationId: 1,
           teamId: 1,
           side: "home",
           jerseyNumber: "8",
