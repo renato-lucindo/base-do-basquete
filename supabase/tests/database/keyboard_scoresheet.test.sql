@@ -6,6 +6,7 @@ select no_plan();
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
+insert into auth.users(id) values ('11111111-1111-4111-8111-111111111111') on conflict do nothing;
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
 where not exists (select 1 from private.admin_accounts);
@@ -97,9 +98,9 @@ from (values
 
 create temp table keyboard_docs(name text primary key,doc jsonb);
 grant select on keyboard_docs to authenticated;
-insert into keyboard_docs values('base','{"rulesVersion":"FIBA_2024","periods":4,"coachPlayer":{"home":null,"away":null},"roster":[{"rosterEntryId":9301,"registrationId":9301,"side":"home","jersey":"00"},{"rosterEntryId":9302,"registrationId":9301,"side":"home","jersey":"0"},{"rosterEntryId":9303,"registrationId":9302,"side":"away","jersey":"00"}],"events":[{"id":"10000000-0000-4000-8000-000000000001","side":"home","period":1,"target":"00","code":"2"},{"id":"10000000-0000-4000-8000-000000000002","side":"home","period":1,"target":"0","code":"1"},{"id":"10000000-0000-4000-8000-000000000003","side":"away","period":1,"target":"00","code":"P2"},{"id":"10000000-0000-4000-8000-000000000004","side":"home","period":1,"target":"00","code":"TC"}]}'::jsonb);
-select has_table('public','keyboard_scoresheets');
-select has_table('public','keyboard_scoresheet_revisions');
+insert into keyboard_docs values('base','{"rulesVersion":"FIBA_2024","periods":4,"coachPlayer":{"home":null,"away":null},"roster":[{"rosterEntryId":9301,"registrationId":9301,"side":"home","jersey":"00","played":true},{"rosterEntryId":9302,"registrationId":9301,"side":"home","jersey":"0","played":true},{"rosterEntryId":9303,"registrationId":9302,"side":"away","jersey":"00","played":true}],"events":[{"id":"10000000-0000-4000-8000-000000000001","side":"home","period":1,"target":"00","code":"2"},{"id":"10000000-0000-4000-8000-000000000002","side":"home","period":1,"target":"0","code":"1"},{"id":"10000000-0000-4000-8000-000000000003","side":"away","period":1,"target":"00","code":"P2"},{"id":"10000000-0000-4000-8000-000000000004","side":"home","period":1,"target":"00","code":"TC"}]}'::jsonb);
+select has_table('public','keyboard_scoresheets','keyboard draft table exists');
+select has_table('public','keyboard_scoresheet_revisions','immutable keyboard revisions exist');
 select ok(not has_function_privilege('anon','public.admin_save_keyboard_scoresheet(bigint,uuid,bigint,jsonb,boolean,text)','execute'),'anonymous cannot invoke writer');
 select ok(not has_table_privilege('authenticated','public.keyboard_scoresheets','update'),'no direct draft writes');
 select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-222222222222","role":"authenticated","aal":"aal2"}',true);
@@ -144,5 +145,26 @@ select set_config('request.jwt.claims','{"sub":"22222222-2222-4222-8222-22222222
 set local role authenticated;
 select is((select count(*) from public.keyboard_scoresheets),0::bigint,'unauthorized identity cannot read drafts');
 reset role;
+
+-- DNP must not inflate the public manual-statistics appearance denominator.
+select set_config('request.jwt.claims',json_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
+insert into keyboard_docs values('participation',jsonb_set((select doc from keyboard_docs where name='base'),'{roster,2,played}','false'));
+-- Keep the away roster entry DNP by removing its foul; also remove the made LL requiring that penalty.
+update keyboard_docs set doc=jsonb_set(doc,'{events}',jsonb_build_array(doc->'events'->0,doc->'events'->3)) where name='participation';
+set local role authenticated;
+select is(public.admin_save_keyboard_scoresheet(93002,'20000000-0000-4000-8000-000000000007',0,(select doc from keyboard_docs where name='participation'),true)->>'version','1','DNP game confirmed');
+select is((select did_not_play from public.game_roster_slots where game_id=93002 and roster_entry_id=9303),true,'DNP survives canonical projection');
+select is((select did_not_play from public.game_roster_slots where game_id=93002 and roster_entry_id=9302),false,'zero-point participant stays eligible for denominator');
+select throws_ok($$update public.game_period_scores set game_id=93003 where game_id=93001$$,'BD910','KEYBOARD_USE_EVENT_WRITER','moving projection out of reserved game blocked');
+reset role;
+select is((select games_played from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9302),2::bigint,'zero-point participant counts in public aggregate');
+select is((select games_played from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9303),1::bigint,'DNP does not inflate public aggregate');
+select ok((select bool_and(revision=2) from public.game_data_domain_authority where game_id=93001),'revision increments all six authorities');
+select throws_ok($$update public.game_data_submissions set status='superseded' where game_id=93001 and status='active'$$,'BD707','BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY','unscoped privileged supersession remains blocked');
+select throws_ok($$delete from public.game_data_submissions where game_id=93001 and status='active'$$,'BD707','BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY','DELETE remains blocked');
+select is(coalesce(current_setting('bdb.keyboard_replacing_submission',true),''),'','scoped replacement flag restored');
+set constraints keyboard_authority_swap_complete immediate;
+set constraints keyboard_authority_swap_complete deferred;
+
 select * from finish();
 rollback;

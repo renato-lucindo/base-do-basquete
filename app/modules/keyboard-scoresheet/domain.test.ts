@@ -15,9 +15,9 @@ const base: Sheet = {
   periods: 4,
   coachPlayer: { home: null, away: null },
   roster: [
-    { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12" },
-    { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12" },
-    { rosterEntryId: 3, registrationId: 10, side: "home", jersey: "00" },
+    { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12", played: true },
+    { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12", played: true },
+    { rosterEntryId: 3, registrationId: 10, side: "home", jersey: "00", played: true },
   ],
   events: [],
 };
@@ -32,6 +32,27 @@ function entry(side: "home" | "away", code: string, period = 1, target = "12") {
   };
 }
 describe("keyboard transcription", () => {
+  it("preserves direct D in both player-coach roles", () => {
+    for (const target of ["12", "C"]) {
+      const result = aggregate({
+        ...base,
+        coachPlayer: { home: 1, away: null },
+        events: [entry("home", "D2", 1, target)],
+      });
+      expect(result.players[0]?.status).toBe("D");
+      expect(result.teams.home.coachStatus).toBe("D");
+    }
+  });
+  it("distinguishes a related DNP from a participant with zero points", () => {
+    const sheet = {
+      ...base,
+      roster: base.roster.map((s) => ({ ...s, played: s.rosterEntryId !== 3 })),
+    };
+    expect(validateSheet(sheet).roster.find((s) => s.rosterEntryId === 3)?.played).toBe(false);
+    expect(() => validateSheet({ ...sheet, events: [entry("home", "2", 1, "00")] })).toThrow(
+      "participação",
+    );
+  });
   it("keeps same jerseys separated by team and 00 distinct", () => {
     const result = aggregate({
       ...base,

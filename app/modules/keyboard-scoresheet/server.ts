@@ -14,3 +14,11 @@ export interface SaveResult {
   confirmed: boolean;
   requestId: string;
 }
+export class SaveFailure extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+  }
+}

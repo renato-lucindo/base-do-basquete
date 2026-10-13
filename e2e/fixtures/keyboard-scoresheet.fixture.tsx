@@ -21,8 +21,8 @@ const initial: KeyboardContext = {
     periods: 4,
     coachPlayer: { home: null, away: null },
     roster: [
-      { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12" },
-      { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12" },
+      { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12", played: true },
+      { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12", played: true },
     ],
     events: [],
   },
@@ -32,15 +32,16 @@ if (params.has("setup")) initial.version = 0;
 const saved = sessionStorage.getItem("keyboard-server");
 if (saved) Object.assign(initial, JSON.parse(saved));
 const receipts = new Map<string, { version: number; confirmed: boolean; requestId: string }>();
+let serverVersion = initial.version;
 async function save(request: SaveRequest) {
   await new Promise((resolve) => setTimeout(resolve, 40));
   if (params.has("fail")) throw new Error("Falha de rede simulada. Tente novamente.");
   const receipt = receipts.get(request.requestId);
   if (receipt) return receipt;
-  if (request.baseVersion !== initial.version) throw new Error("Conflito de versão");
-  initial.version++;
+  if (request.baseVersion !== serverVersion) throw new Error("Conflito de versão");
+  serverVersion++;
   const result = {
-    version: initial.version,
+    version: serverVersion,
     confirmed: request.confirm,
     requestId: request.requestId,
   };
@@ -48,7 +49,7 @@ async function save(request: SaveRequest) {
   sessionStorage.setItem(
     "keyboard-server",
     JSON.stringify({
-      version: initial.version,
+      version: serverVersion,
       initial: request.document,
       confirmed: request.confirm || initial.confirmed,
     }),

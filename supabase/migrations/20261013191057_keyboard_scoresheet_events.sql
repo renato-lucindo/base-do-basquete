@@ -47,6 +47,7 @@ create function public.admin_save_keyboard_scoresheet(
   p_game_id bigint,p_request_id uuid,p_base_version bigint,p_document jsonb,
   p_confirm boolean default false,p_reason text default ''
 ) returns jsonb language plpgsql security definer set search_path='' as $$
+#variable_conflict use_column
 declare
   g public.games; current_sheet public.keyboard_scoresheets;
   receipt public.keyboard_scoresheet_revisions;
@@ -55,6 +56,7 @@ declare
   c integer; t integer; u integer; f integer; b integer; dq text;
   new_submission bigint; old_submission bigint; domain_name text;
   home_score integer; away_score integer; made integer; conceded integer;
+  previous_swap_setting text:=coalesce(current_setting('bdb.keyboard_replacing_submission',true),'');
 begin
   if not private.is_admin_aal2() then raise exception 'BDB_ADMIN_AAL2_REQUIRED' using errcode='BD401'; end if;
   if p_request_id is null or p_base_version is null or p_base_version<0 or p_confirm is null or p_document is null
@@ -83,7 +85,7 @@ begin
   if exists(select 1 from public.competitions competition join public.series_category_data_profiles profile on profile.id=competition.data_profile_id where competition.id=g.competition_id and profile.primary_source<>'manual_scoresheet')
     or exists(select 1 from public.competitions where id=g.competition_id and status='archived')
   then raise exception 'KEYBOARD_MANUAL_PROFILE_REQUIRED' using errcode='BD903'; end if;
-  if old_submission is not null and current_sheet.document->'roster'<>p_document->'roster' then raise exception 'KEYBOARD_CONFIRMED_ROSTER_IMMUTABLE' using errcode='BD907'; end if;
+  if old_submission is not null and (select jsonb_agg(value-'played' order by value->>'rosterEntryId') from jsonb_array_elements(current_sheet.document->'roster')) is distinct from (select jsonb_agg(value-'played' order by value->>'rosterEntryId') from jsonb_array_elements(p_document->'roster')) then raise exception 'KEYBOARD_CONFIRMED_ROSTER_IMMUTABLE' using errcode='BD907'; end if;
   if p_confirm and old_submission is not null and char_length(btrim(coalesce(p_reason,''))) not between 10 and 500 then raise exception 'KEYBOARD_REVISION_REASON_REQUIRED' using errcode='BD908'; end if;
   if p_confirm and exists(select 1 from public.matchup_resolutions where matchup_id=g.matchup_id) then raise exception 'KEYBOARD_RESOLVED_MATCHUP' using errcode='BD909'; end if;
 
@@ -95,7 +97,7 @@ begin
     if p_document->'coachPlayer'->>s is not null and not exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'rosterEntryId'=p_document->'coachPlayer'->>s) then raise exception 'KEYBOARD_INVALID_COACH' using errcode='BD902'; end if;
   end loop;
   for r in select value from jsonb_array_elements(p_document->'roster') loop
-    if r->>'side' is null or r->>'side' not in ('home','away') or r->>'jersey' is null or r->>'jersey' !~ '^(00|0|[1-9][0-9]?)$'
+    if jsonb_typeof(r->'played') is distinct from 'boolean' or r->>'side' is null or r->>'side' not in ('home','away') or r->>'jersey' is null or r->>'jersey' !~ '^(00|0|[1-9][0-9]?)$'
       or not exists(select 1 from public.roster_entries roster join public.game_participants participant on participant.registration_id=roster.registration_id and participant.game_id=p_game_id where roster.id=(r->>'rosterEntryId')::bigint and roster.registration_id=(r->>'registrationId')::bigint and participant.side=r->>'side' and roster.competition_id=g.competition_id and roster.status='active')
     then raise exception 'KEYBOARD_INVALID_ROSTER' using errcode='BD902'; end if;
   end loop;
@@ -105,6 +107,7 @@ begin
     if s is null or s not in ('home','away') or e->>'id' is null or target is null or e->>'code' is null
       or (e->>'period') is null or (e->>'period') !~ '^[0-9]+$' or (e->>'period')::integer not between 1 and n
       or (target not in ('B','C') and not exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target))
+      or exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target and not (r->>'played')::boolean)
       or not (case when target='B' then e->>'code' ~ '^B[12C]$' when target='C' then e->>'code' ~ '^(C[1C]|D[123C]?)$' else e->>'code' ~ '^([123]|P[123C]?|T[1C]|[UD][123C]?)$' end)
     then raise exception 'KEYBOARD_INVALID_EVENT' using errcode='BD902'; end if;
   end loop;
@@ -142,7 +145,7 @@ begin
         i:=0;
         for r in select value from jsonb_array_elements(p_document->'roster') r where r->>'side'=s loop
           i:=i+1;
-          insert into public.game_roster_slots(game_id,registration_id,slot_number,roster_entry_id,jersey_number) values(p_game_id,(r->>'registrationId')::bigint,i,(r->>'rosterEntryId')::bigint,r->>'jersey');
+          insert into public.game_roster_slots(game_id,registration_id,slot_number,roster_entry_id,jersey_number,did_not_play) values(p_game_id,(r->>'registrationId')::bigint,i,(r->>'rosterEntryId')::bigint,r->>'jersey',not(r->>'played')::boolean);
         end loop;
       end loop;
     else
@@ -151,9 +154,14 @@ begin
       delete from public.game_period_scores where game_id=p_game_id;
       delete from public.game_periods where game_id=p_game_id;
       update public.game_roster_slots set disqualified_at_period=null,disqualification_reason=null where game_id=p_game_id;
+      perform set_config('bdb.keyboard_replacing_submission',old_submission::text,true);
       update public.game_data_submissions set status='superseded' where id=old_submission;
+      perform set_config('bdb.keyboard_replacing_submission',previous_swap_setting,true);
     end if;
     insert into public.game_periods(game_id,period_number) select p_game_id,generate_series(1,n);
+    for r in select value from jsonb_array_elements(p_document->'roster') loop
+      update public.game_roster_slots set did_not_play=not(r->>'played')::boolean where game_id=p_game_id and roster_entry_id=(r->>'rosterEntryId')::bigint;
+    end loop;
     insert into public.player_period_stats(game_roster_slot_id,game_id,period_number,two_point_made,three_point_made,free_throw_made,two_point_attempted,three_point_attempted,free_throw_attempted)
     select slot.id,p_game_id,period,
       count(*) filter(where e->>'code'='2'),count(*) filter(where e->>'code'='3'),count(*) filter(where e->>'code'='1'),null,null,null
@@ -194,6 +202,10 @@ begin
       perform private.activate_game_data_domain_authority(p_game_id,domain_name,new_submission,old_submission,case when old_submission is not null then p_reason else null end);
     end loop;
     update public.keyboard_scoresheets set submission_id=new_submission where game_id=p_game_id;
+    if (old_submission is not null and exists(select 1 from public.game_data_domain_authority where submission_id=old_submission))
+      or (select count(*) from public.game_data_domain_authority where game_id=p_game_id and submission_id=new_submission and domain in ('official_result','period_scores','participation','player_scoring','player_foul_total','player_foul_timeline'))<>6 then
+      raise exception 'KEYBOARD_AUTHORITY_SWAP_INCOMPLETE' using errcode='BD911';
+    end if;
     insert into public.admin_mutation_audit(action,entity_type,entity_id,metadata) values('manual_scoresheet_saved','game',p_game_id,jsonb_build_object('editor','keyboard-v1','submissionId',new_submission,'version',p_base_version+1));
   end if;
   update public.keyboard_scoresheets set document=p_document,version=p_base_version+1,updated_at=now() where game_id=p_game_id;
@@ -231,7 +243,7 @@ revoke all on function private.competition_publication_snapshot_before_keyboard(
 
 create function private.guard_keyboard_projection() returns trigger language plpgsql set search_path='' as $$
 begin
-  if current_user in ('authenticated','anon') and exists(select 1 from public.keyboard_scoresheets where game_id=coalesce(new.game_id,old.game_id)) then raise exception 'KEYBOARD_USE_EVENT_WRITER' using errcode='BD910'; end if;
+  if current_user in ('authenticated','anon') and exists(select 1 from public.keyboard_scoresheets where (tg_op<>'DELETE' and game_id=new.game_id) or (tg_op<>'INSERT' and game_id=old.game_id)) then raise exception 'KEYBOARD_USE_EVENT_WRITER' using errcode='BD910'; end if;
   return coalesce(new,old);
 end $$;
 revoke all on function private.guard_keyboard_projection() from public,anon,authenticated;
@@ -240,3 +252,34 @@ create trigger keyboard_guard_fouls before insert or update or delete on public.
 create trigger keyboard_guard_scores before insert or update or delete on public.game_period_scores for each row execute function private.guard_keyboard_projection();
 create trigger keyboard_guard_roster before insert or update or delete on public.game_roster_slots for each row execute function private.guard_keyboard_projection();
 create trigger keyboard_guard_periods before insert or update or delete on public.game_periods for each row execute function private.guard_keyboard_projection();
+
+-- Permit only this trusted writer's short transactional source swap. Unprivileged
+-- users cannot bypass the existing active-authority guard by spoofing a setting.
+create or replace function private.prevent_referenced_submission_deactivation()
+returns trigger language plpgsql set search_path='' as $$ begin
+  if tg_op='DELETE' then
+    if exists(select 1 from public.game_data_domain_authority where submission_id=old.id) then raise exception 'BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY' using errcode='BD707'; end if;
+    return old;
+  end if;
+  if new.status<>'active' and exists(select 1 from public.game_data_domain_authority where submission_id=old.id) then
+    if not coalesce((current_user not in ('anon','authenticated','service_role') and private.is_admin_aal2()
+      and old.status='active' and new.status='superseded' and old.source_type='manual_scoresheet' and old.role='primary'
+      and coalesce(current_setting('bdb.keyboard_replacing_submission',true),'')=old.id::text
+      and exists(select 1 from public.keyboard_scoresheets where game_id=old.game_id and submission_id=old.id)),false) then
+      raise exception 'BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY' using errcode='BD707';
+    end if;
+  end if;
+  return new;
+end $$;
+revoke all on function private.prevent_referenced_submission_deactivation() from public,anon,authenticated;
+
+create function private.check_keyboard_authority_swap() returns trigger
+language plpgsql set search_path='' as $$ begin
+  if exists(select 1 from public.game_data_domain_authority a join public.game_data_submissions s on s.id=a.submission_id where s.id=new.id and s.status<>'active') then
+    raise exception 'KEYBOARD_AUTHORITY_SWAP_INCOMPLETE' using errcode='BD911';
+  end if;
+  return null;
+end $$;
+revoke all on function private.check_keyboard_authority_swap() from public,anon,authenticated;
+create constraint trigger keyboard_authority_swap_complete after update of status on public.game_data_submissions
+deferrable initially deferred for each row execute function private.check_keyboard_authority_swap();

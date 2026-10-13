@@ -13,7 +13,7 @@ import {
   undo,
   validateSheet,
 } from "./domain";
-import type { SaveRequest, SaveResult } from "./server";
+import { SaveFailure, type SaveRequest, type SaveResult } from "./server";
 import "./editor.css";
 
 export interface KeyboardContext {
@@ -56,6 +56,7 @@ export function KeyboardScoresheet({
   const [confirmed, setConfirmed] = useState(context.confirmed);
   const [recovery, setRecovery] = useState<Sheet | null>(null);
   const [busy, setBusy] = useState(false);
+  const [setupErrorId, setSetupErrorId] = useState<number | null>(null);
   const targetRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const version = useRef(context.version);
@@ -79,18 +80,23 @@ export function KeyboardScoresheet({
         const document = validateSheet(copy.document);
         if (JSON.stringify(document) !== JSON.stringify(context.initial)) setRecovery(document);
       }
+      if (!stored && context.version > 0) targetRef.current?.focus();
     } catch {
       setStatus("Cópia local indisponível; o rascunho remoto está preservado.");
     }
     ready.current = true;
-  }, [context.initial, storageKey]);
+  }, [context.initial, context.version, storageKey]);
 
   function apply(next: Sheet) {
     try {
       setHistory((h) => change(h, next));
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Revise o lançamento.");
+      setError(
+        cause instanceof Error && !("issues" in cause)
+          ? cause.message
+          : "Confira as camisas: use 0, 00 ou um número de 1 a 99, sem repetir na equipe.",
+      );
     }
   }
   async function flush(confirm = false) {
@@ -128,6 +134,15 @@ export function KeyboardScoresheet({
           if (confirm && request.document !== current.current) continue;
           if (confirm) continue;
         } while (saved.current !== JSON.stringify(current.current) || confirm);
+      } catch (cause) {
+        if (
+          cause instanceof SaveFailure &&
+          cause.status >= 400 &&
+          cause.status < 500 &&
+          cause.status !== 409
+        )
+          pending.current = null;
+        throw cause;
       } finally {
         setBusy(false);
       }
@@ -172,6 +187,10 @@ export function KeyboardScoresheet({
   }, []);
 
   function submitEntry() {
+    if (editing && !sheet.events.some((event) => event.id === editing)) {
+      setError("O lançamento foi removido. Cancele a edição e lance novamente.");
+      return;
+    }
     const normalized = code.trim().toUpperCase();
     if (
       !["B", "C"].includes(target) &&
@@ -199,6 +218,9 @@ export function KeyboardScoresheet({
     };
     const next = {
       ...sheet,
+      roster: sheet.roster.map((slot) =>
+        slot.side === side && slot.jersey === target ? { ...slot, played: true } : slot,
+      ),
       events: editing
         ? sheet.events.map((e) => (e.id === editing ? event : e))
         : [...sheet.events, event],
@@ -227,9 +249,10 @@ export function KeyboardScoresheet({
   function navigate(nextSide: Side, nextPeriod: number) {
     setSide(nextSide);
     setPeriod(Math.max(1, Math.min(sheet.periods, nextPeriod)));
-    setTarget("");
-    setCode("");
-    setEditing(null);
+    if (!editing) {
+      setTarget("");
+      setCode("");
+    }
     focus();
   }
   function exportCopy() {
@@ -276,6 +299,35 @@ export function KeyboardScoresheet({
         </aside>
       )}
       <p role="status">{status}</p>
+      <details>
+        <summary>Participação em quadra — conferir atletas sem pontos</summary>
+        <p>
+          Relacionar não significa jogar. Marque quem entrou em quadra, inclusive sem pontos ou
+          faltas. Lançar uma ação marca participação automaticamente.
+        </p>
+        {sheet.roster.map((slot) => (
+          <label key={slot.rosterEntryId}>
+            <input
+              type="checkbox"
+              checked={slot.played}
+              onChange={(event) => {
+                const next = {
+                  ...sheet,
+                  roster: sheet.roster.map((s) =>
+                    s.rosterEntryId === slot.rosterEntryId
+                      ? { ...s, played: event.target.checked }
+                      : s,
+                  ),
+                };
+                if (setup) setHistory((h) => ({ ...h, present: next }));
+                else apply(next);
+              }}
+            />
+            Participou: {context.teams[slot.side]} · #{slot.jersey} ·{" "}
+            {context.candidates.find((c) => c.rosterEntryId === slot.rosterEntryId)?.name}
+          </label>
+        ))}
+      </details>
       {error && (
         <p role="alert" id="keyboard-error">
           {error}
@@ -313,6 +365,7 @@ export function KeyboardScoresheet({
                                     registrationId: candidate.registrationId,
                                     side: candidate.side,
                                     jersey: candidate.jersey || "0",
+                                    played: false,
                                   },
                                 ]
                               : sheet.roster.filter(
@@ -328,6 +381,13 @@ export function KeyboardScoresheet({
                         <label>
                           Camisa de {candidate.name}
                           <input
+                            id={`keyboard-roster-${candidate.rosterEntryId}`}
+                            aria-invalid={setupErrorId === candidate.rosterEntryId}
+                            aria-describedby={
+                              setupErrorId === candidate.rosterEntryId
+                                ? "keyboard-error"
+                                : undefined
+                            }
                             inputMode="numeric"
                             maxLength={2}
                             value={selected.jersey}
@@ -389,7 +449,16 @@ export function KeyboardScoresheet({
                 setError("");
                 setTimeout(focus, 0);
               } catch (cause) {
-                setError(cause instanceof Error ? cause.message : "Revise os relacionados.");
+                setError(
+                  cause instanceof Error && !("issues" in cause)
+                    ? cause.message
+                    : "Confira as camisas: use 0, 00 ou um número de 1 a 99, sem repetir na equipe.",
+                );
+                const invalid = sheet.roster.find((s) => !/^(00|0|[1-9][0-9]?)$/.test(s.jersey));
+                if (invalid) {
+                  setSetupErrorId(invalid.rosterEntryId);
+                  document.getElementById(`keyboard-roster-${invalid.rosterEntryId}`)?.focus();
+                }
               }
             }}
           >
@@ -583,6 +652,9 @@ export function KeyboardScoresheet({
               disabled={!history.past.length}
               onClick={() => {
                 setHistory(undo);
+                setEditing(null);
+                setTarget("");
+                setCode("");
                 focus();
               }}
             >
@@ -593,6 +665,9 @@ export function KeyboardScoresheet({
               disabled={!history.future.length}
               onClick={() => {
                 setHistory(redo);
+                setEditing(null);
+                setTarget("");
+                setCode("");
                 focus();
               }}
             >

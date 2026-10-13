@@ -17,8 +17,8 @@ const doc = {
   periods: 4,
   coachPlayer: { home: null, away: null },
   roster: [
-    { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12" },
-    { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12" },
+    { rosterEntryId: 1, registrationId: 10, side: "home", jersey: "12", played: true },
+    { rosterEntryId: 2, registrationId: 20, side: "away", jersey: "12", played: true },
   ],
   events: [],
 };

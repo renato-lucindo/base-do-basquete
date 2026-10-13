@@ -8,6 +8,7 @@ export const rosterSchema = z.object({
   registrationId: id,
   side: sideSchema,
   jersey: z.string().regex(/^(00|0|[1-9][0-9]?)$/),
+  played: z.boolean(),
 });
 export type RosterSlot = z.infer<typeof rosterSchema>;
 export const eventSchema = z.object({
@@ -138,6 +139,8 @@ export function aggregate(sheet: Sheet) {
       errors.push("Camisa ou período inválido.");
       continue;
     }
+    if (player && !sheet.roster.find((s) => s.rosterEntryId === player.rosterEntryId)?.played)
+      errors.push(`Marque a participação de #${player.jersey} antes de lançar pontos ou faltas.`);
     if (/^[123]$/.test(event.code) && player) {
       const points = Number(event.code);
       if (points === 1) {
@@ -181,6 +184,7 @@ export function aggregate(sheet: Sheet) {
       if (foul.kind === "D") own.coachStatus = "D";
     }
     const coach = players.find((p) => p.rosterEntryId === sheet.coachPlayer[event.side]);
+    if (coach?.status === "D") own.coachStatus = "D";
     if (
       own.coachStatus !== "D" &&
       (own.coachC >= 2 ||

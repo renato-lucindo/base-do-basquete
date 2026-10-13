@@ -19,6 +19,35 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await server?.close();
 });
+test("undo cancels removed-event editing; switching teams edits instead of appending", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await page.getByRole("button", { name: "Editar lançamento 1", exact: true }).click();
+  await page.getByRole("button", { name: "Desfazer", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Editar lançamento/ })).toHaveCount(0);
+  await expect(page.getByLabel("Camisa, B ou C", { exact: true })).toHaveValue("");
+  await page.getByRole("button", { name: "Refazer", exact: true }).click();
+  await page.getByRole("button", { name: "Editar lançamento 1", exact: true }).click();
+  await page.getByRole("button", { name: "Equipe B · Equipe Verde", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /Editar lançamento/ })).toBeVisible();
+  await page.getByLabel("Camisa, B ou C", { exact: true }).press("Enter");
+  await page.locator(".keyboard-entry input").nth(1).press("Enter");
+  await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+  await expect(page.locator(".keyboard-history li").first()).toContainText("Equipe Verde");
+});
+test("setup validation gives a readable linked error and focuses jersey", async ({ page }) => {
+  await page.goto(`${url}?setup`);
+  await page.getByLabel("Camisa de Ana", { exact: true }).fill("");
+  await page.getByRole("button", { name: "Iniciar transcrição" }).click();
+  await expect(page.getByRole("alert")).toContainText("Confira as camisas");
+  await expect(page.getByLabel("Camisa de Ana", { exact: true })).toBeFocused();
+  await expect(page.getByLabel("Camisa de Ana", { exact: true })).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+});
 async function entry(page: import("@playwright/test").Page, target: string, code: string) {
   const jersey = page.getByLabel("Camisa, B ou C", { exact: true });
   await jersey.fill(target);

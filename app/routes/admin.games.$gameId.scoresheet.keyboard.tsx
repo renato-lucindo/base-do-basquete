@@ -5,6 +5,7 @@ import { assertCsrfToken, assertSameOrigin } from "../modules/auth/csrf.server";
 import { type Sheet, validateSheet } from "../modules/keyboard-scoresheet/domain";
 import { type KeyboardContext, KeyboardScoresheet } from "../modules/keyboard-scoresheet/editor";
 import {
+  SaveFailure,
   type SaveRequest,
   type SaveResult,
   saveSchema,
@@ -111,6 +112,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
             registrationId,
             side,
             jersey,
+            played: false,
           })),
         events: [],
       };
@@ -199,7 +201,10 @@ export default function Page({ loaderData }: Route.ComponentProps) {
       );
     const result = (await response.json()) as SaveResult & { error?: string };
     if (!response.ok || result.error)
-      throw new Error(result.error ?? "Servidor indisponível. Tente novamente.");
+      throw new SaveFailure(
+        result.error ?? "Servidor indisponível. Tente novamente.",
+        response.status,
+      );
     return result;
   }
   return (
