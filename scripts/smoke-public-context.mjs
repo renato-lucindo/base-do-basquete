@@ -72,6 +72,19 @@ for (let attempt = 1; attempt <= propagationAttempts; attempt += 1) {
 assert.ok(rootResponse, "root request must run");
 assert.equal(rootResponse.status, 302, "root must redirect to a valid context");
 assert.ok(rootLocation, "root redirect must include a location");
+// An older root can redirect to the canonical /visao-geral alias first.
+// That alias must itself redirect to /classificacao; never accept it as final.
+if (
+  /^\\/\\d{4}\\/[^/]+\\/[^/]+\\/(?:masculino|feminino)\\/visao-geral$/.test(rootLocation)
+) {
+  const canonicalResponse = await request(rootLocation);
+  assert.equal(
+    canonicalResponse.status,
+    308,
+    "the public overview alias must permanently redirect to classification",
+  );
+  rootLocation = locationPath(canonicalResponse);
+}
 assert.match(
   rootLocation,
   expectedRoot,
