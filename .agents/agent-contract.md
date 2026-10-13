@@ -1,7 +1,7 @@
 ---
 name: agent-contract
 description: Contrato operacional compartilhado pelos agentes da Base do Basquete.
-version: 2
+version: 3
 ---
 
 # Contrato Operacional dos Agentes
@@ -10,7 +10,7 @@ version: 2
 
 Este documento define o protocolo comum de coordenação entre `project-maintainer`, os agentes de investigação e os revisores especializados. As instruções específicas de cada agente complementam este contrato, mas não podem enfraquecê-lo.
 
-O objetivo é garantir que apenas um agente altere o projeto por vez, que todos os revisores analisem o mesmo estado e que nenhuma aprovação permaneça válida depois de uma mudança relevante.
+O objetivo é garantir uma única autoridade de escrita e aprovações rastreáveis, adotando seleção de revisores proporcional ao risco sem enfraquecer os controles críticos.
 
 ## Fontes de verdade
 
@@ -100,7 +100,12 @@ RISCOS_CONHECIDOS:
 TESTES_EXECUTADOS:
 EVIDENCIAS:
 AMBIENTE_VALIDADO:
+RISK_LEVEL: CRITICO | MODERADO | BAIXO
+RISK_JUSTIFICATION:
+REVIEW_DECISIONS:
 REQUIRED_REVIEWERS:
+WAIVERS:
+REVIEW_APPROVER:
 WRITE_LOCK_OWNER:
 ```
 
@@ -108,24 +113,45 @@ O pacote é incompleto se o commit, os critérios de aceite ou as evidências n�
 
 O `REVIEW_PACKET` deve ser publicado na descrição ou em comentário da PR. Se ainda não houver PR, pode permanecer temporariamente no `HANDOFF.md`, devendo migrar para a PR antes da revisão final.
 
-## Seleção de revisores
+## Seleção proporcional de revisores
 
-Use apenas os revisores exigidos pelo risco:
+Classifique o risco real do **diff** e de seus efeitos, não apenas o tipo de arquivo. A unidade pode exigir especialistas de vários domínios; o nível global é o mais alto. O `project-maintainer` registra no `REVIEW_PACKET` a avaliação por domínio, riscos, revisores, evidências automatizadas e dispensas. Na dúvida sobre risco ou cobertura, classifique para cima.
 
-- `database-security-reviewer`: obrigatório para migrations, schema, RLS, grants, RPCs, Auth, Storage, auditoria, dados privados, idempotência ou escrita crítica.
-- `boxscore-domain-reviewer`: obrigatório para mudanças nos contratos, extração, parsing, matching, revisão ou persistência de boxscores FIBA/Basketball Site.
-- `statistics-domain-reviewer`: obrigatório para mudanças em fórmulas, agregações, read models ou isolamento de estatísticas.
-- `accessibility-ui-reviewer`: obrigatório para mudanças materiais de interface, formulários, navegação ou responsividade.
-- `performance-investigator`: obrigatório quando a unidade altera metas, benchmark, cache, consultas ou caminhos de execução por causa de regressão de desempenho.
-- `qa-reviewer`: obrigatório antes de merge ou release para mudanças funcionais, dependências, workflows, segurança, banco ou governança.
+| Risco | Exemplos | Exigência |
+| --- | --- | --- |
+| **CRITICO** | Auth/autorização, RLS/grants, função privilegiada, dados privados, migration destrutiva ou com efeito na integridade; persistência/concorrência crítica; fonte autoritativa, fórmula, denominador ou isolamento estatístico; contrato semântico FIBA; barreira de acessibilidade crítica | Parecer **independente e obrigatório** do especialista de cada domínio afetado, mais gates técnicos. Não admite dispensa |
+| **MODERADO** | Mudança funcional não sensível, UI usual, migration aditiva comprovadamente sem impacto crítico, workflow/dependência não sensível, governança operacional | CI/Actions com cobertura demonstrada pode substituir QA e acessibilidade independentes. Escalar quando houver lacunas ou risco residual |
+| **BAIXO** | Documentação editorial, formatação ou refatoração mecânica comprovadamente sem mudança de comportamento | Gate proporcional; dispensa documentada quando aplicável |
 
-O `base-repo-scout` não emite parecer e não integra `REQUIRED_REVIEWERS`. Use-o somente quando explorações independentes puderem reduzir incerteza ou ruído no contexto principal.
+### Gatilhos por domínio
 
-Alterações exclusivamente documentais, sem mudança de comportamento, segurança, governança ou processo de release, podem dispensar revisor especializado. A dispensa e sua justificativa devem constar na PR; o gate normal continua obrigatório.
+- `database-security-reviewer`: obrigatório para mudanças de RLS, grants, Auth, Storage, dados privados, RPCs privilegiadas, migrations sensíveis, integridade persistida, transações, idempotência ou concorrência crítica. Migration estritamente aditiva pode ser MODERADA somente com justificativa técnica e teste que demonstrem ausência de impacto sensível.
+- `statistics-domain-reviewer`: obrigatório quando mudam a fonte/autoridade, fórmulas, denominadores, semântica de zero/ausente, agregação, publicação ou isolamento de estatísticas; inclui divergências entre súmula manual e FIBA. Mudança exclusivamente visual sem semântica pode usar testes.
+- `boxscore-domain-reviewer`: obrigatório quando alteram contratos, parsing, matching, reconciliação ou persistência semântica FIBA/Basketball Site. Sem mudança de contrato/comportamento, pode haver dispensa documentada.
+- `accessibility-ui-reviewer`: **não automático** para UI rotineira com E2E/teclado/foco/formulários/viewport relevantes e verdes. Exigir revisão independente para interação nova complexa, autenticação sensível, barreira crítica, cobertura insuficiente, falha conhecida ou risco residual relevante.
+- `performance-investigator`: exigir quando houver regressão importante ou mudança crítica de desempenho/cache/consulta sem benchmark confiável. Otimizações rotineiras com evidências reproduzíveis podem usar gates.
+- `qa-reviewer`: **não automático por categoria de arquivo**. O mantenedor pode aceitar CI/Actions para QA rotineiro de funcionalidades, dependências, workflows, UI e governança quando existir cobertura suficiente no SHA. Exigir QA independente quando houver P0/P1, risco de release/integração sem evidência, falha/lacuna material nos gates, fluxo sensível ponta a ponta não reproduzido, ou divergência entre preview e artefato.
+- `base-repo-scout` não emite parecer e não integra `REQUIRED_REVIEWERS`.
 
-Se um revisor exigido não estiver disponível, não simule nem atribua um parecer. Registre a ausência como bloqueio do gate de merge/release, mantendo permitidas correções e verificações locais reversíveis.
+### Cobertura automatizada e dispensa auditável
 
-Não acione revisores sem necessidade. A especialização deve reduzir duplicação, não multiplicar a mesma análise.
+Na descrição/comentário da PR, antes de qualquer merge, registre:
+
+1. `RISK_LEVEL`, `RISK_JUSTIFICATION` por domínio e por que o cenário não é CRITICO.
+2. `REVIEW_DECISIONS` por agente: `REQUIRED` (parecer independente), `AUTOMATED` (coberto por CI) ou `WAIVED` (não aplicável ao diff), com motivo.
+3. `EVIDENCIAS` do **SHA efetivamente validado** (links dos runs, status, cobertura de regressões, pgTAP/RLS, build, testes de UI/teclado, CodeQL/preview conforme risco).
+4. `WAIVERS`, lacunas e riscos residuais explícitos.
+5. `REVIEW_APPROVER`, identidade rastreável do `project-maintainer` ou mantenedor autorizado que aceita as dispensas.
+
+`AUTOMATED` só é válido quando o conteúdo real dos testes cobre os cenários afetados; check verde isoladamente não basta. `WAIVED` requer justificativa de não aplicabilidade. Não produza `APPROVE` fictício em nome de agente não executado.
+
+**Proibido dispensar** revisor CRITICO, requisito explícito mais restritivo de plano vigente, teste exigido ausente/falho ou revisão com P0/P1, `REQUEST_CHANGES` ou `BLOCK_RELEASE` aberto. Bloqueio anterior somente termina após correção verificada e **novo parecer independente válido do domínio que bloqueou**. Ausência de agente crítico permanece bloqueio, não aprovação tácita.
+
+### Vigência e transição
+
+A versão 3 passa a reger unidades novas **somente após o merge deste contrato na `main`**. Não concede dispensa retroativa a PRs em andamento, nem invalida/exonera achados anteriores. Uma PR antiga poderá solicitar reclassificação explícita e publicar `REVIEW_PACKET` atualizado após a vigência, preservando revisões CRITICAS, exigências específicas e bloqueios prévios. **A própria PR que modifica este contrato segue a versão 2 até ser integrada**; não pode liberar sua aprovação por uma regra que ainda não existe na main.
+
+Documentação apenas editorial permanece elegível à dispensa já prevista. Governança/procedimento é alteração normativa e segue os gates e a revisão aplicáveis ao contrato vigente.
 
 ## Pareceres
 
@@ -141,7 +167,7 @@ Precedência:
 - `BLOCK_RELEASE` prevalece sobre qualquer outro parecer.
 - `REQUEST_CHANGES` impede merge ou release até correção e nova revisão.
 - Uma aprovação não anula bloqueio emitido por outro revisor dentro de seu domínio.
-- Merge ou release exige parecer válido de todos os revisores listados em `REQUIRED_REVIEWERS`.
+- Merge ou release exige parecer válido de todos os revisores em `REQUIRED_REVIEWERS`, gates automatizados selecionados comprovados e ausência de bloqueios. `AUTOMATED`/`WAIVED` são decisões de seleção, não estados de parecer.
 
 ## Validade do parecer
 
@@ -155,14 +181,14 @@ REVIEWED_AT:
 
 O parecer deixa de ser válido quando:
 
-- `HEAD_COMMIT` muda de forma que altere código, configuração, migration, teste ou a evidência material revisada;
+- `HEAD_COMMIT` muda materialmente código, configuração, migration, teste ou evidência do domínio revisado; a renovação pode ser focal ao domínio afetado, sem reabrir especialistas não afetados;
 - migration, policy ou configuração de segurança muda;
 - teste relevante muda;
 - artefato implantado não corresponde ao commit revisado;
 - o ambiente autoritativo diverge da evidência;
 - o escopo ou os critérios de aceite mudam.
 
-Uma revisão incremental pode analisar somente o delta, mas deve produzir novo parecer vinculado ao novo commit.
+Uma revisão incremental pode examinar apenas o delta e seus efeitos, mas, quando o domínio for afetado, deve produzir parecer vinculado ao novo commit. Os runs automatizados também devem corresponder ao artefato validado.
 
 Uma atualização exclusivamente documental que apenas registre o próprio parecer ou resultados já produzidos pode ser validada por revisão incremental do delta, sem repetir gates cujo artefato não mudou.
 
