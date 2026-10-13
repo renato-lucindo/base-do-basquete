@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: Supabase Free isolado criado e testado; SQL1.418 assertivas no QA/restaurado e Auth/MFA reais passaram. Revisões independentes desta evidência pendentes. ProjetoQA payumtvegfqfejmowxiy; compartilhado preservado62 migrations. Estado vigente na seção41. PR72 OPEN/DRAFT, sem merge ou produção.**
+**Checkpoint atual: QA isolado concluído e aprovado por banco/QA em94f4825; SQL1.418 assertivas no QA/restaurado e Auth/MFA reais passaram. ProjetoQA payumtvegfqfejmowxiy; compartilhado preservado62 migrations. Estado vigente na seção41. PR72 OPEN/DRAFT; integração/rollout pendentes, sem merge ou produção.**
 
 A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a entrega documental `MANUAL-SCORESHEET-V2-STAGE10-GATE` foi concluída, com integração pendente. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -18,12 +18,12 @@ OWNER: project-maintainer
 WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
 BASE_COMMIT: bf703423046fe76682b6fdaa4177e00799e2b44d
-HEAD_COMMIT: consultar Git; abertura de QA isolado a partir de bf70342
+HEAD_COMMIT: consultar Git; artefato revisado94f482529878dd625f8dd139002e5964e81e57d5; delta final somente registro documental
 HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
 SCOPE: provisionar projeto Supabase Free separado, aplicar schema somente nele e executar QA/recuperação com fixtures sintéticas; evidências/revisões na PR72
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
 REQUIRED_REVIEWERS: database-security-reviewer, qa-reviewer (ambiente isolado; demais domínios funcionais inalterados)
-STATUS: ACTIVE
+STATUS: RELEASED
 ```
 
 As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
@@ -900,3 +900,18 @@ CRITERIO_DE_CONCLUSAO: checks obrigatórios válidos no SHA final e evidências 
 - Relatório limita comparação aos campos selecionados e registra --no-owner e nove DEFAULT ACL omitidos. Advisors read-only confirmam auth_leaked_password_protection WARN(1), limitação Pro no QA Free; sem upgrade. Snapshot de performance preservado.
 - QA anterior falhou por capacidade do serviço, sem parecer. Renovar banco e QA no commit corrigido. Actions85dc11d CI38398920897/Preview38398920879/CodeQL38398921059/Stage438398912451 falhos antes de etapas por cobrança; merge/rollout NOT_READY.
 - WRITE_LOCK permanece ACTIVE/project-maintainer na mesma unidade. PROXIMO_PASSO_EXATO: validar AST/regressões/diff/segredos, commitar e publicar correção na branch da PR72; renovar pareceres independentes no SHA fixo, registrar resultados e status reais, atualizar HANDOFF e publicar fechamento. Shared/main/produção permanecem intocados.
+
+### QA isolado concluído e revisado (13/10/2026)
+
+- COMMIT_REVISADO94f482529878dd625f8dd139002e5964e81e57d5 publicado na branch da PR72; packet https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6146442207.
+- Banco Harvey: APPROVE_WITH_NON_BLOCKING_NOTES,2026-10-13T13:17:31Z, revogando explicitamente REQUEST_CHANGES e confirmando correção dos três achados. QA independente Pascal01a13568-9d5a-7890-aca6-cd55fa4d27fa: APPROVE,2026-10-13T13:20:05Z, mesmo SHA. Ambos executaram regressões offline3/3PASS; relatórios integrais em docs/execution/manual-scoresheet-isolated-qa.md.
+- Evidências SQL/Auth/recuperação aprovadas nos limites declarados. Final local: AST/JSON/diff/scan PASS,13 links locais válidos. Código/SQL/dependências/workflows inalterados; gates funcionais anteriores reutilizados. Este fechamento somente registra resultados, sem mudança material do artefato revisado.
+- Checks94f4825 CI38403639924/Preview38403639618/CodeQL38403639620/Stage438403629656 FAILURE; quatro annotations de cobrança e CI com zero etapas confirmados por mantenedor/QA. Não houve rerun nem alteração financeira.
+- READINESS_UNIDADE=READY; READINESS_MERGE/ROLLOUT=NOT_READY. SKILL_RESULT managing-base-work-unit/reviewing-supabase-changes/running-release-gate PASS neste escopo. WRITE_LOCK OWNER=project-maintainer; STATUS=RELEASED.
+- QA Free e database recuperado permanecem disponíveis; nenhuma migration no compartilhado, merge/main ou produção. Preservadas limitações de wizard autenticado completo e recuperação lógica/owners/ACLs/serviços gerenciados; sem upgrade para proteção contra senhas vazadas.
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer para homologação; responsável da conta GitHub para cobrança.
+ARQUIVO_OU_SERVICO: projeto QA payumtvegfqfejmowxiy, docs/execution/manual-scoresheet-stage10-final-gate.md e Actions PR72.
+ACAO: preparar preview/backend apontados exclusivamente ao QA e executar wizard autenticado completo com MFA, criação/revisão/retry/CAS e histórico/auditoria; documentar cobertura e limites do ensaio de recuperação antes de recomendar rollout. Restabelecer capacidade Actions sem bypass e verificar checks obrigatórios no SHA final; revalidar inventário compartilhado read-only antes de futura aplicação autorizada.
+CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada, recuperação proporcional ao rollout definida e checks obrigatórios válidos; merge, migrations compartilhadas e produção somente em unidade posterior com gate aprovado.

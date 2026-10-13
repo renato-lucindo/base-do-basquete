@@ -112,3 +112,100 @@ Correção mínima: os quatro runners recusam sys.flags.optimize antes de import
 Advisors de segurança reconsultados read-only em 13/10/2026: além dos11 INFO/53 WARN, auth_leaked_password_protection WARN(1), [proteção contra senhas vazadas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Recurso depende de plano Pro; limitação registrada do QA Free, sem upgrade autorizado/executado. Resumo atualizado; avisos de performance mantêm o snapshot anterior.
 
 QA Archimedes não concluiu a revisão inicial por erro de capacidade do serviço; isso não constitui aprovação. Reenvio da revisão independente após a correção, sem alteração de modelo. Actions de85dc11d: CI38398920897, Preview38398920879, CodeQL38398921059 e Stage438398912451 FAILURE, sem etapas iniciadas, annotation de cobrança verificada. Não confundir com testes executados e reprovados.
+
+## Pareceres finais e fechamento
+
+COMMIT_REVISADO:94f482529878dd625f8dd139002e5964e81e57d5. [Packet publicado](https://github.com/renato-lucindo/base-do-basquete/pull/72#issuecomment-6146442207). O delta posterior registra somente pareceres e estado; não altera runners, testes, resultados ou ambiente revisado.
+
+### Banco — Harvey
+
+PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**  
+WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA  
+BASE_COMMIT: 85dc11d0516c504e6a52d07d01cbc42903627d80  
+COMMIT_REVISADO: 94f482529878dd625f8dd139002e5964e81e57d5  
+REVIEWED_AT: 2026-10-13T13:17:31Z
+
+ESCOPO_REVISADO: renovação focal dos quatro runners, regressões offline, relatório e resumo de advisors.
+
+**Revogo explicitamente meu REQUEST_CHANGES anterior: os três achados foram resolvidos.**
+
+ACHADOS_ANTERIORES:
+
+- **P2 — otimização Python: resolvido.** Os quatro runners verificam `sys.flags.optimize` e lançam exceção antes de imports externos, credenciais ou conexões. O bloqueio permanece ativo com `-O`, `-OO` e `PYTHONOPTIMIZE=1/2`.
+- **P3 — equivalência de segurança: resolvido.** Relatório discrimina os campos comparados e exclui owners, schema USAGE/CREATE, sequences/colunas e corpos de funções. Registra corretamente `--no-owner` e os nove DEFAULT ACL omitidos.
+- **P3 — advisor omitido: resolvido.** `auth_leaked_password_protection` WARN(1) incluído, com limitação Free/Pro explícita e sem upgrade.
+
+MIGRATIONS: nenhuma alteração neste delta; evidências anteriores de QA73/shared62 preservadas.  
+RLS_E_GRANTS: nenhuma alteração; afirmações de equivalência agora limitadas à coleta realizada.  
+INTEGRIDADE_E_TRANSACOES: logs/resultados remotos anteriores permanecem inalterados; nenhuma nova execução remota foi necessária.  
+PRIVACIDADE: testes offline usam fixtures temporárias e drivers simulados; nenhuma credencial real foi obtida.
+
+TESTES_E_EVIDENCIAS: execução própria de `test_runner_guards.py`: **3/3 PASS**, cobrindo16 execuções otimizadas, quatro alvos incorretos e TAP válido/cinco inválidos. `git diff --check` PASS. Sem delta em aplicação, SQL, dependências ou workflows.
+
+ACHADOS_NOVOS: nenhum bloqueante.
+
+RISCOS_RESIDUAIS: permanecem os limites documentados de recuperação lógica na mesma instância, bootstrap distinto da baseline compartilhada, ACLs/owners gerenciados, GoTrue/secrets/S3/PITR e ausência de wizard autenticado integral. Esta renovação não amplia a evidência anterior.
+
+READINESS_BANCO_DESTA_UNIDADE: **READY**, para os ensaios e limites declarados.  
+READINESS_ENCERRAMENTO_UNIDADE: depende do parecer independente de QA.  
+READINESS_MERGE/ROLLOUT: **NOT_READY**; nenhuma autorização de merge, shared ou produção.
+
+GIT_STATUS_ANTES: limpo.  
+GIT_STATUS_DEPOIS: limpo; HEAD fixo preservado. WRITE_LOCK permanece com o mantenedor.
+
+SKILL_RESULT: reviewing-supabase-changes — **PASS** na renovação focal. Gates completos e runners remotos omitidos conforme escopo.
+
+PROXIMO_PASSO_EXATO:  
+RESPONSAVEL: project-maintainer  
+ARQUIVO_OU_SERVICO: relatório da unidade, HANDOFF e PR72.  
+ACAO: registrar esta revogação e consolidar o parecer de QA e status reais dos checks.  
+CRITERIO_DE_CONCLUSAO: revisões válidas no artefato aplicável, preservando explicitamente as pendências de integração e rollout.
+
+### QA — Pascal (01a13568-9d5a-7890-aca6-cd55fa4d27fa)
+
+**PARECER: APPROVE** — limitado ao QA da unidade.
+
+```text
+WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA
+BASE_COMMIT: bf703423046fe76682b6fdaa4177e00799e2b44d
+COMMIT_REVISADO: 94f482529878dd625f8dd139002e5964e81e57d5
+REVIEWED_AT: 2026-10-13T13:20:05Z
+RESPONSAVEL: qa-reviewer independente
+```
+
+Nenhum novo achado bloqueante. Os quatro runners recusam otimização imediatamente após importar `sys`, antes de imports externos, credenciais ou rede. A correção resolve o mecanismo do P2 anterior; os limites de comparação, `--no-owner`, nove DEFAULT ACL omitidos e advisor adicional estão explicitados.
+
+Validações executadas:
+
+- Regressões offline **3/3 PASS**: 16 execuções otimizadas, quatro rejeições de projeto incorreto e TAP válido/cinco inválidos.
+- AST dos cinco arquivos Python e `git diff --check`: **PASS**.
+- Logs/JSONs pgTAP consistentes: **49 arquivos/1.418 assertivas** em cada execução; inventário corresponde aos testes versionados.
+- Log de aplicação corresponde às **73 migrations** do Git.
+- Recuperação: consistência interna confirmada entre log/JSON, **111 tabelas/545 registros**, hashes e nove ACL omitidos.
+- Git limpo antes/depois; HEAD preservado; nenhum arquivo ou serviço alterado.
+
+**Banco:** conforme atualização do mantenedor, Harvey renovou `APPROVE_WITH_NON_BLOCKING_NOTES` neste SHA às `2026-10-13T13:17:31Z`, revogando explicitamente o bloqueio anterior. Minha aprovação não substitui esse parecer especializado.
+
+**GitHub:** [PR 72](https://github.com/renato-lucindo/base-do-basquete/pull/72) OPEN/DRAFT, HEAD confirmado. CI, CodeQL, Preview e Stage4 falham por cobrança; conferi as quatro annotations e zero etapas no CI. Não houve rerun.
+
+Limitações: validei evidências registradas, sem reproduzir SQL/Auth/restore ou consultar credenciais. Não recalculuei hashes a partir do backup privado nem reconfirmei o Supabase ao vivo. Homologação visual autenticada completa e recuperação integral da plataforma permanecem fora da comprovação. Gate568/build/UI foram reutilizados porque os respectivos artefatos não mudaram.
+
+```text
+READINESS_UNIDADE: READY para registro dos pareceres e fechamento
+READINESS_MERGE: NOT_READY
+READINESS_ROLLOUT: NOT_READY
+SKILL_RESULT: running-release-gate PASS no escopo focal de QA
+
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: HANDOFF.md, relatório isolado e PR72
+ACAO: registrar ambos os pareceres e checks atuais; fechar a unidade
+      preservando as pendências de integração/rollout.
+CRITERIO_DE_CONCLUSAO: fechamento rastreável, lock liberado e
+      merge/rollout explicitamente NOT_READY, sem bypass.
+```
+
+### Aceite do mantenedor
+
+READINESS_UNIDADE=READY; WRITE_LOCK RELEASED. Pareceres válidos por identidade do artefato e ausência de delta material posterior. READINESS_MERGE/ROLLOUT=NOT_READY. Checks94f4825: CI38403639924, Preview38403639618, CodeQL38403639620, Stage438403629656 FAILURE antes de etapas, quatro annotations de cobrança verificadas. SHA/checks do fechamento documental serão publicados no comentário final da PR, sem repetir suítes nem reexecutar jobs recusados. Permanecem homologação visual autenticada completa, limites de recuperação e capacidade Actions. Sem merge, aplicação no compartilhado ou produção.
+
