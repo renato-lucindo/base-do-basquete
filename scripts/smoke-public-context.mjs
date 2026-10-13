@@ -51,7 +51,8 @@ async function resolveContext(path) {
 const older = "/2025/liga-de-desenvolvimento/sub-15/equipes";
 const secondCategory = "/2026/liga-de-desenvolvimento/sub-17/jogadores";
 
-const expectedRoot = /^\/2026\/copa-es-ouro\/fixture-fiba\/(?:masculino\/|feminino\/)?visao-geral$/;
+const expectedRoot =
+  /^\/2026\/copa-es-ouro\/fixture-fiba\/(?:masculino\/|feminino\/)?classificacao$/;
 let rootResponse;
 let rootLocation;
 for (let attempt = 1; attempt <= propagationAttempts; attempt += 1) {
@@ -118,7 +119,10 @@ const preferredRoot = await request("/", {
   headers: { Cookie: preference.split(";")[0] },
 });
 assert.equal(preferredRoot.status, 302);
-assert.equal(locationPath(preferredRoot), olderContext.path.replace(/\/equipes$/, "/visao-geral"));
+assert.equal(
+  locationPath(preferredRoot),
+  olderContext.path.replace(/\/equipes$/, "/classificacao"),
+);
 
 const adminResponse = await request("/admin");
 assert.ok(

@@ -1,11 +1,17 @@
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { BoxscoreStatisticsExplorer } from "../components/boxscore-statistics-explorer";
-import { PublicBreadcrumb, PublicHeader, resourceLabel } from "../components/public-navigation";
+import {
+  PublicBreadcrumb,
+  PublicFooter,
+  PublicHeader,
+  resourceLabel,
+} from "../components/public-navigation";
 import { PublicSportsCore } from "../components/public-sports-core";
 import { StatisticsExplorer } from "../components/statistics-explorer";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
+  contextPath,
   isPublicResource,
   parseGenderDivisionSlug,
   parsePublicYear,
@@ -29,10 +35,9 @@ export function meta() {
 }
 
 export async function loader({ params, context, request }: Route.LoaderArgs) {
+  const requestUrl = new URL(request.url);
   const year = parsePublicYear(params.year);
-  const genderDivision = parseGenderDivisionSlug(
-    new URL(request.url).pathname.split("/").filter(Boolean)[3],
-  );
+  const genderDivision = parseGenderDivisionSlug(requestUrl.pathname.split("/").filter(Boolean)[3]);
   if (!year || !genderDivision || !isPublicResource(params.resource)) {
     return notFound();
   }
@@ -49,13 +54,20 @@ export async function loader({ params, context, request }: Route.LoaderArgs) {
     return notFound();
   }
 
+  if (params.resource === "visao-geral") {
+    throw redirect(`${contextPath(resolvedContext, "classificacao")}${requestUrl.search}`, {
+      status: 308,
+      headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) },
+    });
+  }
+
   return data(
     await loadPublicContextPayload(
       client,
       resolvedContext,
       params.resource,
       undefined,
-      new URL(request.url).searchParams,
+      requestUrl.searchParams,
     ),
     {
       headers: { "Set-Cookie": contextPreferenceCookie(resolvedContext) },
@@ -74,17 +86,20 @@ export function PublicContextContent({
   const title = resourceLabel(resource);
 
   return (
-    <main className="public-shell">
+    <div className="public-shell">
       <PublicHeader context={context} contexts={contexts} resource={resource} />
-      <div className="public-content">
+      <main className="public-content">
         {resource === "jogadores" ? null : (
           <>
             <PublicBreadcrumb context={context} contexts={contexts} resource={resource} />
-            <section className="context-hero">
+            <header className="public-page-heading">
+              <p className="eyebrow">{context.displayName}</p>
               <h1>{title}</h1>
-            </section>
+            </header>
           </>
         )}
+
+        {resource === "jogadores" ? <h1 className="sr-only">Jogadores</h1> : null}
 
         {resource === "jogadores" && boxscoreStatistics ? (
           <BoxscoreStatisticsExplorer
@@ -101,8 +116,9 @@ export function PublicContextContent({
         ) : sportsCore ? (
           <PublicSportsCore context={context} data={sportsCore} resource={resource} />
         ) : null}
-      </div>
-    </main>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }
 

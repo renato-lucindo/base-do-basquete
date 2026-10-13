@@ -116,7 +116,6 @@
 }
 
 .reference-column-toolbar,
-.reference-summary,
 .active-filters,
 .reference-explorer > .scrollable-table,
 .reference-explorer > .statistics-pagination,
@@ -144,28 +143,6 @@
 .reference-filters .reference-panel {
   left: 0;
   right: auto;
-}
-
-.reference-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 58px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--surface-muted);
-}
-
-.reference-summary strong {
-  font-size: 15px;
-}
-
-/* biome-ignore lint/style/noDescendingSpecificity: summary copy is isolated from segmented controls. */
-.reference-summary span {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .reference-panel h2,
@@ -904,11 +881,6 @@
   }
   .reference-player-options {
     max-height: 150px;
-  }
-
-  .reference-summary {
-    align-items: flex-start;
-    flex-direction: column;
   }
 }
 

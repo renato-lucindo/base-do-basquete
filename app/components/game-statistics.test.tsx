@@ -64,6 +64,7 @@ describe("GameStatistics", () => {
           jerseyNumber: "7",
           didNotPlay: false,
           isStarter: true,
+          isCaptain: true,
           officialPoints: null,
           fouls: null,
           advancedTotals: null,
@@ -78,8 +79,83 @@ describe("GameStatistics", () => {
     );
 
     expect(html).toContain("Atleta Um");
+    expect(html).toContain("*7");
+    expect(html).toContain("(C)");
+    expect(html).toContain("Ordem oficial");
+    expect(html).toContain("* Titular · (C) Capitão · NJ Não jogou");
     expect(html).toContain("<td>—</td><td>—</td>");
     expect(html).not.toContain("MIN");
     expect(html).not.toContain(">0<");
+    expect(html).not.toContain("public-scoreboard");
+    expect(html.indexOf("Estatísticas dos atletas")).toBeLessThan(
+      html.indexOf("métricas avançadas não se aplicam"),
+    );
+  });
+
+  it("uses NJ for an advanced boxscore player who did not play", () => {
+    const game: PublicGameDetail = {
+      id: 41,
+      competitionId: context.competitionId,
+      label: "Jogo 41",
+      status: "final",
+      scheduledAt: "2026-08-26T15:00:00Z",
+      venue: "Ginásio",
+      advanced: true,
+      teams: [
+        {
+          registrationId: 1,
+          side: "home",
+          teamId: 1,
+          teamName: "Dourada",
+          teamSlug: "dourada",
+          score: 12,
+          periodScores: [],
+          statistics: null,
+          totals: null,
+          pointsReconciled: null,
+        },
+        {
+          registrationId: 2,
+          side: "away",
+          teamId: 2,
+          teamName: "Azul",
+          teamSlug: "azul",
+          score: 10,
+          periodScores: [],
+          statistics: null,
+          totals: null,
+          pointsReconciled: null,
+        },
+      ],
+      gameStatistics: null,
+      players: [
+        {
+          playerId: 2,
+          playerName: "Atleta Dois",
+          playerSlug: "atleta-dois",
+          teamId: 1,
+          side: "home",
+          jerseyNumber: "8",
+          didNotPlay: true,
+          isStarter: false,
+          isCaptain: false,
+          officialPoints: null,
+          fouls: null,
+          advancedTotals: null,
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      <MemoryRouter>
+        <GameStatistics context={context} game={game} />
+      </MemoryRouter>,
+    );
+
+    expect(html).toContain("<td>NJ</td>");
+    expect(html).toContain("Não jogou");
+    expect(html.indexOf("Estatísticas dos atletas")).toBeLessThan(
+      html.indexOf("Estatísticas coletivas indisponíveis"),
+    );
   });
 });
