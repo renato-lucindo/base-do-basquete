@@ -51,8 +51,8 @@ async function resolveContext(path) {
 const older = "/2025/liga-de-desenvolvimento/sub-15/equipes";
 const secondCategory = "/2026/liga-de-desenvolvimento/sub-17/jogadores";
 
-const expectedRoot =
-  /^\/2026\/copa-es-ouro\/fixture-fiba\/(?:masculino\/|feminino\/)?classificacao$/;
+// Root context is selected from current published competitions, not a fixed fixture.
+const expectedRoot = /^\/\d{4}\/[^/]+\/[^/]+\/(?:masculino|feminino)\/classificacao$/;
 let rootResponse;
 let rootLocation;
 for (let attempt = 1; attempt <= propagationAttempts; attempt += 1) {
@@ -75,7 +75,7 @@ assert.ok(rootLocation, "root redirect must include a location");
 assert.match(
   rootLocation,
   expectedRoot,
-  "root must select the latest compatible canonical context",
+  "root must select an available canonical classification context",
 );
 
 for (const path of [rootLocation, older, secondCategory]) {
