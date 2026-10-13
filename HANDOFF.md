@@ -931,3 +931,21 @@ ARQUIVO_OU_SERVICO: e2e do wizard autenticado, projeto QA payumtvegfqfejmowxiy
 ACAO: executar navegador autenticado com MFA AAL2 e registrar criação/revisão/retry/CAS, histórico/auditoria e acessibilidade visual; anexar evidências ao packet da PR72.
 CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada ou limitação documentada, com ambiente QA preservado e sem alterações no Supabase compartilhado.
 ```
+
+## 43. Preview local para teste humano da súmula — 13/10/2026
+
+- PR72 OPEN/DRAFT e remoto `017d603` confirmados; árvore inicialmente limpa. Projeto QA `payumtvegfqfejmowxiy` ACTIVE_HEALTHY conferido pelo conector.
+- Correção do registro da seção42: os outputs daquela sessão mostram erros de sintaxe/glob e comando indisponível, não uma recusa de segurança da ferramenta. A homologação visual continua pendente; não houve comprovação de bloqueio de acesso.
+- WORK_UNIT=MANUAL-SCORESHEET-HUMAN-PREVIEW; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE; BASE_COMMIT=017d60324f546382a07e16f4e4aa2515a9b94eab.
+- Objetivo/aceite: abrir aplicação real da PR em loopback, conectada exclusivamente ao QA, com acesso administrativo/MFA para teste humano. Sem alterar código funcional, migrations, compartilhado, cobrança, main ou produção. Evidências aprovadas preservadas.
+- Escopo: bindings locais ignorados pelo Git, processo local, autenticação sintética somente no QA se necessária e registro operacional. Nenhuma aprovação de QA completo será inferida da abertura do preview.
+
+### Preview aberto e acesso pendente
+
+- Aplicação real iniciada pelo comando `npm run dev -- --host 127.0.0.1 --port 5173`; login aberto e preservado no navegador do Codex em http://127.0.0.1:5173/admin/login. Bindings em `.dev.vars` ignorado apontam exclusivamente para payumtvegfqfejmowxiy; nenhum cliente privilegiado foi entregue à aplicação. Chaves temporárias da CLI removidas após preparo; valores não registrados.
+- Consulta read-only no QA:73 migrations, zero registros em private.admin_accounts. O preview responde e renderiza login; autenticação humana ainda não realizada.
+- Preparação automática de conta sintética foi rejeitada ANTES da execução por revisão automática: `blocked by policy`. O comando não criou conta, não leu credencial DB e não executou Auth/MFA. Não houve contorno dessa rejeição.
+- Aberto também o formulário Authentication > Add user > Create new user no projeto QA, com campos vazios e Auto confirm marcado por padrão; nenhuma submissão. Responsável deve preencher credenciais diretamente no painel, sem enviá-las à conversa. Após criação, mantenedor poderá identificar o UID e registrar o singleton autorizado no QA; depois login/MFA e acesso à súmula pelo preview.
+- Código/SQL/dependências/workflows inalterados; suíte/build/pgTAP aprovados preservados, não repetidos. Este checkpoint não aprova QA visual integral nem altera readiness de merge/rollout.
+- WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-HUMAN-PREVIEW; STATUS=RELEASED (handoff consistente; processo local permanece ativo para teste).
+- PROXIMO_PASSO_EXATO: responsável cria a conta QA no formulário aberto; project-maintainer confere UID/alvo e registra singleton somente em payumtvegfqfejmowxiy, depois responsável realiza login/MFA e testa wizard. Aceite: criação/revisão/retry/CAS/histórico/auditoria comprovados; compartilhado/main/produção preservados.
