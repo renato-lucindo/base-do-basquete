@@ -124,7 +124,7 @@ select ok(
   'Adulto stays visually redundant in the dispute name'
 );
 select ok(
-  (select count(*)=1 from public.competitions c join batch_context x on c.season_id=(x.result->>'seasonId')::bigint where c.display_name='PR3 batch workflow - Sub-17 · Série Ouro'),
+  (select count(*)=1 from public.competitions c join batch_context x on c.season_id=(x.result->>'seasonId')::bigint where c.display_name='PR3 batch workflow - Sub-17 · Série Ouro Norte'),
   'category and division remain explicit on the second dispute'
 );
 select is(
@@ -166,7 +166,7 @@ insert into shared_division_batch values(
         'categoryKind','base','categoryAge',17,'gender','female',
         'startsOn',null,'endsOn',null,
         'divisionMode','new','divisionValueId',null,
-        'divisionTypeName','Serie','divisionValueName','ouro/norte',
+        'divisionTypeName','Serie','divisionValueName','ouro',
         'source','manual_scoresheet','preset','single_group','entryCount',4,
         'expectedProfileId',null,'reason',null
       )
