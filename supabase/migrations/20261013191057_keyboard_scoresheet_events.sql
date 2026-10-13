@@ -110,6 +110,7 @@ begin
     s:=e->>'side'; target:=e->>'target'; kind:=left(e->>'code',1); suffix:=substring(e->>'code' from 2);
     if jsonb_typeof(e) is distinct from 'object' or jsonb_typeof(e->'id') is distinct from 'string' or jsonb_typeof(e->'target') is distinct from 'string' or jsonb_typeof(e->'code') is distinct from 'string' or jsonb_typeof(e->'period') is distinct from 'number'
       or s is null or s not in ('home','away') or e->>'id' is null or target is null or e->>'code' is null
+      or e->>'id' !~ '^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$'
       or (e->>'period') is null or (e->>'period') !~ '^[0-9]+$' or (e->>'period')::integer not between 1 and n
       or (target not in ('B','C') and not exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target))
       or exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target and not (r->>'played')::boolean)
