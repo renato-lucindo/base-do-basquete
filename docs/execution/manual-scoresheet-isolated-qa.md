@@ -119,10 +119,10 @@ COMMIT_REVISADO:94f482529878dd625f8dd139002e5964e81e57d5. [Packet publicado](htt
 
 ### Banco — Harvey
 
-PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**  
-WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA  
-BASE_COMMIT: 85dc11d0516c504e6a52d07d01cbc42903627d80  
-COMMIT_REVISADO: 94f482529878dd625f8dd139002e5964e81e57d5  
+PARECER: **APPROVE_WITH_NON_BLOCKING_NOTES**
+WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA
+BASE_COMMIT: 85dc11d0516c504e6a52d07d01cbc42903627d80
+COMMIT_REVISADO: 94f482529878dd625f8dd139002e5964e81e57d5
 REVIEWED_AT: 2026-10-13T13:17:31Z
 
 ESCOPO_REVISADO: renovação focal dos quatro runners, regressões offline, relatório e resumo de advisors.
@@ -135,9 +135,9 @@ ACHADOS_ANTERIORES:
 - **P3 — equivalência de segurança: resolvido.** Relatório discrimina os campos comparados e exclui owners, schema USAGE/CREATE, sequences/colunas e corpos de funções. Registra corretamente `--no-owner` e os nove DEFAULT ACL omitidos.
 - **P3 — advisor omitido: resolvido.** `auth_leaked_password_protection` WARN(1) incluído, com limitação Free/Pro explícita e sem upgrade.
 
-MIGRATIONS: nenhuma alteração neste delta; evidências anteriores de QA73/shared62 preservadas.  
-RLS_E_GRANTS: nenhuma alteração; afirmações de equivalência agora limitadas à coleta realizada.  
-INTEGRIDADE_E_TRANSACOES: logs/resultados remotos anteriores permanecem inalterados; nenhuma nova execução remota foi necessária.  
+MIGRATIONS: nenhuma alteração neste delta; evidências anteriores de QA73/shared62 preservadas.
+RLS_E_GRANTS: nenhuma alteração; afirmações de equivalência agora limitadas à coleta realizada.
+INTEGRIDADE_E_TRANSACOES: logs/resultados remotos anteriores permanecem inalterados; nenhuma nova execução remota foi necessária.
 PRIVACIDADE: testes offline usam fixtures temporárias e drivers simulados; nenhuma credencial real foi obtida.
 
 TESTES_E_EVIDENCIAS: execução própria de `test_runner_guards.py`: **3/3 PASS**, cobrindo16 execuções otimizadas, quatro alvos incorretos e TAP válido/cinco inválidos. `git diff --check` PASS. Sem delta em aplicação, SQL, dependências ou workflows.
@@ -146,19 +146,19 @@ ACHADOS_NOVOS: nenhum bloqueante.
 
 RISCOS_RESIDUAIS: permanecem os limites documentados de recuperação lógica na mesma instância, bootstrap distinto da baseline compartilhada, ACLs/owners gerenciados, GoTrue/secrets/S3/PITR e ausência de wizard autenticado integral. Esta renovação não amplia a evidência anterior.
 
-READINESS_BANCO_DESTA_UNIDADE: **READY**, para os ensaios e limites declarados.  
-READINESS_ENCERRAMENTO_UNIDADE: depende do parecer independente de QA.  
+READINESS_BANCO_DESTA_UNIDADE: **READY**, para os ensaios e limites declarados.
+READINESS_ENCERRAMENTO_UNIDADE: depende do parecer independente de QA.
 READINESS_MERGE/ROLLOUT: **NOT_READY**; nenhuma autorização de merge, shared ou produção.
 
-GIT_STATUS_ANTES: limpo.  
+GIT_STATUS_ANTES: limpo.
 GIT_STATUS_DEPOIS: limpo; HEAD fixo preservado. WRITE_LOCK permanece com o mantenedor.
 
 SKILL_RESULT: reviewing-supabase-changes — **PASS** na renovação focal. Gates completos e runners remotos omitidos conforme escopo.
 
-PROXIMO_PASSO_EXATO:  
-RESPONSAVEL: project-maintainer  
-ARQUIVO_OU_SERVICO: relatório da unidade, HANDOFF e PR72.  
-ACAO: registrar esta revogação e consolidar o parecer de QA e status reais dos checks.  
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: relatório da unidade, HANDOFF e PR72.
+ACAO: registrar esta revogação e consolidar o parecer de QA e status reais dos checks.
 CRITERIO_DE_CONCLUSAO: revisões válidas no artefato aplicável, preservando explicitamente as pendências de integração e rollout.
 
 ### QA — Pascal (01a13568-9d5a-7890-aca6-cd55fa4d27fa)
@@ -208,4 +208,3 @@ CRITERIO_DE_CONCLUSAO: fechamento rastreável, lock liberado e
 ### Aceite do mantenedor
 
 READINESS_UNIDADE=READY; WRITE_LOCK RELEASED. Pareceres válidos por identidade do artefato e ausência de delta material posterior. READINESS_MERGE/ROLLOUT=NOT_READY. Checks94f4825: CI38403639924, Preview38403639618, CodeQL38403639620, Stage438403629656 FAILURE antes de etapas, quatro annotations de cobrança verificadas. SHA/checks do fechamento documental serão publicados no comentário final da PR, sem repetir suítes nem reexecutar jobs recusados. Permanecem homologação visual autenticada completa, limites de recuperação e capacidade Actions. Sem merge, aplicação no compartilhado ou produção.
-
