@@ -1,54 +1,58 @@
 # HANDOFF — Base do Basquete
 
+## Checkpoint PR #73 reconciliada — 13/10/2026
+
+WORK_UNIT=RECONCILE-PR73-WITH-PR79; OWNER=project-maintainer; BRANCH=codex/multi-dispute-creation-navigation; STATUS=RELEASED. PR3 reconciliada com a base `codex/independent-registrations-copy@ced8a76e19ce`, preservando UI pública PR63, correção de boxscore PR65, integridade de divisões PR79, e os 17 arquivos incrementais da criação múltipla. CSS foi conciliado aplicando o hunk da PR3 sobre o CSS atual, sem perda das regras públicas. O pgTAP de PR3 passou anteriormente em validação temporária #81: 46 arquivos/1.292 testes; a nova árvore exige gate próprio. NÃO INTEGRAR enquanto #79 não for aprovada e incorporada à main com plano de migrations remoto. Sem DDL no Supabase compartilhado nem produção.
+
+## Reconciliação PR #79 após merge do boxscore — 13/10/2026
+
+WORK_UNIT=RECONCILE-PR79-AFTER-PR65; OWNER=project-maintainer; BRANCH=codex/independent-registrations-copy; STATUS=RELEASED. HEAD de PR79 reconciliado com main@f29d8ba620d8 por merge sintético com dois pais. O redirecionamento 303 e o caminho público por naipe aprovados em PR #65 foram preservados ao aplicar 9 hunks da inscrição independente nos dois arquivos administrativos afetados. UI #63 permanece preservada. A PR #79 continua DRAFT, risco CRITICO e **não autoriza merge na main** antes de CI completo, pareceres especialistas independentes e rollout seguro de migrations no Supabase compartilhado. Nenhum banco remoto nem produção alterados.
+
+## Checkpoint de reconciliação PR #65 após merge da UI — 13/10/2026
+
+WORK_UNIT=BOXSCORE-POST-CONFIRM-MAIN-REBASE; OWNER=project-maintainer; BRANCH=codex/boxscore-dynamic-rollout; STATUS=RELEASED após validação. Novo merge de `main@dba21a70f3a0` preserva integralmente a UI pública integrada em PR #63, reaplica os cinco arquivos funcionais originais da #65 sem conflitos de conteúdo e conserva este HANDOFF. PR continua DRAFT até gates no novo HEAD e prova do smoke AAL2 autenticado ou decisão auditável de release; nenhum deploy ou migration remota realizado.
+
+## Checkpoint integração PR #63 — 13/10/2026
+
+WORK_UNIT=UIUX-PUBLIC-FOUNDATION-MAIN-RECONCILE; BRANCH=codex/uiux-public-foundation; OWNER=project-maintainer; STATUS=RELEASED após o merge de reconciliação. A branch foi integrada com `main@c7438c5c1b` preservando os 24 arquivos funcionais sem sobreposição, aplicando os 16 hunks de CSS da PR ao CSS atual sem conflitos e preservando o HANDOFF da main. Nenhum código da PR #72 cancelada foi introduzido deliberadamente. Risco de UI/estatísticas públicas exige CI, acessibilidade, navegação, validação visual de responsividade e revisão de publicação/dados no commit reconciliado antes de merge. Sem produção nem Supabase compartilhado. Próximo passo: conferir runs e pendências da PR #63.
+
 > Checkpoint operacional da linha de edições multidimensionais. Histórico detalhado e evidências anteriores permanecem no Git, nas PRs e em `docs/execution/`. Não registrar segredos.
 
-## Checkpoint de retomada — 08/10/2026 — PR3 SQL
+## Checkpoint PR #75 — 09/10/2026
 
-- Estado remoto confirmado: PRs draft #66 (base main, HEAD 4865592), #68 (base #66, HEAD 62dcfa9), #69 (base #68, HEAD ec9c4f1) e #73 PR3 (base #69, HEAD 58a1205); validação temporária #74 sobre main no mesmo SHA.
-- Runs da PR #74: CI 37781752092: gate e accessibility PASS, database FAIL no pgTAP; CodeQL 37781752041 PASS e preview 37781752184 PASS. O banco concluiu reset/seed, upgrade season/division, divergent edition e manual scheduling antes da falha.
-- Causa confirmada: public.admin_create_competition_edition_batch na migration da PR3 encontra referência ambígua a season_id na função private.create_edition_workflow_batch durante multi_dispute_creation_navigation.test.sql. Correção incremental aditiva é necessária; migração PR3 anterior será preservada.
-- PR #74 é uma validação temporária sem merge. Não publicar migrations no banco compartilhado nem executar deploy de produção nesta correção.
-- Arquivos não rastreados e alterações de outras worktrees pertencem a outras unidades e devem ser preservados.
+A unidade ativa desta sessão é `GOVERNANCE-RISK-BASED-REVIEWS-2026-10-08`, PR #75, branch remota `codex/governance-risk-based-reviews`, base `59fb0eeb7a9f99491e8b913dc9265a4f08ecb184`. Este checkpoint substitui operacionalmente a unidade antiga abaixo, preservada como histórico da pilha. Workspace PR69 e demais worktrees foram preservados.
 
-WRITE_LOCK:
-OWNER: project-maintainer
-WORK_UNIT: MULTI-DISPUTE-PR3-DB-FIX
-BRANCH: codex/pr3-stack-reconcile (publicação para codex/multi-dispute-creation-navigation)
-BASE_COMMIT: 58a1205d9eb29f46b3dc898ed2e6c679d4ef0673
-SCOPE: correção aditiva PL/pgSQL para falha pgTAP da PR3, testes de banco e registro de evidências.
-SCOPE_NEGATIVO: sem merge, compartilhamento de migration, deploy de produção ou alteração das demais worktrees.
-REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer (PR3 funcional).
-STATUS: ACTIVE
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=GOVERNANCE-RISK-BASED-REVIEWS-2026-10-08; BRANCH=codex/governance-risk-based-reviews; STATUS=ACTIVE; SCOPE=QA independente sob contrato v2, registro das evidências e merge autorizado da PR75 se aprovada; sem alteração da PR72, migrations compartilhadas ou deploy de produção.
 
-PROXIMO_PASSO_EXATO:
-RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: supabase/migrations e GitHub PR #74
-ACAO: corrigir referência ambígua com migration aditiva, validar pgTAP remoto, obter pareceres da PR3 vinculados ao SHA final.
-CRITERIO_DE_CONCLUSAO: database CI verde inclusive pgTAP e concurrency, PR #73 atualizada com REVIEW_PACKET e pareceres rastreáveis.
+Artefato normativo `9c058009d877e64efee835624c343d09cf4a9378`: CI [37867233510](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37867233510), CodeQL [37867233499](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37867233499) e preview [37867233560](https://github.com/renato-lucindo/base-do-basquete/actions/runs/37867233560) aprovados. CI executou gate consolidado, 457 testes Vitest, 10 Playwright e banco/pgTAP/concorrência/RPC; scan de 699 arquivos passou. Supabase Preview foi SKIPPED e não substituiu o job database aprovado. Este commit de checkpoint altera somente documentação de evidência; revisão incremental e checks finais devem ser confirmados na PR antes do merge. Parecer completo e resultado de integração serão registrados na PR, fonte remota verificável.
+
+QA independente acionado sob o perfil operacional `.agents/qa-reviewer.md` da base v2, em instância separada; tipo customizado indisponível no runtime, sem dispensa da revisão. A v3 proposta não autoriza sua própria aprovação. PR72 mantém seu BLOCK_RELEASE estatístico até novo parecer independente; segurança e estatística críticas continuam obrigatórias. Nenhuma migration ou publicação em produção foi executada nesta unidade.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=GitHub PR75; ACAO=obter parecer QA válido no HEAD final e confirmar checks, integrar somente se aprovado, registrar merge e liberar lock na PR. Após integração, a próxima unidade será atualizar explicitamente o REVIEW_PACKET da PR72 sob v3, preservando os revisores críticos e o bloqueio estatístico; não iniciar essa unidade nesta sessão. CRITERIO_DE_CONCLUSAO=PR75 MERGED com SHA verificável, parecer válido e checks verdes, sem migrations compartilhadas ou deploy de produção.
 ## 1. Unidade corrente e integração
 
-`MULTI-DISPUTE-PR3-STACK-RECONCILE`: atualização da branch PR3 sobre a PR #69 já reconciliada; PR #66 (`codex/season-division-model`) com `main` em 08/10/2026, após a integração da governança documental pela PR #71 (merge `8ac6220`). O conflito de `HANDOFF.md` foi reconciliado com o formato compacto da governança; `docs/plan/README.md` teve merge automático.
+`EDITION-CREATION-PR66-MAIN-RECONCILE`: reconciliação da PR draft #66 (`codex/season-division-model`) com `main` em 08/10/2026, após a integração da governança documental pela PR #71 (merge `8ac6220`). O conflito de `HANDOFF.md` foi reconciliado com o formato compacto da governança; `docs/plan/README.md` teve merge automático.
 
-Este merge incorpora o histórico reconciliado da PR #69 e preserva a implementação funcional da PR3 (criação múltipla de disputas, navegação adaptativa e auditoria de alterações). Não modifica deliberadamente migrations, contratos de aplicação ou infraestrutura. Os commits funcionais anteriores mantêm sua validade histórica; CI e verificação do HEAD resultante são necessários antes de integrar.
+Este merge de integração agrega a governança documental de `main`, sem mudança deliberada no comportamento funcional, migrations da PR #66 ou infraestrutura. Os commits funcionais anteriores mantêm sua validade histórica; CI e verificação do HEAD resultante são necessários antes de integrar.
 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MULTI-DISPUTE-PR3-STACK-RECONCILE
-BRANCH: codex/multi-dispute-creation-navigation
-BASE_COMMIT: f1f2112605d9178b28aa98b579ec8407aa1e0876
-SCOPE: incorporar o HEAD reconciliado da PR69 na PR3 e atualizar checkpoint
+WORK_UNIT: EDITION-CREATION-PR66-MAIN-RECONCILE
+BRANCH: codex/season-division-model
+BASE_COMMIT: 3d27b45b60b3f15dcf4ebe9053441efc406f773c
+SCOPE: reconciliar o merge de main na PR66 e atualizar checkpoint documental
 SCOPE_NEGATIVO: sem novas migrations, alteração de dados no Supabase, merge na main ou produção
-REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer (delta funcional PR3 ainda não teve parecer final)
+REQUIRED_REVIEWERS: dispensa especializada para delta de merge/documentação sem mudança funcional, sujeita à confirmação do diff
 STATUS: RELEASED
 ```
 
 ## 2. Sequência das PRs
 
 - PR #66: edição/temporada/divisões; draft sobre `main`; branch `codex/season-division-model`. Commit funcional revisado `4542f44`; último HEAD anterior a este merge `3d27b45`.
-- PR #68: cadastro de edição sem naipe, dependente da #66; draft sobre `codex/season-division-model`; funcional `a35366b`, HEAD anterior ao merge `be8cb34`; migration `20261005183643_edition_identity_no_gender.sql` ainda sem rollout compartilhado.
-- PR #69: inscrições independentes e cópia transacional, dependente da #68; draft sobre `codex/edition-identity-no-gender`; HEAD anterior ao merge `b9c8d57` publicado em 08/10. Artefato funcional revisado `a5c84f4`.
-- PR3: criação múltipla de disputas/navegação e auditoria, funcional `f1f2112`, migração `20261006123600_multi_dispute_creation_navigation.sql`, empilhada na PR #69; aguarda validação remota e pareceres específicos.
+- PR #68: cadastro de edição sem naipe, dependente da #66; draft sobre `codex/season-division-model`; HEAD anterior `be8cb34`.
+- PR #69: inscrições independentes e cópia transacional, dependente da #68; draft sobre `codex/edition-identity-no-gender`; HEAD documental `b9c8d57` já publicado em 08/10. Artefato funcional revisado `a5c84f4`.
+- PR3: criação múltipla de disputas/navegação, implementada localmente na branch `codex/multi-dispute-creation-navigation` (HEAD `f1f2112`), aguardando publicação e gates remotos, na sequência da #69.
 - PR4/PR5: importação individual e em lote permanecem etapas posteriores e devem usar unidades/branches próprias.
 
 As PRs são empilhadas e precisam ser conciliadas em ordem. Nenhuma PR desta sequência deve ser tratada como integrada à `main` sem verificação remota.
@@ -62,12 +66,6 @@ As PRs são empilhadas e precisam ser conciliadas em ordem. Nenhuma PR desta seq
 
 ## 4. Evidências e riscos
 
-- PR3, funcional local `f1f2112` (base `45e11c7`): 60 arquivos/473 Vitest, Playwright focal 14/14 com Axe, foco/teclado e 390/720/1440 px, typecheck, lint sem erros, build e scan passaram antes das duas correções de auditoria. Correção de P1 prévia para permitir `competition_season_navigation_configured` na constraint de auditoria e correção incremental de trilha foram commitadas em `f1f2112`; gate SQL/pgTAP remoto e renovação de banco/acessibilidade/QA ainda pendentes.
-
-- PR #69, funcional `a5c84f4`: cinco pareceres independentes de banco/segurança, boxscore, estatísticas, acessibilidade e QA, todos `APPROVE` ou `APPROVE_WITH_NON_BLOCKING_NOTES` e nenhum P0–P3; QA `READY`; gate remoto validou migrações/upgrade e 45 arquivos/1.264 pgTAP. Notas não bloqueantes: concorrência focal de RPC copy ainda sem ensaio específico, advisors pós-rollout futuros e cobertura de acessibilidade focal. Não aplicar migration PR2 ao Supabase compartilhado nesta etapa.
-
-- PR #68, funcional `a35366b`: typecheck, 457 Vitest, 8 Playwright focais com axe, build, scan e verificações documentais passaram localmente antes da publicação; SQL/CI/pareceres posteriores devem ser confirmados pelos registros remotos do HEAD funcional. Nenhuma migration PR68 aplicada ao Supabase compartilhado.
-
 - PR #66, funcional `4542f44`: pareceres banco/segurança, acessibilidade e QA `APPROVE`, sem P0–P3; CI, banco/pgTAP, preview e CodeQL verdes no artefato funcional. Os cinco checks antigos também estavam verdes no HEAD `3d27b45`.
 - PR #69, funcional `a5c84f4`: pareceres especializados aprovados ou aprovados com notas não bloqueantes; CI (incluindo 45 arquivos/1.264 assertivas pgTAP), preview e CodeQL verdes. No HEAD apenas documental `88d0b13`, os três workflows também estavam verdes. `b9c8d57` ainda não apresentou checks próprios na consulta de 08/10.
 - O merge de `main` na PR66 altera a base da pilha: reconfirmar compatibilidade das PRs #68/#69, atualizar seus branches sem force-push e exigir seus checks para os HEADs correspondentes.
@@ -77,13 +75,13 @@ As PRs são empilhadas e precisam ser conciliadas em ordem. Nenhuma PR desta seq
 
 ```text
 REVIEW_PACKET:
-WORK_UNIT: MULTI-DISPUTE-PR3-STACK-RECONCILE
-BRANCH: codex/multi-dispute-creation-navigation
-BASE_COMMIT: f1f2112605d9178b28aa98b579ec8407aa1e0876
-OBJETIVO: alinhar PR3 à base atualizada da PR69, conservando o checkpoint documental compacto
-CRITERIOS_DE_ACEITE: sem conflitos, delta funcional PR3 preservado, gates remotos SQL/CI/preview/CodeQL, pareceres válidos para SHA final
+WORK_UNIT: EDITION-CREATION-PR66-MAIN-RECONCILE
+BRANCH: codex/season-division-model
+BASE_COMMIT: 3d27b45b60b3f15dcf4ebe9053441efc406f773c
+OBJETIVO: eliminar conflito de merge com main, conservando o checkpoint documental compacto
+CRITERIOS_DE_ACEITE: sem conflitos, diff funcional preservado, gates remotos do HEAD resultante aprovados, cadeia empilhada coerente
 ESCOPO_NEGATIVO: sem nova migration, alteração de banco compartilhado ou deploy em produção
-REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer
+REQUIRED_REVIEWERS: dispensa de revisão especializada se o delta for comprovadamente apenas documental/merge; caso contrário renovar pareceres proporcionais
 WRITE_LOCK_OWNER: RELEASED
 ```
 
@@ -92,11 +90,12 @@ WRITE_LOCK_OWNER: RELEASED
 ```text
 PROXIMO_PASSO_EXATO:
 RESPONSAVEL: project-maintainer
-ARQUIVO_OU_SERVICO: GitHub PR draft da codex/multi-dispute-creation-navigation
-ACAO: publicar branch/PR3 draft sobre PR69; executar CI/database e pgTAP de reset/upgrade, preview/CodeQL; corrigir falhas e obter pareceres database-security, accessibility e QA válidos para SHA final
-CRITERIO_DE_CONCLUSAO: PR3 draft com gates e pareceres vinculados ao SHA sem P0-P3; HANDOFF reconciliado e trabalhos não rastreados preservados
+ARQUIVO_OU_SERVICO: GitHub PR #66, PR #68, PR #69 e branch codex/multi-dispute-creation-navigation
+ACAO: publicar o merge reconciliado da PR66; validar CI/database/preview/CodeQL; reconciliar PR68/69 em ordem e publicar a PR3 como draft; executar os gates SQL/CI, revisões e smoke necessários para cada SHA funcional
+CRITERIO_DE_CONCLUSAO: PR66 sem conflito; stack PR68/69 consistente; PR3 draft com evidências remotas e pareceres vinculados ao SHA; sem perda de worktrees/untracked
 ```
 
 ## 7. Rastreabilidade
 
 O histórico longo da PR66 permanece em `3d27b45:HANDOFF.md`, o checkpoint da governança em `8ac6220:HANDOFF.md`, os resultados no histórico de comentários/checks das PRs #66/#68/#69 e os pacotes encerrados em `docs/execution/`. Preserve as worktrees em andamento e os não rastreados de outros trabalhos.
+

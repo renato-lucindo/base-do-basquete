@@ -595,14 +595,10 @@ export function BoxscoreStatisticsExplorer({
           ))}
         </fieldset>
       </div>
-      <div className="reference-summary" aria-live="polite">
-        <strong>
-          {data.total} {data.total === 1 ? "atleta" : "atletas"}
-        </strong>
-        <span>
-          {modeLabel} · {scopeLabel} · somente jogos finalizados
-        </span>
-      </div>
+      <output className="sr-only" aria-live="polite">
+        {data.total} {data.total === 1 ? "atleta encontrado" : "atletas encontrados"}. {modeLabel} ·{" "}
+        {scopeLabel} · somente jogos finalizados.
+      </output>
       {activeFilters.length ? (
         <div className="active-filters">
           <span>Filtros:</span>

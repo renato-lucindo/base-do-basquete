@@ -97,8 +97,9 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain("Equipes · 1/1");
     expect(html).toContain('type="checkbox" checked=""');
     expect(html).not.toContain("<h1>Liga</h1>");
-    expect(html).toContain("1 atleta");
+    expect(html).toContain("1 atleta encontrado");
     expect(html).toContain("Por 30 min. · todos os jogos · somente jogos finalizados");
+    expect(html).not.toContain('class="reference-summary"');
     expect(html).toContain("Colunas · 12/19");
     expect(html).toContain("Todas");
     expect(html).toContain("Nenhuma");
@@ -123,7 +124,7 @@ describe("BoxscoreStatisticsExplorer", () => {
 
     expect(html).toContain("Equipes · 0/1");
     expect(html).toContain('aria-label="Não selecionar nenhuma equipe" disabled=""');
-    expect(html).toContain("0 atletas");
+    expect(html).toContain("0 atletas encontrados");
     expect(html).toContain(
       '<div class="reference-team-options"><label><input type="checkbox"/><span>Azul</span>',
     );
@@ -282,6 +283,9 @@ describe("BoxscoreStatisticsExplorer", () => {
     expect(html).toContain('class="public-header"');
     expect(html).toContain('class="public-nav"');
     expect(html).toContain("Base do Basquete");
+    expect(html).toContain("Dados coletados pela equipe de estatística da FECABA.");
+    expect(html).toContain("Site desenvolvido por Renato Lucindo.");
+    expect(html).not.toContain(">Visão geral</a>");
     expect(html).not.toContain("boxscore-reference-shell");
     expect(html).not.toContain("<h1>Liga</h1>");
   });

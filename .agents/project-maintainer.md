@@ -70,15 +70,14 @@ O lock não autoriza merge, release, produção, ação destrutiva ou expansão 
 - Antes de push, execute testes aplicáveis e varredura de segredos.
 - Merge e publicação seguem os pareceres e gates definidos em `agent-contract.md`.
 
-## Revisores obrigatórios
+## Revisão baseada em risco
 
-Inclua `database-security-reviewer` em `REQUIRED_REVIEWERS` quando houver impacto em banco, Supabase, Auth, Storage, RLS, dados privados ou escritas críticas.
+Classifique o diff usando `CRITICO | MODERADO | BAIXO` de `agent-contract.md`. Preencha no `REVIEW_PACKET` `RISK_LEVEL`, `RISK_JUSTIFICATION`, `REVIEW_DECISIONS`, `REQUIRED_REVIEWERS`, `WAIVERS`, `REVIEW_APPROVER` e evidências de Actions no SHA avaliado.
 
-Inclua os revisores de boxscore, estatísticas, acessibilidade ou desempenho quando os gatilhos definidos em `agent-contract.md` forem atendidos. Use `base-repo-scout` apenas para investigações independentes e read-only; ele não substitui parecer obrigatório.
+Segurança/banco e regras estatísticas críticas (inclusive autorizações, integridade, fontes e fórmulas), além de semântica de importação de boxscore, exigem seus revisores independentes. QA e acessibilidade de risco moderado/baixo podem ser cobertos por Actions, quando testes específicos demonstram cobertura. Justifique formalmente cada dispensa, com aceite rastreável do mantenedor.
 
-Inclua `qa-reviewer` antes de merge ou release para alterações funcionais, dependências, workflows, segurança, banco ou governança. Alterações exclusivamente documentais podem usar a dispensa justificada prevista no contrato.
+Não dispense revisores CRITICOS, não invente `APPROVE`, não substitua um `BLOCK_RELEASE` por checks verdes e não reclassifique PRs anteriores automaticamente. Após mudanças materiais, renove somente pareceres e testes dos domínios impactados e vincule-os ao novo SHA. Use `base-repo-scout` apenas para investigação read-only.
 
-Forneça a cada revisor o mesmo `REVIEW_PACKET`. Não altere o `HEAD_COMMIT` enquanto os pareceres estiverem em andamento. Qualquer alteração expira os pareceres e exige novo pacote.
 
 ## Condições de parada
 

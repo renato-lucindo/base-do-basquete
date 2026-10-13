@@ -1056,6 +1056,8 @@ declare
   division_type public.competition_competitive_division_types;
   resolved_season_id bigint;
   created_value_id bigint;
+  existing_value_name text;
+  existing_sort_order integer;
   conflict_constraint text;
 begin
   if not public.is_current_admin_aal2() then
@@ -1128,6 +1130,40 @@ begin
     raise exception using
       errcode = 'BD409',
       message = 'BDB_COMPETITION_DIVISION_TYPE_CONFLICT';
+  end if;
+
+  select existing.id, existing.name, existing.sort_order
+  into created_value_id, existing_value_name, existing_sort_order
+  from public.competition_competitive_division_values existing
+  where existing.competitive_division_type_id = division_type.id
+    and existing.season_id = resolved_season_id
+    and existing.slug = clean_value_slug;
+
+  if found then
+    if existing_value_name is distinct from clean_value_name
+      or existing_sort_order is distinct from p_sort_order
+    then
+      raise exception using
+        errcode = 'BD506',
+        message = 'BDB_COMPETITION_DIVISION_VALUE_CONFLICT';
+    end if;
+
+    insert into private.competition_dimension_requests (
+      request_id,
+      actor_id,
+      operation,
+      input,
+      result_id
+    )
+    values (
+      p_request_id,
+      auth.uid(),
+      'create_division_value',
+      normalized_input,
+      created_value_id
+    );
+
+    return created_value_id;
   end if;
 
   begin
