@@ -7,6 +7,7 @@ import {
   genderDivisionLabel,
   type PublicResource,
 } from "../modules/competition/context";
+import { PublicFooter } from "./public-navigation";
 
 interface PublicGenderSelectionProps {
   contexts: CompetitionContext[];
@@ -21,8 +22,8 @@ export function PublicGenderSelection({ contexts, detail, resource }: PublicGend
   }
 
   return (
-    <main className="public-shell">
-      <div className="public-content">
+    <div className="public-shell">
+      <main className="public-content public-selection-content">
         <section className="error-card" aria-labelledby="gender-selection-title">
           <p className="eyebrow">Escolha obrigatória</p>
           <h1 id="gender-selection-title">Selecione o naipe da edição</h1>
@@ -56,8 +57,9 @@ export function PublicGenderSelection({ contexts, detail, resource }: PublicGend
             )}
           </div>
         </section>
-      </div>
-    </main>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }
 

@@ -2,7 +2,8 @@ import { data, Link } from "react-router";
 
 import { GameStatistics } from "../components/game-statistics";
 import { PlayerProfile } from "../components/player-profile";
-import { PublicBreadcrumb, PublicHeader } from "../components/public-navigation";
+import { PublicBreadcrumb, PublicFooter, PublicHeader } from "../components/public-navigation";
+import { TeamProfile } from "../components/team-profile";
 import { cloudflareContext } from "../context";
 import { createAnonymousSupabaseClient } from "../modules/auth/supabase.server";
 import {
@@ -83,16 +84,17 @@ export function PublicDetailContent({
   game,
   playerProfile,
   resource,
+  teamProfile,
 }: PublicDetailPayload) {
   return (
-    <main className="public-shell">
+    <div className="public-shell">
       <PublicHeader
         context={context}
         contexts={contexts}
         detailLabel={detail.label}
         resource={resource}
       />
-      <div className="public-content">
+      <main className="public-content">
         <PublicBreadcrumb
           context={context}
           contexts={contexts}
@@ -107,6 +109,8 @@ export function PublicDetailContent({
             context={context}
             profile={playerProfile}
           />
+        ) : resource === "equipes" && teamProfile ? (
+          <TeamProfile achievements={detail.achievements} context={context} profile={teamProfile} />
         ) : (
           <>
             <article className="detail-card">
@@ -148,8 +152,9 @@ export function PublicDetailContent({
             </section>
           </>
         )}
-      </div>
-    </main>
+      </main>
+      <PublicFooter />
+    </div>
   );
 }
 

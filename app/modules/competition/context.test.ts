@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   type CategoryContextRow,
   type CompetitionContextRow,
+  canonicalPublicResource,
   contextPath,
   matchingLegacyContexts,
+  PUBLIC_NAV_RESOURCES,
   parseContextPreference,
   parsePublicYear,
   type SeriesContextRow,
@@ -40,6 +42,12 @@ const category: CategoryContextRow = {
 };
 
 describe("competition context", () => {
+  it("keeps overview compatible while exposing classification as the canonical entry", () => {
+    expect(canonicalPublicResource("visao-geral")).toBe("classificacao");
+    expect(canonicalPublicResource("jogadores")).toBe("jogadores");
+    expect(PUBLIC_NAV_RESOURCES).toEqual(["classificacao", "jogos", "equipes", "jogadores"]);
+  });
+
   it("converts one canonical row and carries the database id", () => {
     const context = toCompetitionContext(competition, series, category);
 

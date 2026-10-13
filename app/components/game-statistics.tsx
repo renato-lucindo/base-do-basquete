@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router";
 
 import { type CompetitionContext, contextPath } from "../modules/competition/context";
@@ -27,6 +28,14 @@ const advancedColumns = [
   "plus-minus",
 ] as const;
 
+type PlayerOrder = "official" | "points-desc" | "points-asc";
+
+const gameStatusLabels: Record<string, string> = {
+  scheduled: "Agendado",
+  live: "Em andamento",
+  final: "Finalizado",
+};
+
 function available(value: number | null | undefined, suffix = ""): string {
   return value === null || value === undefined
     ? "—"
@@ -43,29 +52,13 @@ function clock(seconds: number | null | undefined): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
-function TeamScore({
-  context,
-  status,
-  team,
-}: {
-  context: CompetitionContext;
-  status: string;
-  team: PublicGameTeam;
-}) {
-  return (
-    <div>
-      <Link to={contextPath(context, "equipes", team.teamSlug)}>{team.teamName}</Link>
-      <strong>{status === "scheduled" ? "—" : team.score}</strong>
-    </div>
-  );
-}
-
 function AdvancedPlayerCells({ player }: { player: PublicGamePlayer }) {
   const totals = player.advancedTotals;
   if (player.didNotPlay || !totals) {
     return (
       <>
-        {advancedColumns.map((column) => (
+        <td>{player.didNotPlay ? "NJ" : "—"}</td>
+        {advancedColumns.slice(1).map((column) => (
           <td key={column}>—</td>
         ))}
       </>
@@ -100,13 +93,28 @@ function AdvancedPlayerCells({ player }: { player: PublicGamePlayer }) {
 function TeamBoxscore({
   context,
   game,
+  order,
   team,
 }: {
   context: CompetitionContext;
   game: PublicGameDetail;
+  order: PlayerOrder;
   team: PublicGameTeam;
 }) {
-  const players = game.players.filter((player) => player.registrationId === team.registrationId);
+  const players = game.players
+    .filter((player) => player.registrationId === team.registrationId)
+    .map((player, index) => ({ player, index }))
+    .sort((left, right) => {
+      if (order === "official") return left.index - right.index;
+      if (left.player.officialPoints === null) return right.player.officialPoints === null ? 0 : 1;
+      if (right.player.officialPoints === null) return -1;
+      const direction = order === "points-desc" ? -1 : 1;
+      const points = left.player.officialPoints - right.player.officialPoints;
+      return points === 0
+        ? left.player.playerName.localeCompare(right.player.playerName, "pt-BR")
+        : points * direction;
+    })
+    .map(({ player }) => player);
   return (
     <section className="game-team-statistics">
       <h2>
@@ -145,12 +153,12 @@ function TeamBoxscore({
           <tbody>
             {players.map((player) => (
               <tr className={player.isStarter ? "is-starter" : undefined} key={player.playerId}>
-                <td>{player.jerseyNumber}</td>
+                <td>{player.isStarter ? `*${player.jerseyNumber}` : player.jerseyNumber}</td>
                 <th scope="row">
                   <Link to={contextPath(context, "jogadores", player.playerSlug)}>
                     {player.playerName}
                   </Link>
-                  {player.isStarter ? <span className="starter-mark">Titular</span> : null}
+                  {player.isCaptain ? <span className="captain-mark"> (C)</span> : null}
                   {player.didNotPlay ? <span className="dnp-mark">Não jogou</span> : null}
                 </th>
                 {game.advanced ? (
@@ -294,6 +302,7 @@ export function GameStatistics({
   context: CompetitionContext;
   game: PublicGameDetail;
 }) {
+  const [playerOrder, setPlayerOrder] = useState<PlayerOrder>("official");
   const periods = [
     ...new Set(game.teams.flatMap((team) => team.periodScores.map((score) => score.periodNumber))),
   ].sort((left, right) => left - right);
@@ -314,12 +323,15 @@ export function GameStatistics({
             {scheduled} · {game.venue ?? "Local a definir"}
           </p>
         </div>
-        <span className="game-status">{game.status}</span>
+        <span className="game-status">{gameStatusLabels[game.status] ?? game.status}</span>
       </header>
-      <section className="public-scoreboard" aria-label="Placar do jogo">
-        <TeamScore context={context} status={game.status} team={game.teams[0]} />
-        <span>×</span>
-        <TeamScore context={context} status={game.status} team={game.teams[1]} />
+      <section className="game-match-summary" aria-label="Placar do jogo">
+        {game.teams.map((team) => (
+          <div key={team.registrationId}>
+            <Link to={contextPath(context, "equipes", team.teamSlug)}>{team.teamName}</Link>
+            <strong>{game.status === "scheduled" ? "—" : team.score}</strong>
+          </div>
+        ))}
       </section>
       {periods.length ? (
         <ScrollableTable label="Placar por período">
@@ -355,23 +367,51 @@ export function GameStatistics({
           </table>
         </ScrollableTable>
       ) : null}
-      {game.advanced ? (
-        <CollectiveStatistics game={game} />
-      ) : (
-        <p className="simple-statistics-note">
-          Esta categoria publica o placar e os pontos; métricas avançadas não se aplicam.
-        </p>
-      )}
       {game.players.length ? (
-        game.teams.map((team) => (
-          <TeamBoxscore context={context} game={game} key={team.registrationId} team={team} />
-        ))
+        <section className="game-boxscores" aria-labelledby="game-boxscores-title">
+          <div className="game-boxscores-header">
+            <div>
+              <p className="eyebrow">Súmula</p>
+              <h2 id="game-boxscores-title">Estatísticas dos atletas</h2>
+            </div>
+            <label>
+              Ordenar atletas
+              <select
+                value={playerOrder}
+                onChange={(event) => setPlayerOrder(event.target.value as PlayerOrder)}
+              >
+                <option value="official">Ordem oficial</option>
+                <option value="points-desc">Mais pontos</option>
+                <option value="points-asc">Menos pontos</option>
+              </select>
+            </label>
+          </div>
+          <div className="game-boxscores-grid">
+            {game.teams.map((team) => (
+              <TeamBoxscore
+                context={context}
+                game={game}
+                key={team.registrationId}
+                order={playerOrder}
+                team={team}
+              />
+            ))}
+          </div>
+          <p className="game-boxscore-legend">* Titular · (C) Capitão · NJ Não jogou</p>
+        </section>
       ) : (
         <ResourceState
           kind="empty"
           title="Boxscore indisponível"
           detail="Os dados individuais aparecerão após a publicação da súmula."
         />
+      )}
+      {game.advanced ? (
+        <CollectiveStatistics game={game} />
+      ) : (
+        <p className="simple-statistics-note">
+          Esta categoria publica o placar e os pontos; métricas avançadas não se aplicam.
+        </p>
       )}
     </article>
   );
