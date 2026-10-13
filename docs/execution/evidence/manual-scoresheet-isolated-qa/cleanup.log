@@ -1,0 +1,4 @@
+Removed task-owned failed recovery database: qa_pr72_restore
+Removed task-owned failed recovery database: qa_pr72_restore_final
+Removed task-owned failed recovery database: qa_pr72_restore_verified
+Retained postgres and verified qa_pr72_recovery; source QA project remains available.

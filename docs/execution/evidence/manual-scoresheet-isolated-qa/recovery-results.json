@@ -1,0 +1,690 @@
+{
+  "target": "payumtvegfqfejmowxiy",
+  "source_database": "postgres",
+  "restored_database": "qa_pr72_recovery",
+  "schemas": ["public", "private", "auth", "storage", "extensions", "supabase_migrations"],
+  "tables_verified": 111,
+  "rows_verified": 545,
+  "backup_sha256": "b28e0b27b710928e9bd816c8d01c023c8d8cc0d8a1fcf3f6bea38e777fb3bf50",
+  "backup_bytes": 1735342,
+  "result": "PASS",
+  "omitted_managed_default_acls": [
+    "2977; 826 16553 DEFAULT ACL auth DEFAULT PRIVILEGES FOR SEQUENCES supabase_auth_admin",
+    "2978; 826 16554 DEFAULT ACL auth DEFAULT PRIVILEGES FOR FUNCTIONS supabase_auth_admin",
+    "2976; 826 16552 DEFAULT ACL auth DEFAULT PRIVILEGES FOR TABLES supabase_auth_admin",
+    "2984; 826 16632 DEFAULT ACL extensions DEFAULT PRIVILEGES FOR SEQUENCES supabase_admin",
+    "2983; 826 16631 DEFAULT ACL extensions DEFAULT PRIVILEGES FOR FUNCTIONS supabase_admin",
+    "2982; 826 16630 DEFAULT ACL extensions DEFAULT PRIVILEGES FOR TABLES supabase_admin",
+    "2970; 826 16491 DEFAULT ACL public DEFAULT PRIVILEGES FOR SEQUENCES supabase_admin",
+    "2972; 826 16493 DEFAULT ACL public DEFAULT PRIVILEGES FOR FUNCTIONS supabase_admin",
+    "2971; 826 16492 DEFAULT ACL public DEFAULT PRIVILEGES FOR TABLES supabase_admin"
+  ],
+  "data_fingerprints": [
+    {
+      "schema": "auth",
+      "table": "audit_log_entries",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "custom_oauth_providers",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "flow_state",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "identities",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "instances",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "mfa_amr_claims",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "mfa_challenges",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "mfa_factors",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "mfa_recovery_code_sets",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "mfa_recovery_codes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "oauth_authorizations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "oauth_client_states",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "oauth_clients",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "oauth_consents",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "one_time_tokens",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "refresh_tokens",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "saml_providers",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "saml_relay_states",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "schema_migrations",
+      "count": 82,
+      "sha256": "8cdf22f03f7379ee9ddce1b77ca630cd50ddcae9dd3c3cddb70af6e703df0104"
+    },
+    {
+      "schema": "auth",
+      "table": "scim_tokens",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "scim_users",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "sessions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "sso_domains",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "sso_providers",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "users",
+      "count": 1,
+      "sha256": "a08f3e8b6e8a931c16cef5e3c712261a305f4cdfcbe70a73901a159da698e21c"
+    },
+    {
+      "schema": "auth",
+      "table": "webauthn_challenges",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "auth",
+      "table": "webauthn_credentials",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "admin_accounts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "boxscore_upload_attempts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "competition_creation_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "competition_dimension_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "competition_group_closure_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "competition_publication_games",
+      "count": 5,
+      "sha256": "efc629e6959521797581fc0dd30fcd0a2b1a2504a3ec4f17e4684878296b9a8a"
+    },
+    {
+      "schema": "private",
+      "table": "competition_publication_registrations",
+      "count": 10,
+      "sha256": "c861f17a9971b2306768d5b772c9f090e3d05c80f76cdd3ab29f1e062459dfdf"
+    },
+    {
+      "schema": "private",
+      "table": "competition_publication_roster_entries",
+      "count": 48,
+      "sha256": "59452270f79436c94fdded583e823355fdb4b75a0e958f7112a8ff819f1f3494"
+    },
+    {
+      "schema": "private",
+      "table": "edition_creation_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "manual_matchup_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "matchup_administrative_resolution_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "player_private",
+      "count": 44,
+      "sha256": "44208aefd679819c82664f210f2e5100eda02aa2947440b3e4ba1f23f53c8fcf"
+    },
+    {
+      "schema": "private",
+      "table": "ruleset_amendment_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "ruleset_clone_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "private",
+      "table": "ruleset_draft_edit_requests",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "admin_mutation_audit",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "auth_audit_events",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "boxscore_import_player_matches",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "boxscore_imports",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "boxscore_team_resolutions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "categories",
+      "count": 4,
+      "sha256": "e5755e9f679a046e465f91d78c8a87c0365f897191b2455596e4917ef105255e"
+    },
+    {
+      "schema": "public",
+      "table": "competition_competitive_division_types",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_competitive_division_values",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_entries",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_entry_assignments",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_group_advancements",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_group_closure_rows",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_group_closures",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_groups",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_player_statistics_publications",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_publication_statistics",
+      "count": 1,
+      "sha256": "1d3af4406319ac5f84b02a81e875a4c087285089d9c78cea10a05d2464ac7dd3"
+    },
+    {
+      "schema": "public",
+      "table": "competition_publications",
+      "count": 4,
+      "sha256": "adeef71f432afb4e064a205a675c31cc271d9e98a203b23548951ca4d2f5ed46"
+    },
+    {
+      "schema": "public",
+      "table": "competition_round_byes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_rounds",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_ruleset_amendments",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_ruleset_revisions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_seasons",
+      "count": 3,
+      "sha256": "ecb463dd76616a56a4fbe2cc685b187cfc8195aedac103c8a6b566a7c14f0ac2"
+    },
+    {
+      "schema": "public",
+      "table": "competition_series",
+      "count": 2,
+      "sha256": "5b80698c26a9afd785a9620daa8358a61cf986bca5e2567abfb945dbcda96412"
+    },
+    {
+      "schema": "public",
+      "table": "competition_slots",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_stages",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competition_tracks",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "competitions",
+      "count": 4,
+      "sha256": "8701fdb0451250d5d53b464cf05d8dca0849e541cf6a9b8e2eccf0c8a5ac758b"
+    },
+    {
+      "schema": "public",
+      "table": "final_placements",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "foul_events",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_data_domain_authority",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_data_domain_comparisons",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_data_source_capabilities",
+      "count": 14,
+      "sha256": "b085819f90e6bbf95a64d198cf5e669eb936e016177bd59d628fc5357ec19528"
+    },
+    {
+      "schema": "public",
+      "table": "game_data_submission_snapshots",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_data_submissions",
+      "count": 5,
+      "sha256": "ef29a1a5e3a66d4674707bda41aa190b42b59c2140f41bef409a9597ed3c9d53"
+    },
+    {
+      "schema": "public",
+      "table": "game_officials",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_participants",
+      "count": 10,
+      "sha256": "1a29d7bc4a575fe5e6acb9c128203d464c74be2c6060a07be215a9e1d7788bb2"
+    },
+    {
+      "schema": "public",
+      "table": "game_period_scores",
+      "count": 16,
+      "sha256": "2a473cea2ab17bdbf703134d1a06dcbce628f387484c20cf6b3ca61a9ee819ca"
+    },
+    {
+      "schema": "public",
+      "table": "game_periods",
+      "count": 8,
+      "sha256": "406e3e98977cc47e59a26ce85a3fe4d080c2c35ade6345853a7b89802eb84484"
+    },
+    {
+      "schema": "public",
+      "table": "game_roster_slots",
+      "count": 4,
+      "sha256": "91fda4aac929219585f1314da6d48f0e4ca5f7fa0867ec24a0e1bed36fa5ab88"
+    },
+    {
+      "schema": "public",
+      "table": "game_statistics",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_team_staff",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "game_team_statistics",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "games",
+      "count": 5,
+      "sha256": "e32317fb843e026c6a222baecc1428f45a74ee27bb3f8d70500965ebbf241af2"
+    },
+    {
+      "schema": "public",
+      "table": "manual_scoresheet_game_details",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "manual_scoresheet_public_statistics_projection",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "manual_scoresheet_revisions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "manual_scoresheet_submission_payloads",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "matchup_administrative_resolutions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "matchup_preparations",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "matchup_resolutions",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "matchup_revision_outcomes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "matchups",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "player_honors",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "player_period_stats",
+      "count": 16,
+      "sha256": "65f464da8e0acf3d6757469252750ced17cf2d7b019ff8b3aa0e61d3405e9907"
+    },
+    {
+      "schema": "public",
+      "table": "player_profiles",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "public",
+      "table": "players",
+      "count": 44,
+      "sha256": "338b44031cbcbb0731a1afc32b34df8ec97c3be698a7940cdbdb28fd88d61e06"
+    },
+    {
+      "schema": "public",
+      "table": "roster_entries",
+      "count": 48,
+      "sha256": "a3d452558cfd958a030fcd390862d821c8bf0ada0e6b2a2ccf6375d7d9f432b7"
+    },
+    {
+      "schema": "public",
+      "table": "series_category_data_profiles",
+      "count": 3,
+      "sha256": "a92684b392ac3a69242eedd9cbb9a80f7566697b9b243bdbd3172a3a9fdd06f4"
+    },
+    {
+      "schema": "public",
+      "table": "team_registrations",
+      "count": 10,
+      "sha256": "7d09c32595ae30955fd0efa44b8a86b94f0be81cc571d6d2abc522fc393fc969"
+    },
+    {
+      "schema": "public",
+      "table": "teams",
+      "count": 6,
+      "sha256": "2fba430eefcd46dbf9b9bf0f341828cf556adfacfc66400b9513955078461753"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "count": 1,
+      "sha256": "515030e3fa3f740a4387494e7ceafcdac486522424d34e782c9df7deee925165"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets_analytics",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets_vectors",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "storage",
+      "table": "migrations",
+      "count": 74,
+      "sha256": "e90bd12aa96fae71e6ebe1face12b6863c2e5ddd152a37f1fa01519870edfc41"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "storage",
+      "table": "s3_multipart_uploads",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "storage",
+      "table": "s3_multipart_uploads_parts",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "storage",
+      "table": "vector_indexes",
+      "count": 0,
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "schema": "supabase_migrations",
+      "table": "schema_migrations",
+      "count": 73,
+      "sha256": "5183b0d14da2fd1577d3ffe4df3b8ce86cc37142168d9f37c10a05dc03897aa6"
+    }
+  ]
+}

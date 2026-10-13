@@ -1,0 +1,6 @@
+PASS anonymous authorization denied
+PASS authenticated nonadministrator denied
+PASS AAL1 administrator cannot perform critical write
+PASS real GoTrue login, TOTP challenge and AAL2 authorization
+PASS AAL2 reaches critical RPC domain validation; invalid payload rejected
+PASS synthetic administrator and Auth account removed

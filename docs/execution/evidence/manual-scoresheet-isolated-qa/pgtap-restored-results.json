@@ -1,0 +1,255 @@
+{
+  "target": "payumtvegfqfejmowxiy",
+  "database": "qa_pr72_recovery",
+  "files": 49,
+  "passed": 49,
+  "assertions": 1418,
+  "tls": "verify-full",
+  "results": [
+    {
+      "file": "admin_bulk_player_private_review.test.sql",
+      "result": "PASS",
+      "assertions": 23
+    },
+    {
+      "file": "admin_player_workflow.test.sql",
+      "result": "PASS",
+      "assertions": 16
+    },
+    {
+      "file": "admin_roster_transactions.test.sql",
+      "result": "PASS",
+      "assertions": 40
+    },
+    {
+      "file": "basketball_site_boxscore.test.sql",
+      "result": "PASS",
+      "assertions": 44
+    },
+    {
+      "file": "boxscore_team_resolution.test.sql",
+      "result": "PASS",
+      "assertions": 31
+    },
+    {
+      "file": "canonical_model.test.sql",
+      "result": "PASS",
+      "assertions": 34
+    },
+    {
+      "file": "edition_creation_workflow.test.sql",
+      "result": "PASS",
+      "assertions": 43
+    },
+    {
+      "file": "fiba_boxscore_import.test.sql",
+      "result": "PASS",
+      "assertions": 51
+    },
+    {
+      "file": "final_placements_history.test.sql",
+      "result": "PASS",
+      "assertions": 27
+    },
+    {
+      "file": "game_data_backfill.test.sql",
+      "result": "PASS",
+      "assertions": 43
+    },
+    {
+      "file": "game_data_domain_authority.test.sql",
+      "result": "PASS",
+      "assertions": 64
+    },
+    {
+      "file": "game_data_submissions.test.sql",
+      "result": "PASS",
+      "assertions": 40
+    },
+    {
+      "file": "jersey_history.test.sql",
+      "result": "PASS",
+      "assertions": 5
+    },
+    {
+      "file": "manual_scoresheet_transactions.test.sql",
+      "result": "PASS",
+      "assertions": 19
+    },
+    {
+      "file": "manual_scoresheet_v2_atomic_create.test.sql",
+      "result": "PASS",
+      "assertions": 41
+    },
+    {
+      "file": "manual_scoresheet_v2_collective_ft_public_projection.test.sql",
+      "result": "PASS",
+      "assertions": 14
+    },
+    {
+      "file": "manual_scoresheet_v2_persistence.test.sql",
+      "result": "PASS",
+      "assertions": 36
+    },
+    {
+      "file": "manual_scoresheet_v2_review_security.test.sql",
+      "result": "PASS",
+      "assertions": 24
+    },
+    {
+      "file": "manual_scoresheet_v2_revisions.test.sql",
+      "result": "PASS",
+      "assertions": 66
+    },
+    {
+      "file": "mvp01_structural_ingestion.test.sql",
+      "result": "PASS",
+      "assertions": 16
+    },
+    {
+      "file": "mvp02_public_player_read_models.test.sql",
+      "result": "PASS",
+      "assertions": 35
+    },
+    {
+      "file": "mvp03_preset_compiler.test.sql",
+      "result": "PASS",
+      "assertions": 18
+    },
+    {
+      "file": "mvp03_relational_presets.test.sql",
+      "result": "PASS",
+      "assertions": 36
+    },
+    {
+      "file": "mvp04_matchup_progression.test.sql",
+      "result": "PASS",
+      "assertions": 28
+    },
+    {
+      "file": "mvp04_private_scheduling.test.sql",
+      "result": "PASS",
+      "assertions": 63
+    },
+    {
+      "file": "mvp04_versioned_publication.test.sql",
+      "result": "PASS",
+      "assertions": 37
+    },
+    {
+      "file": "player_private_admin_flow.test.sql",
+      "result": "PASS",
+      "assertions": 24
+    },
+    {
+      "file": "player_profile_foundation.test.sql",
+      "result": "PASS",
+      "assertions": 27
+    },
+    {
+      "file": "post01_conflict_resolution.test.sql",
+      "result": "PASS",
+      "assertions": 18
+    },
+    {
+      "file": "post01_domain_comparisons.test.sql",
+      "result": "PASS",
+      "assertions": 17
+    },
+    {
+      "file": "post01_late_fiba_candidate.test.sql",
+      "result": "PASS",
+      "assertions": 13
+    },
+    {
+      "file": "post01_manual_fiba_projection.test.sql",
+      "result": "PASS",
+      "assertions": 10
+    },
+    {
+      "file": "post01_source_roles.test.sql",
+      "result": "PASS",
+      "assertions": 17
+    },
+    {
+      "file": "post01_submission_snapshots.test.sql",
+      "result": "PASS",
+      "assertions": 13
+    },
+    {
+      "file": "post02_draft_ruleset_editor.test.sql",
+      "result": "PASS",
+      "assertions": 36
+    },
+    {
+      "file": "post02_registration_removal_policy.test.sql",
+      "result": "PASS",
+      "assertions": 28
+    },
+    {
+      "file": "post02_ruleset_clone.test.sql",
+      "result": "PASS",
+      "assertions": 29
+    },
+    {
+      "file": "post03_administrative_results.test.sql",
+      "result": "PASS",
+      "assertions": 33
+    },
+    {
+      "file": "post03_fk_covering_indexes.test.sql",
+      "result": "PASS",
+      "assertions": 11
+    },
+    {
+      "file": "post03_group_closure.test.sql",
+      "result": "PASS",
+      "assertions": 29
+    },
+    {
+      "file": "post03_ruleset_amendments.test.sql",
+      "result": "PASS",
+      "assertions": 34
+    },
+    {
+      "file": "post03_sports_exceptions_dashboard.test.sql",
+      "result": "PASS",
+      "assertions": 8
+    },
+    {
+      "file": "post04_final_profile_enforcement.test.sql",
+      "result": "PASS",
+      "assertions": 21
+    },
+    {
+      "file": "public_game_statistics.test.sql",
+      "result": "PASS",
+      "assertions": 14
+    },
+    {
+      "file": "season_division_corrections.test.sql",
+      "result": "PASS",
+      "assertions": 27
+    },
+    {
+      "file": "season_division_model.test.sql",
+      "result": "PASS",
+      "assertions": 54
+    },
+    {
+      "file": "single_admin_auth.test.sql",
+      "result": "PASS",
+      "assertions": 10
+    },
+    {
+      "file": "stats_public_player_snapshot.test.sql",
+      "result": "PASS",
+      "assertions": 20
+    },
+    {
+      "file": "wp14_boxscore_enhancements.test.sql",
+      "result": "PASS",
+      "assertions": 31
+    }
+  ]
+}

@@ -15,3 +15,9 @@ Este arquivo é o acompanhamento durável no GitHub; não pressupõe issue exter
 MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT concluído em9acc537:68 arquivos, aliases históricos explícitos e protegidos, dry-run com exatamente seis pendentes, gate568 testes e pareceres independentes banco/QA aprovados. [Relatório e logs](manual-scoresheet-preflight-review.md). As descrições da tabela acima registram o problema na abertura; a correção não está mais pendente.
 
 PR72-INTEGRATION-RELEASE continua pendente: cobrança recusa Actions e responsável confirmou que ainda não há ambiente isolado. Disponibilizar o ambiente antes de homologação autenticada/recuperação; não aplicar no compartilhado para compensar a ausência. TOOLING-AUDIT-PR72 permanece separado, sem alteração de dependências nesta unidade.
+
+## Supabase Free isolado disponível —13/10/2026
+
+Responsável autorizou criação somente gratuita na organização renato-lucindo. Projeto base-basquete-pr72-qa(payumtvegfqfejmowxiy) criado/sa-east-1/Free/saudável;73 migrations e seed somente nele. SQL1.418 assertivas PASS no QA e no restaurado, AuthAPI login/TOTP/AAL2 PASS e recuperação lógica111 tabelas/545 registros com limites de papéis gerenciados. [Relatório](manual-scoresheet-isolated-qa.md). Revisões da unidade serão vinculadas ao SHA das evidências.
+
+A ausência de ambiente isolado foi resolvida. Permanecem cobrança Actions, homologação visual autenticada completa e limites de recuperação da plataforma (secrets/configuraçãoGoTrue/bytesStorage/PITR/defaultACLs gerenciadas). Compartilhado62 migrations intacto; sem merge/produção. AuditDEV continua separado.

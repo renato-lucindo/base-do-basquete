@@ -4,7 +4,7 @@
 
 ## 1. Estado vigente
 
-**Checkpoint atual: preflight corrigido, testado e aprovado por banco/QA em9acc537. Integração/rollout NOT_READY por cobrança GitHub e ausência de ambiente isolado, confirmada pelo responsável. Estado vigente na seção40; PR72 OPEN/DRAFT. Sem migrations compartilhadas, merge ou produção.**
+**Checkpoint atual: Supabase Free isolado criado e testado; SQL1.418 assertivas no QA/restaurado e Auth/MFA reais passaram. Revisões independentes desta evidência pendentes. ProjetoQA payumtvegfqfejmowxiy; compartilhado preservado62 migrations. Estado vigente na seção41. PR72 OPEN/DRAFT, sem merge ou produção.**
 
 A feature `MANUAL-SCORESHEET-V2-FIBA2024` segue na branch remota `codex/manual-scoresheet-v2` e PR draft #72, com worktree `manual-stage4-v3-review`. As unidades das Etapas 8 e 9 foram concluídas; a entrega documental `MANUAL-SCORESHEET-V2-STAGE10-GATE` foi concluída, com integração pendente. O objetivo geral é implementar a súmula manual v2 para transcrição pós-jogo em desktop, com criação transacional do jogo somente na confirmação, roster/estrelas/capitão/equipe técnica, oficiais, entrada rápida de pontos e faltas FIBA 2024, revisão versionada com concorrência otimista, rascunho local e acessibilidade por teclado.
 
@@ -15,15 +15,15 @@ A branch foi aberta originalmente em `b663b7acf1be3ce5463468a17613ae983bbe5a26` 
 ```text
 WRITE_LOCK:
 OWNER: project-maintainer
-WORK_UNIT: MANUAL-SCORESHEET-ROLLOUT-PREFLIGHT
+WORK_UNIT: MANUAL-SCORESHEET-ISOLATED-QA
 BRANCH: codex/manual-stage4-v3-review (worktree local; upstream origin/codex/manual-scoresheet-v2, PR #72)
-BASE_COMMIT: 4ece9e7210ebf91e24007099a2b42654edd778e8
-HEAD_COMMIT: consultar Git; preflight revisado em 9acc5370564230211004491e79a679a2a95ec8ad; delta posterior registra os pareceres
+BASE_COMMIT: bf703423046fe76682b6fdaa4177e00799e2b44d
+HEAD_COMMIT: consultar Git; abertura de QA isolado a partir de bf70342
 HEAD_FUNCIONAL: 80a33355d98dc351214d825557323fa29ebf957b; quatro pareceres válidos por domínio e QA local autorizado
-SCOPE: corrigir/testar gerador de preflight, inventário remoto read-only, dry-run e ensaios isolados viáveis; gates/revisão/publicação na PR72
+SCOPE: provisionar projeto Supabase Free separado, aplicar schema somente nele e executar QA/recuperação com fixtures sintéticas; evidências/revisões na PR72
 SCOPE_NEGATIVO: sem criação de atleta pela súmula, OCR/parser genérico, alteração dos contratos de importação PDF, conflito com boxscore, Supabase compartilhado, merge final ou produção nesta unidade
-REQUIRED_REVIEWERS: database-security-reviewer, qa-reviewer (preflight operacional; demais domínios funcionais inalterados)
-STATUS: RELEASED
+REQUIRED_REVIEWERS: database-security-reviewer, qa-reviewer (ambiente isolado; demais domínios funcionais inalterados)
+STATUS: ACTIVE
 ```
 
 As quatro especialidades aprovaram o artefato funcional final da Etapa 9; o QA renovado aceita a execução local autorizada (seção 35). Os registros de etapas anteriores são históricos. O check remoto permanece falho por cobrança; não há autorização de merge neste gate documental.
@@ -877,3 +877,19 @@ RESPONSAVEL: responsável da conta GitHub para cobrança; project-maintainer par
 ARQUIVO_OU_SERVICO: GitHub Billing & plans/Actions PR72; ambiente Supabase isolado a disponibilizar; docs/execution/manual-scoresheet-stage10-final-gate.md.
 ACAO: restabelecer capacidade dos jobs sem reduzir gates; disponibilizar ambiente isolado representativo, registrar alvo/custo/backup e executar nele o plano de schema/compatibilidade, login/MFA AAL2, criação/revisão/retry/CAS, histórico/auditoria e ensaio de recuperação; revalidar inventário read-only antes de qualquer aplicação futura.
 CRITERIO_DE_CONCLUSAO: checks obrigatórios válidos no SHA final e evidências autenticadas/recuperação aprovadas no ambiente isolado, com revisões proporcionais. Migrations compartilhadas, merge/main e produção permanecem fora desta entrega; não fazer bypass.
+
+## 41. QA isolado Supabase autorizado (13/10/2026)
+
+- Responsável instruiu criar novo banco Supabase se necessário; escolheu organização renato-lucindo(susztsuwjauudvirutdr) e confirmou “criação somente gratuita”, US$0/mês, sem upgrade/adicionais. Novo projeto proposto base-basquete-pr72-qa, região sa-east-1; parar se cota Free impedir.
+- Plugin lista organização Free, projeto base-do-basquete ACTIVE_HEALTHY e copa-es-ouro-2026 INACTIVE; nenhum outro alvo será reativado/modificado. get_cost/confirm_cost indisponíveis no servidor (UNAVAILABLE); custo/limites conferidos na documentação oficial e plano Free no painel, autorização explícita registrada acima. Provisionamento via CLI, sem contornar limite de plano.
+- WORK_UNIT=MANUAL-SCORESHEET-ISOLATED-QA; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE. Basebf703423046fe76682b6fdaa4177e00799e2b44d; PR72 OPEN/DRAFT e árvore inicialmente limpa. Aceite: projeto distinto e gratuito verificado, migrations/testes somente nele, evidência SQL/auth/recuperação proporcional, pareceres banco/QA e entrega retomável. Sem merge/main, migrations compartilhadas, upgrade/custos ou produção.
+- PROXIMO_PASSO_EXATO: criar e verificar projeto Free independente com CLI; confirmar ID diferente de yjnbemfeyjhxhomprlnm antes de qualquer escrita. Preparar schema/testes e credenciais efêmeras protegidas, sem logs/versão de secrets; registrar resultados reais e limitações.
+
+### QA isolado executado — checkpoint para revisão (13/10/2026)
+
+- Projeto base-basquete-pr72-qa(payumtvegfqfejmowxiy), sa-east-1, ACTIVE_HEALTHY/NANO, organização Free confirmada após criação. URL https://supabase.com/dashboard/project/payumtvegfqfejmowxiy. Sem upgrade/add-ons; custo gratuito explicitamente autorizado. Shared yjnbemfeyjhxhomprlnm conferido read-only62/última20261005140504, sem feature aplicada.
+-73 migrations do repo aplicadas somente no novo projeto e seed sintética carregada. Executor CLI pgTAP exigiu Docker ausente; runner Python/psycopg com TLS verify-full/CA oficial executou SQL original, includes locais e validação TAP completa.49 arquivos/1.418 assertivas PASS. Primeira execução sem seed foi corrigida na preparação, sem mudar SQL.
+- AuthAPI real PASS: anon negado, authenticated não admin false, administradorAAL1 recebe BD401, login/TOTP/challenge geraAAL2 e probe autoriza, payload inválido permanece negado na validação de domínio. Conta sintética/singleton removidos; sem tokens/TOTP versionados. QA visual autenticado completo do wizard não foi executado nesta unidade.
+- Recuperação lógica em database qa_pr72_recovery da mesma instância:111 tabelas/545 registros e SHA256 conferem,73 registros de migrations, mais49 arquivos/1.418 pgTAP PASS no recuperado.100 relações/165 funções/124 policies da aplicação conferem em RLS/grants/flags. Nove DEFAULT ACL de papéis gerenciados omitidos por restrição do Supabase; recuperação não cobre configuração GoTrue/secrets/S3/PITR e não é clone fiel da baseline compartilhada.
+- Três databases de tentativas incompletas foram removidos; QA postgres e qa_pr72_recovery mantidos. Backup sintético retido somente criptografado DPAPI fora do Git; raw removido. CredencialDB também DPAPI; chavesAPI temporárias removidas. CLI ligada somente em diretório TEMP, sem alterar vínculo do worktree.
+- Relatório/packet em docs/execution/manual-scoresheet-isolated-qa.md; logs/resultados/runners em evidence/manual-scoresheet-isolated-qa. Aplicação/SQL/workflows/dependências inalterados; não repetir gate568/build/browser após evidência nova documental. Validar AST/scan/diff e publicar no SHA fixo para revisão de banco/QA.

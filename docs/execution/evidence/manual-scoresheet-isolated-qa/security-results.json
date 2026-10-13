@@ -1,0 +1,11 @@
+{
+  "target": "payumtvegfqfejmowxiy",
+  "result": "PASS",
+  "scope": "public/private current RLS, policies, effective grants and privileged functions; excludes managed role default ACLs",
+  "counts": {
+    "relations": 100,
+    "functions": 165,
+    "policies": 124
+  },
+  "sha256": "a470bba394098f9278818fd66753312c64d5e92d2281a94c78a378659b5e0f7b"
+}
