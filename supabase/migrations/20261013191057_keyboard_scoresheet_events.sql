@@ -64,6 +64,8 @@ begin
     or jsonb_typeof(p_document->'roster') is distinct from 'array'
     or jsonb_typeof(p_document->'events') is distinct from 'array'
     or jsonb_typeof(p_document->'coachPlayer') is distinct from 'object'
+    or not (p_document->'coachPlayer' ?& array['home','away'])
+    or jsonb_typeof(p_document->'periods') is distinct from 'number'
     or (p_document->>'periods') !~ '^[0-9]+$'
   then raise exception 'KEYBOARD_INVALID_DOCUMENT' using errcode='BD902'; end if;
   n := (p_document->>'periods')::integer;
@@ -82,7 +84,7 @@ begin
     or exists(select 1 from public.game_data_domain_authority where game_id=p_game_id and submission_id is distinct from old_submission)
     or (old_submission is null and (g.status not in ('scheduled','draft','live') or exists(select 1 from public.game_roster_slots where game_id=p_game_id)))
   then raise exception 'KEYBOARD_OTHER_SOURCE_ACTIVE' using errcode='BD906'; end if;
-  if exists(select 1 from public.competitions competition join public.series_category_data_profiles profile on profile.id=competition.data_profile_id where competition.id=g.competition_id and profile.primary_source<>'manual_scoresheet')
+  if not exists(select 1 from public.competitions competition join public.series_category_data_profiles profile on profile.id=competition.data_profile_id where competition.id=g.competition_id and profile.primary_source='manual_scoresheet')
     or exists(select 1 from public.competitions where id=g.competition_id and status='archived')
   then raise exception 'KEYBOARD_MANUAL_PROFILE_REQUIRED' using errcode='BD903'; end if;
   if old_submission is not null and (select jsonb_agg(value-'played' order by value->>'rosterEntryId') from jsonb_array_elements(current_sheet.document->'roster')) is distinct from (select jsonb_agg(value-'played' order by value->>'rosterEntryId') from jsonb_array_elements(p_document->'roster')) then raise exception 'KEYBOARD_CONFIRMED_ROSTER_IMMUTABLE' using errcode='BD907'; end if;
@@ -92,19 +94,22 @@ begin
   -- Validate each selected jersey against this game's two participants and current roster.
   if (select count(distinct value->>'rosterEntryId') from jsonb_array_elements(p_document->'roster'))<>jsonb_array_length(p_document->'roster') then raise exception 'KEYBOARD_DUPLICATE_ROSTER' using errcode='BD902'; end if;
   foreach s in array array['home','away'] loop
+    if jsonb_typeof(p_document->'coachPlayer'->s) not in ('number','null') then raise exception 'KEYBOARD_INVALID_COACH' using errcode='BD902'; end if;
     select count(*) into total from jsonb_array_elements(p_document->'roster') r where r->>'side'=s;
     if total not between 1 and 12 or (select count(distinct r->>'jersey') from jsonb_array_elements(p_document->'roster') r where r->>'side'=s)<>total then raise exception 'KEYBOARD_INVALID_ROSTER' using errcode='BD902'; end if;
     if p_document->'coachPlayer'->>s is not null and not exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'rosterEntryId'=p_document->'coachPlayer'->>s) then raise exception 'KEYBOARD_INVALID_COACH' using errcode='BD902'; end if;
   end loop;
   for r in select value from jsonb_array_elements(p_document->'roster') loop
-    if jsonb_typeof(r->'played') is distinct from 'boolean' or r->>'side' is null or r->>'side' not in ('home','away') or r->>'jersey' is null or r->>'jersey' !~ '^(00|0|[1-9][0-9]?)$'
-      or not exists(select 1 from public.roster_entries roster join public.game_participants participant on participant.registration_id=roster.registration_id and participant.game_id=p_game_id where roster.id=(r->>'rosterEntryId')::bigint and roster.registration_id=(r->>'registrationId')::bigint and participant.side=r->>'side' and roster.competition_id=g.competition_id and roster.status='active')
+    if jsonb_typeof(r) is distinct from 'object' or jsonb_typeof(r->'rosterEntryId') is distinct from 'number' or jsonb_typeof(r->'registrationId') is distinct from 'number' or jsonb_typeof(r->'jersey') is distinct from 'string'
+      or jsonb_typeof(r->'played') is distinct from 'boolean' or r->>'side' is null or r->>'side' not in ('home','away') or r->>'jersey' is null or r->>'jersey' !~ '^(00|0|[1-9][0-9]?)$'
+      or not exists(select 1 from public.roster_entries roster join public.team_registrations registration on registration.id=roster.registration_id and registration.status in ('confirmed','completed') join public.game_participants participant on participant.registration_id=roster.registration_id and participant.game_id=p_game_id where roster.id=(r->>'rosterEntryId')::bigint and roster.registration_id=(r->>'registrationId')::bigint and participant.side=r->>'side' and roster.competition_id=g.competition_id and roster.status='active')
     then raise exception 'KEYBOARD_INVALID_ROSTER' using errcode='BD902'; end if;
   end loop;
   if (select count(distinct (value->>'id')::uuid) from jsonb_array_elements(p_document->'events'))<>jsonb_array_length(p_document->'events') then raise exception 'KEYBOARD_DUPLICATE_EVENT' using errcode='BD902'; end if;
   for e in select value from jsonb_array_elements(p_document->'events') loop
     s:=e->>'side'; target:=e->>'target'; kind:=left(e->>'code',1); suffix:=substring(e->>'code' from 2);
-    if s is null or s not in ('home','away') or e->>'id' is null or target is null or e->>'code' is null
+    if jsonb_typeof(e) is distinct from 'object' or jsonb_typeof(e->'id') is distinct from 'string' or jsonb_typeof(e->'target') is distinct from 'string' or jsonb_typeof(e->'code') is distinct from 'string' or jsonb_typeof(e->'period') is distinct from 'number'
+      or s is null or s not in ('home','away') or e->>'id' is null or target is null or e->>'code' is null
       or (e->>'period') is null or (e->>'period') !~ '^[0-9]+$' or (e->>'period')::integer not between 1 and n
       or (target not in ('B','C') and not exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target))
       or exists(select 1 from jsonb_array_elements(p_document->'roster') r where r->>'side'=s and r->>'jersey'=target and not (r->>'played')::boolean)

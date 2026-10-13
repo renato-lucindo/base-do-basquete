@@ -19,6 +19,23 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   await server?.close();
 });
+test("rejects clearing participation with events without unmounting the editor", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await page
+    .getByText("Participação em quadra — conferir atletas sem pontos", { exact: true })
+    .click();
+  const participation = page.getByLabel("Participou: Equipe Azul · #12 · Ana", { exact: true });
+  await participation.focus();
+  await participation.press("Space");
+  await expect(participation).toBeChecked();
+  await expect(participation).toBeFocused();
+  await expect(page.getByRole("alert")).toContainText("participação");
+  await expect(participation).toHaveAttribute("aria-describedby", "keyboard-error");
+  await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+});
 test("undo cancels removed-event editing; switching teams edits instead of appending", async ({
   page,
 }) => {

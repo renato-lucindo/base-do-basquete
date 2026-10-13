@@ -89,6 +89,8 @@ export function KeyboardScoresheet({
 
   function apply(next: Sheet) {
     try {
+      // React may run state updaters during rendering, outside this catch.
+      validateSheet(next);
       setHistory((h) => change(h, next));
       setError("");
     } catch (cause) {
@@ -310,6 +312,8 @@ export function KeyboardScoresheet({
             <input
               type="checkbox"
               checked={slot.played}
+              aria-invalid={error.includes("participação")}
+              aria-describedby={error.includes("participação") ? "keyboard-error" : undefined}
               onChange={(event) => {
                 const next = {
                   ...sheet,

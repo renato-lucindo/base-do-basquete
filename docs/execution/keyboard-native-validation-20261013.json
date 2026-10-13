@@ -2,7 +2,7 @@
   "environment": "Disposable native PostgreSQL 17.11, ICU und locale, actual migrations and seed; minimal Auth/Storage compatibility bootstrap; not Supabase Auth/PostgREST integration",
   "passedFiles": 45,
   "files": 45,
-  "passedAssertions": 1271,
+  "passedAssertions": 1282,
   "concurrencyScenarios": [
     "CAS single winner",
     "identical retry receipt",
@@ -90,7 +90,7 @@
     },
     {
       "file": "keyboard_scoresheet.test.sql",
-      "passedAssertions": 39,
+      "passedAssertions": 50,
       "failures": [],
       "errors": []
     },
@@ -280,5 +280,6 @@
       "failures": [],
       "errors": []
     }
-  ]
+  ],
+  "evidenceComposition": "Full replay of 45 files on 9f3f258, followed by focused replay of the final validation delta (50 assertions); unchanged domain files reuse the full replay evidence."
 }
