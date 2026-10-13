@@ -1,9 +1,10 @@
 import { Link, NavLink, useNavigate } from "react-router";
 import {
   type CompetitionContext,
+  canonicalPublicResource,
   contextPath,
   genderDivisionLabel,
-  PUBLIC_RESOURCES,
+  PUBLIC_NAV_RESOURCES,
   type PublicResource,
 } from "../modules/competition/context";
 import { ContextualSearch } from "./contextual-search";
@@ -56,14 +57,14 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
 
   function goTo(next: CompetitionContext | undefined) {
     if (next) {
-      navigate(contextPath(next, resource));
+      navigate(contextPath(next, canonicalPublicResource(resource)));
     }
   }
 
   return (
     <header className="public-header">
       <div className="public-header-topline">
-        <Link className="brand" to={contextPath(context, "visao-geral")}>
+        <Link className="brand" to={contextPath(context, "classificacao")}>
           <span className="brand-mark" aria-hidden="true">
             B
           </span>
@@ -214,7 +215,7 @@ export function PublicHeader({ context, contexts, detailLabel, resource }: Publi
           </div>
         </details>
         <span className="public-nav-divider" aria-hidden="true" />
-        {PUBLIC_RESOURCES.map((item) => (
+        {PUBLIC_NAV_RESOURCES.map((item) => (
           <NavLink
             key={item}
             to={contextPath(context, item)}
@@ -234,7 +235,7 @@ export function PublicBreadcrumb({ context, resource, detailLabel }: PublicNavig
     <nav className="breadcrumb" aria-label="Caminho atual">
       <ol>
         <li>
-          <Link to={contextPath(context, "visao-geral")}>{context.series.name}</Link>
+          <Link to={contextPath(context, "classificacao")}>{context.series.name}</Link>
         </li>
         <li>
           <Link to={contextPath(context, resource)}>
@@ -250,4 +251,13 @@ export function PublicBreadcrumb({ context, resource, detailLabel }: PublicNavig
 
 export function resourceLabel(resource: PublicResource): string {
   return resourceLabels[resource];
+}
+
+export function PublicFooter() {
+  return (
+    <footer className="public-footer">
+      <p>Dados coletados pela equipe de estatística da FECABA.</p>
+      <p>Site desenvolvido por Renato Lucindo.</p>
+    </footer>
+  );
 }

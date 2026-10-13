@@ -1,8 +1,12 @@
 # HANDOFF — Base do Basquete
 
-## Checkpoint de integração — PR #65 — 13/10/2026
+## Checkpoint de reconciliação PR #65 após merge da UI — 13/10/2026
 
-Unidade: `BOXSCORE-POST-CONFIRM-NAVIGATION-MAIN-RECONCILE`. A PR #65 foi reconciliada com `main@c7438c5c1b` por merge sintético de dois pais, preservando os cinco arquivos funcionais validados na branch da PR e as alterações mais recentes da `main`. Único arquivo modificado em ambas as linhas: `HANDOFF.md`; conteúdo atual da `main` foi preservado e este checkpoint acrescentado. Nenhuma migration nem dado remoto alterados. Risco moderado para o merge mecânico; o gate de CI/preview/CodeQL e o smoke AAL2 pós-confirmação permanecem necessários antes de integrar a PR #65 à `main`. WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=BOXSCORE-POST-CONFIRM-NAVIGATION-MAIN-RECONCILE; BRANCH=codex/boxscore-dynamic-rollout; STATUS=RELEASED após publicação do merge de reconciliação. Próximo passo: confirmar testes e revisão do delta na PR #65, sem publicação de produção.
+WORK_UNIT=BOXSCORE-POST-CONFIRM-MAIN-REBASE; OWNER=project-maintainer; BRANCH=codex/boxscore-dynamic-rollout; STATUS=RELEASED após validação. Novo merge de `main@dba21a70f3a0` preserva integralmente a UI pública integrada em PR #63, reaplica os cinco arquivos funcionais originais da #65 sem conflitos de conteúdo e conserva este HANDOFF. PR continua DRAFT até gates no novo HEAD e prova do smoke AAL2 autenticado ou decisão auditável de release; nenhum deploy ou migration remota realizado.
+
+## Checkpoint integração PR #63 — 13/10/2026
+
+WORK_UNIT=UIUX-PUBLIC-FOUNDATION-MAIN-RECONCILE; BRANCH=codex/uiux-public-foundation; OWNER=project-maintainer; STATUS=RELEASED após o merge de reconciliação. A branch foi integrada com `main@c7438c5c1b` preservando os 24 arquivos funcionais sem sobreposição, aplicando os 16 hunks de CSS da PR ao CSS atual sem conflitos e preservando o HANDOFF da main. Nenhum código da PR #72 cancelada foi introduzido deliberadamente. Risco de UI/estatísticas públicas exige CI, acessibilidade, navegação, validação visual de responsividade e revisão de publicação/dados no commit reconciliado antes de merge. Sem produção nem Supabase compartilhado. Próximo passo: conferir runs e pendências da PR #63.
 
 > Checkpoint operacional da linha de edições multidimensionais. Histórico detalhado e evidências anteriores permanecem no Git, nas PRs e em `docs/execution/`. Não registrar segredos.
 
