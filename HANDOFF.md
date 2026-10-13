@@ -915,3 +915,19 @@ RESPONSAVEL: project-maintainer para homologação; responsável da conta GitHub
 ARQUIVO_OU_SERVICO: projeto QA payumtvegfqfejmowxiy, docs/execution/manual-scoresheet-stage10-final-gate.md e Actions PR72.
 ACAO: preparar preview/backend apontados exclusivamente ao QA e executar wizard autenticado completo com MFA, criação/revisão/retry/CAS e histórico/auditoria; documentar cobertura e limites do ensaio de recuperação antes de recomendar rollout. Restabelecer capacidade Actions sem bypass e verificar checks obrigatórios no SHA final; revalidar inventário compartilhado read-only antes de futura aplicação autorizada.
 CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada, recuperação proporcional ao rollout definida e checks obrigatórios válidos; merge, migrations compartilhadas e produção somente em unidade posterior com gate aprovado.
+
+## 42. Retomada e fechamento do QA isolado (13/10/2026)
+
+- A retomada em `manual-stage4-v3-review` confirmou HEAD `c83662b`, árvore limpa e histórico da PR #72 preservado.
+- `AGENTS.md` e este `HANDOFF.md` foram lidos antes da continuação. O estado da seção 41 permanece a fonte de verdade.
+- A pendência autorizada de QA visual autenticado do wizard foi analisada. A evidência disponível no repositório comprova SQL/Auth/MFA/recuperação lógica, mas não contém uma execução de navegador autenticado contra `payumtvegfqfejmowxiy`.
+- Nesta sessão não foi possível concluir o ensaio visual porque a consulta complementar aos artefatos de E2E foi bloqueada pela ferramenta de execução antes da inspeção dos arquivos. Nenhuma conclusão de aprovação visual foi registrada.
+- Não houve alteração no Supabase compartilhado, migrations, merge na main, cobrança GitHub ou produção.
+
+```text
+PROXIMO_PASSO_EXATO:
+RESPONSAVEL: project-maintainer
+ARQUIVO_OU_SERVICO: e2e do wizard autenticado, projeto QA payumtvegfqfejmowxiy
+ACAO: executar navegador autenticado com MFA AAL2 e registrar criação/revisão/retry/CAS, histórico/auditoria e acessibilidade visual; anexar evidências ao packet da PR72.
+CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada ou limitação documentada, com ambiente QA preservado e sem alterações no Supabase compartilhado.
+```
