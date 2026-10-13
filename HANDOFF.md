@@ -964,3 +964,13 @@ CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada ou limitação doc
 
 - Gate local `npm run check` EXIT0:68 arquivos/568 testes PASS; lint320 warnings/27 infos existentes; typecheck/build/runbooks/agentes/scan PASS. Primeira tentativa parou na formatação do cache CLI ignorado `supabase/.temp/linked-project.json`; somente esse cache foi formatado e o gate passou. Regressões do launcher3/3 PASS, incluindo expiração do middleware. Log em evidence/manual-scoresheet-local-aal1/npm-check.log.
 - SQL temporário preparado em evidence/manual-scoresheet-local-aal1/enable-qa-only.sql; restauração separada. Alteração remota de MFA ainda não aplicada; registrar pareceres no commit fixo antes dela.
+
+### Teste direto com dados fictícios — 13/10/2026
+
+- Responsável pediu abrir apenas a súmula com dados fictícios. Reutilizada a fixture existente `e2e/fixtures/manual-scoresheet-setup.fixture.tsx`, sem alterar código e sem carregar backend/secrets.
+- Servidor Vite isolado em loopback5175, configFile=false, JSX automático, fs limitado a app/e2e/fixtures/node_modules, mesmo componente React/CSS dos E2E. URL aberta e preservada: http://127.0.0.1:5175/manual-scoresheet-setup.html?revision=1.
+- Navegação visual validada: Jogo > Equipes > Lançamentos; deixado diretamente em Lançamentos, com Equipe Azul/Ana7 e Equipe Vermelha/Carla9, capitães/técnicos e exemplo inicial2x0/T1. Usuário pode editar pontos, faltas, períodos e revisar. Rascunho somente local; confirmar usa action simulada da fixture e não persiste no Supabase.
+- Para reproduzir: iniciar createServer de vite com configFile=false, root=e2e/fixtures, esbuild.jsx=automatic, host127.0.0.1/port5175/strictPort; fs.allow app/e2e/fixtures/node_modules. Abrir URL acima e avançar pelos dois botões Continuar. Não usar como evidência de autenticação/RLS/gravação/CAS real.
+- Dispensa MFA de banco NÃO aplicada; launcher AAL1 NÃO iniciado. O servidor normal5173 e a conta humana QA permanecem disponíveis. Commits78011c0/660bded preservam preparação separada e revisão focal pendente; não houve alteração de função SQL ou migration QA/compartilhada para essa dispensa.
+- WORK_UNIT=MANUAL-SCORESHEET-HUMAN-FIXTURE; WRITE_LOCK OWNER=project-maintainer; STATUS=RELEASED. Apenas documentação de execução nesta continuação; gate568/build e regressões3 já aprovados preservados.
+- PROXIMO_PASSO_EXATO: responsável testa interface no editor5175. Para QA real de persistência, retornar ao backend5173/QA; concluir revisões de660bded antes de qualquer dispensa MFA e registrar resultados. Preservar ambientes compartilhados, main e produção.
