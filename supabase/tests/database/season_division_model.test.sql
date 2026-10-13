@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(56);
 set constraints all deferred;
 
 select has_table('public', 'competition_seasons', 'season parent exists');
@@ -302,8 +302,24 @@ select is(
   gold_id,
   'identical division retry returns the original value'
 ) from season_division_context;
+select throws_ok(
+  $select public.admin_add_competitive_division_value(
+    gen_random_uuid(), season_id, 'Série', 'serie', 'Ouro alterado', 'ouro', 1
+  ) from season_division_context$,
+  'BD506',
+  'BDB_COMPETITION_DIVISION_VALUE_CONFLICT',
+  'same division slug cannot silently reuse an incompatible name'
+);
+select throws_ok(
+  $select public.admin_add_competitive_division_value(
+    gen_random_uuid(), season_id, 'Série', 'serie', 'Ouro', 'ouro', 8
+  ) from season_division_context$,
+  'BD506',
+  'BDB_COMPETITION_DIVISION_VALUE_CONFLICT',
+  'same division slug cannot silently reuse an incompatible sort order'
+);
 select lives_ok(
-  $$update season_division_context
+  $update season_division_context
     set silver_id = public.admin_add_competitive_division_value(
       '11111111-1111-4111-8111-000000000003',
       season_id,
