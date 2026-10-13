@@ -2,14 +2,14 @@ import { Link, useSearchParams } from "react-router";
 
 import type { CompetitionContext, PublicResource } from "../modules/competition/context";
 import { contextPath } from "../modules/competition/context";
+import type { PublicSportsCoreDto } from "../modules/statistics/public-sports.server";
 import {
   gameScoreLabel,
-  splitGames,
   type PublicGameSummary,
   type StandingRow,
+  splitGames,
   type TeamStatisticsRow,
 } from "../modules/statistics/sports-domain";
-import type { PublicSportsCoreDto } from "../modules/statistics/public-sports.server";
 import { ResourceState } from "./resource-state";
 import { ScrollableTable } from "./scrollable-table";
 
@@ -29,9 +29,13 @@ function dateTime(value: string | null): string {
 
 const statusLabels = {
   scheduled: "Agendado",
-  live: "Ao vivo",
   final: "Finalizado",
 } as const;
+
+function isWinner(game: PublicGameSummary, side: "home" | "away"): boolean {
+  if (game.status !== "final" || game.homeScore === null || game.awayScore === null) return false;
+  return side === "home" ? game.homeScore > game.awayScore : game.awayScore > game.homeScore;
+}
 
 function GamesSection({
   context,
@@ -44,7 +48,9 @@ function GamesSection({
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const teamId = searchParams.get("team") ?? "";
-  const status = searchParams.get("status") ?? "all";
+  const requestedStatus = searchParams.get("status");
+  const status =
+    requestedStatus === "scheduled" || requestedStatus === "final" ? requestedStatus : "all";
   const filtered = games.filter(
     (game) =>
       (!teamId || game.home.id === Number(teamId) || game.away.id === Number(teamId)) &&
@@ -76,13 +82,21 @@ function GamesSection({
           {items.map((game) => (
             <li key={game.id}>
               <header>
-                <span className="game-status">{statusLabels[game.status]}</span>
+                {game.status === "scheduled" || game.status === "final" ? (
+                  <span className="game-status">{statusLabels[game.status]}</span>
+                ) : null}
                 <strong>{game.label}</strong>
               </header>
               <div className="game-list-matchup">
-                <span>{game.home.abbreviation ?? game.home.name}</span>
+                <span className={isWinner(game, "home") ? "is-winner" : undefined}>
+                  {game.home.name}
+                  {isWinner(game, "home") ? <span className="sr-only">, vencedor</span> : null}
+                </span>
                 <strong>{gameScoreLabel(game)}</strong>
-                <span>{game.away.abbreviation ?? game.away.name}</span>
+                <span className={isWinner(game, "away") ? "is-winner" : undefined}>
+                  {game.away.name}
+                  {isWinner(game, "away") ? <span className="sr-only">, vencedor</span> : null}
+                </span>
               </div>
               <p>
                 {dateTime(game.scheduledAt)} · {game.venue ?? "Local a definir"}
@@ -114,7 +128,6 @@ function GamesSection({
           <select value={status} onChange={(event) => update("status", event.target.value)}>
             <option value="all">Todos</option>
             <option value="scheduled">Agendados</option>
-            <option value="live">Ao vivo</option>
             <option value="final">Finalizados</option>
           </select>
         </label>
@@ -124,8 +137,8 @@ function GamesSection({
           [...structuralGroups].map(([label, items]) => renderGroup(label, items))
         ) : (
           <>
-            {renderGroup("Próximos jogos", groups.upcoming)}
-            {renderGroup("Jogos encerrados", groups.finished)}
+            {renderGroup("Agenda", groups.upcoming)}
+            {renderGroup("Resultados", groups.finished)}
           </>
         )
       ) : (

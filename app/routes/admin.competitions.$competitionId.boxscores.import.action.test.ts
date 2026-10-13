@@ -98,4 +98,46 @@ describe("atomic boxscore target", () => {
     expect(result).toMatchObject({ init: { status: 400 } });
     expect(rpc).not.toHaveBeenCalled();
   });
+
+  it("redirects with 303 to explicit publication after the confirmed import", async () => {
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "admin_commit_boxscore_import_v2") return { data: 129, error: null };
+      if (name === "admin_get_game_data_conflict") {
+        return { data: { domains: [], pendingCount: 0 }, error: null };
+      }
+      return { data: null, error: { code: "PGRST202" } };
+    });
+
+    let response: Response | null = null;
+    try {
+      await action(actionArgs());
+    } catch (error) {
+      response = error as Response;
+    }
+
+    expect(response?.status).toBe(303);
+    expect(response?.headers.get("Location")).toBe(
+      "/admin/competitions/20/publication?importedGame=129",
+    );
+  });
+
+  it("redirects data conflicts with 303 after the confirmation POST", async () => {
+    rpc.mockImplementation(async (name: string) => {
+      if (name === "admin_commit_boxscore_import_v2") return { data: 129, error: null };
+      if (name === "admin_get_game_data_conflict") {
+        return { data: { domains: [{ domain: "score" }], pendingCount: 1 }, error: null };
+      }
+      return { data: null, error: { code: "PGRST202" } };
+    });
+
+    let response: Response | null = null;
+    try {
+      await action(actionArgs());
+    } catch (error) {
+      response = error as Response;
+    }
+
+    expect(response?.status).toBe(303);
+    expect(response?.headers.get("Location")).toBe("/admin/games/129/data-conflict");
+  });
 });

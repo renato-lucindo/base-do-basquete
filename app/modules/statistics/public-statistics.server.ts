@@ -82,6 +82,7 @@ export interface PublicGamePlayer {
   jerseyNumber: string;
   didNotPlay: boolean;
   isStarter: boolean;
+  isCaptain: boolean;
   officialPoints: number | null;
   fouls: number | null;
   advancedTotals: StatisticTotals | null;
@@ -299,7 +300,7 @@ export async function loadPublicGameDetail(
       .eq("score_scope", "period")
       .order("period_number"),
     playerResultPromise,
-    client.from("game_roster_slots").select("id,is_starter").eq("game_id", gameId),
+    client.from("game_roster_slots").select("id,is_starter,is_captain").eq("game_id", gameId),
     client.from("game_team_statistics").select("*").eq("game_id", gameId),
     client
       .from("game_statistics")
@@ -340,6 +341,7 @@ export async function loadPublicGameDetail(
   );
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
   const starterBySlot = new Map(rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]));
+  const captainBySlot = new Map(rosterSlotsResult.data.map((slot) => [slot.id, slot.is_captain]));
   const activeDomains = new Set(activeSourcesResult.data.map((source) => source.domain));
   const players: PublicGamePlayer[] = playerResult.data.map((row) => {
     const points =
@@ -358,6 +360,7 @@ export async function loadPublicGameDetail(
         "is_starter" in row
           ? Boolean(row.is_starter)
           : (starterBySlot.get(row.game_roster_slot_id as number) ?? false),
+      isCaptain: captainBySlot.get(row.game_roster_slot_id as number) ?? false,
       officialPoints: nullableNumber(points),
       fouls: nullableNumber(row.fouls),
       advancedTotals:

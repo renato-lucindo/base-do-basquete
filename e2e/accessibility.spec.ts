@@ -49,3 +49,41 @@ test("public statistics have no serious axe violations and reflow at 200 percent
   );
   expect(seriousOrCritical).toEqual([]);
 });
+
+test("public statistics mobile navigation is keyboard accessible without page overflow", async ({
+  page,
+}) => {
+  test.skip(
+    process.env.PLAYWRIGHT_PUBLIC_STATS !== "true",
+    "The published statistics fixture is available only in the preview environment.",
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(publicStatisticsPath);
+
+  const navigation = page.getByRole("navigation", { name: "Navegação da edição" });
+  await expect(navigation.getByRole("link", { name: "Classificação" })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Jogos" })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Equipes" })).toBeVisible();
+
+  const editionSwitcher = navigation.locator('summary[aria-label="Alterar edição"]');
+  await editionSwitcher.focus();
+  await expect(editionSwitcher).toBeFocused();
+  await editionSwitcher.press("Enter");
+  await expect(navigation.getByRole("combobox", { name: "Competição" })).toBeVisible();
+  await editionSwitcher.press("Enter");
+  await expect(navigation.getByRole("combobox", { name: "Competição" })).toBeHidden();
+
+  const viewport = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth);
+
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter(
+      (violation) => violation.impact === "serious" || violation.impact === "critical",
+    ),
+  ).toEqual([]);
+});

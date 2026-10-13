@@ -8,9 +8,22 @@ import {
   loadCompetitionStatistics,
   loadPublicGameDetail,
 } from "../statistics/public-statistics.server";
+import type {
+  PublicGameSummary,
+  PublicTeamSummary,
+  StandingRow,
+  TeamStatisticsRow,
+} from "../statistics/sports-domain";
 import type { CompetitionContext, DetailResource, PublicResource } from "./context";
 import { listPublicContexts } from "./context.server";
 import { loadPublicDetail } from "./public-data.server";
+
+export interface PublicTeamProfileDto {
+  games: PublicGameSummary[];
+  standing: StandingRow | null;
+  statistics: TeamStatisticsRow | null;
+  team: PublicTeamSummary;
+}
 
 export async function loadPublicContextPayload(
   client: SupabaseClient<Database>,
@@ -54,7 +67,7 @@ export async function loadPublicDetailPayload(
   searchParams = new URLSearchParams(),
 ) {
   const contexts = knownContexts ?? (await listPublicContexts(client));
-  const [loadedDetail, game, playerProfile] = await Promise.all([
+  const [loadedDetail, game, playerProfile, teamSportsCore] = await Promise.all([
     resource === "jogadores"
       ? Promise.resolve(null)
       : loadPublicDetail(client, resolvedContext, resource, detailReference),
@@ -64,6 +77,7 @@ export async function loadPublicDetailPayload(
     resource === "jogadores"
       ? loadPublicPlayerProfile(client, resolvedContext, contexts, detailReference, searchParams)
       : Promise.resolve(null),
+    resource === "equipes" ? loadPublicSportsCore(client, resolvedContext) : Promise.resolve(null),
   ]);
   const detail = playerProfile
     ? {
@@ -75,6 +89,19 @@ export async function loadPublicDetailPayload(
   if (!detail || (resource === "jogos" && !game) || (resource === "jogadores" && !playerProfile)) {
     return null;
   }
+  const team = teamSportsCore?.teams.find((item) => item.slug === detailReference) ?? null;
+  const teamProfile: PublicTeamProfileDto | null =
+    team && teamSportsCore
+      ? {
+          games: teamSportsCore.games.filter(
+            (item) => item.home.id === team.id || item.away.id === team.id,
+          ),
+          standing: teamSportsCore.standings.find((item) => item.id === team.id) ?? null,
+          statistics: teamSportsCore.teamStatistics.find((item) => item.id === team.id) ?? null,
+          team,
+        }
+      : null;
+  if (resource === "equipes" && !teamProfile) return null;
 
   return {
     context: resolvedContext,
@@ -83,6 +110,7 @@ export async function loadPublicDetailPayload(
     game,
     playerProfile,
     resource,
+    teamProfile,
   };
 }
 
