@@ -8,6 +8,56 @@ export type Database = {
   };
   public: {
     Tables: {
+      keyboard_scoresheets: {
+        Row: {
+          game_id: number;
+          version: number;
+          document: Json;
+          submission_id: number | null;
+          updated_at: string;
+        };
+        Insert: {
+          game_id: number;
+          version?: number;
+          document: Json;
+          submission_id?: number | null;
+          updated_at?: string;
+        };
+        Update: {
+          game_id?: number;
+          version?: number;
+          document?: Json;
+          submission_id?: number | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      keyboard_scoresheet_revisions: {
+        Row: {
+          request_id: string;
+          game_id: number;
+          version: number;
+          base_version: number;
+          document: Json;
+          confirmed: boolean;
+          reason: string;
+          actor: string;
+          created_at: string;
+        };
+        Insert: {
+          request_id: string;
+          game_id: number;
+          version: number;
+          base_version: number;
+          document: Json;
+          confirmed: boolean;
+          reason?: string;
+          actor: string;
+          created_at?: string;
+        };
+        Update: { reason?: string };
+        Relationships: [];
+      };
       admin_mutation_audit: {
         Row: {
           action: string;
@@ -3275,7 +3325,7 @@ export type Database = {
           assists: number;
           blocks: number;
           defensive_rebounds: number;
-          free_throw_attempted: number;
+          free_throw_attempted: number | null;
           free_throw_made: number;
           fouls_received: number | null;
           game_id: number;
@@ -3288,17 +3338,17 @@ export type Database = {
           seconds_played: number;
           stat_scope: string;
           steals: number;
-          three_point_attempted: number;
+          three_point_attempted: number | null;
           three_point_made: number;
           turnovers: number;
-          two_point_attempted: number;
+          two_point_attempted: number | null;
           two_point_made: number;
         };
         Insert: {
           assists?: number;
           blocks?: number;
           defensive_rebounds?: number;
-          free_throw_attempted?: number;
+          free_throw_attempted?: number | null;
           free_throw_made?: number;
           fouls_received?: number | null;
           game_id: number;
@@ -3311,17 +3361,17 @@ export type Database = {
           seconds_played?: number;
           stat_scope?: string;
           steals?: number;
-          three_point_attempted?: number;
+          three_point_attempted?: number | null;
           three_point_made?: number;
           turnovers?: number;
-          two_point_attempted?: number;
+          two_point_attempted?: number | null;
           two_point_made?: number;
         };
         Update: {
           assists?: number;
           blocks?: number;
           defensive_rebounds?: number;
-          free_throw_attempted?: number;
+          free_throw_attempted?: number | null;
           free_throw_made?: number;
           fouls_received?: number | null;
           game_id?: number;
@@ -3334,10 +3384,10 @@ export type Database = {
           seconds_played?: number;
           stat_scope?: string;
           steals?: number;
-          three_point_attempted?: number;
+          three_point_attempted?: number | null;
           three_point_made?: number;
           turnovers?: number;
-          two_point_attempted?: number;
+          two_point_attempted?: number | null;
           two_point_made?: number;
         };
         Relationships: [
@@ -4605,6 +4655,17 @@ export type Database = {
       };
     };
     Functions: {
+      admin_save_keyboard_scoresheet: {
+        Args: {
+          p_game_id: number;
+          p_request_id: string;
+          p_base_version: number;
+          p_document: Json;
+          p_confirm?: boolean;
+          p_reason?: string;
+        };
+        Returns: Json;
+      };
       admin_create_competition_edition: {
         Args: { p_input: Json; p_request_id: string };
         Returns: Json;

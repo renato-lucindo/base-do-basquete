@@ -1,5 +1,15 @@
 # HANDOFF — Base do Basquete
 
+## Unidade vigente — 13/10/2026 — MANUAL-KEYBOARD-MVP
+
+Autorização: implementar integralmente o MVP de transcrição por teclado nesta conversa. Base real `origin/main@27d917a1ce4a404ced091fd3ca660113c215ca92`, confirmada pelo GitHub. O checkpoint PR75 abaixo é histórico (PR já integrada). PR72 e seu worktree com WIP permanecem preservados; este módulo tem arquitetura/interface próprias e usa apenas entidades compartilhadas. Os dois arquivos experimentais criados nas respostas anteriores permanecem no workspace PR69, identificados como trabalho desta conversa, sem uso no novo módulo.
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=MANUAL-KEYBOARD-MVP; BRANCH=codex/keyboard-scoresheet-mvp; BASE_COMMIT=27d917a1ce4a404ced091fd3ca660113c215ca92; STATUS=ACTIVE.
+
+Objetivo/aceite: camisa por jogo/equipe, dois inputs, pontos 1/2/3, faltas compensadas e penalidades FIBA, B/C sem camisa, teclado e foco contínuo, cores por período, histórico/edição/desfazer/refazer, rascunho remoto idempotente com CAS, projeção única canônica, testes e preview. LL cobrados/cedidos coletivos, sem aproveitamentos no MVP. Regras versionadas FIBA_2024 conforme notação P/T/U/D solicitada; novas regras 2026 requerem perfil distinto, nunca alteração silenciosa das súmulas históricas.
+
+Escopo negativo: sem mutar PR72/WIP existente, OCR, domínio próprio, migração compartilhada, merge ou produção nesta unidade. Revisores críticos: banco/segurança e estatísticas; acessibilidade independente pela interação complexa. Próximo passo: implementar domínio, persistência aditiva e editor isolado; validar testes focais e gates do HEAD resultante.
+
 > Checkpoint operacional da linha de edições multidimensionais. Histórico detalhado e evidências anteriores permanecem no Git, nas PRs e em `docs/execution/`. Não registrar segredos.
 
 ## Checkpoint PR #75 — 09/10/2026

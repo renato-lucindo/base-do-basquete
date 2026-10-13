@@ -329,12 +329,29 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
         })
       : null;
 
+  const keyboardGamesResult = await auth.client
+    .from("games")
+    .select("id,game_number")
+    .eq("competition_id", competitionId);
+  const keyboardResult = keyboardGamesResult.data?.length
+    ? await auth.client
+        .from("keyboard_scoresheets")
+        .select("game_id")
+        .in(
+          "game_id",
+          keyboardGamesResult.data.map((game) => game.id),
+        )
+    : null;
+  const keyboardSavedGames = (keyboardGamesResult.data ?? []).filter((game) =>
+    keyboardResult?.data?.some((sheet) => sheet.game_id === game.id),
+  );
   return data(
     {
       competition,
       csrfToken: auth.payload.csrfToken,
       idempotencyKey: crypto.randomUUID(),
       games,
+      keyboardSavedGames,
       registrations,
       requiresFallbackReason,
       unavailableIssue,
@@ -610,24 +627,64 @@ export function ScoresheetUnavailableState({
 export default function NewManualScoresheet({ loaderData, actionData }: Route.ComponentProps) {
   if (loaderData.unavailableIssue) {
     return (
-      <ScoresheetUnavailableState
-        competitionId={loaderData.competition.id}
-        issue={loaderData.unavailableIssue}
-        requiresFallbackReason={loaderData.requiresFallbackReason}
-      />
+      <>
+        {loaderData.keyboardSavedGames.length > 0 && (
+          <section aria-label="Súmulas por teclado salvas">
+            <h2>Retomar ou corrigir súmula</h2>
+            <ul>
+              {loaderData.keyboardSavedGames.map((game) => (
+                <li key={game.id}>
+                  <Link to={`/admin/games/${game.id}/scoresheet/keyboard`}>
+                    Jogo {game.game_number ?? game.id} · retomar ou corrigir
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <ScoresheetUnavailableState
+          competitionId={loaderData.competition.id}
+          issue={loaderData.unavailableIssue}
+          requiresFallbackReason={loaderData.requiresFallbackReason}
+        />
+      </>
     );
   }
 
   return (
-    <ManualScoresheetEditor
-      actionError={actionData?.error}
-      competitionId={loaderData.competition.id}
-      competitionName={loaderData.competition.display_name}
-      csrfToken={loaderData.csrfToken}
-      idempotencyKey={loaderData.idempotencyKey}
-      games={loaderData.games}
-      registrations={loaderData.registrations}
-      requiresFallbackReason={loaderData.requiresFallbackReason}
-    />
+    <>
+      {!loaderData.requiresFallbackReason && (
+        <section aria-label="Inclusão por teclado">
+          <h2>Transcrever súmula por teclado</h2>
+          <p>Escolha o jogo para lançar pontos e faltas com dois campos.</p>
+          <ul>
+            {loaderData.keyboardSavedGames.map((game) => (
+              <li key={`saved-${game.id}`}>
+                <Link to={`/admin/games/${game.id}/scoresheet/keyboard`}>
+                  Jogo {game.game_number ?? game.id} · retomar ou corrigir súmula por teclado
+                </Link>
+              </li>
+            ))}
+            {loaderData.games.map((game) => (
+              <li key={game.id}>
+                <Link to={`/admin/games/${game.id}/scoresheet/keyboard`}>
+                  Jogo {game.gameNumber ?? game.id} · lançar por teclado
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <ManualScoresheetEditor
+        actionError={actionData?.error}
+        competitionId={loaderData.competition.id}
+        competitionName={loaderData.competition.display_name}
+        csrfToken={loaderData.csrfToken}
+        idempotencyKey={loaderData.idempotencyKey}
+        games={loaderData.games}
+        registrations={loaderData.registrations}
+        requiresFallbackReason={loaderData.requiresFallbackReason}
+      />
+    </>
   );
 }
