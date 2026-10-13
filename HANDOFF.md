@@ -949,3 +949,18 @@ CRITERIO_DE_CONCLUSAO: evidência visual autenticada aprovada ou limitação doc
 - Código/SQL/dependências/workflows inalterados; suíte/build/pgTAP aprovados preservados, não repetidos. Este checkpoint não aprova QA visual integral nem altera readiness de merge/rollout.
 - WRITE_LOCK OWNER=project-maintainer; WORK_UNIT=MANUAL-SCORESHEET-HUMAN-PREVIEW; STATUS=RELEASED (handoff consistente; processo local permanece ativo para teste).
 - PROXIMO_PASSO_EXATO: responsável cria a conta QA no formulário aberto; project-maintainer confere UID/alvo e registra singleton somente em payumtvegfqfejmowxiy, depois responsável realiza login/MFA e testa wizard. Aceite: criação/revisão/retry/CAS/histórico/auditoria comprovados; compartilhado/main/produção preservados.
+
+### Continuação — vínculo administrativo do usuário criado pelo responsável
+
+- WORK_UNIT=MANUAL-SCORESHEET-HUMAN-PREVIEW; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE; BASE_COMMIT=106aedd.
+- Responsável criou a conta pelo formulário QA. Consulta read-only confirma uma conta humana com email confirmado e last_sign_in_at recente, ainda sem vínculo em private.admin_accounts (zero administradores); a outra identidade é fixture SQL sem login.
+- Diagnóstico: login GoTrue ocorreu, mas o guard is_current_admin recusa corretamente uma identidade ainda não autorizada. Concluir o bootstrap previsto na seção43 somente no QA, preservando senha, MFA, singleton e todas as regras de autorização.
+
+### Dispensa de MFA solicitada somente no QA local
+
+- Responsável confirmou explicitamente: "Somente preview local e QA". WORK_UNIT=MANUAL-SCORESHEET-QA-LOCAL-AAL1; WRITE_LOCK OWNER=project-maintainer; STATUS=ACTIVE; BASE_COMMIT=106aedd.
+- Escopo: launcher de desenvolvimento separado, limitado a loopback/projeto QA exato, preservando fontes de produção; exceção temporária de banco limitada ao administrador QA já confirmado e com expiração. Sem senha/TOTP fabricados, sem remover login, singleton, CSRF, RLS ou regras de domínio. Migrations compartilhadas, main/produção e cobrança permanecem proibidos.
+- Critério: login do responsável acessa wizard sem MFA somente no QA autorizado; anon/não admin continuam negados; fora de loopback/QA ou após expiração a dispensa falha fechada. Risco CRITICO de autorização de teste: requer revisão banco/QA focal, sem substituir ou apagar os pareceres do artefato original.
+
+- Gate local `npm run check` EXIT0:68 arquivos/568 testes PASS; lint320 warnings/27 infos existentes; typecheck/build/runbooks/agentes/scan PASS. Primeira tentativa parou na formatação do cache CLI ignorado `supabase/.temp/linked-project.json`; somente esse cache foi formatado e o gate passou. Regressões do launcher3/3 PASS, incluindo expiração do middleware. Log em evidence/manual-scoresheet-local-aal1/npm-check.log.
+- SQL temporário preparado em evidence/manual-scoresheet-local-aal1/enable-qa-only.sql; restauração separada. Alteração remota de MFA ainda não aplicada; registrar pareceres no commit fixo antes dela.
