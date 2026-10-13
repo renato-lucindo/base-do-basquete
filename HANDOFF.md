@@ -1,8 +1,12 @@
 # HANDOFF — Base do Basquete
 
-## Integração em preparação — PR #79 — 13/10/2026
+## Reconciliação PR #79 após merge do boxscore — 13/10/2026
 
-WORK_UNIT=RECONCILE-PR68-PR69-WITH-UI-MAIN; OWNER=project-maintainer; BRANCH=codex/independent-registrations-copy; STATUS=RELEASED após preparar o HEAD. Reconciliação com main@dba21a70f3a0 preservando a UI pública PR63, inclusive ordenação visual e capitão do boxscore; a filtragem de atletas passou a usar registration_id da inscrição efetiva. Correção de integridade do valor de divisão e testes pgTAP de conflito estão incluídos. Nenhuma migration aplicada ao Supabase remoto, nenhuma mudança em produção. Merge na main está BLOQUEADO até pareceres independentes de segurança/banco e estatísticas, QA do HEAD e plano de rollout do histórico remoto. Próximo passo: confirmar CI/preview/CodeQL deste novo commit e pareceres críticos.
+WORK_UNIT=RECONCILE-PR79-AFTER-PR65; OWNER=project-maintainer; BRANCH=codex/independent-registrations-copy; STATUS=RELEASED. HEAD de PR79 reconciliado com main@f29d8ba620d8 por merge sintético com dois pais. O redirecionamento 303 e o caminho público por naipe aprovados em PR #65 foram preservados ao aplicar 9 hunks da inscrição independente nos dois arquivos administrativos afetados. UI #63 permanece preservada. A PR #79 continua DRAFT, risco CRITICO e **não autoriza merge na main** antes de CI completo, pareceres especialistas independentes e rollout seguro de migrations no Supabase compartilhado. Nenhum banco remoto nem produção alterados.
+
+## Checkpoint de reconciliação PR #65 após merge da UI — 13/10/2026
+
+WORK_UNIT=BOXSCORE-POST-CONFIRM-MAIN-REBASE; OWNER=project-maintainer; BRANCH=codex/boxscore-dynamic-rollout; STATUS=RELEASED após validação. Novo merge de `main@dba21a70f3a0` preserva integralmente a UI pública integrada em PR #63, reaplica os cinco arquivos funcionais originais da #65 sem conflitos de conteúdo e conserva este HANDOFF. PR continua DRAFT até gates no novo HEAD e prova do smoke AAL2 autenticado ou decisão auditável de release; nenhum deploy ou migration remota realizado.
 
 ## Checkpoint integração PR #63 — 13/10/2026
 

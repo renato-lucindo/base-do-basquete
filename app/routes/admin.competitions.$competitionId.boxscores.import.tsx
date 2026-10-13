@@ -16,7 +16,6 @@ import { uniqueRegistrationCandidate } from "../modules/boxscore/team-registrati
 import type { ParsedBoxscore } from "../modules/boxscore/types";
 import { scheduleLocalToIso } from "../modules/competition/scheduling";
 import { logOperationalEvent } from "../modules/observability/operation.server";
-import { buildPublicGamePath } from "../modules/scoresheet/domain";
 import type { Json } from "../types/database.generated";
 import type { Route } from "./+types/admin.competitions.$competitionId.boxscores.import";
 
@@ -1015,30 +1014,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     } | null;
     if (comparisonPayload?.domains?.length) {
       throw redirect(`/admin/games/${commit.data}/data-conflict`, {
+        status: 303,
         headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
       });
     }
-    const competition = await auth.client
-      .from("competitions")
-      .select("year,series_id,category_id")
-      .eq("id", competitionId)
-      .single();
-    if (competition.error) throw new Error("Competition context query failed");
-    const [series, category] = await Promise.all([
-      auth.client
-        .from("competition_series")
-        .select("slug")
-        .eq("id", competition.data.series_id)
-        .single(),
-      auth.client.from("categories").select("slug").eq("id", competition.data.category_id).single(),
-    ]);
-    if (series.error || category.error) throw new Error("Competition context query failed");
-    throw redirect(
-      buildPublicGamePath(competition.data.year, series.data.slug, category.data.slug, commit.data),
-      {
-        headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
-      },
-    );
+    throw redirect(`/admin/competitions/${competitionId}/publication?importedGame=${commit.data}`, {
+      status: 303,
+      headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+    });
   }
 
   throw new Response("Ação inválida", { status: 400 });

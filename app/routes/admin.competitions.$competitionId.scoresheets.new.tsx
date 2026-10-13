@@ -518,10 +518,16 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   const competitionResult = await auth.client
     .from("competitions")
-    .select("year,series_id,category_id")
+    .select("year,series_id,category_id,gender_division")
     .eq("id", competitionId)
     .single();
   if (competitionResult.error) throw new Error("Manual scoresheet redirect context failed");
+  if (
+    competitionResult.data.gender_division !== "male" &&
+    competitionResult.data.gender_division !== "female"
+  ) {
+    throw new Error("Manual scoresheet redirect context failed");
+  }
   const [seriesResult, categoryResult] = await Promise.all([
     auth.client
       .from("competition_series")
@@ -543,9 +549,10 @@ export async function action({ request, params, context }: Route.ActionArgs) {
       competitionResult.data.year,
       seriesResult.data.slug,
       categoryResult.data.slug,
+      competitionResult.data.gender_division,
       result.data,
     ),
-    { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
+    { status: 303, headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
 }
 
