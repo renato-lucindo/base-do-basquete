@@ -1,3 +1,8 @@
+import sys
+
+if sys.flags.optimize:
+    raise RuntimeError('Python optimization is forbidden for isolated QA runners')
+
 import base64, hashlib, hmac, json, os, pathlib, secrets, struct, time, urllib.parse
 import psycopg, requests
 TARGET = 'payumtvegfqfejmowxiy'

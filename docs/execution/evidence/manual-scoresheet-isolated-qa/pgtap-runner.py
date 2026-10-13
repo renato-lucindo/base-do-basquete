@@ -1,3 +1,8 @@
+import sys
+
+if sys.flags.optimize:
+    raise RuntimeError('Python optimization is forbidden for isolated QA runners')
+
 import json, os, pathlib, re, sys, urllib.parse
 import psycopg
 

@@ -1,3 +1,8 @@
+import sys
+
+if sys.flags.optimize:
+    raise RuntimeError('Python optimization is forbidden for isolated QA runners')
+
 import hashlib,json,os,pathlib,urllib.parse,psycopg
 TARGET='payumtvegfqfejmowxiy'
 cli=pathlib.Path(os.environ['TEMP'])/'bdb-pr72-isolated-cli/supabase/.temp'
