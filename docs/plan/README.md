@@ -40,11 +40,11 @@ O texto que inicia a primeira tarefa está em `PROMPT-PARA-EXECUCAO.md`.
 
 Executar os pacotes de trabalho de `PLANO-EXECUCAO.md` na ordem de dependência. Cada pacote representa uma entrega vertical completa e pode envolver banco, backend, interface, testes e deploy no mesmo PR.
 
-## Proposta de governança documental
+## Governança documental em implantação
 
-O plano para classificar fontes, explicitar precedência, reduzir o `HANDOFF.md`, tratar duplicatas e introduzir verificações automáticas está em `PLANO-GOVERNANCA-DOCUMENTAL.md`. Enquanto estiver marcado como proposta, ele não altera a autoridade nem o estado dos documentos existentes.
+O plano para classificar fontes, explicitar precedência, reduzir o `HANDOFF.md`, tratar duplicatas e introduzir verificações automáticas está em `PLANO-GOVERNANCA-DOCUMENTAL.md`. A fundação `DOC-GOV-01` já foi integrada à `main`; as fases seguintes são adotadas somente pelas unidades sequenciais previstas no próprio plano, sem antecipar deduplicação, metadados ou gates ainda não implantados.
 
-O catálogo inicial da auditoria está em `../governance/DOCUMENT-CATALOG.md`. Itens marcados como `classificação pendente` são conflitos a resolver; não representam uma mudança silenciosa de autoridade.
+O catálogo operacional está em `../governance/DOCUMENT-CATALOG.md`. Conflitos ainda abertos continuam sem mudança silenciosa de autoridade e devem ser resolvidos pela unidade indicada no plano.
 
 Não pedir confirmação para decisões técnicas reversíveis cobertas por este plano. Aplicar os padrões definidos, registrar a decisão e continuar.
 
@@ -115,3 +115,9 @@ Somente uma task pode permanecer em `DOING`. Migrations já enviadas ou aplicada
 Por decisão do responsável, a fila operacional ativa da PR #35 passou a ser `acelerado-mvp/README.md`. Os 50 cartões permanecem rastreados em `tasks-pr35/`, mas agora funcionam como requisitos internos de 5 pacotes verticais de MVP e 4 pacotes pós-MVP, sem CI, preview e handoff separados por cartão.
 
 O pacote ativo é `MVP-01 — Jogo estrutural e ingestão principal`. O MVP prioriza o fluxo completo e seguro de criação, equipes/elencos, estrutura, agenda, súmula ou boxscore PDF de contrato versionado, publicação explícita e consulta pública. Funcionalidades adiadas continuam obrigatoriamente mapeadas em `POST-01` a `POST-04`.
+
+## Plano ativo — competições multidimensionais — 02/10/2026
+
+A evolução aprovada após a consolidação administrativa está em `COMPETICOES-MULTIDIMENSIONAIS.md`. O plano introduz temporada por campeonato, ano e naipe; disputa por categoria etária e divisão competitiva opcional; inscrições públicas distintas; navegação administrativa por disputa; contexto público isolado; revisão visual compacta; e ocultação temporária do Sienna sem remover sua implementação nem a acessibilidade estrutural.
+
+Executar as sete PRs verticais na ordem registrada no documento. A unidade ativa é a PR 1, `SEASON-DIVISION-MODEL-PR1`. Não aplicar migration no Supabase compartilhado, fazer merge ou publicar produção sem autorização explícita.

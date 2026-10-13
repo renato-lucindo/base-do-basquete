@@ -103,8 +103,8 @@ select throws_ok(
       null,9101,9101,2026,'Duplicada','published',now(),'male','manual_scoresheet'
     )$$,
   '23505',
-  'duplicate key value violates unique constraint "competitions_context_unique"',
-  'unclassified series/category/year context is unique'
+  'duplicate key value violates unique constraint "competitions_dispute_unique"',
+  'season/category/optional-division dispute context is unique'
 );
 select throws_ok(
   $$insert into public.teams (name, slug) values ('Slug Ruim', 'Slug Ruim')$$,
