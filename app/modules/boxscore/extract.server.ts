@@ -2,6 +2,7 @@ import { extractTextItems, getDocumentProxy } from "unpdf";
 
 import { parseFibaGeniusBoxscore } from "./parser";
 import { parseBasketballSiteBoxscore } from "./site-parser";
+import type { PositionedTextItem } from "./types";
 
 export const MAX_PDF_BYTES = 10 * 1024 * 1024;
 export const MAX_PDF_PAGES = 4;
@@ -10,6 +11,36 @@ export interface ValidatedPdf {
   bytes: Uint8Array;
   filename: string;
   sha256: string;
+}
+
+export type SupportedBoxscoreFormat = "FIBA_GENIUS_SPORTS" | "BASKETBALL_SITE";
+
+const formatSignatures: Array<{
+  format: SupportedBoxscoreFormat;
+  required: readonly string[];
+}> = [
+  {
+    format: "FIBA_GENIUS_SPORTS",
+    required: ["Box Score FIBA", "Arremessos", "Rebotes", "Não jogou"],
+  },
+  {
+    format: "BASKETBALL_SITE",
+    required: ["Ficha do Jogo", "Date / Time:"],
+  },
+];
+
+export function detectSupportedBoxscoreFormat(
+  pages: PositionedTextItem[][],
+): SupportedBoxscoreFormat {
+  const completeText = pages
+    .flat()
+    .map((item) => item.str)
+    .join(" ");
+  const matches = formatSignatures.filter(({ required }) =>
+    required.every((signature) => completeText.includes(signature)),
+  );
+  if (matches.length !== 1) throw new Error("BDB_PDF_UNSUPPORTED_FORMAT");
+  return matches[0]?.format as SupportedBoxscoreFormat;
 }
 
 function toHex(bytes: ArrayBuffer): string {
@@ -47,11 +78,7 @@ export async function extractSupportedBoxscore(bytes: Uint8Array) {
   if (!items.some((page) => page.some((item) => item.str.trim()))) {
     throw new Error("BDB_PDF_NO_TEXT");
   }
-  const completeText = items
-    .flat()
-    .map((item) => item.str)
-    .join(" ");
-  return completeText.includes("Ficha do Jogo")
+  return detectSupportedBoxscoreFormat(items) === "BASKETBALL_SITE"
     ? parseBasketballSiteBoxscore(items)
     : parseFibaGeniusBoxscore(items);
 }

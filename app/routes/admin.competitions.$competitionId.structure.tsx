@@ -532,6 +532,19 @@ export default function CompetitionStructure({
         Revisões ativas e publicadas são somente leitura. Toda alteração começa em um rascunho
         privado e independente.
       </p>
+      <section className="admin-note" aria-labelledby="automatic-structure-title">
+        <h2 id="automatic-structure-title">Chave automática é opcional</h2>
+        <p>
+          Use esta estrutura somente quando quiser gerar confrontos por posições ou vencedores de
+          jogos anteriores. Para cadastrar os jogos diretamente, use o fluxo manual da agenda.
+        </p>
+        <Link
+          className="button button-secondary"
+          to={`/admin/competitions/${competition.id}/schedule`}
+        >
+          Ir para jogos e agenda
+        </Link>
+      </section>
       {actionData?.error ? <p className="form-error">{actionData.error}</p> : null}
       {loaderData.clonedRevisionId ? (
         <p className="form-success">

@@ -156,6 +156,123 @@ const counts = JSON.parse(
 assert.deepEqual(counts, { editions: 1, audits: 1, revisions: 1 });
 console.log("PASS: concurrent first-write idempotency, exactly one edition/revision/audit");
 
+const divisionFixture = JSON.parse(
+  await run(`begin; ${authContext}
+set local role authenticated;
+select jsonb_build_object(
+  'gold', public.admin_add_competitive_division_value('${randomUUID()}',
+    (select season_id from public.competitions where id=${created[0]}),'Série','serie','Ouro','ouro',1),
+  'silver', public.admin_add_competitive_division_value('${randomUUID()}',
+    (select season_id from public.competitions where id=${created[0]}),'Série','serie','Prata','prata',2)
+); commit;`),
+);
+function divisionContender(valueId) {
+  return `create function pg_temp.division_contender() returns text language plpgsql as $$begin
+    perform public.admin_assign_competition_competitive_division(${created[0]},null,${valueId});
+    return 'accepted';
+  exception when sqlstate 'BD409' then
+    if sqlerrm <> 'BDB_COMPETITION_DIVISION_STALE' then raise; end if;
+    return 'stale';
+  end$$; set local role authenticated;
+  select pg_temp.division_contender()`;
+}
+const divisionOutcomes = await race(
+  `select id from public.competitions where id=${created[0]} for update`,
+  [divisionContender(divisionFixture.gold), divisionContender(divisionFixture.silver)],
+);
+assert.deepEqual(divisionOutcomes.sort(), ["accepted", "stale"]);
+const winningDivision = Number(
+  await run(`select competitive_division_value_id from public.competitions where id=${created[0]}`),
+);
+assert.ok([divisionFixture.gold, divisionFixture.silver].includes(winningDivision));
+assert.equal(
+  Number(
+    await run(`select count(*) from public.admin_mutation_audit
+    where action='competition_competitive_division_assigned' and entity_id=${created[0]}`),
+  ),
+  1,
+);
+await run(`begin; ${authContext} set local role authenticated;
+  select public.admin_assign_competition_competitive_division(${created[0]},null,${winningDivision}); commit;`);
+assert.equal(
+  Number(
+    await run(`select count(*) from public.admin_mutation_audit
+    where action='competition_competitive_division_assigned' and entity_id=${created[0]}`),
+  ),
+  1,
+);
+console.log(
+  "PASS: divergent division CAS accepts one writer, rejects stale writer, and retries once",
+);
+
+const raceToken = runId.replaceAll("-", "").slice(0, 8);
+const manualFixture = JSON.parse(
+  await run(`begin; ${authContext}
+with teams as (
+  insert into public.teams(name,slug) values
+    ('Manual race home ${raceToken}','manual-race-home-${raceToken}'),
+    ('Manual race away ${raceToken}','manual-race-away-${raceToken}')
+  returning id
+), registrations as (
+  insert into public.team_registrations(competition_id,team_id,status,confirmed_at)
+  select ${created[0]},id,'confirmed',now() from teams
+  returning id
+)
+select jsonb_build_object('home',min(id),'away',max(id)) from registrations;
+commit;`),
+);
+const manualRequestId = randomUUID();
+const createManual = `set local role authenticated; select public.admin_create_manual_matchup('${manualRequestId}',${created[0]},null,${manualFixture.home},${manualFixture.away},null,'Concurrency court')`;
+const manualCreated = await race(
+  `select id from public.competitions where id=${created[0]} for update`,
+  [createManual, createManual],
+);
+assert.equal(
+  manualCreated[0],
+  manualCreated[1],
+  "simultaneous manual matchup retries return the same committed result",
+);
+const manualResult = JSON.parse(manualCreated[0]);
+const manualCounts = JSON.parse(
+  await run(`select jsonb_build_object(
+'requests',(select count(*) from private.manual_matchup_requests where request_id='${manualRequestId}'),
+'audits',(select count(*) from public.admin_mutation_audit where action='manual_matchup_created' and entity_id=${manualResult.matchupId}),
+'games',(select count(*) from public.games where id=${manualResult.gameId}))`),
+);
+assert.deepEqual(manualCounts, { requests: 1, audits: 1, games: 1 });
+console.log("PASS: concurrent manual matchup retry creates one request/matchup/game/audit");
+
+const sameTeamName = `Concurrent Wolves ${raceToken}`;
+const createSameTeam = `set local role authenticated; select (public.admin_create_team('${sameTeamName}',null)).id`;
+const sameTeam = await race(
+  `select pg_advisory_xact_lock(hashtextextended('team-name:${sameTeamName.toLowerCase()}',0))`,
+  [createSameTeam, createSameTeam],
+);
+assert.equal(
+  sameTeam[0],
+  sameTeam[1],
+  "same normalized team name resolves to one team under concurrency",
+);
+assert.equal(Number(await run(`select count(*) from public.teams where id=${sameTeam[0]}`)), 1);
+console.log("PASS: concurrent identical team creation resolves to one team");
+
+const slugNameOne = `Slug Race ${raceToken}`;
+const slugNameTwo = `Slug-Race ${raceToken}`;
+const slugBase = `slug-race-${raceToken}`;
+const slugTeams = await race(
+  `select pg_advisory_xact_lock(hashtextextended('team-slug:${slugBase}',0))`,
+  [
+    `set local role authenticated; select (public.admin_create_team('${slugNameOne}',null)).id`,
+    `set local role authenticated; select (public.admin_create_team('${slugNameTwo}',null)).id`,
+  ],
+);
+assert.notEqual(slugTeams[0], slugTeams[1], "distinct colliding names remain distinct teams");
+const slugValues = (
+  await run(`select slug from public.teams where id in (${slugTeams.join(",")}) order by slug`)
+).split("\n");
+assert.deepEqual(slugValues, [slugBase, `${slugBase}-2`]);
+console.log("PASS: concurrent slug collisions serialize and receive deterministic suffixes");
+
 const draft = JSON.parse(
   await run(`begin; ${authContext}
 create temporary table race_context(value jsonb);
@@ -211,3 +328,81 @@ assert.equal(
   2,
 );
 console.log("PASS: competing semifinal writes serialize; third matchup rejected");
+
+const editionRequest = randomUUID();
+const editionInput = {
+  seriesId: null,
+  championshipName: `Edition race ${runId}`,
+  seasonId: null,
+  categoryKind: "adult",
+  categoryAge: null,
+  year: 2026,
+  gender: "male",
+  description: null,
+  startsOn: null,
+  endsOn: null,
+  divisionMode: "none",
+  divisionValueId: null,
+  divisionTypeName: null,
+  divisionValueName: null,
+  source: "manual_scoresheet",
+  preset: "single_group",
+  entryCount: 4,
+  expectedProfileId: null,
+  reason: null,
+  reviewed: true,
+};
+const editionCall = `set local role authenticated; select public.admin_create_competition_edition('${editionRequest}', '${JSON.stringify(editionInput)}'::jsonb)`;
+const editionResults = await race(
+  `select pg_advisory_xact_lock(hashtextextended('${editionRequest}',431))`,
+  [editionCall, editionCall],
+);
+assert.equal(editionResults[0], editionResults[1], "concurrent exact retry returns identical IDs");
+const editionResult = JSON.parse(editionResults[0]);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from private.edition_creation_requests where request_id='${editionRequest}'`,
+    ),
+  ),
+  1,
+);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.admin_mutation_audit where action='edition_workflow_created' and entity_id=${editionResult.seasonId}`,
+    ),
+  ),
+  1,
+);
+console.log("PASS: concurrent complete edition creation is idempotent with one ledger and audit");
+const editionSeries = Number(
+  await run(`select series_id from public.competition_seasons where id=${editionResult.seasonId}`),
+);
+const competingEdition = {
+  ...editionInput,
+  seriesId: editionSeries,
+  championshipName: null,
+  year: 2025,
+  categoryKind: "base",
+  categoryAge: 12,
+};
+const contenderEdition =
+  () => `set local role authenticated; create function pg_temp.create_edition_contender() returns text language plpgsql as $$begin
+  perform public.admin_create_competition_edition('${randomUUID()}','${JSON.stringify(competingEdition)}'::jsonb);
+  return 'accepted'; exception when sqlstate 'BD506' then return 'duplicate'; end$$;
+  select pg_temp.create_edition_contender()`;
+const editionOutcomes = await race(
+  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025:male',417))`,
+  [contenderEdition(), contenderEdition()],
+);
+assert.deepEqual(editionOutcomes.sort(), ["accepted", "duplicate"]);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025 and gender_division='male'`,
+    ),
+  ),
+  1,
+);
+console.log("PASS: competing edition requests serialize; one accepted and one explicit duplicate");

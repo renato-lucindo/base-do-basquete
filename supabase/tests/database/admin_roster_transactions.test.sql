@@ -2,8 +2,17 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(40);
 set constraints all deferred;
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.admin_confirm_team_registrations(bigint,bigint[])',
+    'execute'
+  ),
+  'anonymous clients cannot execute bulk registration confirmation'
+);
 
 insert into private.admin_accounts (user_id)
 select '11111111-1111-4111-8111-111111111111'
@@ -43,6 +52,26 @@ select throws_ok(
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'a non-admin at aal2 cannot create registrations'
 );
+select throws_ok(
+  $$select public.admin_create_team('Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot create teams'
+);
+select throws_ok(
+  $$select public.admin_create_and_register_team(9201, 'Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot create and register teams'
+);
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe não autorizada', 'ENA')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the private team resolver also rejects a non-admin at aal2'
+);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'a non-admin at aal2 cannot confirm registrations in bulk'
+);
 
 reset role;
 select set_config(
@@ -55,6 +84,21 @@ select throws_ok(
   $$select public.admin_create_team_registration(9201, 9201)$$,
   'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
   'the administrator at aal1 cannot create registrations'
+);
+select throws_ok(
+  $$select public.admin_create_and_register_team(9201, 'Equipe sem MFA', 'ESM')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the administrator at aal1 cannot create and register teams'
+);
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe sem MFA', 'ESM')$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the private team resolver also requires administrator aal2'
+);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(9201, array[1::bigint])$$,
+  'BD401', 'BDB_ADMIN_AAL2_REQUIRED',
+  'the administrator at aal1 cannot confirm registrations in bulk'
 );
 
 reset role;
@@ -158,6 +202,107 @@ select is(
   'successful administrative mutations are audited once'
 );
 
+select public.admin_create_team_registration(9201, 9203);
+select lives_ok(
+  $$select public.admin_confirm_team_registrations(
+      9201,
+      array[
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9202),
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9203)
+      ]
+    )$$,
+  'multiple draft registrations are confirmed in one transaction'
+);
+select is(
+  (select count(*) from public.team_registrations where competition_id = 9201 and status = 'confirmed'),
+  3::bigint,
+  'bulk confirmation transitions every selected registration'
+);
+select is(
+  (select count(*) from public.admin_mutation_audit where action = 'registration_transitioned' and entity_id in (
+    select id from public.team_registrations where competition_id = 9201
+  )),
+  3::bigint,
+  'bulk confirmation preserves one transition audit per registration'
+);
+
+insert into public.teams (id, name, slug)
+overriding system value values (9204, 'Time RPC Quatro', 'time-rpc-quatro');
+select public.admin_create_team_registration(9201, 9204);
+select throws_ok(
+  $$select public.admin_confirm_team_registrations(
+      9201,
+      array[
+        (select id from public.team_registrations where competition_id = 9201 and team_id = 9204),
+        (select id from public.team_registrations where competition_id = 9202 and team_id = 9203)
+      ]
+    )$$,
+  'BD102', 'BDB_INVALID_REGISTRATION_TRANSITION',
+  'a registration from another competition rejects the complete batch'
+);
+select is(
+  (select status from public.team_registrations where competition_id = 9201 and team_id = 9204),
+  'draft'::text,
+  'a rejected batch leaves valid registrations unchanged'
+);
+
+select lives_ok(
+  $$select public.admin_create_team('Águias do Sul', 'ADS')$$,
+  'team creation generates its technical identifier server-side'
+);
+select is(
+  (select slug from public.teams where name = 'Águias do Sul'),
+  'aguias-do-sul'::text,
+  'team slug is derived from the normalized public name'
+);
+select lives_ok(
+  $$select public.admin_create_team('  Águias   do Sul ', 'ADS')$$,
+  'retrying the same normalized team name is idempotent'
+);
+select is(
+  (select count(*) from public.teams where lower(regexp_replace(name, '\s+', ' ', 'g')) = 'águias do sul'),
+  1::bigint,
+  'normalized retries leave one active team'
+);
+select lives_ok(
+  $$select public.admin_create_and_register_team(9201, 'Leões do Norte', 'LDN')$$,
+  'a new team can be created and registered atomically'
+);
+select lives_ok(
+  $$select public.admin_create_and_register_team(9201, 'Leões do Norte', 'LDN')$$,
+  'create and register retries are idempotent'
+);
+select is(
+  (
+    select count(*)
+    from public.team_registrations registration
+    join public.teams team on team.id = registration.team_id
+    where registration.competition_id = 9201 and team.name = 'Leões do Norte'
+  ),
+  1::bigint,
+  'create and register leaves one registration for the resolved team'
+);
+select lives_ok(
+  $$select public.admin_create_team('Aguia Sul', null)$$,
+  'first colliding slug candidate is created'
+);
+select lives_ok(
+  $$select public.admin_create_team('Aguia-Sul', null)$$,
+  'a distinct team with the same slug base is still created'
+);
+select is(
+  (select slug from public.teams where name = 'Aguia-Sul'),
+  'aguia-sul-2'::text,
+  'slug collisions receive a deterministic suffix'
+);
+
+reset role;
+set local role anon;
+select throws_ok(
+  $$select private.admin_resolve_team('Equipe anônima', null)$$,
+  '42501', null,
+  'anon cannot execute the private team resolver'
+);
 reset role;
 select * from finish();
 rollback;

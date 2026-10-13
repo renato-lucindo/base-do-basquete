@@ -1,10 +1,30 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { normalizeRegistrationRemoval } from "../modules/competition/admin-domain";
 import {
+  DraftRegistrationSelector,
   mapRosterActionFailure,
   parseRegistrationRemovalDecision,
   parseRosterActionEntries,
+  resolveCompetitionDataActions,
 } from "./admin.competitions.$competitionId";
+
+describe("bulk registration accessibility", () => {
+  it("associates and announces the batch error", () => {
+    const html = renderToStaticMarkup(
+      createElement(DraftRegistrationSelector, {
+        error: "Selecione ao menos uma inscrição em rascunho.",
+        registrations: [{ id: 41, teamName: "Equipe teste" }],
+      }),
+    );
+
+    expect(html).toContain('aria-describedby="confirm-registrations-error"');
+    expect(html).toContain('id="confirm-registrations-error"');
+    expect(html).toContain('role="alert"');
+    expect(html).toContain('tabindex="-1"');
+  });
+});
 
 describe("admin competition roster action", () => {
   it("parses only player identifiers and normalized jersey values", () => {
@@ -106,5 +126,48 @@ describe("admin registration removal input", () => {
   it("requires a bounded administrator reason", () => {
     expect(normalizeRegistrationRemoval("remove", "curta")).toMatchObject({ ok: false });
     expect(normalizeRegistrationRemoval("remove", "x".repeat(501))).toMatchObject({ ok: false });
+  });
+});
+
+describe("competition data actions", () => {
+  it("prioritizes the configured source and names the manual exception explicitly", () => {
+    expect(
+      resolveCompetitionDataActions({
+        status: "draft",
+        primarySource: "fiba_boxscore",
+        gameCount: 2,
+      }),
+    ).toEqual({
+      scoresheet: expect.objectContaining({
+        label: "Registrar súmula emergencial",
+        enabled: true,
+      }),
+      boxscore: expect.objectContaining({ label: "Importar boxscore", enabled: true }),
+    });
+  });
+
+  it("explains unavailable game actions instead of linking into a failing flow", () => {
+    const actions = resolveCompetitionDataActions({
+      status: "draft",
+      primarySource: "manual_scoresheet",
+      gameCount: 0,
+    });
+
+    expect(actions.scoresheet).toMatchObject({ enabled: false });
+    expect(actions.boxscore).toMatchObject({ enabled: false });
+    expect(actions.scoresheet?.description).toContain("agenda");
+  });
+
+  it("hides source mutations until a profile exists or when the edition is archived", () => {
+    expect(
+      resolveCompetitionDataActions({ status: "draft", primarySource: null, gameCount: 1 }),
+    ).toEqual({ scoresheet: null, boxscore: null });
+    expect(
+      resolveCompetitionDataActions({
+        status: "archived",
+        primarySource: "manual_scoresheet",
+        gameCount: 1,
+      }),
+    ).toEqual({ scoresheet: null, boxscore: null });
   });
 });

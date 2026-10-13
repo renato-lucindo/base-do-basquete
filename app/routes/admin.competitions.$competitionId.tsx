@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type Ref, useEffect, useState } from "react";
 import { data, Form, Link, redirect, useNavigation } from "react-router";
 import { AdminNavigation } from "../components/admin/admin-area";
 import { RegistrationAccordion } from "../components/admin/registration-accordion";
@@ -12,12 +12,108 @@ import {
   normalizeJersey,
   normalizeRegistrationRemoval,
 } from "../modules/competition/admin-domain";
+import {
+  type CompetitionPrimarySource,
+  resolveCompetitionReadiness,
+} from "../modules/competition/admin-readiness";
+import {
+  normalizeTeamCreationInput,
+  parseTeamSelection,
+} from "../modules/competition/team-creation";
 import { logOperationalEvent } from "../modules/observability/operation.server";
 import type { Route } from "./+types/admin.competitions.$competitionId";
 
 function parseId(value: string | FormDataEntryValue | null): number | null {
   const text = typeof value === "string" ? value : "";
   return /^[1-9][0-9]*$/.test(text) ? Number(text) : null;
+}
+
+export function DraftRegistrationSelector({
+  error,
+  errorRef,
+  registrations,
+}: {
+  error?: string | null;
+  errorRef?: Ref<HTMLParagraphElement>;
+  registrations: Array<{ id: number; teamName: string }>;
+}) {
+  return (
+    <>
+      <fieldset aria-describedby={error ? "confirm-registrations-error" : undefined}>
+        <legend>Inscrições em rascunho</legend>
+        {registrations.map((registration) => (
+          <label className="checkbox-label" key={registration.id}>
+            <input type="checkbox" name="registrationId" value={registration.id} defaultChecked />
+            {registration.teamName}
+          </label>
+        ))}
+      </fieldset>
+      {error ? (
+        <p
+          className="form-error"
+          id="confirm-registrations-error"
+          ref={errorRef}
+          role="alert"
+          tabIndex={-1}
+        >
+          {error}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+interface CompetitionDataAction {
+  label: string;
+  description: string;
+  enabled: boolean;
+}
+
+export function resolveCompetitionDataActions({
+  status,
+  primarySource,
+  gameCount,
+}: {
+  status: string;
+  primarySource: CompetitionPrimarySource;
+  gameCount: number;
+}): { scoresheet: CompetitionDataAction | null; boxscore: CompetitionDataAction | null } {
+  if (status === "archived" || !primarySource) return { scoresheet: null, boxscore: null };
+  const hasGame = gameCount > 0;
+  if (primarySource === "manual_scoresheet") {
+    return {
+      scoresheet: {
+        label: "Registrar súmula",
+        description: hasGame
+          ? "Registre o resultado e os dados básicos no jogo já organizado."
+          : "Organize ao menos um confronto na agenda antes de registrar a súmula.",
+        enabled: hasGame,
+      },
+      boxscore: {
+        label: "Importar boxscore suplementar",
+        description: hasGame
+          ? "Use um PDF compatível para enriquecer um jogo existente após revisão."
+          : "Organize ao menos um confronto na agenda antes de importar um PDF.",
+        enabled: hasGame,
+      },
+    };
+  }
+  return {
+    scoresheet: {
+      label: "Registrar súmula emergencial",
+      description: hasGame
+        ? "Use somente quando o boxscore principal ainda não estiver disponível; o motivo será auditado."
+        : "Organize ao menos um confronto na agenda antes de usar o fallback emergencial.",
+      enabled: hasGame,
+    },
+    boxscore: {
+      label: "Importar boxscore",
+      description: hasGame
+        ? "Envie e revise o PDF da fonte principal para um jogo existente."
+        : "Organize ao menos um confronto na agenda antes de importar o boxscore.",
+      enabled: hasGame,
+    },
+  };
 }
 
 export function parseRegistrationRemovalDecision(value: unknown): {
@@ -99,12 +195,21 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
 
   const competitionResult = await auth.client
     .from("competitions")
-    .select("id,display_name,year,status,series_id,category_id,gender_division")
+    .select("id,display_name,year,status,series_id,category_id,gender_division,data_profile_id")
     .eq("id", competitionId)
     .limit(1);
   if (competitionResult.error) throw new Error("Competition hub query failed");
   const competition = competitionResult.data[0];
   if (!competition) throw new Response("Edição não encontrada", { status: 404 });
+
+  const profileResult = competition.data_profile_id
+    ? await auth.client
+        .from("series_category_data_profiles")
+        .select("primary_source")
+        .eq("id", competition.data_profile_id)
+        .single()
+    : { data: null, error: null };
+  if (profileResult.error) throw new Error("Competition data profile query failed");
 
   const [
     seriesResult,
@@ -130,7 +235,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     auth.client.from("players").select("id", { count: "exact", head: true }).eq("is_active", true),
     auth.client
       .from("games")
-      .select("id,game_number", { count: "exact" })
+      .select("id,game_number,status", { count: "exact" })
       .eq("competition_id", competitionId),
     auth.client
       .from("final_placements")
@@ -335,6 +440,28 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     removalDecision: removalDecisions.get(registration.id) ?? null,
   }));
   const registeredTeamIds = new Set(registrations.map((registration) => registration.team_id));
+  const primarySource: CompetitionPrimarySource =
+    profileResult.data?.primary_source === "manual_scoresheet" ||
+    profileResult.data?.primary_source === "fiba_boxscore"
+      ? profileResult.data.primary_source
+      : null;
+  const participatingRegistrations = registrations.filter(
+    (registration) => registration.status !== "withdrawn",
+  );
+  const readiness = resolveCompetitionReadiness({
+    competitionId,
+    status: competition.status,
+    primarySource,
+    registrationCount: participatingRegistrations.length,
+    draftRegistrationCount: participatingRegistrations.filter(
+      (registration) => registration.status === "draft",
+    ).length,
+    rosteredRegistrationCount: participatingRegistrations.filter(
+      (registration) => registration.roster.length > 0,
+    ).length,
+    gameCount: gamesResult.count ?? 0,
+    finalGameCount: gamesResult.data.filter((game) => game.status === "final").length,
+  });
 
   return data(
     {
@@ -348,10 +475,18 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       availableTeams: teamsResult.data.filter((team) => !registeredTeamIds.has(team.id)),
       playerCount: playerCountResult.count ?? 0,
       gameCount: gamesResult.count ?? 0,
+      readiness,
+      dataActions: resolveCompetitionDataActions({
+        status: competition.status,
+        primarySource,
+        gameCount: gamesResult.count ?? 0,
+      }),
       sourceFallbacks,
       savedRosterId: parseId(new URL(request.url).searchParams.get("savedRoster")),
       changedRegistrationId: parseId(new URL(request.url).searchParams.get("changedRegistration")),
       registrationOutcome: new URL(request.url).searchParams.get("registrationOutcome"),
+      confirmedBatch: parseId(new URL(request.url).searchParams.get("confirmedBatch")),
+      teamAdded: new URL(request.url).searchParams.get("teamAdded") === "1",
     },
     { headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined },
   );
@@ -371,12 +506,50 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   let result: { error: { code?: string } | null };
   if (intent === "register-team") {
-    const teamId = parseId(formData.get("teamId"));
+    const teamId =
+      parseId(formData.get("teamId")) ?? parseTeamSelection(formData.get("teamSelection"));
     if (!teamId) return data({ error: "Selecione uma equipe." }, { status: 400 });
     result = await auth.client.rpc("admin_create_team_registration", {
       p_competition_id: competitionId,
       p_team_id: teamId,
     });
+  } else if (intent === "create-and-register-team") {
+    const normalized = normalizeTeamCreationInput(
+      formData.get("name"),
+      formData.get("abbreviation"),
+    );
+    if (!normalized.ok) return data({ error: normalized.error }, { status: 400 });
+    const createResult = await auth.client.rpc("admin_create_and_register_team", {
+      p_competition_id: competitionId,
+      p_name: normalized.input.name,
+      p_abbreviation: normalized.input.abbreviation as string,
+    });
+    if (!createResult.error) {
+      throw redirect(`/admin/competitions/${competitionId}?teamAdded=1#teams`, {
+        headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+      });
+    }
+    result = createResult;
+  } else if (intent === "confirm-registrations") {
+    const registrationIds = formData.getAll("registrationId").map((value) => parseId(value));
+    if (
+      registrationIds.length === 0 ||
+      registrationIds.some((registrationId) => registrationId === null)
+    ) {
+      return data({ error: "Selecione ao menos uma inscrição em rascunho." }, { status: 400 });
+    }
+    const validIds = registrationIds as number[];
+    const bulkResult = await auth.client.rpc("admin_confirm_team_registrations", {
+      p_competition_id: competitionId,
+      p_registration_ids: validIds,
+    });
+    if (bulkResult.error) {
+      result = bulkResult;
+    } else {
+      throw redirect(`/admin/competitions/${competitionId}?confirmedBatch=${validIds.length}`, {
+        headers: auth.cookie ? { "Set-Cookie": auth.cookie } : undefined,
+      });
+    }
   } else if (intent === "transition-registration") {
     const registrationId = parseId(formData.get("registrationId"));
     const status = String(formData.get("status") ?? "");
@@ -521,6 +694,9 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
   useEffect(() => {
     if (loaderData.savedRosterId) setOpenRegistration(loaderData.savedRosterId);
   }, [loaderData.savedRosterId]);
+  const draftRegistrations = loaderData.registrations.filter(
+    (registration) => registration.status === "draft",
+  );
   return (
     <main className="admin-shell">
       <header className="site-header admin-header">
@@ -553,6 +729,16 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
         ) : loaderData.registrationOutcome === "unchanged" ? (
           <p className="form-success">A inscrição já estava no estado solicitado.</p>
         ) : null}
+        {loaderData.confirmedBatch ? (
+          <p className="form-success">
+            {loaderData.confirmedBatch === 1
+              ? "1 inscrição foi confirmada."
+              : `${loaderData.confirmedBatch} inscrições foram confirmadas em uma única operação.`}
+          </p>
+        ) : null}
+        {loaderData.teamAdded ? (
+          <p className="form-success">Equipe localizada ou criada e inscrita nesta edição.</p>
+        ) : null}
 
         <div className="admin-status-grid">
           <article>
@@ -568,6 +754,41 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             <strong>{loaderData.gameCount}</strong>
           </article>
         </div>
+
+        <section className="admin-panel admin-readiness" aria-labelledby="readiness-title">
+          <p className="eyebrow">Sequência da edição</p>
+          {loaderData.readiness.next ? (
+            <>
+              <h2 id="readiness-title">Próxima ação: {loaderData.readiness.next.label}</h2>
+              <p>{loaderData.readiness.next.description}</p>
+              <Link className="button button-primary" to={loaderData.readiness.next.href}>
+                {loaderData.readiness.next.actionLabel}
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 id="readiness-title">Fluxo operacional concluído</h2>
+              <p>Esta edição não possui uma próxima ação operacional pendente neste fluxo.</p>
+            </>
+          )}
+          <ol className="admin-readiness-steps">
+            {loaderData.readiness.steps.map((step) => (
+              <li key={step.key} data-state={step.state}>
+                <span aria-hidden="true" className="admin-readiness-marker" />
+                <div>
+                  <strong>{step.label}</strong>
+                  <small>
+                    {step.state === "complete"
+                      ? "Concluído"
+                      : step.state === "current"
+                        ? "Próxima ação"
+                        : "Aguardando etapa anterior"}
+                  </small>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
 
         {loaderData.sourceFallbacks.length ? (
           <section className="admin-panel">
@@ -593,31 +814,95 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
           </section>
         ) : null}
 
-        <section className="admin-panel">
-          <h2>Inscrever equipe</h2>
+        <section className="admin-panel" id="teams">
+          <h2>Adicionar equipe à edição</h2>
+          <p>
+            Busque uma equipe já cadastrada ou crie uma nova sem precisar informar endereço técnico.
+          </p>
           <Form method="post" className="inline-admin-form">
             <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
             <input type="hidden" name="intent" value="register-team" />
             <label>
-              Equipe
-              <select name="teamId" required defaultValue="">
-                <option value="" disabled>
-                  Selecione
-                </option>
+              Buscar equipe existente
+              <input
+                name="teamSelection"
+                list="available-team-options"
+                autoComplete="off"
+                placeholder="Digite o nome da equipe"
+                required
+                disabled={loaderData.availableTeams.length === 0}
+              />
+              <datalist id="available-team-options">
                 {loaderData.availableTeams.map((team) => (
-                  <option key={team.id} value={team.id}>
-                    {team.name}
-                  </option>
+                  <option
+                    key={team.id}
+                    value={`${team.id} — ${team.name}`}
+                    label={team.abbreviation ?? undefined}
+                  />
                 ))}
-              </select>
+              </datalist>
             </label>
-            <button className="button button-primary" type="submit">
-              Criar inscrição
+            <button
+              className="button button-primary"
+              type="submit"
+              disabled={isSubmitting || loaderData.availableTeams.length === 0}
+            >
+              Inscrever equipe existente
             </button>
           </Form>
+          {loaderData.availableTeams.length === 0 ? (
+            <p>Todas as equipes ativas já estão inscritas. Você ainda pode cadastrar uma nova.</p>
+          ) : null}
+          <details className="admin-create-inline" open={Boolean(actionData?.error)}>
+            <summary>Cadastrar nova equipe e inscrever</summary>
+            <Form method="post" className="compact-admin-form">
+              <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+              <input type="hidden" name="intent" value="create-and-register-team" />
+              <label>
+                Nome
+                <input name="name" required minLength={2} maxLength={120} />
+              </label>
+              <label>
+                Sigla (opcional)
+                <input name="abbreviation" maxLength={8} pattern="[A-Za-z0-9]{2,8}" />
+              </label>
+              <p>O endereço técnico da equipe é gerado automaticamente no servidor.</p>
+              <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                Criar e inscrever equipe
+              </button>
+            </Form>
+          </details>
         </section>
 
-        <div className="registration-list">
+        {draftRegistrations.length ? (
+          <section className="admin-panel">
+            <h2>Confirmar inscrições</h2>
+            <p>Selecione as equipes prontas. A operação inteira é validada antes de confirmar.</p>
+            <Form method="post" className="admin-form">
+              <input type="hidden" name="csrfToken" value={loaderData.csrfToken} />
+              <input type="hidden" name="intent" value="confirm-registrations" />
+              <fieldset>
+                <legend>Inscrições em rascunho</legend>
+                {draftRegistrations.map((registration) => (
+                  <label className="checkbox-label" key={registration.id}>
+                    <input
+                      type="checkbox"
+                      name="registrationId"
+                      value={registration.id}
+                      defaultChecked
+                    />
+                    {registration.teamName}
+                  </label>
+                ))}
+              </fieldset>
+              <button className="button button-primary" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Confirmando…" : "Confirmar selecionadas"}
+              </button>
+            </Form>
+          </section>
+        ) : null}
+
+        <div className="registration-list" id="rosters">
           {loaderData.registrations.map((registration) => (
             <RegistrationAccordion
               key={registration.id}
@@ -805,13 +1090,13 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
             </Link>
           </article>
           <article>
-            <h2>Estrutura e agenda</h2>
-            <p>Atribua equipes às vagas e prepare os jogos sem publicar.</p>
+            <h2>Jogos e agenda</h2>
+            <p>Crie os confrontos diretamente e organize data, horário e local.</p>
             <Link
               className="button button-primary"
               to={`/admin/competitions/${competition.id}/schedule`}
             >
-              Organizar confrontos
+              Organizar jogos
             </Link>
           </article>
           <article>
@@ -844,26 +1129,42 @@ export default function CompetitionHub({ loaderData, actionData }: Route.Compone
               Revisar exceções
             </Link>
           </article>
-          <article>
-            <h2>Súmula manual</h2>
-            <p>Requer confronto na agenda, equipes confirmadas e elencos preenchidos.</p>
-            <Link
-              className="button button-primary"
-              to={`/admin/competitions/${competition.id}/scoresheets/new`}
-            >
-              Abrir súmula
-            </Link>
-          </article>
-          <article>
-            <h2>Importar boxscore</h2>
-            <p>Formatos documentados FIBA/Genius Sports e Basketball Site.</p>
-            <Link
-              className="button button-primary"
-              to={`/admin/competitions/${competition.id}/boxscores/import`}
-            >
-              Enviar e revisar PDF
-            </Link>
-          </article>
+          {loaderData.dataActions.scoresheet ? (
+            <article>
+              <h2>{loaderData.dataActions.scoresheet.label}</h2>
+              <p>{loaderData.dataActions.scoresheet.description}</p>
+              {loaderData.dataActions.scoresheet.enabled ? (
+                <Link
+                  className="button button-primary"
+                  to={`/admin/competitions/${competition.id}/scoresheets/new`}
+                >
+                  {loaderData.dataActions.scoresheet.label}
+                </Link>
+              ) : (
+                <button className="button button-primary" type="button" disabled>
+                  Indisponível até organizar a agenda
+                </button>
+              )}
+            </article>
+          ) : null}
+          {loaderData.dataActions.boxscore ? (
+            <article>
+              <h2>{loaderData.dataActions.boxscore.label}</h2>
+              <p>{loaderData.dataActions.boxscore.description}</p>
+              {loaderData.dataActions.boxscore.enabled ? (
+                <Link
+                  className="button button-primary"
+                  to={`/admin/competitions/${competition.id}/boxscores/import`}
+                >
+                  {loaderData.dataActions.boxscore.label}
+                </Link>
+              ) : (
+                <button className="button button-primary" type="button" disabled>
+                  Indisponível até organizar a agenda
+                </button>
+              )}
+            </article>
+          ) : null}
         </section>
       </section>
     </main>
