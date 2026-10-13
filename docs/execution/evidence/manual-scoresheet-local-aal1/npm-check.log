@@ -1,0 +1,601 @@
+
+> base-do-basquete@0.0.0 check
+> npm run format:check && npm run lint && npm run typecheck && npm test && npm run check:runbooks && npm run check:agents && npm run build && npm run scan:secrets
+
+
+> base-do-basquete@0.0.0 format:check
+> biome format .
+
+Checked 236 files in 134ms. No fixes applied.
+
+> base-do-basquete@0.0.0 lint
+> biome lint .
+
+scripts\supabase-stage4-reconcile-overlay.mjs:28:16 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    26 │ for (const file of files) {
+    27 │   const match = /^(\d{14})_([a-z0-9_]+)\.sql$/.exec(file);
+  > 28 │   check(match, "Unexpected local migration filename: " + file);
+       │                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    29 │   check(!byName.has(match[2]), "Duplicate local migration name: " + match[2]);
+    30 │   byName.set(match[2], file);
+  
+  i Unsafe fix: Use a template literal.
+  
+     26  26 │   for (const file of files) {
+     27  27 │     const match = /^(\d{14})_([a-z0-9_]+)\.sql$/.exec(file);
+     28     │ - ··check(match,·"Unexpected·local·migration·filename:·"·+·file);
+         28 │ + ··check(match,·`Unexpected·local·migration·filename:·${file}`);
+     29  29 │     check(!byName.has(match[2]), "Duplicate local migration name: " + match[2]);
+     30  30 │     byName.set(match[2], file);
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:29:32 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    27 │   const match = /^(\d{14})_([a-z0-9_]+)\.sql$/.exec(file);
+    28 │   check(match, "Unexpected local migration filename: " + file);
+  > 29 │   check(!byName.has(match[2]), "Duplicate local migration name: " + match[2]);
+       │                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    30 │   byName.set(match[2], file);
+    31 │ }
+  
+  i Unsafe fix: Use a template literal.
+  
+     27  27 │     const match = /^(\d{14})_([a-z0-9_]+)\.sql$/.exec(file);
+     28  28 │     check(match, "Unexpected local migration filename: " + file);
+     29     │ - ··check(!byName.has(match[2]),·"Duplicate·local·migration·name:·"·+·match[2]);
+         29 │ + ··check(!byName.has(match[2]),·`Duplicate·local·migration·name:·${match[2]}`);
+     30  30 │     byName.set(match[2], file);
+     31  31 │   }
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:38:39 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    36 │ const localVersionAliases = manifest.localVersionAliases ?? {};
+    37 │ for (const [name, filename] of Object.entries(localVersionAliases)) {
+  > 38 │   check(expectedRemoteOnly.has(name), "Unexpected historical alias: " + name);
+       │                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    39 │   check(byName.get(name) === filename, "Historical local migration alias changed: " + name);
+    40 │ }
+  
+  i Unsafe fix: Use a template literal.
+  
+     36  36 │   const localVersionAliases = manifest.localVersionAliases ?? {};
+     37  37 │   for (const [name, filename] of Object.entries(localVersionAliases)) {
+     38     │ - ··check(expectedRemoteOnly.has(name),·"Unexpected·historical·alias:·"·+·name);
+         38 │ + ··check(expectedRemoteOnly.has(name),·`Unexpected·historical·alias:·${name}`);
+     39  39 │     check(byName.get(name) === filename, "Historical local migration alias changed: " + name);
+     40  40 │   }
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:39:40 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    37 │ for (const [name, filename] of Object.entries(localVersionAliases)) {
+    38 │   check(expectedRemoteOnly.has(name), "Unexpected historical alias: " + name);
+  > 39 │   check(byName.get(name) === filename, "Historical local migration alias changed: " + name);
+       │                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    40 │ }
+    41 │ const expectedExcluded = new Set(manifest.legacyLocalExcluded);
+  
+  i Unsafe fix: Use a template literal.
+  
+     37  37 │   for (const [name, filename] of Object.entries(localVersionAliases)) {
+     38  38 │     check(expectedRemoteOnly.has(name), "Unexpected historical alias: " + name);
+     39     │ - ··check(byName.get(name)·===·filename,·"Historical·local·migration·alias·changed:·"·+·name);
+         39 │ + ··check(byName.get(name)·===·filename,·`Historical·local·migration·alias·changed:·${name}`);
+     40  40 │   }
+     41  41 │   const expectedExcluded = new Set(manifest.legacyLocalExcluded);
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:48:5 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    46 │   check(
+    47 │     remoteNames.has(name) || expectedExcluded.has(name) || expectedPending.has(name),
+  > 48 │     "Unrecognized local migration: " + name + ". Audit before regenerating the overlay.",
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    49 │   );
+    50 │ }
+  
+  i Unsafe fix: Use a template literal.
+  
+     46  46 │     check(
+     47  47 │       remoteNames.has(name) || expectedExcluded.has(name) || expectedPending.has(name),
+     48     │ - ····"Unrecognized·local·migration:·"·+·name·+·".·Audit·before·regenerating·the·overlay.",
+         48 │ + ····`Unrecognized·local·migration:·${name}.·Audit·before·regenerating·the·overlay.`,
+     49  49 │     );
+     50  50 │   }
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:51:62 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    49 │   );
+    50 │ }
+  > 51 │ for (const name of expectedExcluded) check(byName.has(name), "Missing legacy source: " + name);
+       │                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    52 │ for (const name of expectedPending)
+    53 │   check(
+  
+  i Unsafe fix: Use a template literal.
+  
+     49  49 │     );
+     50  50 │   }
+     51     │ - for·(const·name·of·expectedExcluded)·check(byName.has(name),·"Missing·legacy·source:·"·+·name);
+         51 │ + for·(const·name·of·expectedExcluded)·check(byName.has(name),·`Missing·legacy·source:·${name}`);
+     52  52 │   for (const name of expectedPending)
+     53  53 │     check(
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:55:5 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    53 │   check(
+    54 │     byName.has(name) && !remoteNames.has(name),
+  > 55 │     "Stage 4 migration missing or already included in remote history: " + name,
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 │   );
+    57 │ for (const name of expectedRemoteOnly)
+  
+  i Unsafe fix: Use a template literal.
+  
+     53  53 │     check(
+     54  54 │       byName.has(name) && !remoteNames.has(name),
+     55     │ - ····"Stage·4·migration·missing·or·already·included·in·remote·history:·"·+·name,
+         55 │ + ····`Stage·4·migration·missing·or·already·included·in·remote·history:·${name}`,
+     56  56 │     );
+     57  57 │   for (const name of expectedRemoteOnly)
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:60:5 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    58 │   check(
+    59 │     !byName.has(name) || localVersionAliases[name] === byName.get(name),
+  > 60 │     "Previously remote-only migration now exists locally without an audited alias: " + name,
+       │     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    61 │   );
+    62 │ 
+  
+  i Unsafe fix: Use a template literal.
+  
+     58  58 │     check(
+     59  59 │       !byName.has(name) || localVersionAliases[name] === byName.get(name),
+     60     │ - ····"Previously·remote-only·migration·now·exists·locally·without·an·audited·alias:·"·+·name,
+         60 │ + ····`Previously·remote-only·migration·now·exists·locally·without·an·audited·alias:·${name}`,
+     61  61 │     );
+     62  62 │   
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:76:41 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    74 │     "Invalid remote history entry",
+    75 │   );
+  > 76 │   check(!versions.has(applied.version), "Duplicate remote version: " + applied.version);
+       │                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    77 │   versions.add(applied.version);
+    78 │   const filename = applied.version + "_" + applied.name + ".sql";
+  
+  i Unsafe fix: Use a template literal.
+  
+     74  74 │       "Invalid remote history entry",
+     75  75 │     );
+     76     │ - ··check(!versions.has(applied.version),·"Duplicate·remote·version:·"·+·applied.version);
+         76 │ + ··check(!versions.has(applied.version),·`Duplicate·remote·version:·${applied.version}`);
+     77  77 │     versions.add(applied.version);
+     78  78 │     const filename = applied.version + "_" + applied.name + ".sql";
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:78:20 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    76 │   check(!versions.has(applied.version), "Duplicate remote version: " + applied.version);
+    77 │   versions.add(applied.version);
+  > 78 │   const filename = applied.version + "_" + applied.name + ".sql";
+       │                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    79 │   if (byName.has(applied.name) && !expectedRemoteOnly.has(applied.name)) {
+    80 │     await copyFile(path.join(source, byName.get(applied.name)), path.join(target, filename));
+  
+  i Unsafe fix: Use a template literal.
+  
+     76  76 │     check(!versions.has(applied.version), "Duplicate remote version: " + applied.version);
+     77  77 │     versions.add(applied.version);
+     78     │ - ··const·filename·=·applied.version·+·"_"·+·applied.name·+·".sql";
+         78 │ + ··const·filename·=·`${applied.version}_${applied.name}.sql`;
+     79  79 │     if (byName.has(applied.name) && !expectedRemoteOnly.has(applied.name)) {
+     80  80 │       await copyFile(path.join(source, byName.get(applied.name)), path.join(target, filename));
+  
+
+scripts\supabase-stage4-reconcile-overlay.mjs:82:49 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    80 │     await copyFile(path.join(source, byName.get(applied.name)), path.join(target, filename));
+    81 │   } else {
+  > 82 │     check(expectedRemoteOnly.has(applied.name), "Unknown remote-only migration: " + applied.name);
+       │                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    83 │     const guard = [
+    84 │       "-- Applied remotely; deliberately NOT a replayable migration.",
+  
+  i Unsafe fix: Use a template literal.
+  
+     80  80 │       await copyFile(path.join(source, byName.get(applied.name)), path.join(target, filename));
+     81  81 │     } else {
+     82     │ - ····check(expectedRemoteOnly.has(applied.name),·"Unknown·remote-only·migration:·"·+·applied.name);
+         82 │ + ····check(expectedRemoteOnly.has(applied.name),·`Unknown·remote-only·migration:·${applied.name}`);
+     83  83 │       const guard = [
+     84  84 │         "-- Applied remotely; deliberately NOT a replayable migration.",
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:52:27 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    50 │ check(manifest.applied.length === 62, "Remote baseline version count changed");
+    51 │ for (const name of prerequisiteNames)
+  > 52 │   check(byName.has(name), "Missing bootstrap prerequisite: " + name);
+       │                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    53 │ for (const name of exceptions) {
+    54 │   const record = manifest.applied.find((item) => item.name === name);
+  
+  i Unsafe fix: Use a template literal.
+  
+     50  50 │   check(manifest.applied.length === 62, "Remote baseline version count changed");
+     51  51 │   for (const name of prerequisiteNames)
+     52     │ - ··check(byName.has(name),·"Missing·bootstrap·prerequisite:·"·+·name);
+         52 │ + ··check(byName.has(name),·`Missing·bootstrap·prerequisite:·${name}`);
+     53  53 │   for (const name of exceptions) {
+     54  54 │     const record = manifest.applied.find((item) => item.name === name);
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:55:26 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    53 │ for (const name of exceptions) {
+    54 │   const record = manifest.applied.find((item) => item.name === name);
+  > 55 │   check(Boolean(record), "Missing recorded historical exception: " + name);
+       │                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    56 │ }
+    57 │ const overlay = await mkdtemp(path.join(tmpdir(), "bdb-remote-history-stage4-"));
+  
+  i Unsafe fix: Use a template literal.
+  
+     53  53 │   for (const name of exceptions) {
+     54  54 │     const record = manifest.applied.find((item) => item.name === name);
+     55     │ - ··check(Boolean(record),·"Missing·recorded·historical·exception:·"·+·name);
+         55 │ + ··check(Boolean(record),·`Missing·recorded·historical·exception:·${name}`);
+     56  56 │   }
+     57  57 │   const overlay = await mkdtemp(path.join(tmpdir(), "bdb-remote-history-stage4-"));
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:102:44 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    100 │ const availableTests = await readdir(testDir);
+    101 │ for (const filename of focalTests) {
+  > 102 │   check(availableTests.includes(filename), "Missing required regression test: " + filename);
+        │                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    103 │ }
+    104 │ for (const filename of availableTests) {
+  
+  i Unsafe fix: Use a template literal.
+  
+    100 100 │   const availableTests = await readdir(testDir);
+    101 101 │   for (const filename of focalTests) {
+    102     │ - ··check(availableTests.includes(filename),·"Missing·required·regression·test:·"·+·filename);
+        102 │ + ··check(availableTests.includes(filename),·`Missing·required·regression·test:·${filename}`);
+    103 103 │   }
+    104 104 │   for (const filename of availableTests) {
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:112:16 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    110 │ const migrationVersions = new Set();
+    111 │ for (const item of manifest.applied) {
+  > 112 │   const name = item.version + "_" + item.name + ".sql";
+        │                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    113 │   check(/^\d{14}$/.test(item.version) && /^[a-z0-9_]+$/.test(item.name), "Invalid history row");
+    114 │   check(!migrationVersions.has(item.version), "Duplicate baseline version: " + item.version);
+  
+  i Unsafe fix: Use a template literal.
+  
+    110 110 │   const migrationVersions = new Set();
+    111 111 │   for (const item of manifest.applied) {
+    112     │ - ··const·name·=·item.version·+·"_"·+·item.name·+·".sql";
+        112 │ + ··const·name·=·`${item.version}_${item.name}.sql`;
+    113 113 │     check(/^\d{14}$/.test(item.version) && /^[a-z0-9_]+$/.test(item.name), "Invalid history row");
+    114 114 │     check(!migrationVersions.has(item.version), "Duplicate baseline version: " + item.version);
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:114:47 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    112 │   const name = item.version + "_" + item.name + ".sql";
+    113 │   check(/^\d{14}$/.test(item.version) && /^[a-z0-9_]+$/.test(item.name), "Invalid history row");
+  > 114 │   check(!migrationVersions.has(item.version), "Duplicate baseline version: " + item.version);
+        │                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    115 │   migrationVersions.add(item.version);
+    116 │   const from = exceptions.has(item.name)
+  
+  i Unsafe fix: Use a template literal.
+  
+    112 112 │     const name = item.version + "_" + item.name + ".sql";
+    113 113 │     check(/^\d{14}$/.test(item.version) && /^[a-z0-9_]+$/.test(item.name), "Invalid history row");
+    114     │ - ··check(!migrationVersions.has(item.version),·"Duplicate·baseline·version:·"·+·item.version);
+        114 │ + ··check(!migrationVersions.has(item.version),·`Duplicate·baseline·version:·${item.version}`);
+    115 115 │     migrationVersions.add(item.version);
+    116 116 │     const from = exceptions.has(item.name)
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:117:29 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    115 │   migrationVersions.add(item.version);
+    116 │   const from = exceptions.has(item.name)
+  > 117 │     ? path.join(fixtureDir, name + ".fixture")
+        │                             ^^^^^^^^^^^^^^^^^
+    118 │     : path.join(original, byName.get(item.name) ?? "MISSING_" + name);
+    119 │   await copyFile(from, path.join(migrations, name));
+  
+  i Unsafe fix: Use a template literal.
+  
+    115 115 │     migrationVersions.add(item.version);
+    116 116 │     const from = exceptions.has(item.name)
+    117     │ - ····?·path.join(fixtureDir,·name·+·".fixture")
+        117 │ + ····?·path.join(fixtureDir,·`${name}.fixture`)
+    118 118 │       : path.join(original, byName.get(item.name) ?? "MISSING_" + name);
+    119 119 │     await copyFile(from, path.join(migrations, name));
+  
+
+scripts\test-stage4-remote-history-upgrade.mjs:118:52 lint/style/useTemplate  FIXABLE  ━━━━━━━━━━━━━
+
+  i Template literals are preferred over string concatenation.
+  
+    116 │   const from = exceptions.has(item.name)
+    117 │     ? path.join(fixtureDir, name + ".fixture")
+  > 118 │     : path.join(original, byName.get(item.name) ?? "MISSING_" + name);
+        │                                                    ^^^^^^^^^^^^^^^^^
+    119 │   await copyFile(from, path.join(migrations, name));
+    120 │ }
+  
+  i Unsafe fix: Use a template literal.
+  
+    116 116 │     const from = exceptions.has(item.name)
+    117 117 │       ? path.join(fixtureDir, name + ".fixture")
+    118     │ - ····:·path.join(original,·byName.get(item.name)·??·"MISSING_"·+·name);
+        118 │ + ····:·path.join(original,·byName.get(item.name)·??·`MISSING_${name}`);
+    119 119 │     await copyFile(from, path.join(migrations, name));
+    120 120 │   }
+  
+
+app\modules\competition\context.ts:150:5 lint/complexity/useOptionalChain  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    149 │   if (
+  > 150 │     !series ||
+        │     ^^^^^^^^^^
+  > 151 │     !series.is_active ||
+        │     ^^^^^^^^^^^^^^^^^
+    152 │     series.id !== competition.series_id ||
+    153 │     !slugPattern.test(series.slug)
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    148 148 │   
+    149 149 │     if (
+    150     │ - ····!series·||
+    151     │ - ····!series.is_active·||
+        150 │ + ····!series?.is_active·||
+    152 151 │       series.id !== competition.series_id ||
+    153 152 │       !slugPattern.test(series.slug)
+  
+
+app\modules\competition\context.ts:159:5 lint/complexity/useOptionalChain  FIXABLE  ━━━━━━━━━━━━━━━━
+
+  ! Change to an optional chain.
+  
+    158 │   if (
+  > 159 │     !category ||
+        │     ^^^^^^^^^^^^
+  > 160 │     !category.is_active ||
+        │     ^^^^^^^^^^^^^^^^^^^
+    161 │     category.id !== competition.category_id ||
+    162 │     !slugPattern.test(category.slug)
+  
+  i Unsafe fix: Change to an optional chain.
+  
+    157 157 │   
+    158 158 │     if (
+    159     │ - ····!category·||
+    160     │ - ····!category.is_active·||
+        159 │ + ····!category?.is_active·||
+    161 160 │       category.id !== competition.category_id ||
+    162 161 │       !slugPattern.test(category.slug)
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 327.
+Checked 239 files in 241ms. No fixes applied.
+Found 320 warnings.
+Found 27 infos.
+
+> base-do-basquete@0.0.0 typecheck
+> npm run typegen && tsc -b
+
+
+> base-do-basquete@0.0.0 typegen
+> wrangler types worker-configuration.d.ts --env preview && react-router typegen
+
+
+ ⛅️ wrangler 4.140.0
+────────────────────
+Generating project types...
+
+interface __BaseEnv_Env {
+	APP_ENV: "preview";
+	SUPABASE_URL: string;
+	SUPABASE_PUBLISHABLE_KEY: string;
+	SESSION_SECRET: string;
+}
+declare namespace Cloudflare {
+	interface GlobalProps {
+		mainModule: typeof import("./workers/app");
+	}
+	interface Env extends __BaseEnv_Env {}
+}
+interface Env extends __BaseEnv_Env {}
+type StringifyValues<EnvType extends Record<string, unknown>> = {
+	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
+};
+declare namespace NodeJS {
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "APP_ENV" | "SUPABASE_URL" | "SUPABASE_PUBLISHABLE_KEY" | "SESSION_SECRET">> {}
+}
+
+Generating runtime types...
+
+Runtime types generated.
+
+
+✨ Types written to worker-configuration.d.ts
+
+📖 Read about runtime types
+https://developers.cloudflare.com/workers/languages/typescript/#generate-types
+📣 Remember to rerun 'wrangler types' after you change your wrangler.jsonc file.
+
+
+> base-do-basquete@0.0.0 test
+> vitest run
+
+
+ RUN  v5.0.2 C:/Users/12405304716/.codex/worktrees/manual-stage4-v3-review/Base do Basquete
+
+
+ Test Files  68 passed (68)
+      Tests  568 passed (568)
+   Start at  11:59:00
+   Duration  7.71s (import 48%, tests 25%, transform 25%, worker 2%)
+
+    Isolate  68 workers spawned · ~448ms startup each (spawn + environment, per file)
+             at least ~2.32s faster with isolate: false — reuses workers across files instead of one per file
+
+
+> base-do-basquete@0.0.0 check:runbooks
+> node scripts/check-runbooks.mjs
+
+Runbook check passed for 5 files.
+
+> base-do-basquete@0.0.0 check:agents
+> node scripts/check-agent-configuration.mjs
+
+Configuração de agentes aprovada: 7 subagents, 7 skills, 21 cenários de skills e 21 cenários de roteamento.
+
+> base-do-basquete@0.0.0 build
+> npm run prepare:sienna && react-router build
+
+
+> base-do-basquete@0.0.0 prepare:sienna
+> node scripts/prepare-sienna.mjs
+
+Sienna 2.2.333 preparado com recursos locais.
+Using Vite Environment API
+vite v8.3.1 building client environment for production...
+transforming...
+✓ 286 modules transformed.
+rendering chunks...
+computing gzip size...
+build/client/.assetsignore                                                             0.02 kB
+build/client/.vite/manifest.json                                                      16.63 kB │ gzip:  1.68 kB
+build/client/assets/public-context-BhoM91dA.css                                       14.52 kB │ gzip:  3.16 kB
+build/client/assets/root-Dv1EfFnG.css                                                 98.96 kB │ gzip: 18.40 kB
+build/client/assets/admin._index-BvRk9kiK.js                                           0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.admin-players-BvRk9kiK.js                                      0.00 kB │ gzip:  0.02 kB
+build/client/assets/api.public-search-BvRk9kiK.js                                      0.00 kB │ gzip:  0.02 kB
+build/client/assets/public-detail-ukasozY7.js                                          0.08 kB │ gzip:  0.09 kB
+build/client/assets/public-context-D3R4rLia.js                                         0.08 kB │ gzip:  0.09 kB
+build/client/assets/admin.logout-Gu6d_YIt.js                                           0.09 kB │ gzip:  0.11 kB
+build/client/assets/jsx-runtime-CoyHOb2O.js                                            0.42 kB │ gzip:  0.30 kB
+build/client/assets/public-legacy-context-BjyBb21N.js                                  0.44 kB │ gzip:  0.30 kB
+build/client/assets/sticky-action-summary-nIImoQEK.js                                  0.44 kB │ gzip:  0.27 kB
+build/client/assets/public-legacy-detail-CdLX7D8t.js                                   0.46 kB │ gzip:  0.31 kB
+build/client/assets/admin-wizard-steps-uqq5aAyE.js                                     0.61 kB │ gzip:  0.40 kB
+build/client/assets/player-private-fields-DDYNzoRI.js                                  0.66 kB │ gzip:  0.40 kB
+build/client/assets/admin.security-Dk0aR0t8.js                                         0.71 kB │ gzip:  0.44 kB
+build/client/assets/home-ZVP3H-US.js                                                   0.75 kB │ gzip:  0.46 kB
+build/client/assets/admin-area-C_w93YcM.js                                             0.99 kB │ gzip:  0.50 kB
+build/client/assets/public-gender-selection-B-HNIATU.js                                1.26 kB │ gzip:  0.65 kB
+build/client/assets/admin.mfa-DDN0iTiQ.js                                              1.34 kB │ gzip:  0.68 kB
+build/client/assets/admin.login-C4wyYtA4.js                                            1.67 kB │ gzip:  0.79 kB
+build/client/assets/admin.teams-BIeZTG6U.js                                            1.92 kB │ gzip:  0.84 kB
+build/client/assets/admin.competitions-CH_yXp_H.js                                     2.20 kB │ gzip:  0.97 kB
+build/client/assets/admin.mfa.enroll-Cfb6N0SI.js                                       2.28 kB │ gzip:  0.94 kB
+build/client/assets/admin.players-DOOKA6Df.js                                          2.53 kB │ gzip:  1.07 kB
+build/client/assets/admin.competitions._competitionId.publication--_0LTI84.js          2.70 kB │ gzip:  1.25 kB
+build/client/assets/admin.players._playerId.private-profile-aRA8dEsy.js                3.00 kB │ gzip:  1.25 kB
+build/client/assets/root-KLnmipbc.js                                                   3.13 kB │ gzip:  1.44 kB
+build/client/assets/admin.games._gameId.scoresheet-CoisAz7W.js                         4.75 kB │ gzip:  1.83 kB
+build/client/assets/admin.games._gameId.data-conflict-BcbbXpNO.js                      5.23 kB │ gzip:  1.75 kB
+build/client/assets/admin-player-search-dIwU58S5.js                                    5.97 kB │ gzip:  2.37 kB
+build/client/assets/admin.competitions._competitionId.data-profile-BZ9YHcmY.js         7.32 kB │ gzip:  2.27 kB
+build/client/assets/admin.competitions._competitionId.schedule-B3Qe8YqT.js            10.00 kB │ gzip:  2.93 kB
+build/client/assets/admin.competitions._competitionId.sports-exceptions-SDPktywB.js   10.11 kB │ gzip:  2.42 kB
+build/client/assets/admin.competitions._competitionId.structure-Coo8KJ-c.js           10.69 kB │ gzip:  2.94 kB
+build/client/assets/lib-DyxF5puc.js                                                   11.60 kB │ gzip:  4.64 kB
+build/client/assets/admin.competitions.new-BQEKsQWU.js                                12.90 kB │ gzip:  3.92 kB
+build/client/assets/admin.review-queues-aguL93Wb.js                                   13.40 kB │ gzip:  4.09 kB
+build/client/assets/domain-DoPsUV-k.js                                                15.15 kB │ gzip:  5.07 kB
+build/client/assets/admin.competitions._competitionId.scoresheets.new-B-wvxhRQ.js     17.37 kB │ gzip:  5.50 kB
+build/client/assets/admin.competitions._competitionId.boxscores.import-BC6MUKAS.js    19.68 kB │ gzip:  6.25 kB
+build/client/assets/admin.competitions._competitionId-IEmP5okY.js                     20.60 kB │ gzip:  5.66 kB
+build/client/assets/public-detail-CmrIsJiP.js                                         29.97 kB │ gzip:  7.71 kB
+build/client/assets/errorBoundaries-DK-lwuEi.js                                       33.35 kB │ gzip: 11.72 kB
+build/client/assets/public-context-CoddAn7Z.js                                        51.73 kB │ gzip: 14.42 kB
+build/client/assets/setup-wizard-CeIs_tEl.js                                          58.67 kB │ gzip: 17.04 kB
+build/client/assets/client-z2bt_39Z.js                                                72.27 kB │ gzip: 19.68 kB
+build/client/assets/components-CBy3lMW3.js                                            86.91 kB │ gzip: 28.73 kB
+build/client/assets/entry.client-gZlnvjE7.js                                         214.82 kB │ gzip: 67.19 kB
+
+✓ built in 2.19s
+vite v8.3.1 building ssr environment for production...
+transforming...
+✓ 328 modules transformed.
+rendering chunks...
+Using secrets defined in .dev.vars
+computing gzip size...
+build/server/.dev.vars                                0.19 kB
+build/server/.vite/manifest.json                      1.21 kB │ gzip:   0.35 kB
+build/server/wrangler.json                            1.55 kB │ gzip:   0.77 kB
+build/server/assets/server-build-DUuh1oKc.css       113.48 kB │ gzip:  20.76 kB
+build/server/assets/rolldown-runtime-DC62tzP2.js      1.44 kB │ gzip:   0.67 kB
+build/server/index.js                                41.91 kB │ gzip:  10.07 kB
+build/server/assets/operation.server-kFNNxwSk.js    128.27 kB │ gzip:  31.42 kB
+build/server/assets/pdfjs-DNoWJfE7.js             2,092.31 kB │ gzip: 547.64 kB
+build/server/assets/server-build-DeLBS5vF.js      2,489.77 kB │ gzip: 502.85 kB
+
+✓ built in 1.37s
+
+> base-do-basquete@0.0.0 scan:secrets
+> node scripts/scan-secrets.mjs
+
+Secret scan passed for 796 tracked files.
