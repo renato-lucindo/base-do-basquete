@@ -74,9 +74,10 @@ assert.equal(rootResponse.status, 302, "root must redirect to a valid context");
 assert.ok(rootLocation, "root redirect must include a location");
 // An older root can redirect to the canonical /visao-geral alias first.
 // That alias must itself redirect to /classificacao; never accept it as final.
-if (
-  /^\\/\\d{4}\\/[^/]+\\/[^/]+\\/(?:masculino|feminino)\\/visao-geral$/.test(rootLocation)
-) {
+const overviewAlias = new RegExp(
+  "^/[0-9]{4}/[^/]+/[^/]+/(?:masculino|feminino)/visao-geral$",
+);
+if (overviewAlias.test(rootLocation)) {
   const canonicalResponse = await request(rootLocation);
   assert.equal(
     canonicalResponse.status,
