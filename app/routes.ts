@@ -23,7 +23,6 @@ export default [
   ),
   route("admin/teams", "routes/admin.teams.tsx"),
   route("admin/players", "routes/admin.players.tsx"),
-  route("admin/players/import-text", "routes/admin.players.import-text.tsx"),
   route("admin/review-queues", "routes/admin.review-queues.tsx"),
   route("admin/security", "routes/admin.security.tsx"),
   route("admin/login", "routes/admin.login.tsx"),
