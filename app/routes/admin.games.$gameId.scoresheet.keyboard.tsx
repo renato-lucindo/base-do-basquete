@@ -52,7 +52,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       headers: headers(auth.cookie),
     });
   const registrationIds = participants.map((p) => p.registration_id);
-  const [rosterResult, registrationsResult] = await Promise.all([
+  const historicalIds = sheetResult.data
+    ? validateSheet(sheetResult.data.document).roster.map((slot) => slot.rosterEntryId)
+    : [];
+  const [rosterResult, registrationsResult, profileResult, historicalResult] = await Promise.all([
     auth.client
       .from("roster_entries")
       .select("id,registration_id,player_id,jersey_number")
@@ -62,8 +65,35 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .from("team_registrations")
       .select("id,team_id,public_name,status")
       .in("id", registrationIds),
+    auth.client
+      .from("competitions")
+      .select("data_profile_id")
+      .eq("id", gameResult.data.competition_id)
+      .single(),
+    historicalIds.length
+      ? auth.client.from("roster_entries").select("id,registration_id,player_id,jersey_number").in("id", historicalIds)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  if (rosterResult.error) throw new Error("Keyboard roster query failed");
+  if (rosterResult.error || historicalResult.error) throw new Error("Keyboard roster query failed");
+  if (profileResult.error || !profileResult.data?.data_profile_id)
+    throw new Response("Perfil de dados indisponível.", {
+      status: 503,
+      headers: headers(auth.cookie),
+    });
+  const sourceResult = await auth.client
+    .from("series_category_data_profiles")
+    .select("primary_source")
+    .eq("id", profileResult.data.data_profile_id)
+    .single();
+  if (sourceResult.error || !sourceResult.data)
+    throw new Response("Perfil de dados indisponível.", {
+      status: 503,
+      headers: headers(auth.cookie),
+    });
+  const requiresFallback = sourceResult.data.primary_source === "fiba_boxscore";
+  const roster = [...rosterResult.data, ...historicalResult.data].filter(
+    (entry, index, entries) => entries.findIndex((item) => item.id === entry.id) === index,
+  );
   let registrations: Array<{
     id: number;
     team_id: number;
@@ -88,7 +118,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,full_name")
       .in(
         "id",
-        rosterResult.data.map((p) => p.player_id),
+        roster.map((p) => p.player_id),
       ),
     auth.client
       .from("teams")
@@ -99,7 +129,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       ),
   ]);
   if (playersResult.error || teamsResult.error) throw new Error("Keyboard display query failed");
-  const candidates: KeyboardContext["candidates"] = rosterResult.data.flatMap((r) => {
+  const candidates: KeyboardContext["candidates"] = roster.flatMap((r) => {
     const participant = participants.find((p) => p.registration_id === r.registration_id);
     if (!participant || (participant.side !== "home" && participant.side !== "away")) return [];
     return [
@@ -148,6 +178,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     initial,
     version: sheetResult.data?.version ?? 0,
     confirmed: Boolean(sheetResult.data?.submission_id),
+    requiresFallback,
   };
   return data(
     { editor, csrfToken: auth.payload.csrfToken, competitionId: gameResult.data.competition_id },
@@ -196,17 +227,24 @@ export async function action({ request, params, context }: Route.ActionArgs) {
         ? "A súmula foi alterada em outra aba. Exporte sua cópia e recarregue antes de conciliar."
         : code === "BD906"
           ? "Este jogo já possui outra fonte ativa. Abra o fluxo de reconciliação."
-          : code === "BD908"
-            ? "Informe um motivo de 10 a 500 caracteres para a revisão."
+          : code === "BD715"
+            ? "Informe um motivo de 10 a 500 caracteres para o fallback emergencial."
+            : code === "BD908"
+              ? "Informe um motivo de 10 a 500 caracteres para a revisão."
             : code === "BD909"
               ? "O confronto já foi resolvido. Revise a resolução antes de corrigir a súmula."
               : code === "BD903"
                 ? "Este módulo exige um jogo de edição manual elegível."
-                : "Não foi possível salvar. Revise os relacionados, faltas e totais; sua cópia local está preservada.";
-    return data(
-      { error: message },
-      { status: code === "BD905" || code === "BD906" ? 409 : 400, headers: responseHeaders },
-    );
+                : "Não foi possível concluir o salvamento. Tente novamente; sua cópia local e a identidade de reenvio estão preservadas.";
+    const status =
+      code === "BD905" || code === "BD906" || code === "BD909" || code === "BD904"
+        ? 409
+        : code === "BD401"
+          ? 403
+          : ["BD902", "BD903", "BD907", "BD908", "BD715"].includes(code)
+            ? 400
+            : 503;
+    return data({ error: message }, { status, headers: responseHeaders });
   }
   return data(result.data, { headers: responseHeaders });
 }
