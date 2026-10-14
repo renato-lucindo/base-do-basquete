@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { CompetitionContext } from "../competition/context";
-import { loadCompetitionStatistics } from "./public-statistics.server";
+import { loadCompetitionStatistics, loadPublicGameDetail } from "./public-statistics.server";
 
 const context = {
   competitionId: 77,
@@ -12,6 +12,7 @@ function resultBuilder(result: unknown) {
   const builder = {
     eq: vi.fn(() => builder),
     in: vi.fn(() => builder),
+    limit: vi.fn(() => builder),
     maybeSingle: vi.fn(() => builder),
     order: vi.fn(() => builder),
     // biome-ignore lint/suspicious/noThenProperty: Supabase query builders are intentionally thenable.
@@ -92,5 +93,91 @@ describe("public statistics schema compatibility", () => {
       teamName: "Azul",
       teamSlug: "azul",
     });
+  });
+});
+
+function gameClient(schemaError: string | null) {
+  const tables: Record<string, unknown> = {
+    games: [
+      {
+        id: 5,
+        competition_id: 77,
+        game_number: 1,
+        status: "final",
+        scheduled_at: null,
+        venue: null,
+      },
+    ],
+    game_participants: [
+      { registration_id: 10, side: "home" },
+      { registration_id: 11, side: "away" },
+    ],
+    game_scores: [
+      { registration_id: 10, side: "home", score: 10 },
+      { registration_id: 11, side: "away", score: 8 },
+    ],
+    team_registrations: schemaError
+      ? [
+          { id: 10, team_id: 1 },
+          { id: 11, team_id: 2 },
+        ]
+      : [
+          { id: 10, team_id: 1, public_name: "Lobos A" },
+          { id: 11, team_id: 1, public_name: "Lobos B" },
+        ],
+    teams: [
+      { id: 1, name: "Lobos", slug: "lobos" },
+      { id: 2, name: "Ursos", slug: "ursos" },
+    ],
+    game_statistics: null,
+  };
+  return {
+    from: (table: string) => ({
+      select: (columns: string) =>
+        resultBuilder(
+          table === "team_registrations" && schemaError && columns.includes("public_name")
+            ? { data: null, error: { code: schemaError } }
+            : { data: tables[table] ?? (table === "game_statistics" ? null : []), error: null },
+        ),
+    }),
+  };
+}
+
+describe("public game detail registration identity", () => {
+  it.each(["42703", "PGRST204"])(
+    "loads the real game detail on the old schema (%s)",
+    async (code) => {
+      const result = await loadPublicGameDetail(gameClient(code) as never, context, "5");
+      expect(
+        result?.teams.map(({ registrationId, teamName, teamSlug, score }) => ({
+          registrationId,
+          teamName,
+          teamSlug,
+          score,
+        })),
+      ).toEqual([
+        { registrationId: 10, teamName: "Lobos", teamSlug: "lobos", score: 10 },
+        { registrationId: 11, teamName: "Ursos", teamSlug: "ursos", score: 8 },
+      ]);
+    },
+  );
+  it("keeps A/B identities and scores distinct on the new schema", async () => {
+    const result = await loadPublicGameDetail(gameClient(null) as never, context, "5");
+    expect(
+      result?.teams.map(({ teamId, teamName, teamSlug, score }) => ({
+        teamId,
+        teamName,
+        teamSlug,
+        score,
+      })),
+    ).toEqual([
+      { teamId: 1, teamName: "Lobos A", teamSlug: "inscricao-10", score: 10 },
+      { teamId: 1, teamName: "Lobos B", teamSlug: "inscricao-11", score: 8 },
+    ]);
+  });
+  it("propagates authorization failures instead of falling back", async () => {
+    await expect(loadPublicGameDetail(gameClient("42501") as never, context, "5")).rejects.toThrow(
+      "Public statistics query failed",
+    );
   });
 });

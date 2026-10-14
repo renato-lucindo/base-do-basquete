@@ -74,7 +74,7 @@ assert.equal(rootResponse.status, 302, "root must redirect to a valid context");
 assert.ok(rootLocation, "root redirect must include a location");
 // An older root can redirect to the canonical /visao-geral alias first.
 // That alias must itself redirect to /classificacao; never accept it as final.
-const overviewAlias = new RegExp("^/[0-9]{4}/[^/]+/[^/]+/(?:masculino|feminino)/visao-geral$");
+const overviewAlias = /^\/[0-9]{4}\/[^/]+\/[^/]+\/(?:masculino|feminino)\/visao-geral$/;
 if (overviewAlias.test(rootLocation)) {
   const canonicalResponse = await request(rootLocation);
   assert.equal(
@@ -111,6 +111,25 @@ const gameMatch = gameListBody.match(
   /\/2026\/liga-de-desenvolvimento\/sub-15\/(?:masculino\/|feminino\/)?jogos\/(\d+)/,
 );
 assert.ok(gameMatch, "the seeded context must expose one contextual game link");
+const gameDetail = await request(gameMatch[0]);
+assert.equal(gameDetail.status, 200, "the linked game detail must render on the current schema");
+assert.match(await gameDetail.text(), /Base do Basquete/);
+const teamList = await resolveContext("/2026/liga-de-desenvolvimento/sub-15/equipes");
+assert.equal(teamList.response.status, 200, "the team list must render");
+const teamLinks = [
+  ...new Set(
+    (await teamList.response.text()).match(
+      /\/2026\/liga-de-desenvolvimento\/sub-15\/(?:masculino\/|feminino\/)?equipes\/[a-z0-9-]+/g,
+    ) ?? [],
+  ),
+];
+assert.ok(teamLinks.length, "the seeded context must expose a team detail link");
+for (const teamPath of teamLinks) {
+  const teamDetail = await request(teamPath);
+  assert.equal(teamDetail.status, 200, `${teamPath} must render on the current schema`);
+  assert.match(await teamDetail.text(), /Base do Basquete/);
+}
+
 const crossedGamePath = `/2025/liga-de-desenvolvimento/sub-15/jogos/${gameMatch[1]}`;
 const crossedGameInitial = await request(crossedGamePath);
 assert.equal(crossedGameInitial.status, 308, "legacy game paths must canonicalize the gender");

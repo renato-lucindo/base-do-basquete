@@ -372,19 +372,29 @@ export async function loadPublicGameDetail(
     .select("id,team_id,public_name")
     .eq("competition_id", context.competitionId)
     .in("id", registrationIds);
-  ensure(registrationsResult.error);
+  const legacyRegistrations = registrationIdentitySchemaUnavailable(registrationsResult.error)
+    ? await client
+        .from("team_registrations")
+        .select("id,team_id")
+        .eq("competition_id", context.competitionId)
+        .in("id", registrationIds)
+    : null;
+  ensure(legacyRegistrations ? legacyRegistrations.error : registrationsResult.error);
+  const registrations = legacyRegistrations
+    ? (legacyRegistrations.data ?? []).map((row) => ({ ...row, public_name: null }))
+    : (registrationsResult.data ?? []);
   const teamsResult = await client
     .from("teams")
     .select("id,name,slug")
     .in(
       "id",
-      registrationsResult.data.map((registration) => registration.team_id),
+      registrations.map((registration) => registration.team_id),
     )
     .eq("is_public", true);
   ensure(teamsResult.error);
 
   const registrationById = new Map(
-    registrationsResult.data.map((registration) => [registration.id, registration]),
+    registrations.map((registration) => [registration.id, registration]),
   );
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
   const starterBySlot = new Map(rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]));
@@ -454,8 +464,8 @@ export async function loadPublicGameDetail(
         registrationId: participant.registration_id,
         side: participant.side,
         teamId: team.id,
-        teamName: registration.public_name,
-        teamSlug: `inscricao-${registration.id}`,
+        teamName: registration.public_name ?? team.name,
+        teamSlug: legacyRegistrations ? team.slug : `inscricao-${registration.id}`,
         score:
           scoresResult.data.find((score) => score.registration_id === participant.registration_id)
             ?.score ?? 0,

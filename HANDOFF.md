@@ -1,5 +1,15 @@
 # HANDOFF â€” Base do Basquete
 
+## Correção focal de compatibilidade pública — 14/10/2026
+
+WORK_UNIT=PR79-PUBLIC-DETAIL-LEGACY-COMPAT; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr79-boxscore-final-persistence; BRANCH_REMOTA=codex/independent-registrations-copy; BASE=f29d8ba620d8; WRITE_LOCK=ACTIVE durante correção, RELEASED após push/revisão.
+
+Artefato354709d: banco Harvey e boxscore Noether APPROVE_WITH_NON_BLOCKING_NOTES, pareceres6162004100/6161987055. CI38519060395/preview38519060399/CodeQL38519060411 SUCCESS:486Vitest,47arquivos/1303pgTAP, fresh/upgrade/concorrência/PostgREST. Estatísticas Linnaeus e QA Hilbert REQUEST_CHANGES por detalhes de jogo/equipe sem fallback de public_name no schema anterior (HTTP500 no preview). Achados anteriores de fingerprints, perfil/histórico/snapshots, retry e persistência A/B foram resolvidos.
+
+Correção focal adiciona fallback restrito aos códigos de incompatibilidade conhecidos nos loaders reais de jogo, lista/detalhe de equipe; mantém filtros de competição/status/participantes, nomes/slugs legados e identidade A/B nova, sem esconder falhas de autorização. Regressões abrangem42703/PGRST204, dois formatos de URL, snapshot real, contexto incorreto, placares A/B e erro42501. Smoke de preview passa a exigir200 dos detalhes vinculados, além das listas. SQL/grants/migrations inalterados. Gate local da correção PASS:493Vitest/65arquivos, formatação/lint/typecheck/build/runbooks/agentes/segredos(724). Revisão do novo SHA obrigatória; nenhum merge com REQUEST_CHANGES aberto.
+
+PROXIMO_PASSO_EXATO: publicar correção após gate local; renovar estatísticas/QA e confirmar validade focal de banco/boxscore; conferir CI/preview/CodeQL e detalhesHTTP200; integrar79 somente aprovada, depois reconciliar/revisar73. Sem PR77, DDL compartilhado ou produção. IDs remotos históricos PR66 preservados. Trabalho alheio137b78b permanece em codex/preserve-roster-import-137b78b; WIPcd906eb permanece isolado.
+
 ## Retomada apÃ³s reset â€” PR79 boxscore ponta a ponta
 
 O heartbeat autorizado retomou o trabalho em 14/10/2026 02:36 America/Araguaina; janela de5h consultada em0%, sem usar crÃ©dito de reset. A pausa terminou. Este checkpoint substitui operacionalmente as instruÃ§Ãµes histÃ³ricas abaixo. EvidÃªncia da pausa em `codex/pr79-review-handoff@cd906eb`, `docs/execution/PR79-INDEPENDENT-REVIEWS-PAUSED.md` e comentÃ¡rio6158608289 da PR79.
