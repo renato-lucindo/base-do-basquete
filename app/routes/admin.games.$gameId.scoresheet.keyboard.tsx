@@ -71,7 +71,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .eq("id", gameResult.data.competition_id)
       .single(),
     historicalIds.length
-      ? auth.client.from("roster_entries").select("id,registration_id,player_id,jersey_number").in("id", historicalIds)
+      ? auth.client
+          .from("roster_entries")
+          .select("id,registration_id,player_id,jersey_number")
+          .in("id", historicalIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
   if (rosterResult.error || historicalResult.error) throw new Error("Keyboard roster query failed");
@@ -231,11 +234,11 @@ export async function action({ request, params, context }: Route.ActionArgs) {
             ? "Informe um motivo de 10 a 500 caracteres para o fallback emergencial."
             : code === "BD908"
               ? "Informe um motivo de 10 a 500 caracteres para a revisão."
-            : code === "BD909"
-              ? "O confronto já foi resolvido. Revise a resolução antes de corrigir a súmula."
-              : code === "BD903"
-                ? "Este módulo exige um jogo de edição manual elegível."
-                : "Não foi possível concluir o salvamento. Tente novamente; sua cópia local e a identidade de reenvio estão preservadas.";
+              : code === "BD909"
+                ? "O confronto já foi resolvido. Revise a resolução antes de corrigir a súmula."
+                : code === "BD903"
+                  ? "Este módulo exige um jogo de edição manual elegível."
+                  : "Não foi possível concluir o salvamento. Tente novamente; sua cópia local e a identidade de reenvio estão preservadas.";
     const status =
       code === "BD905" || code === "BD906" || code === "BD909" || code === "BD904"
         ? 409
