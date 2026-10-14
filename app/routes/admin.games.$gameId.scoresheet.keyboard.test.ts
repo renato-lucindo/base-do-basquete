@@ -115,7 +115,7 @@ function keyboardLoaderArgs() {
     context: { get: () => ({ env: {} }) },
   } as unknown as Parameters<typeof loader>[0];
 }
-function mockKeyboardLoader(publicNameMissing: boolean) {
+function mockKeyboardLoader(publicNameMissing: boolean, primarySource = "manual_scoresheet") {
   const participants = [
     { registration_id: 10, side: "home" },
     { registration_id: 20, side: "away" },
@@ -132,6 +132,8 @@ function mockKeyboardLoader(publicNameMissing: boolean) {
   }
   const fixtures: Record<string, ReturnType<typeof chain>> = {
     games: chain([{ id: 42, competition_id: 1, game_number: 7, matchup_id: 100 }]),
+    competitions: chain([{ data_profile_id: 11 }]),
+    series_category_data_profiles: chain([{ primary_source: primarySource }]),
     game_participants: chain(participants),
     keyboard_scoresheets: chain([]),
     roster_entries: chain([
@@ -167,4 +169,24 @@ it("carrega o editor com o nome antigo quando public_name não existe", async ()
   mockKeyboardLoader(true);
   const response = await loader(keyboardLoaderArgs());
   expect(response.data.editor.teams).toEqual({ home: "Equipe base", away: "Equipe base" });
+});
+
+it("marks FIBA games as emergency fallback requiring a reason", async () => {
+  mockKeyboardLoader(false, "fiba_boxscore");
+  const response = await loader(keyboardLoaderArgs());
+  expect(response.data.editor.requiresFallback).toBe(true);
+});
+it("returns service unavailable rather than validation error on transient PostgREST failure", async () => {
+  rpc.mockResolvedValue({ data: null, error: { code: "08006" } });
+  expect(await action(args(request))).toMatchObject({
+    init: { status: 503 },
+    data: { error: expect.stringContaining("identidade de reenvio") },
+  });
+});
+it("reports a missing emergency fallback reason as validation, not infrastructure error", async () => {
+  rpc.mockResolvedValue({ data: null, error: { code: "BD715" } });
+  expect(await action(args({ ...request, confirm: true }))).toMatchObject({
+    init: { status: 400 },
+    data: { error: expect.stringContaining("fallback emergencial") },
+  });
 });
