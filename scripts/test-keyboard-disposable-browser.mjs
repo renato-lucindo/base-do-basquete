@@ -75,8 +75,9 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     await expect(page).toHaveURL(/\/admin\/?$/);
 
     await page.goto("/admin/competitions/9350/scoresheets/new");
-    await expect(page.getByRole("heading", { name: /Fallback emergencial/ })).toBeVisible();
-    await page.getByRole("link", { name: /Iniciar fallback emergencial/ }).click();
+    const fallbackEntry = page.getByRole("link", { name: /Iniciar fallback emergencial/ });
+    await expect(fallbackEntry).toBeVisible();
+    await fallbackEntry.click();
     await expect(page).toHaveURL(/\/admin\/games\/93501\/scoresheet\/keyboard$/);
     await page.getByRole("button", { name: "Iniciar transcrição" }).click();
 
