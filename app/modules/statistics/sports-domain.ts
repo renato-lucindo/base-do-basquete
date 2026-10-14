@@ -2,6 +2,7 @@ export type PublicGameStatus = "scheduled" | "live" | "final";
 
 export interface PublicTeamSummary {
   id: number;
+  registrationId?: number;
   name: string;
   slug: string;
   abbreviation: string | null;

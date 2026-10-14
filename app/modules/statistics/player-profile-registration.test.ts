@@ -130,4 +130,62 @@ describe("player profile registration identity", () => {
     const result = await loadPublicPlayerProfile(client as never, context, [context], "atleta");
     expect(result?.current).toMatchObject({ teamName: "Lobos", teamSlug: "lobos" });
   });
+
+  it("loads legacy published games and opponents when public_name is unavailable", async () => {
+    const context = {
+      competitionId: 77,
+      year: 2026,
+      statisticsMode: "scoresheet",
+    } as CompetitionContext;
+    const row = {
+      competition_id: 77,
+      registration_id: 22,
+      team_id: 1,
+      team_name: "Lobos",
+      team_slug: "lobos",
+      points: 12,
+      games_played: 1,
+    };
+    const tables: Record<string, unknown[]> = {
+      public_player_profiles: [{ id: 5, full_name: "Atleta", slug: "atleta" }],
+      roster_entries: [{ id: 1 }],
+      competition_scoresheet_player_statistics: [row],
+      game_scoresheet_player_statistics: [{ ...row, game_id: 9, did_not_play: false }],
+      games: [{ id: 9, competition_id: 77, game_number: "1", status: "final" }],
+      game_participants: [
+        { game_id: 9, registration_id: 22, side: "home" },
+        { game_id: 9, registration_id: 23, side: "away" },
+      ],
+      team_registrations: [
+        { id: 22, team_id: 1 },
+        { id: 23, team_id: 2 },
+      ],
+      teams: [
+        { id: 1, name: "Lobos" },
+        { id: 2, name: "Rivais" },
+      ],
+      game_scores: [
+        { game_id: 9, registration_id: 22, score: 12 },
+        { game_id: 9, registration_id: 23, score: 8 },
+      ],
+    };
+    const client = {
+      from: (table: string) => ({
+        select: (columns: string) =>
+          builder(
+            table === "team_registrations" && columns.includes("public_name")
+              ? { data: null, error: { code: "PGRST204" } }
+              : { data: tables[table] ?? [], error: null },
+          ),
+      }),
+    };
+    const result = await loadPublicPlayerProfile(client as never, context, [context], "atleta");
+    expect(result?.current).toMatchObject({ teamName: "Lobos", teamSlug: "lobos" });
+    expect(result?.games[0]).toMatchObject({
+      teamName: "Lobos",
+      opponentName: "Rivais",
+      score: "12 × 8",
+      result: "Vitória",
+    });
+  });
 });

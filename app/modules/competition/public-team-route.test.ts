@@ -66,4 +66,30 @@ describe("public team routes after independent registrations", () => {
       await loadPublicDetailPayload(client() as never, other, "equipes", "inscricao-23", [other]),
     ).toBeNull();
   });
+
+  it.each(["lobos", "inscricao-22"])(
+    "resolves %s against the actual unchanged legacy snapshot",
+    async (slug) => {
+      const actual = await vi.importActual<typeof import("../statistics/public-sports.server")>(
+        "../statistics/public-sports.server",
+      );
+      vi.mocked(loadPublicSportsCore).mockImplementationOnce(actual.loadPublicSportsCore);
+      const snapshot = {
+        schemaVersion: 1,
+        teams: [{ id: 1, registrationId: 22, name: "Lobos", slug: "lobos", abbreviation: "LOB" }],
+        games: [],
+      };
+      const api = { ...client(), rpc: vi.fn().mockResolvedValue({ data: snapshot, error: null }) };
+      const result = await loadPublicDetailPayload(api as never, context, "equipes", slug, [
+        context,
+      ]);
+      expect(result?.teamProfile?.team).toMatchObject({
+        id: 1,
+        registrationId: 22,
+        name: "Lobos",
+        slug: "lobos",
+      });
+      expect(snapshot.teams[0]?.slug).toBe("lobos");
+    },
+  );
 });

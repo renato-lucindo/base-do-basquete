@@ -94,7 +94,8 @@ export async function loadPublicDetailPayload(
       (item) =>
         item.slug === detailReference ||
         (loadedDetail?.registrationId !== undefined &&
-          item.slug === `inscricao-${loadedDetail.registrationId}`),
+          (item.registrationId === loadedDetail.registrationId ||
+            item.slug === `inscricao-${loadedDetail.registrationId}`)),
     ) ?? null;
   const teamProfile: PublicTeamProfileDto | null =
     team && teamSportsCore

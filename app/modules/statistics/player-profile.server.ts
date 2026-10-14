@@ -16,7 +16,10 @@ import {
   parseBoxscoreStatisticsMode,
 } from "./boxscore-statistics-contract";
 import type { PlayerTotals } from "./player-profile-domain";
-import { registrationIdentityMap } from "./public-statistics.server";
+import {
+  registrationIdentityMap,
+  registrationIdentitySchemaUnavailable,
+} from "./public-statistics.server";
 
 interface PlayerCompetitionBase {
   context: CompetitionContext;
@@ -408,13 +411,36 @@ export async function loadPublicPlayerProfile(
     : { data: [], error: null };
   ensure(participantsResult.error, "Adversários temporariamente indisponíveis");
   const registrationIds = participantsResult.data.map((item) => item.registration_id);
-  const registrationsResult = registrationIds.length
+  const registrationsWithIdentity = registrationIds.length
     ? await client
         .from("team_registrations")
         .select("id,team_id,public_name")
         .in("id", registrationIds)
     : { data: [], error: null };
-  ensure(registrationsResult.error, "Equipes temporariamente indisponíveis");
+  const legacyRegistrations = registrationIdentitySchemaUnavailable(registrationsWithIdentity.error)
+    ? await client.from("team_registrations").select("id,team_id").in("id", registrationIds)
+    : null;
+  ensure(
+    legacyRegistrations ? legacyRegistrations.error : registrationsWithIdentity.error,
+    "Equipes temporariamente indisponíveis",
+  );
+  const legacyTeams = legacyRegistrations?.data?.length
+    ? await client
+        .from("teams")
+        .select("id,name")
+        .in(
+          "id",
+          legacyRegistrations.data.map((registration) => registration.team_id),
+        )
+    : { data: [], error: null };
+  ensure(legacyTeams.error, "Equipes temporariamente indisponíveis");
+  const legacyNameByTeamId = new Map(legacyTeams.data.map((team) => [team.id, team.name]));
+  const registrations = legacyRegistrations
+    ? (legacyRegistrations.data ?? []).map((registration) => ({
+        ...registration,
+        public_name: legacyNameByTeamId.get(registration.team_id) ?? null,
+      }))
+    : (registrationsWithIdentity.data ?? []);
   const scoresResult = gameIds.length
     ? await client
         .from("game_scores")
@@ -438,7 +464,7 @@ export async function loadPublicPlayerProfile(
       row.game_id === null ? [] : ([[row.game_id, row]] as const),
     ),
   );
-  const registrationById = new Map(registrationsResult.data.map((item) => [item.id, item]));
+  const registrationById = new Map(registrations.map((item) => [item.id, item]));
 
   return {
     id: profile.id,

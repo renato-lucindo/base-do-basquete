@@ -114,7 +114,7 @@ function nullableNumber(value: number | null): number | null {
   return value;
 }
 
-function registrationIdentitySchemaUnavailable(error: unknown): boolean {
+export function registrationIdentitySchemaUnavailable(error: unknown): boolean {
   if (typeof error !== "object" || error === null || !("code" in error)) return false;
   return ["42703", "42P01", "PGRST204", "PGRST205"].includes(
     String((error as { code?: unknown }).code),
