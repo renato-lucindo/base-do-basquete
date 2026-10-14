@@ -273,7 +273,39 @@ select lives_ok($$
 $$, 'the exact private object moves the import to review');
 select is((select status from public.boxscore_imports where id = (select import_id from boxscore_test_data)), 'review', 'ready import waits for review');
 select is((select count(*)::integer from public.boxscore_import_player_matches where import_id = (select import_id from boxscore_test_data)), 10, 'every source player has a persisted match');
-select lives_ok($$
+-- Regression: both PDF commit entrypoints must honor an existing keyboard draft.
+reset role;
+insert into public.keyboard_scoresheets(game_id, document)
+values (
+  94001,
+  '{"rulesVersion":"FIBA_2024","periods":4,"roster":[],"events":[],"coachPlayer":{"home":null,"away":null}}'::jsonb
+);
+set local role authenticated;
+select throws_ok($
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    resolution - 'gameId',
+    jsonb_build_object(
+      'mode','existing','gameId',94001,'applyReviewedMetadata',false,
+      'scheduledAt','2026-05-09T20:00:00Z','venue','Ginasio PDF'
+    )
+  ) from boxscore_test_data
+$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'FIBA v2 cannot overwrite a keyboard draft');
+select throws_ok($
+  select public.admin_commit_boxscore_import(import_id, resolution)
+  from boxscore_test_data
+$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'legacy FIBA commit cannot overwrite a keyboard draft');
+select is((select status from public.boxscore_imports where id=(select import_id from boxscore_test_data)),
+  'review', 'blocked FIBA import remains reviewable');
+select is((select status from public.games where id=94001),
+  'scheduled', 'blocked FIBA import does not finalize the game');
+select is((select count(*) from public.keyboard_scoresheets where game_id=94001),
+  1::bigint, 'FIBA collision retains the existing keyboard draft');
+reset role;
+delete from public.keyboard_scoresheets where game_id=94001;
+set local role authenticated;
+
+select lives_ok($
   select public.admin_commit_boxscore_import_v2(
     import_id,
     resolution - 'gameId',
