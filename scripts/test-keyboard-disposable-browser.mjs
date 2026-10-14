@@ -63,6 +63,11 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     browser = await chromium.launch();
     const context = await browser.newContext({ baseURL: origin });
     const page = await context.newPage();
+    const browserErrors = [];
+    page.on("pageerror", (error) => browserErrors.push(error.message.slice(0, 500)));
+    page.on("console", (message) => {
+      if (message.type() === "error") browserErrors.push(message.text().slice(0, 500));
+    });
     page.setDefaultTimeout(15000);
 
     await page.goto("/admin/login");
@@ -78,7 +83,18 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     const fallbackEntry = page.getByRole("link", { name: /Iniciar fallback emergencial/ });
     await expect(fallbackEntry).toBeVisible();
     await fallbackEntry.click();
-    await expect(page).toHaveURL(/\/admin\/games\/93501\/scoresheet\/keyboard$/);
+    try {
+      await expect(page).toHaveURL(/\/admin\/games\/93501\/scoresheet\/keyboard$/);
+    } catch (cause) {
+      const response = await context.request.get(`${origin}/admin/games/93501/scoresheet/keyboard`);
+      console.error("Fallback browser navigation diagnostics", {
+        actualUrl: page.url(),
+        directGetStatus: response.status(),
+        visibleText: (await page.locator("body").innerText()).slice(0, 1500),
+        browserErrors,
+      });
+      throw cause;
+    }
     await page.getByRole("button", { name: "Iniciar transcrição" }).click();
 
     async function entry(jersey, code) {
