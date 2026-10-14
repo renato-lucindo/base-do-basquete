@@ -227,6 +227,44 @@ const mixed = await race(93004, writer(93004, randomUUID(), 0), legacy);
 assert.deepEqual(mixed.sort(), ["accepted", "other-source"]);
 console.log("PASS: legacy and keyboard cannot both own one game");
 
+
+// A reserved keyboard draft and a PDF importer must contend for the same
+// game-row lock, irrespective of which writer acquires it first.
+await sql(`begin; ${authContext}
+set local role authenticated;
+select public.admin_save_keyboard_scoresheet(
+  93005, '${randomUUID()}', 0, ${docLiteral}
+);
+commit;`);
+const reservedImportId = Number(await sql(`insert into public.boxscore_imports (
+  competition_id, sha256, storage_path, parser_version, status, created_by
+) values (
+  9301, repeat('d',64), '9301/'||repeat('d',64)||'.pdf',
+  'basketball-site-v1', 'review',
+  (select user_id from private.admin_accounts limit 1)
+) returning id`));
+assert.ok(Number.isSafeInteger(reservedImportId));
+const blockedPdfWriter = `create function pg_temp.try_pdf() returns text language plpgsql as $test$
+  begin
+    perform public.admin_commit_boxscore_import(
+      ${reservedImportId}, '{"gameId":93005}'::jsonb
+    );
+    return 'unexpected-pdf-commit';
+  exception when sqlstate 'BD906' then return 'other-source';
+  end $test$;
+  set local role authenticated; select pg_temp.try_pdf()`;
+const draftAndPdf = await race(
+  93005,
+  writer(93005, randomUUID(), 1),
+  blockedPdfWriter,
+);
+assert.deepEqual(draftAndPdf.sort(), ["accepted", "other-source"]);
+assert.equal(Number(await sql("select version from public.keyboard_scoresheets where game_id=93005")), 2);
+assert.equal(Number(await sql("select count(*) from public.keyboard_scoresheet_revisions where game_id=93005")), 2);
+assert.equal(await sql("select status from public.boxscore_imports where id="+reservedImportId), "review");
+assert.equal(await sql("select status from public.games where id=93005"), "scheduled");
+console.log("PASS: concurrent PDF import cannot steal a keyboard-reserved game");
+
 // Exercise actual GoTrue-issued sessions and TOTP MFA, not forged JWT claims.
 const authOptions = {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
