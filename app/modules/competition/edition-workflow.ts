@@ -333,11 +333,13 @@ export function validateEditionBatchWorkflow(value: unknown, year: number) {
       singleWorkflowInput(batch, candidate as DisputeWorkflowInput),
       year,
     );
-    if (!validation.ok)
+    if (!validation.ok) {
+      if (!disputeKeys.includes(validation.field as keyof DisputeWorkflowInput)) return validation;
       return fail(
         `disputes.${index}.${validation.field}`,
         `Disputa ${index + 1}: ${validation.error}`,
       );
+    }
     summaries.push(validation.summary);
     const typed = candidate as DisputeWorkflowInput;
     if (typed.divisionMode === "new") {

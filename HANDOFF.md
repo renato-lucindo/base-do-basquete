@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## PR73 - correcoes dos pareceres independentes - 14/10/2026
+
+WORK_UNIT=PR73-INDEPENDENT-FINDINGS-FIX; OWNER=project-maintainer; BRANCH_REMOTA=codex/multi-dispute-creation-navigation; BASE=cfb461425b76d0a738e915bb6925025ff7c635b4; WRITE_LOCK=ACTIVE ate push para renovacao. HEAD anterior7156f60 teve banco APPROVE_WITH_NON_BLOCKING_NOTES(6166742820), acessibilidade REQUEST_CHANGES(6166834700) e QA REQUEST_CHANGES(6166869794). CI38552252383/preview38552252332/CodeQL38552252316 SUCCESS:503Vitest,15Playwright,48arquivos/1331pgTAP. CI nao substitui os bloqueios.
+
+Correcoes focais: erros de identificacao no validador batch conservam o campo compartilhado; erros proprios da disputa conservam prefixo/index. Ano/Nome agora visiveis com aria-invalid/describedby e alerta focado; duas regressoes Playwright PASS. Confirmacao HTTP validada por origem/AAL2/CSRF/contrato/requestUUID/revisao alcança RPC antes de escolhas mutaveis, preservando replay de adicao e guardas autoritativos; revisao sem escrita mantem preflight. Confirmacao incompleta continua na etapa Revisao.
+
+Migration aditiva20261014110514 reconcilia somente expectativas de perfil alteradas pelo proprio lote: registra expectativa original e perfil do item concluido por categoria/idade/naipe, substitui a expectativa dos itens seguintes somente quando corresponde ao mesmo original. O primeiro item continua validado contra o perfil ativo, com locks transacionais; expectativa externa ou divergente permanece rejeitada. Ledger externo conserva payload original. Novos16pgTAP cobrem Ouro/Prata na mesma categoria/naipe, replay, umperfil e rejeicoes/rollback de expectativas divergentes/externas e fonte alterada semjustificativa. Migrations publicadas anteriores inalteradas. SQL so emCI descartavel, sem Dockerlocal. Gate local da correcao PASS512Vitest/66arquivos e todosgates npmruncheck, scan732; duasregressoesPlaywrightPASS. Artefato deve receber SQL integral e novos pareceres.
+
+NotaDB nao bloqueante sobre deadlock entreUUIDsdistintos acompanhada em issue84; ainda nao reproduzida. Shell herdado: nome acessivel do brand em390px e movimento reduzido foram observados como limitacoes daBASE por Popper; nao sao regressao destaPR. Rollout/MFAreal/zoomnativo/advisorsprodutivos continuam limitacoes explicitadas. Sem PR77, DDL compartilhado ou producao. PR79 integrada emcfb4614, com gatesposmerge38551883368/38551883396 SUCCESS.
+
+PROXIMO_PASSO_EXATO: estabilizar e publicar correcoes com gate; renovar banco/acessibilidade/QA noSHAexato; integrar73 somente semREQUEST_CHANGES e comgatesverdes. Preservar worktrees/WIP e IDs remotos historicosPR66.
+
 ## PR73 - reconciliacao e revisoes independentes - 14/10/2026
 
 Este checkpoint substitui operacionalmente as instrucoes historicas abaixo. PR79 MERGED em2026-10-14T10:46:11Z por cfb461425b76d0a738e915bb6925025ff7c635b4; arvore identica ao HEAD7e37821 aprovado. Quatro pareceres independentes e QA editorial6166528738 validos; CI38551232484/preview38551232491/CodeQL38551232516 SUCCESS. Nenhum rollout compartilhado ou producao realizado.

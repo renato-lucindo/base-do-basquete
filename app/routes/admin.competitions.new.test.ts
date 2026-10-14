@@ -249,9 +249,62 @@ describe("edition workflow actions", () => {
     const result = await action(post(create));
     expect(JSON.stringify(result)).not.toContain("secret detail");
     client.rpc.mockClear();
-    tables.categories = { data: null, error: { code: "42703" } };
+    client.rpc.mockResolvedValue({ data: null, error: { code: "PGRST202" } });
     const unavailable = await action(post(create));
     expect(JSON.stringify(unavailable)).toContain("migration");
+    client.rpc.mockClear();
+    tables.categories = { data: null, error: { code: "42703" } };
+    const reviewUnavailable = await action(
+      post({ intent: "review", csrfToken: "csrf-test", payload: JSON.stringify(input) }),
+    );
+    expect(JSON.stringify(reviewUnavailable)).toContain("migration");
+    expect(client.rpc).not.toHaveBeenCalled();
+  });
+  it("replays an addition through the ledger after its dispute and context have changed", async () => {
+    const addition = { ...input, seasonId: 7, seriesId: null };
+    const fields = { ...create, payload: JSON.stringify(addition) };
+    client.rpc.mockResolvedValue({ data: { seasonId: 7, competitionId: 124 }, error: null });
+    await expect(action(post(fields))).rejects.toMatchObject({ status: 302 });
+    tables.competition_seasons = {
+      data: [{ ...season(), description: "Changed after creation" }],
+      error: null,
+    };
+    tables.categories = { data: [{ id: 20, age_kind: "adult", age_value: null }], error: null };
+    tables.competition_dispute_contexts = {
+      data: [
+        {
+          competition_id: 124,
+          season_id: 7,
+          category_id: 20,
+          gender_division: "male",
+          competitive_division_value_id: null,
+        },
+      ],
+      error: null,
+    };
+    await expect(action(post(fields))).rejects.toMatchObject({ status: 302 });
+    expect(client.rpc).toHaveBeenCalledTimes(2);
+    expect(client.rpc.mock.calls[1]).toEqual(client.rpc.mock.calls[0]);
+    expect(client.from).not.toHaveBeenCalled();
+  });
+  it("leaves a new addition duplicate decision to the authoritative RPC", async () => {
+    client.rpc.mockResolvedValue({
+      data: null,
+      error: { code: "BD506", message: "BDB_COMPETITION_CONTEXT_ALREADY_EXISTS" },
+    });
+    const result = await action(
+      post({ ...create, payload: JSON.stringify({ ...input, seasonId: 7, seriesId: null }) }),
+    );
+    expect(JSON.stringify(result)).toContain("Essa categoria e divisão");
+    expect(client.rpc).toHaveBeenCalledExactlyOnceWith(
+      "admin_add_competition_dispute",
+      expect.any(Object),
+    );
+  });
+  it("keeps a missing review confirmation associated with the review step", async () => {
+    const result = await action(post({ ...create, reviewed: "" }));
+    expect(JSON.stringify(result)).toContain('"field":"reviewed"');
+    expect(JSON.stringify(result)).toContain('"review":{"input"');
     expect(client.rpc).not.toHaveBeenCalled();
   });
 });

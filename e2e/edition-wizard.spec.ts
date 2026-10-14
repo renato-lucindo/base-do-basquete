@@ -1,6 +1,6 @@
-import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
 import { resolve } from "node:path";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, type Page, test } from "@playwright/test";
 import { createServer, type ViteDevServer } from "vite";
 
 let server: ViteDevServer;
@@ -232,3 +232,33 @@ test("invalid division fields are visible and associated with their errors", asy
   await page.getByRole("button", { name: "Revisar estrutura" }).click();
   await expect(page.getByLabel("Valor", { exact: true })).toHaveAttribute("aria-invalid", "true");
 });
+
+for (const field of ["year", "championshipName"] as const) {
+  test(`shared ${field} error reveals and labels the identification field`, async ({ page }) => {
+    await page.goto(fixtureUrl);
+    await page.getByLabel("Campeonato", { exact: true }).selectOption("new");
+    await page
+      .getByLabel("Nome", { exact: true })
+      .fill(field === "championshipName" ? "" : "GREEN");
+    if (field === "year") await page.getByLabel("Ano", { exact: true }).fill("1899");
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await page.getByLabel("Naipe").selectOption("male");
+    await page.getByLabel("Fonte primária").selectOption("manual_scoresheet");
+    await page.getByLabel("Formato", { exact: true }).selectOption("single_group");
+    await page.getByLabel("Quantidade de equipes").fill("4");
+    await page.getByRole("button", { name: "Revisar estrutura" }).click();
+    await expect(page.getByRole("alert")).toBeFocused();
+    await expect(page.locator('fieldset[data-step="1"]')).toBeVisible();
+    await expect(page.locator('fieldset[data-step="2"]')).toBeHidden();
+    const control = page.locator(`#${field}`);
+    await expect(control).toBeVisible();
+    await expect(control).toHaveAttribute("aria-invalid", "true");
+    await expect(control).toHaveAttribute("aria-describedby", "edition-error");
+    await expect(page.getByRole("alert")).not.toContainText("Disputa 1:");
+    await control.fill(field === "year" ? "2026" : "GREEN");
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await expect(page.getByLabel("Quantidade de equipes")).toHaveValue("4");
+    await page.getByRole("button", { name: "Revisar estrutura" }).click();
+    await expect(page.getByRole("heading", { name: "Revisão da criação" })).toBeFocused();
+  });
+}

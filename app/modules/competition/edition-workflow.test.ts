@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   disputeName,
+  type EditionBatchWorkflowInput,
+  type EditionWorkflowInput,
   masterAges,
   validateEditionBatchWorkflow,
   validateEditionWorkflow,
   workflowInputFromForm,
-  type EditionBatchWorkflowInput,
-  type EditionWorkflowInput,
 } from "./edition-workflow";
+
 const workflowFixture: EditionWorkflowInput = {
   seriesId: null,
   championshipName: "RED",
@@ -241,5 +242,34 @@ describe("edition workflow", () => {
         2026,
       ),
     ).toMatchObject({ ok: false, field: "disputes.0.divisionMode" });
+  });
+  it.each([
+    ["year", { year: 1899 }],
+    ["championshipName", { seriesId: null, championshipName: null }],
+    ["description", { description: "x".repeat(2001) }],
+    ["seriesId", { seriesId: 0, championshipName: null }],
+    ["seasonId", { seasonId: 0, championshipName: null }],
+  ] as const)("keeps shared %s validation associated with identification", (field, delta) => {
+    const result = validateEditionBatchWorkflow({ ...batchFixture, ...delta }, 2026);
+    expect(result).toMatchObject({ ok: false, field });
+    if (!result.ok) expect(result.error).not.toMatch(/^Disputa /);
+  });
+  it("keeps an invalid second dispute associated with its own field", () => {
+    expect(
+      validateEditionBatchWorkflow(
+        {
+          ...batchFixture,
+          disputes: [
+            batchFixture.disputes[0],
+            {
+              ...batchFixture.disputes[0],
+              categoryKind: "base",
+              categoryAge: 24,
+            },
+          ],
+        },
+        2026,
+      ),
+    ).toMatchObject({ ok: false, field: "disputes.1.categoryAge" });
   });
 });

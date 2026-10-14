@@ -129,6 +129,57 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
       { status: 400, headers },
     );
+  const input = validation.input;
+  const requestId = String(form.get("requestId") ?? "");
+  const confirmationValid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) &&
+    input.reviewed;
+  if (intent === "create" && confirmationValid) {
+    const firstDispute = input.disputes[0];
+    if (!firstDispute) throw new Error("Validated edition batch is empty");
+    const result = input.seasonId
+      ? await auth.client.rpc("admin_add_competition_dispute", {
+          p_request_id: requestId,
+          p_input: { ...singleWorkflowInput(input, firstDispute) },
+        })
+      : await auth.client.rpc("admin_create_competition_edition_batch", {
+          p_request_id: requestId,
+          p_input: {
+            ...input,
+            disputes: input.disputes.map((dispute) => ({ ...dispute })),
+          },
+        });
+    const resultObject =
+      result.data && typeof result.data === "object" && !Array.isArray(result.data)
+        ? result.data
+        : null;
+    const competitionId = resultObject?.competitionId;
+    if (
+      result.error ||
+      typeof competitionId !== "number" ||
+      !Number.isSafeInteger(competitionId) ||
+      competitionId < 1
+    ) {
+      return data(
+        {
+          error: ["PGRST202", "PGRST204", "42P01", "42703"].includes(result.error?.code ?? "")
+            ? "O novo fluxo aguarda aplicação autorizada da migration. Nenhum dado foi criado."
+            : workflowError(result.error?.code, result.error?.message),
+          field: "form",
+          review: null,
+          existingSeasonId: null,
+          existingCompetitionId: null,
+        },
+        { status: 409, headers },
+      );
+    }
+    throw redirect(
+      input.seasonId || input.disputes.length === 1
+        ? `/admin/competitions/${competitionId}`
+        : "/admin/competitions",
+      { headers },
+    );
+  }
   const choices = await loadWorkflowChoices(auth.client);
   if (!choices.available)
     return data(
@@ -141,7 +192,6 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
       { status: 409, headers },
     );
-  const input = validation.input;
   let season = choices.seasons.find((item) => item.id === input.seasonId);
   if (input.seasonId && !season) {
     const resolution = await auth.client.rpc("admin_resolve_competition_season_id", {
@@ -257,22 +307,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     reviewDisputes.push({ input: dispute, name, summary });
   }
   const review = { input, disputes: reviewDisputes };
-  if (intent === "review")
-    return data(
-      {
-        error: null,
-        field: null,
-        review,
-        existingSeasonId: null,
-        existingCompetitionId: null,
-      },
-      { headers },
-    );
-  const requestId = String(form.get("requestId") ?? "");
-  if (
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId) ||
-    !input.reviewed
-  ) {
+  if (intent === "create")
     return data(
       {
         error: "Confirme a revisão ou recarregue o formulário.",
@@ -283,50 +318,15 @@ export async function action({ request, context }: Route.ActionArgs) {
       },
       { status: 400, headers },
     );
-  }
-  const firstDispute = input.disputes[0];
-  if (!firstDispute) throw new Error("Validated edition batch is empty");
-  const result = input.seasonId
-    ? await auth.client.rpc("admin_add_competition_dispute", {
-        p_request_id: requestId,
-        p_input: { ...singleWorkflowInput(input, firstDispute) },
-      })
-    : await auth.client.rpc("admin_create_competition_edition_batch", {
-        p_request_id: requestId,
-        p_input: {
-          ...input,
-          disputes: input.disputes.map((dispute) => ({ ...dispute })),
-        },
-      });
-  const resultObject =
-    result.data && typeof result.data === "object" && !Array.isArray(result.data)
-      ? result.data
-      : null;
-  const competitionId = resultObject?.competitionId;
-  if (
-    result.error ||
-    typeof competitionId !== "number" ||
-    !Number.isSafeInteger(competitionId) ||
-    competitionId < 1
-  ) {
-    return data(
-      {
-        error: workflowError(result.error?.code, result.error?.message),
-        field: "form",
-        review,
-        existingSeasonId:
-          result.error?.message === "BDB_COMPETITION_SEASON_CONFLICT"
-            ? (existing?.id ?? null)
-            : null,
-        existingCompetitionId: null,
-      },
-      { status: 409, headers },
-    );
-  }
-  throw redirect(
-    input.seasonId || input.disputes.length === 1
-      ? `/admin/competitions/${competitionId}`
-      : "/admin/competitions",
+
+  return data(
+    {
+      error: null,
+      field: null,
+      review,
+      existingSeasonId: null,
+      existingCompetitionId: null,
+    },
     { headers },
   );
 }
