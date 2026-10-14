@@ -348,4 +348,3 @@ revoke all on function private.admin_resolve_boxscore_team_registrations_impl(bi
 from public, anon, authenticated;
 grant execute on function private.admin_resolve_boxscore_team_registrations_impl(bigint, jsonb)
 to authenticated;
-
