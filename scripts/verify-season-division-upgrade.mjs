@@ -143,4 +143,26 @@ assert.equal(evidence.legacySeasonAliasesResolve, true, "legacy edition aliases 
 assert.equal(evidence.linkedGames, 1, "historical game link changed");
 assert.equal(evidence.linkedPublications, 1, "historical publication link or snapshot changed");
 
-console.log("season/division upgrade compatibility passed");
+const publicRegistrations = await run(`
+set role anon;
+select coalesce(jsonb_agg(id order by id), '[]')::text
+from public.team_registrations where id in (94001,94002,94003);
+`);
+assert.deepEqual(
+  JSON.parse(publicRegistrations),
+  [94001],
+  "upgrade changed anonymous visibility or exposed pending registration edits",
+);
+const renamedVisibility = await run(`
+begin;
+update public.team_registrations set public_name='Upgrade Nome Pendente' where id=94001;
+set local role anon;
+select count(*) from public.team_registrations where id=94001;
+rollback;
+`);
+assert.equal(
+  renamedVisibility,
+  "0",
+  "legacy publication exposed an unpublished public-name change",
+);
+console.log("season/division upgrade and legacy publication visibility compatibility passed");

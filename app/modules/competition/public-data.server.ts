@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../../types/database.generated";
+import { registrationIdentitySchemaUnavailable } from "../statistics/public-statistics.server";
 import {
   type CompetitionContext,
   type DetailResource,
@@ -18,6 +19,7 @@ export interface PublicResourceItem {
 }
 
 export interface PublicDetail {
+  registrationId?: number;
   label: string;
   description: string;
   achievements: PublicAchievement[];
@@ -89,17 +91,38 @@ function toPublicAchievement(achievement: {
   };
 }
 
+async function publicRegistrations(
+  client: SupabaseClient<Database>,
+  competitionId: number,
+  filter?: { column: "id" | "team_id"; value: number },
+): Promise<Array<{ id: number; team_id: number; public_name: string | null }>> {
+  let query = client
+    .from("team_registrations")
+    .select("id,team_id,public_name")
+    .eq("competition_id", competitionId)
+    .in("status", ["confirmed", "completed"]);
+  if (filter) query = query.eq(filter.column, filter.value);
+  const result = await query.order("id");
+  if (!registrationIdentitySchemaUnavailable(result.error)) {
+    ensureQuery(result.error);
+    return result.data;
+  }
+  let legacyQuery = client
+    .from("team_registrations")
+    .select("id,team_id")
+    .eq("competition_id", competitionId)
+    .in("status", ["confirmed", "completed"]);
+  if (filter) legacyQuery = legacyQuery.eq(filter.column, filter.value);
+  const legacy = await legacyQuery.order("id");
+  ensureQuery(legacy.error);
+  return legacy.data.map((row) => ({ ...row, public_name: null }));
+}
+
 async function teamItems(
   client: SupabaseClient<Database>,
   context: CompetitionContext,
 ): Promise<PublicResourceItem[]> {
-  const registrationResult = await client
-    .from("team_registrations")
-    .select("id,team_id,public_name,status")
-    .eq("competition_id", context.competitionId)
-    .in("status", ["confirmed", "completed"]);
-  ensureQuery(registrationResult.error);
-
+  const registrationResult = { data: await publicRegistrations(client, context.competitionId) };
   if (registrationResult.data.length === 0) {
     return [];
   }
@@ -216,20 +239,16 @@ export async function loadPublicDetail(
   detailKey: string,
 ): Promise<PublicDetail | null> {
   if (resource === "equipes") {
-    let registration: { id: number; public_name: string; team_id: number } | null = null;
+    let registration: { id: number; public_name: string | null; team_id: number } | null = null;
     let team: { abbreviation: string | null; id: number; name: string; slug: string } | null = null;
     const registrationMatch = detailKey.match(/^inscricao-([1-9][0-9]*)$/);
     if (registrationMatch) {
-      const registrationResult = await client
-        .from("team_registrations")
-        .select("id,team_id,public_name")
-        .eq("id", Number(registrationMatch[1]))
-        .eq("competition_id", context.competitionId)
-        .in("status", ["confirmed", "completed"])
-        .maybeSingle();
-      ensureQuery(registrationResult.error);
-      if (!registrationResult.data) return null;
-      registration = registrationResult.data;
+      const registrations = await publicRegistrations(client, context.competitionId, {
+        column: "id",
+        value: Number(registrationMatch[1]),
+      });
+      registration = registrations.length === 1 ? (registrations[0] ?? null) : null;
+      if (!registration) return null;
       const teamResult = await client
         .from("teams")
         .select("id,name,slug,abbreviation")
@@ -248,17 +267,15 @@ export async function loadPublicDetail(
       ensureQuery(teamResult.error);
       if (teamResult.data.length !== 1 || !teamResult.data[0]) return null;
       team = teamResult.data[0];
-      const registrationResult = await client
-        .from("team_registrations")
-        .select("id,team_id,public_name")
-        .eq("competition_id", context.competitionId)
-        .eq("team_id", team.id)
-        .in("status", ["confirmed", "completed"])
-        .order("id");
-      ensureQuery(registrationResult.error);
+      const registrationResult = {
+        data: await publicRegistrations(client, context.competitionId, {
+          column: "team_id",
+          value: team.id,
+        }),
+      };
       const exactLegacyRegistration = registrationResult.data.filter(
         (candidate) =>
-          candidate.public_name.toLocaleLowerCase("pt-BR") ===
+          (candidate.public_name ?? team?.name)?.toLocaleLowerCase("pt-BR") ===
           team?.name.toLocaleLowerCase("pt-BR"),
       );
       registration =
@@ -279,7 +296,8 @@ export async function loadPublicDetail(
       .order("placement");
     ensureQuery(achievementsResult.error);
     return {
-      label: registration.public_name,
+      registrationId: registration.id,
+      label: registration.public_name ?? team.name,
       description: team.abbreviation ?? "Equipe inscrita nesta edição.",
       achievements: achievementsResult.data
         .map(toPublicAchievement)

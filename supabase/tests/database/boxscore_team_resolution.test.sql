@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(39);
 set constraints all deferred;
 
 insert into auth.users (
@@ -383,6 +383,33 @@ select is(
    where competition_id = 9470 and team_id = 9472),
   2, 'ambiguous team resolution leaves both independent registrations intact'
 );
+
+-- Two independent registrations of the same global team are valid opponents.
+reset role;
+insert into public.boxscore_imports(
+  id, competition_id, sha256, storage_path, source_filename, file_size_bytes,
+  parser_version, status, parsed_payload, validation_payload, created_by
+) overriding system value values
+  (94709, 9470, repeat('9',64), '9470/' || repeat('9',64) || '.pdf', 'independent.pdf', 100,
+   'fiba-genius-v2', 'review', '{"teams":[{"name":"Equipe Rascunho","abbreviation":"ERA"},{"name":"Equipe Rascunho B","abbreviation":"ERB"}]}',
+   '{"valid":true}', (select user_id from private.admin_accounts limit 1)),
+  (94710, 9470, repeat('a',64), '9470/' || repeat('a',64) || '.pdf', 'wrong-registration.pdf', 100,
+   'fiba-genius-v2', 'review', '{"teams":[{"name":"Equipe Confirmada","abbreviation":"ECF"},{"name":"Equipe Rascunho B","abbreviation":"ERA"}]}',
+   '{"valid":true}', (select user_id from private.admin_accounts limit 1));
+set local role authenticated;
+select throws_ok($$select public.admin_resolve_boxscore_team_registrations(94710,
+  '{"teams":[{"sourceTeamName":"Equipe Confirmada","action":"existing_registration","registrationId":9471},{"sourceTeamName":"Equipe Rascunho B","action":"existing_registration","registrationId":9472}]}')$$,
+  'BD317', 'BDB_PDF_TEAM_MISMATCH', 'exact public-name match cannot select the other registration via shared abbreviation');
+select is((select count(*) from public.boxscore_team_resolutions where import_id=94710), 0::bigint,
+  'mismatched registration leaves no authoritative resolution');
+select lives_ok($$select public.admin_resolve_boxscore_team_registrations(94709,
+  '{"teams":[{"sourceTeamName":"Equipe Rascunho","action":"existing_registration","registrationId":9472},{"sourceTeamName":"Equipe Rascunho B","action":"existing_registration","registrationId":9478}]}')$$,
+  'public names resolve two registrations of one global team even with a distinct PDF abbreviation');
+select is((select registration_2_id from public.boxscore_team_resolutions where import_id=94709), 9478::bigint,
+  'resolution persists the exact independent registration');
+select is((public.admin_resolve_boxscore_team_registrations(94709,
+  '{"teams":[{"sourceTeamName":"Equipe Rascunho","action":"existing_registration","registrationId":9472},{"sourceTeamName":"Equipe Rascunho B","action":"existing_registration","registrationId":9478}]}')->>'idempotent')::boolean,
+  true, 'independent registration resolution replay remains idempotent');
 
 select * from finish();
 rollback;

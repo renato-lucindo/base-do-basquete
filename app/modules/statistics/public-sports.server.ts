@@ -50,6 +50,14 @@ function registrationIdentitySchemaUnavailable(error: unknown): boolean {
   return ["42703", "42P01", "PGRST204", "PGRST205"].includes(String(code));
 }
 
+function publishedRegistrationIdentity(team: Record<string, unknown>) {
+  return typeof team.registrationId === "number" &&
+    Number.isSafeInteger(team.registrationId) &&
+    team.registrationId > 0
+    ? { registrationId: team.registrationId }
+    : {};
+}
+
 function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null {
   const snapshot = record(snapshotValue);
   if (!snapshot || !Array.isArray(snapshot.teams) || !Array.isArray(snapshot.games)) return null;
@@ -65,6 +73,7 @@ function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null
     return [
       {
         id: team.id,
+        ...publishedRegistrationIdentity(team),
         name: team.name,
         slug: team.slug,
         abbreviation: nullableString(team.abbreviation),
@@ -102,12 +111,14 @@ function publishedSportsCore(snapshotValue: unknown): PublicSportsCoreDto | null
         venue: nullableString(game.venue),
         home: {
           id: home.id,
+          ...publishedRegistrationIdentity(home),
           name: home.name,
           slug: home.slug,
           abbreviation: nullableString(home.abbreviation),
         },
         away: {
           id: away.id,
+          ...publishedRegistrationIdentity(away),
           name: away.name,
           slug: away.slug,
           abbreviation: nullableString(away.abbreviation),
