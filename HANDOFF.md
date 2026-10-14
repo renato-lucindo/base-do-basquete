@@ -1,5 +1,15 @@
 # HANDOFF — Base do Basquete
 
+## Revisoes e integracoes79 e73 concluidas - 14/10/2026
+
+Este checkpoint substitui operacionalmente os registros historicos abaixo. PR79 MERGED por cfb461425b76d0a738e915bb6925025ff7c635b4, com banco/boxscore/estatisticas/QA aprovados e QA editorial6166528738. PR73 MERGED por squash467d9e40ae559dc6d5bcf123a11fbd41f1c3a282, com banco6167075596, acessibilidade6167092759 e QA6167114151 aprovados noHEADc1323c3. As arvores integradas foram verificadas identicas aos HEADs aprovados. Todos os bloqueios anteriores foram encerrados por novos pareceres independentes; CI nao foi usado como aprovacao ficticia.
+
+Gates finaisPR73: CI38554674459/preview38554674418/CodeQL38554674383 SUCCESS;512Vitest,17Playwright(2skips),49arquivos/1347pgTAP,fresh/upgrade/concorrencia/PostgREST/scan732. Gates finaisPR79 e posmerge, SHAs, pareceres, correcoes, riscos e preservacao estao em docs/execution/PR79-PR73-INTEGRATION-20261014.md. Unidades79/73 COMPLETE, WRITE_LOCK=RELEASED; revisores encerrados. Registro editorial de encerramento sem alteracao funcional ou normativa.
+
+Issue84 acompanha deadlock potencial entreUUIDsdistintos, nota nao bloqueante ainda nao reproduzida. Limitacoes de A/B+inversao/supplemental, shell herdado, zoom nativo e MFAreal permanecem documentadas. PR77 permaneceu em1df666858180d652f103eff5c182fb0c1d0ebb91, intocada. Nenhuma migration compartilhada ou producao nesta unidade. IDs remotosPR66 20261005140439/20261005140504, worktrees/untracked e branches de preservacao foram mantidos. WIPsdepausa nao foram integrados.
+
+PROXIMO_PASSO_EXATO: a unidade autorizada79/73 terminou. Proxima investigacao da fila eissue84, em unidade propria e banco descartavel, com barreiras de concorrencia, resultado sem40P01/estado parcial e revisao independente. Rollout compartilhado/advisors/MFAreal e producao exigem outra unidade e autorizacao; nao foram iniciados.
+
 ## PR73 - correcoes dos pareceres independentes - 14/10/2026
 
 WORK_UNIT=PR73-INDEPENDENT-FINDINGS-FIX; OWNER=project-maintainer; BRANCH_REMOTA=codex/multi-dispute-creation-navigation; BASE=cfb461425b76d0a738e915bb6925025ff7c635b4; WRITE_LOCK=ACTIVE ate push para renovacao. HEAD anterior7156f60 teve banco APPROVE_WITH_NON_BLOCKING_NOTES(6166742820), acessibilidade REQUEST_CHANGES(6166834700) e QA REQUEST_CHANGES(6166869794). CI38552252383/preview38552252332/CodeQL38552252316 SUCCESS:503Vitest,15Playwright,48arquivos/1331pgTAP. CI nao substitui os bloqueios.
