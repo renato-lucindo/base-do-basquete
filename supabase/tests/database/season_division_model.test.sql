@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(54);
+select plan(56);
 set constraints all deferred;
 
 select has_table('public', 'competition_seasons', 'season parent exists');
@@ -22,20 +22,20 @@ select is(
   (
     select count(*)
     from (
-      select distinct series_id, year, gender_division
+      select distinct series_id, year
       from public.competitions
     ) contexts
   ),
-  'backfill creates one season per championship year and gender'
+  'backfill creates one edition per championship and year'
 );
 select ok(
   not exists(
     select 1
     from public.competitions competition
     join public.competition_seasons season on season.id = competition.season_id
-    where (season.series_id, season.year, season.gender_division)
+    where (season.series_id, season.year)
       is distinct from
-      (competition.series_id, competition.year, competition.gender_division)
+      (competition.series_id, competition.year)
   ),
   'backfill preserves the historical context on every dispute'
 );
@@ -63,8 +63,8 @@ select has_index(
   'public',
   'competitions',
   'competitions_dispute_unique',
-  array['season_id', 'category_id', 'competitive_division_value_id'],
-  'dispute identity includes the optional division value'
+  array['season_id', 'category_id', 'gender_division', 'competitive_division_value_id'],
+  'dispute identity includes category, gender and optional division value'
 );
 select is(
   (
@@ -254,7 +254,7 @@ select throws_ok(
   ) from season_division_context$$,
   'BD506',
   'BDB_COMPETITION_SEASON_CONFLICT',
-  'duplicate championship year and gender is rejected'
+  'duplicate championship and year is rejected regardless of requested gender'
 );
 select is(
   public.admin_update_competition_season(
@@ -302,6 +302,22 @@ select is(
   gold_id,
   'identical division retry returns the original value'
 ) from season_division_context;
+select throws_ok(
+  $$select public.admin_add_competitive_division_value(
+    gen_random_uuid(), season_id, 'Série', 'serie', 'Ouro alterado', 'ouro', 1
+  ) from season_division_context$$,
+  'BD506',
+  'BDB_COMPETITION_DIVISION_VALUE_CONFLICT',
+  'same division slug cannot silently reuse an incompatible name'
+);
+select throws_ok(
+  $$select public.admin_add_competitive_division_value(
+    gen_random_uuid(), season_id, 'Série', 'serie', 'Ouro', 'ouro', 8
+  ) from season_division_context$$,
+  'BD506',
+  'BDB_COMPETITION_DIVISION_VALUE_CONFLICT',
+  'same division slug cannot silently reuse an incompatible sort order'
+);
 select lives_ok(
   $$update season_division_context
     set silver_id = public.admin_add_competitive_division_value(

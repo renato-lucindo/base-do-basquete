@@ -99,4 +99,38 @@ describe("public contextual search", () => {
     expect(result.map((group) => group.type)).toEqual(["players", "teams", "games"]);
     expect(result.at(-1)?.items[0]?.href).toBe("/2026/liga-de-desenvolvimento/sub-15/jogos/7");
   });
+
+  it("keeps two public registration identities backed by the same global team", () => {
+    const result = buildGlobalSearchResults(
+      "lobos",
+      [context],
+      [],
+      [
+        {
+          id: 10,
+          name: "Lobos",
+          abbreviation: "LOB",
+          slug: "inscricao-10",
+          isPublic: true,
+          context,
+        },
+        {
+          id: 11,
+          name: "Lobos B",
+          abbreviation: "LOB",
+          slug: "inscricao-11",
+          isPublic: true,
+          context,
+        },
+      ],
+      [],
+    );
+    const teamItems = result.find((group) => group.type === "teams")?.items ?? [];
+
+    expect(teamItems.map((item) => item.label)).toEqual(["Lobos", "Lobos B"]);
+    expect(teamItems.map((item) => item.href)).toEqual([
+      "/2026/liga-de-desenvolvimento/sub-15/equipes/inscricao-10",
+      "/2026/liga-de-desenvolvimento/sub-15/equipes/inscricao-11",
+    ]);
+  });
 });

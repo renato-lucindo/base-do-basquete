@@ -68,7 +68,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     {
       name: string;
       year: number;
-      gender: string | null;
       seasonId: number | null;
       competitions: typeof competitions;
     }
@@ -77,11 +76,10 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     const dimension = contextById.get(competition.id);
     const key = dimension?.season_id
       ? String(dimension.season_id)
-      : `legacy-${competition.series_id}-${competition.year}-${competition.gender_division}`;
+      : `legacy-${competition.series_id}-${competition.year}`;
     const group = groups.get(key) ?? {
       name: dimension?.season_name ?? competition.seriesName,
       year: competition.year,
-      gender: competition.gender_division,
       seasonId: dimension?.season_id ?? null,
       competitions: [],
     };
@@ -106,8 +104,8 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
   return (
     <AdminArea title="Competições">
       <p>
-        Cada edição reúne as disputas de um campeonato, ano e naipe. Abra uma disputa para organizar
-        equipes, jogos e dados.
+        Cada edição reúne as disputas de um campeonato e ano. Categoria, naipe e divisão identificam
+        cada disputa.
       </p>
       <Link className="button" to="/admin/competitions/new">
         Criar edição
@@ -150,12 +148,7 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
         {loaderData.groups.map((group) => (
           <section key={group.id} aria-labelledby={`edition-${group.id}`}>
             <h2 id={`edition-${group.id}`}>
-              {group.name} · {group.year} ·{" "}
-              {group.gender === "male"
-                ? "Masculino"
-                : group.gender === "female"
-                  ? "Feminino"
-                  : "Naipe pendente"}
+              {group.name} · {group.year}
             </h2>
             {group.seasonId ? (
               <Link to={`/admin/competitions/new?seasonId=${group.seasonId}`}>
@@ -166,7 +159,13 @@ export default function Competitions({ loaderData }: Route.ComponentProps) {
               {group.competitions.map((item) => (
                 <li key={item.id}>
                   <Link to={`/admin/competitions/${item.id}`}>{item.display_name}</Link> ·{" "}
-                  {item.categoryName} · {statusLabels[item.status] ?? "Em revisão"}
+                  {item.categoryName} ·{" "}
+                  {item.gender_division === "male"
+                    ? "Masculino"
+                    : item.gender_division === "female"
+                      ? "Feminino"
+                      : "Naipe pendente"}{" "}
+                  · {statusLabels[item.status] ?? "Em revisão"}
                 </li>
               ))}
             </ul>

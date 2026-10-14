@@ -30,7 +30,7 @@ insert into public.series_category_data_profiles (
 select
   series.id,
   category.id,
-  'male',
+  gender.value,
   1,
   'manual_scoresheet',
   'active',
@@ -39,6 +39,7 @@ select
   clock_timestamp()
 from public.competition_series series
 cross join public.categories category
+cross join (values ('male'::text), ('female'::text)) gender(value)
 where series.slug = 'liga-upgrade'
   and category.slug in ('sub-15-upgrade', 'sub-17-upgrade');
 
@@ -68,7 +69,7 @@ select
   'draft',
   fixture.starts_on,
   fixture.ends_on,
-  'male',
+  fixture.gender_division,
   false,
   profile.id,
   false,
@@ -77,14 +78,15 @@ select
 from public.competition_series series
 join (
   values
-    (91001::bigint, 'sub-15-upgrade'::text, 'Liga Upgrade Sub-15'::text, '2030-03-01'::date, '2030-09-30'::date),
-    (91002::bigint, 'sub-17-upgrade'::text, 'Liga Upgrade Sub-17'::text, '2030-04-01'::date, '2030-11-30'::date)
-) fixture(id, category_slug, display_name, starts_on, ends_on) on true
+    (91001::bigint, 'sub-15-upgrade'::text, 'male'::text, 'Liga Upgrade Sub-15'::text, '2030-03-01'::date, '2030-09-30'::date),
+    (91002::bigint, 'sub-17-upgrade'::text, 'male'::text, 'Liga Upgrade Sub-17'::text, '2030-04-01'::date, '2030-11-30'::date),
+    (91003::bigint, 'sub-15-upgrade'::text, 'female'::text, 'Liga Upgrade Sub-15 Feminino'::text, '2030-03-01'::date, '2030-11-30'::date)
+) fixture(id, category_slug, gender_division, display_name, starts_on, ends_on) on true
 join public.categories category on category.slug = fixture.category_slug
 join public.series_category_data_profiles profile
   on profile.series_id = series.id
   and profile.category_id = category.id
-  and profile.gender_division = 'male'
+  and profile.gender_division = fixture.gender_division
   and profile.status = 'active'
 where series.slug = 'liga-upgrade';
 
@@ -97,6 +99,19 @@ values (92001, 91001, 'UPGRADE-1', 'structural');
 set constraints games_validate_matchup_participants immediate;
 
 select set_config('bdb.allow_internal_ingestion_game', 'off', false);
+
+-- Real pre-PR2 publication members: one unchanged, two editorial changes
+-- pending at upgrade time. The migration must not republish those changes.
+insert into public.teams (id, name, slug, is_public)
+overriding system value values
+  (94001, 'Upgrade Publicado', 'upgrade-publicado', true),
+  (94002, 'Upgrade Retirado', 'upgrade-retirado', true),
+  (94003, 'Upgrade Pendente', 'upgrade-pendente', true);
+insert into public.team_registrations (id, competition_id, team_id, status, confirmed_at)
+overriding system value values
+  (94001, 91001, 94001, 'confirmed', '2030-01-01T12:00:00Z'),
+  (94002, 91001, 94002, 'confirmed', '2030-01-01T12:00:00Z'),
+  (94003, 91001, 94003, 'confirmed', '2030-01-01T12:00:00Z');
 
 with publication_snapshot as (
   select private.competition_publication_snapshot(91001) ||
@@ -121,3 +136,20 @@ select
   'legacy_backfill',
   '2030-10-01T12:00:00Z'
 from publication_snapshot;
+
+insert into private.competition_publication_registrations
+  (publication_id, competition_id, registration_id, fingerprint)
+select 93001, 91001, id, private.publication_registration_fingerprint(id)
+from public.team_registrations where id in (94001, 94002, 94003);
+update public.competitions set status = 'published', current_publication_id = 93001,
+  published_at = '2030-10-01T12:00:00Z' where id = 91001;
+update public.team_registrations set status = 'withdrawn' where id = 94002;
+update public.team_registrations set confirmed_at = '2030-02-01T12:00:00Z' where id = 94003;
+
+set role anon;
+do $$ begin
+  if (select count(*) from public.team_registrations where id in (94001, 94002, 94003)) <> 1 then
+    raise exception 'Legacy fixture must expose only the unchanged published registration';
+  end if;
+end $$;
+reset role;

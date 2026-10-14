@@ -34,9 +34,7 @@ export async function loadWorkflowChoices(
       .eq("status", "active"),
     client
       .from("competition_seasons")
-      .select(
-        "id,series_id,year,gender_division,name,description,suggested_starts_on,suggested_ends_on,revision",
-      ),
+      .select("id,series_id,year,name,description,suggested_starts_on,suggested_ends_on,revision"),
     client.from("competition_competitive_division_types").select("id,season_id,name"),
     client
       .from("competition_competitive_division_values")
@@ -63,13 +61,23 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const rawSeason = new URL(request.url).searchParams.get("seasonId");
   if (rawSeason !== null && !/^[1-9]\d{0,8}$/.test(rawSeason))
     throw new Response("Edição inválida", { status: 400 });
-  const selectedSeasonId = rawSeason ? Number(rawSeason) : null;
+  let selectedSeasonId = rawSeason ? Number(rawSeason) : null;
   if (
     choices.available &&
     selectedSeasonId &&
     !choices.seasons.some((season) => season.id === selectedSeasonId)
-  )
-    throw new Response("Edição não encontrada", { status: 404 });
+  ) {
+    const resolution = await auth.client.rpc("admin_resolve_competition_season_id", {
+      p_season_id: selectedSeasonId,
+    });
+    if (
+      resolution.error ||
+      typeof resolution.data !== "number" ||
+      !choices.seasons.some((season) => season.id === resolution.data)
+    )
+      throw new Response("Edição não encontrada", { status: 404 });
+    selectedSeasonId = resolution.data;
+  }
   return data(
     {
       ...choices,
@@ -123,18 +131,20 @@ export async function action({ request, context }: Route.ActionArgs) {
       { status: 409, headers },
     );
   const input = validation.input;
-  const season = choices.seasons.find((item) => item.id === input.seasonId);
+  let season = choices.seasons.find((item) => item.id === input.seasonId);
+  if (input.seasonId && !season) {
+    const resolution = await auth.client.rpc("admin_resolve_competition_season_id", {
+      p_season_id: input.seasonId,
+    });
+    if (!resolution.error && typeof resolution.data === "number")
+      season = choices.seasons.find((item) => item.id === resolution.data);
+  }
   const championship = choices.series.find(
     (item) => item.id === (season?.series_id ?? input.seriesId),
   );
   if ((input.seasonId && !season) || ((input.seriesId || season) && !championship))
     throw new Response("Contexto indisponível", { status: 404 });
-  if (
-    season &&
-    (season.year !== input.year ||
-      season.gender_division !== input.gender ||
-      season.description !== input.description)
-  ) {
+  if (season && (season.year !== input.year || season.description !== input.description)) {
     return data(
       {
         error: "O contexto da edição mudou. Recarregue antes de adicionar a disputa.",
@@ -146,12 +156,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     );
   }
   const existing = !season
-    ? choices.seasons.find(
-        (item) =>
-          item.series_id === input.seriesId &&
-          item.year === input.year &&
-          item.gender_division === input.gender,
-      )
+    ? choices.seasons.find((item) => item.series_id === input.seriesId && item.year === input.year)
     : null;
   if (existing && intent === "review")
     return data(
@@ -164,7 +169,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       { status: 409, headers },
     );
   const selectedDivision = choices.divisions.find(
-    (item) => item.id === input.divisionValueId && item.season_id === input.seasonId,
+    (item) => item.id === input.divisionValueId && item.season_id === season?.id,
   );
   if (input.divisionMode === "existing" && !selectedDivision)
     return data(

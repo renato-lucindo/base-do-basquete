@@ -249,6 +249,12 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
         code: "not-found",
         message: "O registro selecionado não existe mais.",
       };
+    case "BD409":
+      return {
+        code: "context-conflict",
+        message:
+          "Os dados selecionados entram em conflito com o estado atual. Revise e tente novamente.",
+      };
     case "BD102":
       return {
         code: "transition",
@@ -327,7 +333,7 @@ export function mapAdminDomainError(code: string | undefined): AdminDomainError 
       return {
         code: "context-conflict",
         field: "genderDivision",
-        message: "Já existe uma edição com a mesma série, categoria, naipe e ano.",
+        message: "Já existe uma disputa com a mesma edição, categoria, naipe e divisão.",
       };
     case "BR050":
       return {

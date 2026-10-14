@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(22);
 
 select has_column('public','player_period_stats','fouls_received',
   'canonical player totals preserve nullable received fouls');
@@ -26,6 +26,18 @@ select has_trigger('public','competition_publication_statistics',
   'competition_publication_statistics_immutable','headers are append-only');
 select has_trigger('public','competition_player_statistics_publications',
   'competition_player_statistics_publications_immutable','rows are append-only');
+select has_trigger('public','competition_player_statistics_publications',
+  'competition_player_statistics_publications_registration_identity',
+  'future statistics snapshots normalize team identity from the registration');
+select ok(
+  lower(pg_get_functiondef(
+    'private.normalize_published_player_registration_identity()'::regprocedure
+  )) like '%public_name%'
+  and lower(pg_get_functiondef(
+    'private.normalize_published_player_registration_identity()'::regprocedure
+  )) like '%inscricao-%',
+  'statistics snapshot normalization freezes public registration name and slug'
+);
 select has_trigger('public','competition_publications',
   'competition_publications_snapshot_player_statistics',
   'player statistics are frozen in the publication transaction');

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(40);
 set constraints all deferred;
 
 select is(
@@ -136,6 +136,28 @@ select is((select public.public_get_competition_publication(future_competition_i
   'public snapshot RPC returns null for a private URL');
 reset role;
 
+update public.team_registrations
+set public_name='Publish team one B'
+where id=(select reg_one from publication_context);
+set local role anon;
+select is(
+  (select count(*) from public.team_registrations
+    where id=(select reg_one from publication_context)),
+  0::bigint,
+  'registration public-name changes invalidate mutable public membership until republish'
+);
+select is(
+  (select team->>'name'
+   from publication_context context
+   cross join lateral jsonb_array_elements(
+     public.public_get_competition_publication(context.competition_id)->'teams'
+   ) team
+   where (team->>'registrationId')::bigint=context.reg_one),
+  'Publish team one'::text,
+  'current immutable snapshot retains the previously published registration name'
+);
+reset role;
+
 set local role authenticated;
 select lives_ok($$update publication_context set game_id=public.admin_prepare_matchup(
   matchup_id,0,'2025-03-01T18:00:00-03:00','Publication court')$$,
@@ -163,6 +185,16 @@ select is((select count(*) from public.games where id=(select game_id from publi
   'confirmed scheduled game becomes visible');
 select is((select public.public_get_competition_publication(competition_id)->'games'->0->>'homeScore' from publication_context),null::text,
   'scheduled game never appears as zero to zero');
+select is(
+  (select team->>'name'
+   from publication_context context
+   cross join lateral jsonb_array_elements(
+     public.public_get_competition_publication(context.competition_id)->'teams'
+   ) team
+   where (team->>'registrationId')::bigint=context.reg_one),
+  'Publish team one B'::text,
+  'republish freezes the updated registration public name'
+);
 reset role;
 
 update public.games set status='final',started_at=scheduled_at,ended_at=scheduled_at+interval '2 hours'
