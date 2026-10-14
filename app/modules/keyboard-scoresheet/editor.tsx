@@ -144,10 +144,7 @@ export function KeyboardScoresheet({
           if (confirm) continue;
         } while (saved.current !== JSON.stringify(current.current) || confirm);
       } catch (cause) {
-        if (
-          cause instanceof SaveFailure &&
-          [400, 403, 422].includes(cause.status)
-        )
+        if (cause instanceof SaveFailure && [400, 403, 422].includes(cause.status))
           pending.current = null;
         throw cause;
       } finally {
