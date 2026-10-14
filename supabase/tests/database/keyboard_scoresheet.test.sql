@@ -249,12 +249,12 @@ select is((select count(*) from public.keyboard_scoresheet_revisions where game_
   4::bigint,'historical correction creates an immutable revision');
 select is((select count(*) from public.game_data_submissions where game_id=93001 and status='active'),
   1::bigint,'historical correction keeps one active canonical submission');
-select throws_ok($select public.admin_save_keyboard_scoresheet(
+select throws_ok($$select public.admin_save_keyboard_scoresheet(
   93001,'20000000-0000-4000-8000-000000000042',4,
   jsonb_set((select document from public.keyboard_scoresheets where game_id=93001),
     '{roster,0,rosterEntryId}','9304'::jsonb),
   true,'Tentativa de alterar participante histórico'
-)$,'BD902','KEYBOARD_INVALID_ROSTER','a transferred athlete cannot replace an original historical roster slot');
+)$$,'BD902','KEYBOARD_INVALID_ROSTER','a transferred athlete cannot replace an original historical roster slot');
 reset role;
 
 select * from finish();
