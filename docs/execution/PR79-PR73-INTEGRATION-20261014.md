@@ -46,4 +46,3 @@ As pausas por uso foram respeitadas e as retomadas ocorreram depois dos resets, 
 A unidade autorizada de revisões/integrações79→73 está concluída. A issue84 contém a próxima investigação concreta em banco descartável; ela não foi iniciada como parte deste encerramento.
 
 PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=issue84 e teste de concorrência descartável; ACAO=reproduzir o interleaving de UUIDs distintos com barreiras determinísticas e propor ordem consistente dos locks em unidade própria; CRITERIO_DE_CONCLUSAO=resultado explícito sem40P01, sem duplicidade ou estado parcial, com replay e pareceres válidos. Produção e Supabase compartilhado continuam fora desta autorização.
-
