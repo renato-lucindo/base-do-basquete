@@ -1,3 +1,29 @@
+## PR #77 — checkpoint de validação da interface — 14/10/2026
+
+WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA_PR: codex/keyboard-scoresheet-mvp; BASE_HEAD_VERIFICADO: a3e60a84164c312d4f58b10e1278f1fc0e0c1f0c; PR: OPEN/DRAFT. Nenhum merge ou deploy; Supabase compartilhado inalterado.
+
+VALIDACAO_LOCAL: Playwright Chromium `e2e/keyboard-scoresheet.spec.ts --workers=1`: 18/18 PASS, incluindo recuperação divergente por dois reloads (localStorage preservado), tentativa de digitação sob ancestral `inert`, descarte explícito, Ctrl+Z/Ctrl+Y, anúncios e erro de participação com camisas iguais em equipes opostas. Duas regressões inicialmente falhas foram ajustadas para representar corretamente o comportamento nativo de `inert` e a rejeição da alteração de participação. Vitest focal 44/44 PASS; `npm run check`: PASS (Vitest global 558/558, format, lint, typecheck, runbooks, agentes, build, varredura de segredos); `git diff --check`: PASS. `worker-configuration.d.ts` foi regenerado pelo typecheck com versão atualizada do workerd; preservar o diff até decidir sobre versionamento.
+
+PENDENCIAS: 3 migrations SQL locais não rastreadas (20261014224000, 20261014225000 e 20261014225500) ainda exigem revisão e pgTAP de segurança, histórico e desqualificação; PDF tardio P2-B não implementado; integração autenticada P2-A ainda não ensaiada no novo delta. A leitura em lote das migrations pelo Codex Native foi bloqueada pela plataforma nesta retomada; não foi feita revisão do conteúdo por esse caminho. Docker e psql indisponíveis neste Windows; usar Supabase descartável em Actions para pgTAP após verificação. Não publicar migrations sem validar. Os quatro REQUEST_CHANGES anteriores continuam bloqueantes.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=supabase/migrations/20261014224000_keyboard_fallback_revision_guard.sql, 20261014225000_fiba_historical_registration_statistics.sql, 20261014225500_keyboard_reject_post_disqualification_scores.sql, migration aditiva de conciliação PDF, supabase/tests/database e GitHub Actions da PR77; ACAO=revisar os contratos SQL, implementar a conciliação controlada do PDF tardio e pgTAP, executar integração GoTrue/AAL2 e concorrência em stack descartável, validar gates, publicar REVIEW_PACKET e solicitar quatro revisões independentes válidas; CRITERIO_DE_CONCLUSAO=todos dez achados cobertos e gates verdes no HEAD publicado, quatro pareceres independentes sem bloqueios, PR mantida DRAFT sem merge, migração compartilhada ou deploy.
+
+## PR #77 — retomada dos bloqueios independentes — 14/10/2026
+
+WRITE_LOCK:
+OWNER: project-maintainer
+WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014
+BRANCH: codex/pr77-fallback-review-fixes-20261014
+HEAD_COMMIT: a3e60a84164c312d4f58b10e1278f1fc0e0c1f0c
+SCOPE: corrigir os cinco P1 e cinco P2 dos pareceres 6178910298, 6178887733, 6178934927 e 6178940422, testes, migration aditiva, documentação e publicação somente na PR #77.
+SCOPE_NEGATIVO: sem migrations em Supabase compartilhado, dados ou deploy de produção, merge, alterações nas PRs #73/#79, ou descarte de mudanças de terceiros.
+RISK_LEVEL: CRITICO
+REQUIRED_REVIEWERS: database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer; avaliar também boxscore-domain-reviewer pelo contrato de fontes.
+STATUS: ACTIVE
+
+O HEAD remoto confirmado pela API da PR é a3e60a8; a PR permanece DRAFT. A unidade retoma após quatro REQUEST_CHANGES de revisores independentes; CI verde anterior não encerra os novos bloqueios. O worktree isolado iniciou limpo. O HANDOFF anterior da PR77 descreve estado anterior aos pareceres e é preservado abaixo como histórico.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=migrations SQL, app/modules/keyboard-scoresheet, rota de seleção, testes/Actions e PR77; ACAO=implementar e validar os dez achados com migration aditiva, publicar commits e packet e solicitar os pareceres; CRITERIO_DE_CONCLUSAO=regressões e gates no HEAD corrigido, pareceres independentes válidos e nenhum bloqueio crítico; manter PR DRAFT sem merge.
 # HANDOFF — Base do Basquete
 
 ## PR #77 — fallback emergencial, retry e revisão histórica (14/10/2026)

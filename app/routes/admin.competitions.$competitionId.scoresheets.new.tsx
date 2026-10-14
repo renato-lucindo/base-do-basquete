@@ -238,7 +238,10 @@ export function ScoresheetUnavailableState({
       <h2>Nenhum jogo disponível</h2>
       <p>{issue.message}</p>
       {requiresFallbackReason ? (
-        <p>Esta edição exige a origem principal de boxscore. Consulte a configuração da edição.</p>
+        <p>
+          Esta edição usa boxscore FIBA como fonte principal. O fallback emergencial só está
+          disponível para jogos elegíveis.
+        </p>
       ) : null}
       <Link className="button button-primary" to={action}>
         {issue.action === "schedule" ? "Abrir agenda" : "Revisar equipes e elencos"}
@@ -273,14 +276,20 @@ export default function NewManualScoresheet({ loaderData }: Route.ComponentProps
             não serão iniciados sem persistência segura.
           </p>
         </section>
-      ) : loaderData.fallbackProfile ? (
-        <section className="admin-welcome" role="alert">
-          <h2>Edição com boxscore como fonte principal</h2>
-          <p>Revise a origem de dados da edição antes de iniciar a transcrição por teclado.</p>
-        </section>
       ) : loaderData.games.length ? (
         <section className="admin-welcome" aria-label="Selecionar jogo para transcrição">
-          <h2>Escolha o jogo</h2>
+          <h2>
+            {loaderData.fallbackProfile
+              ? "Fallback emergencial — escolha o jogo"
+              : "Escolha o jogo"}
+          </h2>
+          {loaderData.fallbackProfile && (
+            <p role="note">
+              Esta edição usa boxscore FIBA como fonte principal. O lançamento por teclado é um
+              fallback emergencial; a confirmação exige justificativa de 10 a 500 caracteres e será
+              auditada.
+            </p>
+          )}
           <ul>
             {loaderData.games.map((game) => (
               <li key={game.id}>
@@ -289,7 +298,11 @@ export default function NewManualScoresheet({ loaderData }: Route.ComponentProps
                   to={`/admin/games/${game.id}/scoresheet/keyboard`}
                 >
                   Jogo {game.number ?? game.id} · {game.homeName} × {game.awayName} ·{" "}
-                  {game.saved ? "Retomar ou corrigir" : "Lançar súmula"}
+                  {game.saved
+                    ? "Retomar ou corrigir"
+                    : loaderData.fallbackProfile
+                      ? "Iniciar fallback emergencial"
+                      : "Lançar súmula"}
                 </Link>
               </li>
             ))}

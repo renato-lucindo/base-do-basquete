@@ -130,9 +130,9 @@ test("continuous two-field typing, team validation, modes, compensation, undo an
   await page.getByLabel("Camisa, B ou C", { exact: true }).press("Space");
   await entry(page, "12", "Uc");
   await expect(page.locator(".keyboard-history li").last()).toContainText("UC");
-  await page.getByLabel("Camisa, B ou C", { exact: true }).press("Control+z");
+  await page.getByRole("button", { name: "Desfazer", exact: true }).click();
   await expect(page.locator(".keyboard-history li")).toHaveCount(2);
-  await page.getByLabel("Camisa, B ou C", { exact: true }).press("Control+Shift+z");
+  await page.getByRole("button", { name: "Refazer", exact: true }).click();
   await expect(page.locator(".keyboard-history li")).toHaveCount(3);
   await page.getByRole("button", { name: "Editar lançamento 1", exact: true }).click();
   await page.getByLabel("Período ativo").selectOption("2");
@@ -168,6 +168,123 @@ test("network failure preserves editable history and local recovery", async ({ p
   await expect(page.getByRole("complementary", { name: "Recuperação" })).toBeVisible();
   await page.getByRole("button", { name: "Recuperar cópia local" }).click();
   await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+});
+
+test("Ctrl+Z edits native input history without undoing scoresheet events", async ({ page }) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  const jersey = page.getByLabel("Camisa, B ou C", { exact: true });
+  await jersey.pressSequentially("12");
+  await expect(jersey).toHaveValue("12");
+  await jersey.press("Control+z");
+  await expect(jersey).not.toHaveValue("12");
+  await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+  await jersey.press("Control+y");
+  await expect(jersey).toHaveValue("12");
+  await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+});
+
+test("divergent local recovery survives two reloads byte-for-byte until an explicit choice", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await expect(page.getByRole("status")).toHaveText("Rascunho salvo no servidor");
+  const savedRaw = await page.evaluate(() => {
+    const key = "bdb:keyboard:v1:990";
+    const raw = localStorage.getItem(key);
+    if (!raw) throw new Error("Missing local copy");
+    const server = JSON.parse(sessionStorage.getItem("keyboard-server") ?? "{}");
+    server.version = 17;
+    server.initial.events = [];
+    sessionStorage.setItem("keyboard-server", JSON.stringify(server));
+    return raw;
+  });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.reload();
+    await expect(page.getByRole("complementary", { name: "Recuperação" })).toBeVisible();
+    // Playwright's editable predicate does not account for an inert ancestor.
+    // Assert that the browser prevents focusing and typing in the editor.
+    const jersey = page.getByLabel("Camisa, B ou C", { exact: true });
+    await expect(page.locator(".keyboard-sheet > div[inert]")).toHaveCount(1);
+    await page.getByRole("button", { name: "Recuperar cópia local" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(jersey).not.toBeFocused();
+    const before = await jersey.inputValue();
+    await page.keyboard.type("12");
+    await expect(jersey).toHaveValue(before);
+    expect(await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"))).toBe(savedRaw);
+  }
+  await page.getByRole("button", { name: "Recuperar cópia local" }).click();
+  await expect(page.locator(".keyboard-history li")).toHaveCount(1);
+  await expect(page.getByRole("complementary", { name: "Recuperação" })).toHaveCount(0);
+});
+
+test("discard replaces the local copy only after selection", async ({ page }) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await expect(page.getByRole("status")).toHaveText("Rascunho salvo no servidor");
+  const original = await page.evaluate(() => {
+    const key = "bdb:keyboard:v1:990";
+    const raw = localStorage.getItem(key);
+    if (!raw) throw new Error("Missing local copy");
+    const server = JSON.parse(sessionStorage.getItem("keyboard-server") ?? "{}");
+    server.initial.events = [];
+    sessionStorage.setItem("keyboard-server", JSON.stringify(server));
+    return raw;
+  });
+  await page.reload();
+  expect(await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"))).toBe(original);
+  await page.getByRole("button", { name: "Usar versão do servidor" }).click();
+  await expect(page.locator(".keyboard-history li")).toHaveCount(0);
+  const updated = await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"));
+  expect(updated).not.toBe(original);
+  expect(JSON.parse(updated ?? "{}").document.events).toEqual([]);
+});
+
+test("invalid local JSON is preserved and recover is disabled until export or discard", async ({
+  page,
+}) => {
+  await page.goto(url);
+  const damaged = '{"document":{"events": invalid}}';
+  await page.evaluate((raw) => localStorage.setItem("bdb:keyboard:v1:990", raw), damaged);
+  await page.reload();
+  await expect(page.getByRole("complementary", { name: "Recuperação" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recuperar cópia local" })).toBeDisabled();
+  expect(await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"))).toBe(damaged);
+  await page.getByRole("button", { name: "Usar versão do servidor" }).click();
+  expect(await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"))).not.toBe(damaged);
+});
+
+test("participation errors only annotate the matching team when jerseys are shared", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await page
+    .getByText("Participação em quadra — conferir atletas sem pontos", { exact: true })
+    .click();
+  const home = page.getByLabel("Participou: Equipe Azul · #12 · Ana", { exact: true });
+  const away = page.getByLabel("Participou: Equipe Verde · #12 · Bia", { exact: true });
+  // The business rule rejects the uncheck and restores the original state.
+  await home.click();
+  await expect(home).toBeChecked();
+  await expect(home).toHaveAttribute("aria-invalid", "true");
+  await expect(home).toHaveAttribute("aria-describedby", "keyboard-error");
+  await expect(away).not.toHaveAttribute("aria-invalid", "true");
+  await expect(away).not.toHaveAttribute("aria-describedby", "keyboard-error");
+});
+
+test("team, period, and mode changes are announced in a live region", async ({ page }) => {
+  await page.goto(url);
+  const announcement = page.locator('[aria-live="polite"][aria-atomic="true"]');
+  await expect(announcement).toContainText("Equipe Equipe Azul");
+  await page.getByRole("button", { name: "Equipe B · Equipe Verde", exact: true }).click();
+  await expect(announcement).toContainText("Equipe Equipe Verde");
+  await page.getByLabel("Período ativo").selectOption("2");
+  await expect(announcement).toContainText("Q2");
+  await page.getByRole("button", { name: /Modo: Pontos/ }).click();
+  await expect(announcement).toContainText("Modo faltas");
 });
 for (const width of [390, 720, 1440])
   test(`keyboard screen reflows at ${width}px in both themes`, async ({ page }) => {

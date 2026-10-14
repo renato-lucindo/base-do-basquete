@@ -188,6 +188,28 @@ describe("manual scoresheet step isolation", () => {
 });
 
 describe("entrada exclusiva por teclado", () => {
+  it("exibe jogos FIBA elegíveis como fallback emergencial e mantém a justificativa visível", () => {
+    const RouterStub = createRoutesStub([
+      {
+        path: "/",
+        Component: () =>
+          createElement(NewManualScoresheet, {
+            loaderData: {
+              competitionId: 100,
+              competitionName: "Liga FIBA",
+              games: [{ id: 42, number: 7, homeName: "Azul", awayName: "Verde", saved: false }],
+              unavailableIssue: null,
+              migrationPending: false,
+              fallbackProfile: true,
+            },
+          } as unknown as Parameters<typeof NewManualScoresheet>[0]),
+      },
+    ]);
+    const html = renderToStaticMarkup(createElement(RouterStub));
+    expect(html).toContain("Fallback emergencial");
+    expect(html).toContain("justificativa de 10 a 500 caracteres");
+    expect(html).toContain('href="/admin/games/42/scoresheet/keyboard"');
+  });
   it("mostra os jogos elegíveis sem renderizar a grade antiga", () => {
     const RouterStub = createRoutesStub([
       {

@@ -102,6 +102,31 @@ describe("keyboard transcription", () => {
       validateSheet({ ...sheet, events: [...sheet.events, entry("home", "P")] }),
     ).toThrow("posterior");
   });
+  it.each(["1", "2", "3"])(
+    "rejects a %s-point basket after disqualification without adding it to the score",
+    (code) => {
+      const afterD = { ...base, events: [entry("home", "D1"), entry("home", code)] };
+      expect(aggregate(afterD).teams.home.points).toBe(0);
+      expect(() => validateSheet(afterD)).toThrow("Cesta posterior");
+      const valid = { ...afterD, events: afterD.events.slice(1) };
+      expect(validateSheet(valid).events).toHaveLength(1);
+      const sorted = { ...base, events: [entry("home", code, 2), entry("home", "D1", 1)] };
+      expect(() => validateSheet(sorted)).toThrow("Cesta posterior");
+    },
+  );
+  it("rejects points after five fouls and GD, but permits a basket earlier in the period", () => {
+    const excluded = [...Array.from({ length: 5 }, () => entry("home", "Pc")), entry("home", "3")];
+    expect(() => validateSheet({ ...base, events: excluded })).toThrow("Cesta posterior");
+    expect(() =>
+      validateSheet({
+        ...base,
+        events: [entry("home", "Tc"), entry("home", "Uc"), entry("home", "2")],
+      }),
+    ).toThrow("Cesta posterior");
+    expect(() =>
+      validateSheet({ ...base, events: [entry("home", "2"), entry("home", "D1")] }),
+    ).not.toThrow();
+  });
   it("coach C+C or three B/C cause GD; B2 is not a technical counter", () => {
     expect(
       aggregate({ ...base, events: [entry("home", "Cc", 1, "C"), entry("home", "C1", 1, "C")] })

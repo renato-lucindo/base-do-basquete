@@ -140,8 +140,16 @@ export function aggregate(sheet: Sheet) {
       continue;
     }
     if (player && !sheet.roster.find((s) => s.rosterEntryId === player.rosterEntryId)?.played)
-      errors.push(`Marque a participação de #${player.jersey} antes de lançar pontos ou faltas.`);
+      errors.push(
+        `Marque a participação de #${player.jersey} da equipe ${event.side === "home" ? "A" : "B"} antes de lançar pontos ou faltas.`,
+      );
     if (/^[123]$/.test(event.code) && player) {
+      if (player.status !== "eligible") {
+        errors.push(
+          `Cesta posterior à exclusão ou desqualificação de #${player.jersey} da equipe ${event.side === "home" ? "A" : "B"}.`,
+        );
+        continue;
+      }
       const points = Number(event.code);
       if (points === 1) {
         player.free++;
@@ -159,13 +167,17 @@ export function aggregate(sheet: Sheet) {
       errors.push(`Código inválido: ${event.code}.`);
       continue;
     }
-    own.freeConceded += foul.freeThrows;
-    opponent.freeTaken += foul.freeThrows;
     if (player) {
-      if (player.status !== "eligible")
+      if (player.status !== "eligible") {
         errors.push(
           `Há falta posterior à exclusão de #${player.jersey}. Use B para uma ocorrência de banco.`,
         );
+        continue;
+      }
+    }
+    own.freeConceded += foul.freeThrows;
+    opponent.freeTaken += foul.freeThrows;
+    if (player) {
       player.fouls++;
       own.foulsByPeriod[event.period - 1] = (own.foulsByPeriod[event.period - 1] ?? 0) + 1;
       if (foul.kind === "T") player.technical++;
