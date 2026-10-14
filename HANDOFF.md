@@ -1,5 +1,13 @@
 # HANDOFF — Base do Basquete
 
+## PR #77 — ensaios reais de integração (14/10/2026)
+
+WORK_UNIT=PR77-DISPOSABLE-INTEGRATION-GATE; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=e393a6cd80e53271b0b238d82decd855b954193d; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO; PR DRAFT.
+
+OBJETIVO: incorporar ao GitHub Actions provas reproduzíveis de concorrência entre escritores keyboard/legado e autenticação GoTrue/MFA TOTP AAL2, usando exclusivamente a stack Supabase descartável. ESCOPO_NEGATIVO: sem migrations em Supabase compartilhado, sem produção, sem merge, sem PR #72 e sem outras worktrees. Os pareceres de banco/acessibilidade não foram concluídos devido a sessões de agentes desconectadas/interrompidas; renovar após o commit e a conclusão dos gates.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=GitHub Actions / PR77; ACAO=implementar e executar os ensaios de GoTrue/PostgREST AAL2 e corrida keyboard em banco descartável, colher pareceres críticos renovados e registrar o REVIEW_PACKET; CRITERIO_DE_CONCLUSAO=jobs verdes no HEAD publicado e quatro pareceres independentes válidos antes de liberar integração.
+
 ## PR #77 — correção do pgTAP em CI — 14/10/2026
 
 WORK_UNIT=PR77-PGTAP-VALID-SCORE-FIX; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=be15e9c99d202ff252dce363af88b68fcc48c9cb; WRITE_LOCK=RELEASED após commit/push; RISK_LEVEL=CRITICO; PR DRAFT.
