@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## PAUSA EXPLÍCITA — preservar e retomar após reset
+
+O responsável solicitou pausar as execuções pelo limite de uso e retomar após o próximo reset de 5 horas. Uso consultado: 88%; reset previsto em 14/10/2026 02:33:44 America/Araguaina. Retomada única agendada neste chat para 14/10/2026 02:36, automação `retomar-revis-es-pr79-e-pr73-ap-s-reset`. Nenhum crédito de reset consumido. Quatro revisores encerrados; não iniciar novos trabalhos antes da retomada. WRITE_LOCK=RELEASED; unidade PAUSED por solicitação humana, não concluída.
+
+Checkpoint remoto desta pausa na branch `codex/pr79-review-handoff`. O HEAD funcional da PR #79 permanece `676021c9a8da5e0ac78b38ac7bcbaacb69a80e65`, draft, sem merge. O commit desta pausa altera somente evidência documental e não será enviado ao branch da PR #79; assim preserva o SHA do REVIEW_PACKET 6158529386. Detalhes essenciais, pareceres e próximos passos em `docs/execution/PR79-INDEPENDENT-REVIEWS-PAUSED.md`. Original `C:/Users/12405304716/Documents/Codex/Base do Basquete` e arquivos não rastreados de súmula preservados.
+
+As correções de fingerprint/publicação, summary, URLs e replay HTTP foram publicadas; último gate local: 486 Vitest e `npm run check` PASS. Novo CI38493525222: gate/accessibility SUCCESS, database ainda IN_PROGRESS na última consulta; preview38493525231 e CodeQL38493525218 SUCCESS. Deixar os jobs remotos já iniciados concluírem; não presumir o resultado final do banco.
+
+MERGE BLOQUEADO: banco/estatísticas/QA mantêm REQUEST_CHANGES em9deb996 até revisão das correções676021c. Boxscore independente em9deb996 identificou dois P2 adicionais ainda não corrigidos: `register_existing_team` contorna a prioridade de nome público via sigla; commit legado/reconciliação de placar/métricas coletivas continuam associando equipe global e falham com inscrições A/B. Nenhum parecer foi emitido em676021c. #73 não foi revisada nesta sessão; continua dependente da #79 e sem alterações. #77 intocada, sem migrations no Supabase compartilhado ou produção.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer após reset; ARQUIVO_OU_SERVICO=PR #79, resolver SQL e cadeia de commit de boxscore; ACAO=conferir CI676021c, abrir correção aditiva dos dois P2 de boxscore com teste resolução→confirmação→persistência, publicar novo packet e renovar banco/estatísticas/boxscore/QA; depois de integrar #79 com gates válidos, reconciliar e revisar #73; CRITERIO_DE_CONCLUSAO=pareceres válidos sem bloqueios em cada SHA, gates verdes, integração autorizada sem alterar #77, banco compartilhado ou produção.
+
 ## Unidade autoritativa — revisão independente #79 → #73
 
 Este checkpoint substitui operacionalmente as instruções de retomada históricas abaixo, preservadas como evidência. O responsável autorizou revisar #79 e depois #73 e integrar somente com pareceres válidos e gates; proibiu alterar #77, aplicar migrations no Supabase compartilhado e publicar produção.
