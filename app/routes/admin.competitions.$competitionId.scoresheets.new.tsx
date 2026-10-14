@@ -9,6 +9,10 @@ function parseId(value: string | undefined) {
   return Number.isSafeInteger(number) ? number : null;
 }
 
+function isMissingPublicNameColumn(error: { code?: string } | null): boolean {
+  return error?.code === "42703" || error?.code === "PGRST204";
+}
+
 export interface ScoresheetUnavailableIssue {
   action: "hub" | "schedule";
   message: string;
@@ -102,8 +106,32 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .eq("competition_id", competitionId)
       .order("id"),
   ]);
-  if (registrationsResult.error || rosterResult.error || gamesResult.error) {
+  if (
+    (registrationsResult.error && !isMissingPublicNameColumn(registrationsResult.error)) ||
+    rosterResult.error ||
+    gamesResult.error
+  ) {
     throw new Error("Scoresheet eligibility query failed");
+  }
+
+  let confirmed: Map<number, string | null>;
+  if (registrationsResult.error) {
+    const legacy = await auth.client
+      .from("team_registrations")
+      .select("id,team_id")
+      .eq("competition_id", competitionId)
+      .eq("status", "confirmed")
+      .order("id");
+    if (legacy.error) throw new Error("Legacy scoresheet registration query failed");
+    const teamIds = [...new Set(legacy.data.map((row) => row.team_id))];
+    const teams = teamIds.length
+      ? await auth.client.from("teams").select("id,name").in("id", teamIds)
+      : { data: [], error: null };
+    if (teams.error) throw new Error("Legacy scoresheet team query failed");
+    const names = new Map(teams.data.map((team) => [team.id, team.name]));
+    confirmed = new Map(legacy.data.map((row) => [row.id, names.get(row.team_id) ?? null]));
+  } else {
+    confirmed = new Map(registrationsResult.data.map((row) => [row.id, row.public_name]));
   }
 
   const gameIds = gamesResult.data.map((game) => game.id);
@@ -130,7 +158,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   }
   const migrationPending = Boolean(savedResult.error);
   const fallbackProfile = profileResult.data?.primary_source === "fiba_boxscore";
-  const confirmed = new Map(registrationsResult.data.map((entry) => [entry.id, entry.public_name]));
+
   const rostered = new Set(rosterResult.data.map((entry) => entry.registration_id));
   const savedIds = new Set((savedResult.data ?? []).map((entry) => entry.game_id));
   const eligible = gamesResult.data.flatMap((game) => {

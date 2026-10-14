@@ -63,8 +63,25 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,team_id,public_name,status")
       .in("id", registrationIds),
   ]);
-  if (rosterResult.error || registrationsResult.error)
-    throw new Error("Keyboard roster query failed");
+  if (rosterResult.error) throw new Error("Keyboard roster query failed");
+  let registrations: Array<{
+    id: number;
+    team_id: number;
+    public_name: string | null;
+    status: string;
+  }>;
+  if (registrationsResult.error) {
+    if (!["42703", "PGRST204"].includes(registrationsResult.error.code))
+      throw new Error("Keyboard registration query failed");
+    const legacy = await auth.client
+      .from("team_registrations")
+      .select("id,team_id,status")
+      .in("id", registrationIds);
+    if (legacy.error) throw new Error("Legacy keyboard registration query failed");
+    registrations = legacy.data.map((row) => ({ ...row, public_name: null }));
+  } else {
+    registrations = registrationsResult.data;
+  }
   const [playersResult, teamsResult] = await Promise.all([
     auth.client
       .from("players")
@@ -78,7 +95,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,name")
       .in(
         "id",
-        registrationsResult.data.map((r) => r.team_id),
+        registrations.map((r) => r.team_id),
       ),
   ]);
   if (playersResult.error || teamsResult.error) throw new Error("Keyboard display query failed");
@@ -96,7 +113,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     ];
   });
   const teamName = (side: "home" | "away") => {
-    const registration = registrationsResult.data.find(
+    const registration = registrations.find(
       (r) => r.id === participants.find((p) => p.side === side)?.registration_id,
     );
     return (

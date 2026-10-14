@@ -1,6 +1,6 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
-import { action } from "./admin.games.$gameId.scoresheet.keyboard";
+import { action, loader } from "./admin.games.$gameId.scoresheet.keyboard";
 
 vi.mock("../modules/auth/authorization.server", () => ({ requireAdminAal2: vi.fn() }));
 const rpc = vi.fn();
@@ -84,4 +84,83 @@ it("returns a conflict without overwriting another tab", async () => {
     init: { status: 409 },
     data: { error: expect.stringContaining("outra aba") },
   });
+});
+
+function chain(data: unknown[], error: { code?: string } | null = null) {
+  const result = { data, error };
+  const builder = {
+    select: vi.fn(),
+    eq: vi.fn(),
+    in: vi.fn(),
+    single: vi.fn(),
+    maybeSingle: vi.fn(),
+    then: (resolve: (value: typeof result) => unknown, reject?: (error: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
+  };
+  builder.select.mockReturnValue(builder);
+  builder.eq.mockReturnValue(builder);
+  builder.in.mockReturnValue(builder);
+  builder.single.mockResolvedValue({ data: data[0] ?? null, error });
+  builder.maybeSingle.mockResolvedValue({ data: data[0] ?? null, error });
+  return builder;
+}
+function keyboardLoaderArgs() {
+  return {
+    request: new Request("https://example.test/admin/games/42/scoresheet/keyboard"),
+    params: { gameId: "42" },
+    context: { get: () => ({ env: {} }) },
+  } as unknown as Parameters<typeof loader>[0];
+}
+function mockKeyboardLoader(publicNameMissing: boolean) {
+  const participants = [
+    { registration_id: 10, side: "home" },
+    { registration_id: 20, side: "away" },
+  ];
+  const registrationRows = [
+    { id: 10, team_id: 101, public_name: "Azul inscrição A", status: "confirmed" },
+    { id: 20, team_id: 101, public_name: "Azul inscrição B", status: "confirmed" },
+  ];
+  const registrations = chain(registrationRows);
+  if (publicNameMissing) {
+    registrations.select
+      .mockReturnValueOnce(chain([], { code: "42703" }))
+      .mockReturnValueOnce(chain(registrationRows.map(({ public_name: _name, ...row }) => row)));
+  }
+  const fixtures: Record<string, ReturnType<typeof chain>> = {
+    games: chain([{ id: 42, competition_id: 1, game_number: 7, matchup_id: 100 }]),
+    game_participants: chain(participants),
+    keyboard_scoresheets: chain([]),
+    roster_entries: chain([
+      { id: 1, registration_id: 10, player_id: 11, jersey_number: "12" },
+      { id: 2, registration_id: 20, player_id: 22, jersey_number: "12" },
+    ]),
+    team_registrations: registrations,
+    players: chain([
+      { id: 11, full_name: "Um" },
+      { id: 22, full_name: "Dois" },
+    ]),
+    teams: chain([{ id: 101, name: "Equipe base" }]),
+  };
+  vi.mocked(requireAdminAal2).mockResolvedValue({
+    client: { from: vi.fn((table: string) => fixtures[table]) },
+    payload: { csrfToken: "fixture" },
+    cookie: null,
+  } as unknown as Awaited<ReturnType<typeof requireAdminAal2>>);
+}
+it("exibe a inscrição correta para equipes com a mesma entidade global", async () => {
+  mockKeyboardLoader(false);
+  const response = await loader(keyboardLoaderArgs());
+  expect(response.data.editor.teams).toEqual({
+    home: "Azul inscrição A",
+    away: "Azul inscrição B",
+  });
+  expect(response.data.editor.candidates.map((candidate) => candidate.side)).toEqual([
+    "home",
+    "away",
+  ]);
+});
+it("carrega o editor com o nome antigo quando public_name não existe", async () => {
+  mockKeyboardLoader(true);
+  const response = await loader(keyboardLoaderArgs());
+  expect(response.data.editor.teams).toEqual({ home: "Equipe base", away: "Equipe base" });
 });

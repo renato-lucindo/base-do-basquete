@@ -298,3 +298,30 @@ describe("encaminhamento do jogo para o novo editor", () => {
     expect(payload.data.games).toHaveLength(1);
   });
 });
+
+describe("compatibilidade da seleção no preview", () => {
+  it("usa o nome global somente se public_name ainda não existir no banco", async () => {
+    readyGames();
+    const registrations = client.from("team_registrations") as ReturnType<typeof query>;
+    registrations.select
+      .mockReturnValueOnce(query([], { code: "42703", message: "column missing" }))
+      .mockReturnValueOnce(
+        query([
+          { id: 11, team_id: 21 },
+          { id: 12, team_id: 22 },
+        ]),
+      );
+    await expect(loader(loaderArgs())).rejects.toMatchObject({
+      headers: expect.any(Headers),
+      status: 302,
+    });
+    expect(client.from).toHaveBeenCalledWith("teams");
+  });
+
+  it("não converte erro de autorização em fallback de esquema antigo", async () => {
+    readyGames();
+    const registrations = client.from("team_registrations") as ReturnType<typeof query>;
+    registrations.select.mockReturnValueOnce(query([], { code: "42501" }));
+    await expect(loader(loaderArgs())).rejects.toThrow("Scoresheet eligibility query failed");
+  });
+});
