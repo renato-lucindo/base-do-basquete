@@ -1,5 +1,16 @@
 # HANDOFF — Base do Basquete
 
+## PR #77 — fallback emergencial, retry e revisão histórica (14/10/2026)
+
+WORK_UNIT=PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER=project-maintainer; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=cebed5c319e86da4d622e637db0d64718193b5d5; WRITE_LOCK=ACTIVE até conferir CI e publicar packet; RISK_LEVEL=CRITICO; PR=OPEN/DRAFT.
+
+OBJETIVO: resolver P1 fallback manual de súmula por teclado em competição de fonte FIBA exigindo justificativa e submissão de papel fallback; P2 falhas transitórias HTTP e retry idempotente; P2 revisão de elencos históricos após transferência. Migration aditiva 20261014223000_keyboard_fallback_history.sql substitui somente a implementação da RPC, preservando migration anterior e vínculos autoritativos. Novos testes: keyboard_emergency_fallback.test.sql (rascunho, justificativa, papel fallback, autoridades, auditoria, finalização explícita) e teclado histórico; rota administrativa e editor agora expõem fallback e fonte histórica. Nenhuma migration executada no Supabase compartilhado ou em produção.
+
+RISCOS_ABERTOS: revisão independente de database-security, statistics, accessibility e QA no HEAD definitivo; regressões pgTAP/GoTrue, CI/CodeQL/Preview precisam de conferência remota. Parecer antigo REQUEST_CHANGES não é automaticamente resolvido. Escopo negativo: sem PR72, outras worktrees, produção ou merge. O checkout Windows citado no handoff anterior não é acessível nesta sessão; commits desta unidade publicados diretamente pelo GitHub Connector na branch PR, preservando o restante da árvore.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=GitHub Actions/PR #77; ACAO=conferir CI database e gate no HEAD, corrigir falhas de fixtures/código mantendo migrações antigas intocadas, liberar write lock após REVIEW_PACKET final, obter quatro pareceres independentes no mesmo SHA; CRITERIO_DE_CONCLUSAO=CI/database (incl. pgTAP e GoTrue AAL2)/accessibility, CodeQL e preview verdes, quatro pareceres válidos sem bloqueios antes de qualquer merge/rollout.
+
+
 ## PR #77 — ensaios reais de integração (14/10/2026)
 
 WORK_UNIT=PR77-DISPOSABLE-INTEGRATION-GATE; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=e393a6cd80e53271b0b238d82decd855b954193d; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO; PR DRAFT.
