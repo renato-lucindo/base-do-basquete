@@ -95,7 +95,7 @@ const source = readFileSync("supabase/tests/database/keyboard_scoresheet.test.sq
 const helpers = readFileSync("supabase/tests/helpers/final_profile_fixtures.inc", "utf8");
 const fixture = source
   .slice(0, source.indexOf("create temp table keyboard_docs"))
-  .replace("\\ir ../helpers/final_profile_fixtures.inc", helpers)
+  .replace("\\ir ../helpers/final_profile_fixtures.inc", () => helpers)
   .replace("select no_plan();", "");
 assert.ok(fixture.includes("insert into public.game_participants"), "fixture boundary changed");
 await sql(`${fixture}\ncommit;`);
