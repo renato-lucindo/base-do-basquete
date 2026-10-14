@@ -384,3 +384,15 @@ assert.equal(
 console.log(
   "PASS: real GoTrue MFA AAL2 saves, retries idempotently, confirms and persists canonical score",
 );
+
+if (process.env.KEYBOARD_BROWSER_INTEGRATION === "true") {
+  const { verifyDisposableBrowser } = await import("./test-keyboard-disposable-browser.mjs");
+  await verifyDisposableBrowser({
+    sql,
+    status,
+    adminUser,
+    password,
+    totp: () => totp(enrollment.totp.secret),
+    helpers,
+  });
+}

@@ -81,5 +81,9 @@ jobs:
         run: node scripts/test-boxscore-team-resolution-concurrency.mjs
       - name: Verify named RPC arguments through PostgREST
         run: node scripts/test-season-division-rpc-contract.mjs
-      - name: Verify keyboard writers and real GoTrue TOTP AAL2 on disposable Supabase
+      - name: Install Chromium for authenticated disposable browser integration
+        run: npx --no-install playwright install --with-deps chromium
+      - name: Verify GoTrue TOTP AAL2 and real browser FIBA fallback integration
+        env:
+          KEYBOARD_BROWSER_INTEGRATION: "true"
         run: node scripts/test-keyboard-disposable-integration.mjs

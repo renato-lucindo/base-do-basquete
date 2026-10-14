@@ -1,3 +1,15 @@
+## PR #77 — integração autenticada Chromium em stack descartável — 14/10/2026
+
+WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; BASE_MAIN: be851210da2ba96e4ca78c9cbfac53223ee6862d; HEAD_CONFERIDO: 8aefa8f2f68ecec8eb5949738f2533c08f210b71; PR: OPEN/DRAFT; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
+
+EVIDENCIAS: no SHA 8aefa8f, CI 38653184586, CodeQL 38653184648 e Preview 38653184770 PASS, incluindo pgTAP da stack descartável. `npm.cmd run check` local na worktree PASS (68 arquivos, 558 Vitest, formato, lint com 328 avisos não bloqueantes, typecheck, build, runbooks, agentes, scan de segredos). Sintaxe dos scripts e `git diff --check` PASS. O novo Playwright autenticado ainda exige execução no job database do GitHub Actions.
+
+DELTA_ATUAL: `scripts/test-keyboard-disposable-browser.mjs` (novo, integra Chromium, GoTrue/AAL2, FIBA, persistência SQL, falha HTTP/retry idempotente, concorrência e recuperação local), `scripts/test-keyboard-disposable-integration.mjs` (invocação condicional no encerramento do teste AAL2 existente) e `.github/workflows/ci.yml` (instala Chromium e habilita integração de navegador no banco descartável). `worker-configuration.d.ts` foi alterado anteriormente pelo gerador Wrangler; preservar fora do commit. Sem migration ou deploy no Supabase compartilhado, sem merge, sem alteração das PRs #73/#79.
+
+PARECERES: QA 6178910298, banco 6178887733, estatísticas 6178934927 e acessibilidade 6178940422 continuam REQUEST_CHANGES/BLOCK_RELEASE para o SHA antigo. Renovar cada parecer após gates e REVIEW_PACKET atualizados; consultar também boxscore-domain por conciliação FIBA.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=GitHub Actions PR77 job database + `scripts/test-keyboard-disposable-browser.mjs`; ACAO=publicar integração na branch remota, verificar Playwright real em Supabase descartável, corrigir falhas concretas, renovar gates, publicar REVIEW_PACKET e solicitar pareceres independentes; CRITERIO_DE_CONCLUSAO=CI/CodeQL/Preview verdes no SHA definitivo, replay de navegador AAL2 e pgTAP aprovados, pareceres sem bloqueios, PR DRAFT sem merge/produção.
+
 ## PR #77 — reconciliação pós-CI do commit 4e0b67c — 14/10/2026
 
 WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; HEAD_LOCAL_E_REMOTO: 4e0b67c4c690627561ddd96be9230afb48cd6f2c; BASE_MAIN: be851210da2ba96e4ca78c9cbfac53223ee6862d; RISK_LEVEL: CRITICO; PR: OPEN/DRAFT; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
