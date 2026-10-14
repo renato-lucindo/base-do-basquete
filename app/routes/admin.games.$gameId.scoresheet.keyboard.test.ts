@@ -94,9 +94,13 @@ function chain(data: unknown[], error: { code?: string } | null = null) {
     in: vi.fn(),
     single: vi.fn(),
     maybeSingle: vi.fn(),
-    then: (resolve: (value: typeof result) => unknown, reject?: (error: unknown) => unknown) =>
-      Promise.resolve(result).then(resolve, reject),
   };
+  // O builder do PostgREST é awaitable; simule a propriedade dinamicamente.
+  // biome-ignore lint/suspicious/noThenProperty: PostgREST expõe um builder intencionalmente awaitable neste mock.
+  Object.defineProperty(builder, "then", {
+    value: (resolve: (value: typeof result) => unknown, reject?: (error: unknown) => unknown) =>
+      Promise.resolve(result).then(resolve, reject),
+  });
   builder.select.mockReturnValue(builder);
   builder.eq.mockReturnValue(builder);
   builder.in.mockReturnValue(builder);
