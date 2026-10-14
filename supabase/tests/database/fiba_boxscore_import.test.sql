@@ -281,7 +281,7 @@ values (
   '{"rulesVersion":"FIBA_2024","periods":4,"roster":[],"events":[],"coachPlayer":{"home":null,"away":null}}'::jsonb
 );
 set local role authenticated;
-select throws_ok($
+select throws_ok($$
   select public.admin_commit_boxscore_import_v2(
     import_id,
     resolution - 'gameId',
@@ -290,11 +290,11 @@ select throws_ok($
       'scheduledAt','2026-05-09T20:00:00Z','venue','Ginasio PDF'
     )
   ) from boxscore_test_data
-$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'FIBA v2 cannot overwrite a keyboard draft');
-select throws_ok($
+$$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'FIBA v2 cannot overwrite a keyboard draft');
+select throws_ok($$
   select public.admin_commit_boxscore_import(import_id, resolution)
   from boxscore_test_data
-$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'legacy FIBA commit cannot overwrite a keyboard draft');
+$$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'legacy FIBA commit cannot overwrite a keyboard draft');
 select is((select status from public.boxscore_imports where id=(select import_id from boxscore_test_data)),
   'review', 'blocked FIBA import remains reviewable');
 select is((select status from public.games where id=94001),
@@ -305,7 +305,7 @@ reset role;
 delete from public.keyboard_scoresheets where game_id=94001;
 set local role authenticated;
 
-select lives_ok($
+select lives_ok($$
   select public.admin_commit_boxscore_import_v2(
     import_id,
     resolution - 'gameId',
