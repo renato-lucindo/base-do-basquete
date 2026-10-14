@@ -2,11 +2,13 @@
 
 ## PR #77 — reconciliação com main após #79/#73 — 14/10/2026
 
-WORK_UNIT=PR77-MAIN-RECONCILE-20261014; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=1df666858180d652f103eff5c182fb0c1d0ebb91; MAIN_INTEGRADA=be85121; WRITE_LOCK=ACTIVE durante reconciliação e gates, exclusivamente neste worktree isolado.
+WORK_UNIT=PR77-MAIN-RECONCILE-20261014; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=1df666858180d652f103eff5c182fb0c1d0ebb91; MAIN_INTEGRADA=be85121; WRITE_LOCK=RELEASED após reconciliação e validação local; somente a branch isolada recebeu alterações.
 
 Objetivo: incorporar a main atual à PR77, conservando a súmula por teclado independente, correções de jogos e contratos de inscrições/disputas já integrados. Escopo negativo: PR72 encerrada, worktrees de terceiros, migrations no Supabase compartilhado, produção e merge na main. A evidência local de 545 Vitest (66 arquivos), gerada em codex/pr77-manual-scoresheet-replacement@086c73d, corresponde a outra implementação e não deve ser atribuída à PR77 por teclado. Gates remotos anteriores de PR77 (1df6668) ficaram verdes, mas serão renovados se o HEAD funcional mudar.
 
 RISK_LEVEL=CRITICO; REQUIRED_REVIEWERS=database-security-reviewer, statistics-domain-reviewer, accessibility-ui-reviewer, qa-reviewer; revisão independente no HEAD reconciliado, pgTAP, GoTrue/PostgREST AAL2, CI, CodeQL e preview são pendentes. Manter draft sem integração até pareceres válidos e decisão de release formal.
+
+Conflitos de merge restritos a HANDOFF e à união das assinaturas `admin_save_keyboard_scoresheet` e `admin_create_competition_edition_batch` em `app/types/database.generated.ts`; rotas ajustadas automaticamente. `npm.cmd ci` PASS (166 pacotes auditados, zero vulnerabilidades); `npm.cmd run check` PASS (542 Vitest, lint com 328 avisos não bloqueantes, typecheck, runbooks, agentes, build e scan de 753 arquivos). O arquivo `worker-configuration.d.ts` foi regenerado por `npm ci` e é alteração instrumental fora do delta de integração; restaurar a versão rastreada antes do push. A validação de SQL/pgTAP, preview, CodeQL e testes de navegador será exigida do CI da nova cabeça.
 
 PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; ARQUIVO_OU_SERVICO=PR #77 / codex/keyboard-scoresheet-mvp; ACAO=concluir reconciliação e executar gates no novo HEAD, publicar REVIEW_PACKET, obter pareceres independentes CRITICOS e ensaio autenticado isolado; CRITERIO_DE_CONCLUSAO=CI/database/preview/CodeQL verdes, aprovações válidas, GoTrue/PostgREST e integridade confirmados, sem migração compartilhada ou produção.
 
