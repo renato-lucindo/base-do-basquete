@@ -1,6 +1,7 @@
 import { validateEditionInput } from "./edition-creation";
 
 export type AgeKind = "adult" | "base" | "master";
+export type DisputeNavigationOrder = "category_division" | "division_category";
 export interface EditionWorkflowInput {
   seriesId: number | null;
   championshipName: string | null;
@@ -21,6 +22,32 @@ export interface EditionWorkflowInput {
   entryCount: number;
   expectedProfileId: number | null;
   reason: string | null;
+  reviewed: boolean;
+}
+export interface DisputeWorkflowInput {
+  categoryKind: AgeKind;
+  categoryAge: number | null;
+  gender: "male" | "female";
+  startsOn: string | null;
+  endsOn: string | null;
+  divisionMode: "none" | "existing" | "new";
+  divisionValueId: number | null;
+  divisionTypeName: string | null;
+  divisionValueName: string | null;
+  source: "manual_scoresheet" | "fiba_boxscore";
+  preset: "single_group" | "single_elimination";
+  entryCount: number;
+  expectedProfileId: number | null;
+  reason: string | null;
+}
+export interface EditionBatchWorkflowInput {
+  seriesId: number | null;
+  championshipName: string | null;
+  seasonId: number | null;
+  year: number;
+  description: string | null;
+  navigationOrder: DisputeNavigationOrder;
+  disputes: DisputeWorkflowInput[];
   reviewed: boolean;
 }
 export const masterAges = Array.from({ length: 12 }, (_, index) => 30 + index * 5);
@@ -193,4 +220,145 @@ export function workflowError(code?: string, message?: string): string {
   if (code === "BR013") return "A mudança de fonte exige confirmação e justificativa.";
   if (code === "BD401") return "Confirme o segundo fator antes de criar.";
   return "Não foi possível criar. Nenhuma criação parcial foi mantida.";
+}
+
+const batchKeys: (keyof EditionBatchWorkflowInput)[] = [
+  "seriesId",
+  "championshipName",
+  "seasonId",
+  "year",
+  "description",
+  "navigationOrder",
+  "disputes",
+  "reviewed",
+];
+const disputeKeys: (keyof DisputeWorkflowInput)[] = [
+  "categoryKind",
+  "categoryAge",
+  "gender",
+  "startsOn",
+  "endsOn",
+  "divisionMode",
+  "divisionValueId",
+  "divisionTypeName",
+  "divisionValueName",
+  "source",
+  "preset",
+  "entryCount",
+  "expectedProfileId",
+  "reason",
+];
+
+export function singleWorkflowInput(
+  batch: EditionBatchWorkflowInput,
+  dispute: DisputeWorkflowInput,
+  reviewed = batch.reviewed,
+): EditionWorkflowInput {
+  return {
+    seriesId: batch.seriesId,
+    championshipName: batch.championshipName,
+    seasonId: batch.seasonId,
+    year: batch.year,
+    description: batch.description,
+    reviewed,
+    ...dispute,
+  };
+}
+
+function divisionSlug(value: string | null | undefined): string {
+  return (value ?? "")
+    .trim()
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function disputeIdentity(dispute: DisputeWorkflowInput): string {
+  const division =
+    dispute.divisionMode === "none"
+      ? "none"
+      : dispute.divisionMode === "existing"
+        ? `existing:${dispute.divisionValueId}`
+        : `new:${divisionSlug(dispute.divisionTypeName)}:${divisionSlug(dispute.divisionValueName)}`;
+  return [dispute.categoryKind, dispute.categoryAge ?? "", dispute.gender, division].join(":");
+}
+
+export function validateEditionBatchWorkflow(value: unknown, year: number) {
+  const fail = (field: string, error: string) => ({ ok: false as const, field, error });
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    return fail("form", "Revise os dados da edição.");
+  const input = value as Record<string, unknown>;
+  if (
+    Object.keys(input).some((key) => !batchKeys.includes(key as keyof EditionBatchWorkflowInput)) ||
+    batchKeys.some((key) => !(key in input))
+  ) {
+    return fail("form", "Recarregue o formulário: o contrato dos dados mudou.");
+  }
+  if (
+    input.navigationOrder !== "category_division" &&
+    input.navigationOrder !== "division_category"
+  ) {
+    return fail("navigationOrder", "Selecione a ordem da navegação da edição.");
+  }
+  if (!Array.isArray(input.disputes) || input.disputes.length < 1 || input.disputes.length > 12)
+    return fail("disputes", "Cadastre entre 1 e 12 disputas por vez.");
+  if (typeof input.reviewed !== "boolean") return fail("reviewed", "Confirme a revisão dos dados.");
+  if (input.seasonId !== null && input.disputes.length !== 1)
+    return fail("disputes", "Adicione uma disputa por vez a uma edição existente.");
+
+  const batch = input as unknown as EditionBatchWorkflowInput;
+  const summaries: { rounds: number; matchups: number; byes: number }[] = [];
+  const identities = new Map<string, number>();
+  let divisionType: string | null = null;
+  for (const [index, candidate] of batch.disputes.entries()) {
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate))
+      return fail(`disputes.${index}`, `Revise a disputa ${index + 1}.`);
+    const dispute = candidate as unknown as Record<string, unknown>;
+    if (
+      Object.keys(dispute).some(
+        (key) => !disputeKeys.includes(key as keyof DisputeWorkflowInput),
+      ) ||
+      disputeKeys.some((key) => !(key in dispute))
+    ) {
+      return fail(`disputes.${index}`, `Recarregue a disputa ${index + 1}: o contrato mudou.`);
+    }
+    if (batch.seasonId === null && dispute.divisionMode === "existing")
+      return fail(
+        `disputes.${index}.divisionMode`,
+        "Uma edição nova ainda não possui divisões existentes.",
+      );
+    const validation = validateEditionWorkflow(
+      singleWorkflowInput(batch, candidate as DisputeWorkflowInput),
+      year,
+    );
+    if (!validation.ok) {
+      if (!disputeKeys.includes(validation.field as keyof DisputeWorkflowInput)) return validation;
+      return fail(
+        `disputes.${index}.${validation.field}`,
+        `Disputa ${index + 1}: ${validation.error}`,
+      );
+    }
+    summaries.push(validation.summary);
+    const typed = candidate as DisputeWorkflowInput;
+    if (typed.divisionMode === "new") {
+      const currentType = divisionSlug(typed.divisionTypeName);
+      if (divisionType === null) divisionType = currentType;
+      else if (divisionType !== currentType)
+        return fail(
+          `disputes.${index}.divisionTypeName`,
+          "Todas as novas divisões da edição devem usar o mesmo tipo.",
+        );
+    }
+    const identity = disputeIdentity(typed);
+    const previous = identities.get(identity);
+    if (previous !== undefined)
+      return fail(
+        `disputes.${index}.categoryKind`,
+        `A disputa ${index + 1} repete a combinação da disputa ${previous + 1}.`,
+      );
+    identities.set(identity, index);
+  }
+  return { ok: true as const, input: batch, summaries };
 }

@@ -1350,6 +1350,7 @@ export type Database = {
         Row: {
           created_at: string;
           description: string | null;
+          dispute_navigation_order: string;
           id: number;
           name: string;
           revision: number;
@@ -1362,6 +1363,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           description?: string | null;
+          dispute_navigation_order?: string;
           id?: never;
           name: string;
           revision?: number;
@@ -1374,6 +1376,7 @@ export type Database = {
         Update: {
           created_at?: string;
           description?: string | null;
+          dispute_navigation_order?: string;
           id?: never;
           name?: string;
           revision?: number;
@@ -4605,6 +4608,10 @@ export type Database = {
       };
     };
     Functions: {
+      admin_create_competition_edition_batch: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
       admin_create_competition_edition: {
         Args: { p_input: Json; p_request_id: string };
         Returns: Json;

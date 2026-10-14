@@ -1,5 +1,34 @@
 # HANDOFF — Base do Basquete
 
+## PR73 - correcoes dos pareceres independentes - 14/10/2026
+
+WORK_UNIT=PR73-INDEPENDENT-FINDINGS-FIX; OWNER=project-maintainer; BRANCH_REMOTA=codex/multi-dispute-creation-navigation; BASE=cfb461425b76d0a738e915bb6925025ff7c635b4; WRITE_LOCK=ACTIVE ate push para renovacao. HEAD anterior7156f60 teve banco APPROVE_WITH_NON_BLOCKING_NOTES(6166742820), acessibilidade REQUEST_CHANGES(6166834700) e QA REQUEST_CHANGES(6166869794). CI38552252383/preview38552252332/CodeQL38552252316 SUCCESS:503Vitest,15Playwright,48arquivos/1331pgTAP. CI nao substitui os bloqueios.
+
+Correcoes focais: erros de identificacao no validador batch conservam o campo compartilhado; erros proprios da disputa conservam prefixo/index. Ano/Nome agora visiveis com aria-invalid/describedby e alerta focado; duas regressoes Playwright PASS. Confirmacao HTTP validada por origem/AAL2/CSRF/contrato/requestUUID/revisao alcança RPC antes de escolhas mutaveis, preservando replay de adicao e guardas autoritativos; revisao sem escrita mantem preflight. Confirmacao incompleta continua na etapa Revisao.
+
+Migration aditiva20261014110514 reconcilia somente expectativas de perfil alteradas pelo proprio lote: registra expectativa original e perfil do item concluido por categoria/idade/naipe, substitui a expectativa dos itens seguintes somente quando corresponde ao mesmo original. O primeiro item continua validado contra o perfil ativo, com locks transacionais; expectativa externa ou divergente permanece rejeitada. Ledger externo conserva payload original. Novos16pgTAP cobrem Ouro/Prata na mesma categoria/naipe, replay, umperfil e rejeicoes/rollback de expectativas divergentes/externas e fonte alterada semjustificativa. Migrations publicadas anteriores inalteradas. SQL so emCI descartavel, sem Dockerlocal. Gate local da correcao PASS512Vitest/66arquivos e todosgates npmruncheck, scan732; duasregressoesPlaywrightPASS. Artefato deve receber SQL integral e novos pareceres.
+
+NotaDB nao bloqueante sobre deadlock entreUUIDsdistintos acompanhada em issue84; ainda nao reproduzida. Shell herdado: nome acessivel do brand em390px e movimento reduzido foram observados como limitacoes daBASE por Popper; nao sao regressao destaPR. Rollout/MFAreal/zoomnativo/advisorsprodutivos continuam limitacoes explicitadas. Sem PR77, DDL compartilhado ou producao. PR79 integrada emcfb4614, com gatesposmerge38551883368/38551883396 SUCCESS.
+
+PROXIMO_PASSO_EXATO: estabilizar e publicar correcoes com gate; renovar banco/acessibilidade/QA noSHAexato; integrar73 somente semREQUEST_CHANGES e comgatesverdes. Preservar worktrees/WIP e IDs remotos historicosPR66.
+
+## PR73 - reconciliacao e revisoes independentes - 14/10/2026
+
+Este checkpoint substitui operacionalmente as instrucoes historicas abaixo. PR79 MERGED em2026-10-14T10:46:11Z por cfb461425b76d0a738e915bb6925025ff7c635b4; arvore identica ao HEAD7e37821 aprovado. Quatro pareceres independentes e QA editorial6166528738 validos; CI38551232484/preview38551232491/CodeQL38551232516 SUCCESS. Nenhum rollout compartilhado ou producao realizado.
+
+WORK_UNIT=PR73-MAIN-RECONCILE-INDEPENDENT-REVIEW; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr73-main-independent-review; BRANCH_REMOTA=codex/multi-dispute-creation-navigation; BASE_COMMIT=cfb461425b76d0a738e915bb6925025ff7c635b4; HEAD_INICIAL=f3b1a5ddb426a0edd1a40bd6c445f2721945238a. WRITE_LOCK=ACTIVE ate publicar arvore estavel. Merge de main apresentou conflito somenteHANDOFF; preservadas as evidencias recentes e o checkpoint historico73. Os17arquivos incrementais do pacote mantidos; sem funcionalidade daPR77. Migrations publicadas20261006123600 e20261008104500 imutaveis.
+
+Packet original6157258955: wizard Identificacao/Disputas/Revisao, criacao transacional de1-12disputas, navegacao categoria/divisao, AAL2 e idempotencia. Revisores obrigatorios banco/seguranca, acessibilidade e QA; estatisticas/boxscore dispensados apenas neste incremento sem alterar seus dominios, dependencia79 revisada. Validacao estabilizada: scripts descartaveis CI agora verificamRPCbatch viaPostgREST para anonimo, nao-adminAAL2, adminAAL1 e adminAAL2 com payloadinvalido, e concorrencia de retry com um ledger/auditoria/divisao e doisIDs de disputa. Gate local npm run check PASS:503Vitest/66arquivos, format/lint/typecheck/runbooks/agentes/build/scan730. SQL/concorrencia/PostgREST aguardamCI descartavel; Dockerlocal ausente. Publicar novo packet comSHA exato e CI/preview/CodeQL. WRITE_LOCK=RELEASED apos push para revisoes independentes. Nao integrar ate pareceres independentes validos e gates verdes.
+
+Sem PR77, DDL compartilhado ou deploy de producao. Supabase compartilhado ainda sempublic_name; IDs remotos historicosPR66 20261005140439/20261005140504 preservados. MFAreal/rollout/advisors produtivos permanecem unidade posterior. Worktrees/WIPs440a0b1/cd906eb e trabalho alheio137b78b preservados; nenhum deles introduzido nesta integracao.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=PR73; ACAO=estabilizar/revisar diff, publicar gate/packet e colher banco/acessibilidade/QA; integrar por squash somente aprovada; CRITERIO=PR73MERGED comSHAgatespareceres verificaveis, sem PR77/Supabasecompartilhado/producao.
+
+## Checkpoint PR #73 reconciliada — 13/10/2026
+
+WORK_UNIT=RECONCILE-PR73-WITH-PR79; OWNER=project-maintainer; BRANCH=codex/multi-dispute-creation-navigation; STATUS=RELEASED. PR3 reconciliada com a base `codex/independent-registrations-copy@ced8a76e19ce`, preservando UI pública PR63, correção de boxscore PR65, integridade de divisões PR79, e os 17 arquivos incrementais da criação múltipla. CSS foi conciliado aplicando o hunk da PR3 sobre o CSS atual, sem perda das regras públicas. O pgTAP de PR3 passou anteriormente em validação temporária #81: 46 arquivos/1.292 testes; a nova árvore exige gate próprio. NÃO INTEGRAR enquanto #79 não for aprovada e incorporada à main com plano de migrations remoto. Sem DDL no Supabase compartilhado nem produção.
+
+
 ## PR79 - pareceres concluidos e ajuste editorial final - 14/10/2026
 
 Este checkpoint substitui operacionalmente as instrucoes historicas abaixo. A pausa por uso terminou apos reset:0% da janela5h, sem consumir credito de reset. Checkpoint WIP440a0b1 em codex/pr79-review-pause-bb3d4ac preservado fora da integracao.
