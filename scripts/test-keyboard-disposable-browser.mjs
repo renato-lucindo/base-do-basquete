@@ -69,6 +69,27 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
       if (message.type() === "error") browserErrors.push(message.text().slice(0, 500));
     });
     page.setDefaultTimeout(15000);
+    const navigationEvents = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/admin/games/93501")) {
+        navigationEvents.push({ event: "request", method: request.method(), url: request.url() });
+      }
+    });
+    page.on("response", (response) => {
+      if (response.url().includes("/admin/games/93501")) {
+        navigationEvents.push({
+          event: "response",
+          status: response.status(),
+          url: response.url(),
+          location: response.headers().location ?? null,
+        });
+      }
+    });
+    page.on("requestfailed", (request) => {
+      if (request.url().includes("/admin/games/93501")) {
+        navigationEvents.push({ event: "requestfailed", url: request.url(), failure: request.failure() });
+      }
+    });
 
     await page.goto("/admin/login");
     await page.getByLabel("E-mail").fill(adminUser.email);
@@ -82,14 +103,22 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     await page.goto("/admin/competitions/9350/scoresheets/new");
     const fallbackEntry = page.getByRole("link", { name: /Iniciar fallback emergencial/ });
     await expect(fallbackEntry).toBeVisible();
+    const fallbackHref = await fallbackEntry.getAttribute("href");
     await fallbackEntry.click();
     try {
       await expect(page).toHaveURL(/\/admin\/games\/93501\/scoresheet\/keyboard$/);
     } catch (cause) {
-      const response = await context.request.get(`${origin}/admin/games/93501/scoresheet/keyboard`);
+      const editorUrl = `${origin}/admin/games/93501/scoresheet/keyboard`;
+      const initialResponse = await context.request.get(editorUrl, { maxRedirects: 0 });
+      const finalResponse = await context.request.get(editorUrl);
       console.error("Fallback browser navigation diagnostics", {
         actualUrl: page.url(),
-        directGetStatus: response.status(),
+        fallbackHref,
+        directGetStatus: initialResponse.status(),
+        directGetLocation: initialResponse.headers().location ?? null,
+        directGetFinalStatus: finalResponse.status(),
+        directGetFinalUrl: finalResponse.url(),
+        navigationEvents: navigationEvents.slice(-20),
         visibleText: (await page.locator("body").innerText()).slice(0, 1500),
         browserErrors,
       });
