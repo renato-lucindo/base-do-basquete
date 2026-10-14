@@ -18,6 +18,7 @@ export interface PublicResourceItem {
 }
 
 export interface PublicDetail {
+  registrationId?: number;
   label: string;
   description: string;
   achievements: PublicAchievement[];
@@ -279,6 +280,7 @@ export async function loadPublicDetail(
       .order("placement");
     ensureQuery(achievementsResult.error);
     return {
+      registrationId: registration.id,
       label: registration.public_name,
       description: team.abbreviation ?? "Equipe inscrita nesta edição.",
       achievements: achievementsResult.data

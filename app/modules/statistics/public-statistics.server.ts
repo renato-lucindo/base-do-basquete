@@ -121,7 +121,7 @@ function registrationIdentitySchemaUnavailable(error: unknown): boolean {
   );
 }
 
-async function registrationIdentityMap(
+export async function registrationIdentityMap(
   client: SupabaseClient<Database>,
   rows: Array<Record<string, unknown>>,
 ): Promise<Map<number, string> | null> {

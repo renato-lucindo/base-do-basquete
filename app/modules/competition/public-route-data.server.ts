@@ -89,7 +89,13 @@ export async function loadPublicDetailPayload(
   if (!detail || (resource === "jogos" && !game) || (resource === "jogadores" && !playerProfile)) {
     return null;
   }
-  const team = teamSportsCore?.teams.find((item) => item.slug === detailReference) ?? null;
+  const team =
+    teamSportsCore?.teams.find(
+      (item) =>
+        item.slug === detailReference ||
+        (loadedDetail?.registrationId !== undefined &&
+          item.slug === `inscricao-${loadedDetail.registrationId}`),
+    ) ?? null;
   const teamProfile: PublicTeamProfileDto | null =
     team && teamSportsCore
       ? {

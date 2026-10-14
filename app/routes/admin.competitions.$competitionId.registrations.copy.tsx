@@ -120,12 +120,9 @@ function conflictLabel(conflict: CopyConflict) {
   }
 }
 
-function buildCopyItems(formData: FormData, preview: CopyPreview) {
-  const selectedRegistrationIds = formData
-    .getAll("registrationId")
-    .map(parseId)
-    .filter((value): value is number => value !== null);
-  if (!selectedRegistrationIds.length) {
+function buildCopyItems(formData: FormData) {
+  const selectedRegistrationIds = formData.getAll("registrationId").map(parseId);
+  if (!selectedRegistrationIds.length || selectedRegistrationIds.some((id) => id === null)) {
     return { ok: false as const, error: "Selecione ao menos uma inscrição para copiar." };
   }
   if (new Set(selectedRegistrationIds).size !== selectedRegistrationIds.length) {
@@ -134,28 +131,16 @@ function buildCopyItems(formData: FormData, preview: CopyPreview) {
 
   const items = [];
   for (const registrationId of selectedRegistrationIds) {
-    const registration = preview.registrations.find(
-      (item) => item.sourceRegistrationId === registrationId,
-    );
-    if (!registration) {
-      return { ok: false as const, error: "A prévia mudou. Recarregue antes de confirmar." };
-    }
     const publicName = String(formData.get(`publicName:${registrationId}`) ?? "")
       .replace(/\s+/g, " ")
       .trim();
     if (publicName.length < 2 || publicName.length > 120) {
-      return { ok: false as const, error: `Revise o nome público de ${registration.teamName}.` };
+      return { ok: false as const, error: "Revise o nome público da inscrição selecionada." };
     }
-    const selectedPlayerIds = formData
-      .getAll(`player:${registrationId}`)
-      .map(parseId)
-      .filter((value): value is number => value !== null);
-    const compatiblePlayerIds = new Set(
-      registration.players.filter((player) => !player.conflict).map((player) => player.playerId),
-    );
+    const selectedPlayerIds = formData.getAll(`player:${registrationId}`).map(parseId);
     if (
       new Set(selectedPlayerIds).size !== selectedPlayerIds.length ||
-      selectedPlayerIds.some((playerId) => !compatiblePlayerIds.has(playerId))
+      selectedPlayerIds.some((playerId) => playerId === null)
     ) {
       return { ok: false as const, error: "A seleção de atletas não corresponde à prévia atual." };
     }
@@ -258,15 +243,9 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     return data({ error: "A prévia expirou. Recarregue antes de confirmar." }, { status: 400 });
   }
 
-  const previewResult = await auth.client.rpc("admin_preview_registration_copy", {
-    p_source_competition_id: sourceCompetitionId,
-    p_target_competition_id: competitionId,
-  });
-  const preview = previewResult.error ? null : parseRegistrationCopyPreview(previewResult.data);
-  if (!preview) {
-    return data({ error: "Não foi possível revalidar a prévia." }, { status: 409 });
-  }
-  const selection = buildCopyItems(formData, preview);
+  // The authoritative RPC checks replay before mutable eligibility/membership.
+  // Re-reading the preview here would reject an already successful retry.
+  const selection = buildCopyItems(formData);
   if (!selection.ok) return data({ error: selection.error }, { status: 400 });
 
   const result = await auth.client.rpc("admin_copy_team_registrations", {

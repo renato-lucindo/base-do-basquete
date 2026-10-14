@@ -100,6 +100,19 @@ set constraints games_validate_matchup_participants immediate;
 
 select set_config('bdb.allow_internal_ingestion_game', 'off', false);
 
+-- Real pre-PR2 publication members: one unchanged, two editorial changes
+-- pending at upgrade time. The migration must not republish those changes.
+insert into public.teams (id, name, slug, is_public)
+overriding system value values
+  (94001, 'Upgrade Publicado', 'upgrade-publicado', true),
+  (94002, 'Upgrade Retirado', 'upgrade-retirado', true),
+  (94003, 'Upgrade Pendente', 'upgrade-pendente', true);
+insert into public.team_registrations (id, competition_id, team_id, status, confirmed_at)
+overriding system value values
+  (94001, 91001, 94001, 'confirmed', '2030-01-01T12:00:00Z'),
+  (94002, 91001, 94002, 'confirmed', '2030-01-01T12:00:00Z'),
+  (94003, 91001, 94003, 'confirmed', '2030-01-01T12:00:00Z');
+
 with publication_snapshot as (
   select private.competition_publication_snapshot(91001) ||
     '{"upgradeMarker":"preserve-me"}'::jsonb as value
@@ -123,3 +136,20 @@ select
   'legacy_backfill',
   '2030-10-01T12:00:00Z'
 from publication_snapshot;
+
+insert into private.competition_publication_registrations
+  (publication_id, competition_id, registration_id, fingerprint)
+select 93001, 91001, id, private.publication_registration_fingerprint(id)
+from public.team_registrations where id in (94001, 94002, 94003);
+update public.competitions set status = 'published', current_publication_id = 93001,
+  published_at = '2030-10-01T12:00:00Z' where id = 91001;
+update public.team_registrations set status = 'withdrawn' where id = 94002;
+update public.team_registrations set confirmed_at = '2030-02-01T12:00:00Z' where id = 94003;
+
+set role anon;
+do $$ begin
+  if (select count(*) from public.team_registrations where id in (94001, 94002, 94003)) <> 1 then
+    raise exception 'Legacy fixture must expose only the unchanged published registration';
+  end if;
+end $$;
+reset role;

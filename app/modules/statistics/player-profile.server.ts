@@ -16,6 +16,7 @@ import {
   parseBoxscoreStatisticsMode,
 } from "./boxscore-statistics-contract";
 import type { PlayerTotals } from "./player-profile-domain";
+import { registrationIdentityMap } from "./public-statistics.server";
 
 interface PlayerCompetitionBase {
   context: CompetitionContext;
@@ -243,6 +244,23 @@ export async function loadPublicPlayerProfile(
   ensure(boxscoreStatisticsResult.error, "Estatísticas detalhadas temporariamente indisponíveis");
   ensure(legacyStatisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
 
+  const registrationNames = await registrationIdentityMap(client, [
+    ...scoresheetStatisticsResult.data,
+    ...boxscoreStatisticsResult.data,
+    ...legacyStatisticsResult.data,
+  ]);
+  function summaryIdentity(row: {
+    registration_id?: number | null;
+    team_name: string | null;
+    team_slug: string | null;
+  }) {
+    const name =
+      row.registration_id == null ? undefined : registrationNames?.get(row.registration_id);
+    return name === undefined
+      ? { teamName: row.team_name, teamSlug: row.team_slug }
+      : { teamName: name, teamSlug: `inscricao-${row.registration_id}` };
+  }
+
   const scoresheetCompetitions = scoresheetStatisticsResult.data.flatMap(
     (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
@@ -251,8 +269,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "scoresheet",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
@@ -278,8 +295,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "boxscore",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
@@ -307,8 +323,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "scoresheet",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
