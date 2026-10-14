@@ -1,5 +1,10 @@
 # HANDOFF — Base do Basquete
 
+## Unidade ativa — 14/10/2026 — PR77-KEYBOARD-ENTRY-REPLACE
+
+WRITE_LOCK: OWNER=project-maintainer; WORK_UNIT=PR77-KEYBOARD-ENTRY-REPLACE; BRANCH=codex/keyboard-scoresheet-mvp; BASE_COMMIT=1df666858180d652f103eff5c182fb0c1d0ebb91; STATUS=ACTIVE; SCOPE=substituir a entrada de inclusão da súmula legada pela seleção de jogos para o editor por teclado, oferecer retomada de lançamentos existentes e testes de regressão; SCOPE_NEGATIVO=sem mutation no Supabase compartilhado, migration, produção, merge ou alteração de outras unidades.
+
+Objetivo: acesso direto ao MVP por teclado ao incluir súmula de jogo elegível. Avaliar no preview e conservar gates críticos da PR77. Próximo passo exato: remover o componente antigo da rota app/routes/admin.competitions.$competitionId.scoresheets.new.tsx, validar acessibilidade/compilação/testes e publicar preview, verificando ausência do formulário antigo e prontidão do banco.
 ## PR #77 reconciliada após UI/boxscore — 13/10/2026
 
 WORK_UNIT=PR77-KEYBOARD-SCORESHEET-MAIN-RECONCILE; OWNER=project-maintainer; BRANCH=codex/keyboard-scoresheet-mvp; STATUS=RELEASED. Branch do novo editor por teclado reconciliada com main@f29d8ba620d8 (PR63 e PR65). A rota legada preserva POST/303 e naipe, e os novos links de retomar/lancar súmula por teclado foram adicionados sem conflito. A PR #72 permanece cancelada, sem merge. Branch continua DRAFT/RISCO CRITICO; é proibido integrar sem revisões independentes atuais de database-security, statistics, accessibility e QA, validação autenticada GoTrue/PostgREST e rollout compatível de migration. Nenhum deploy, merge na main ou mutation no Supabase compartilhado.
@@ -94,4 +99,3 @@ CRITERIO_DE_CONCLUSAO: PR66 sem conflito; stack PR68/69 consistente; PR3 draft c
 ## 7. Rastreabilidade
 
 O histórico longo da PR66 permanece em `3d27b45:HANDOFF.md`, o checkpoint da governança em `8ac6220:HANDOFF.md`, os resultados no histórico de comentários/checks das PRs #66/#68/#69 e os pacotes encerrados em `docs/execution/`. Preserve as worktrees em andamento e os não rastreados de outros trabalhos.
-
