@@ -57,8 +57,10 @@ export function KeyboardScoresheet({
   const [recovery, setRecovery] = useState<Sheet | null>(null);
   const [busy, setBusy] = useState(false);
   const [setupErrorId, setSetupErrorId] = useState<number | null>(null);
+  const [fieldError, setFieldError] = useState<"target" | "code" | "reason" | null>(null);
   const targetRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
   const version = useRef(context.version);
   const current = useRef(history.present);
   const saved = useRef(JSON.stringify(context.initial));
@@ -191,6 +193,7 @@ export function KeyboardScoresheet({
   function submitEntry() {
     if (editing && !sheet.events.some((event) => event.id === editing)) {
       setError("O lançamento foi removido. Cancele a edição e lance novamente.");
+      setFieldError(null);
       return;
     }
     const normalized = code.trim().toUpperCase();
@@ -199,6 +202,7 @@ export function KeyboardScoresheet({
       !sheet.roster.some((p) => p.side === side && p.jersey === target)
     ) {
       setError("Camisa não relacionada à equipe ativa.");
+      setFieldError("target");
       focus();
       return;
     }
@@ -208,6 +212,7 @@ export function KeyboardScoresheet({
         : !parseFoul(normalized, target)
     ) {
       setError("Ação inválida. Use 1, 2, 3 ou uma falta válida, como P2, Tc, B1, B2 ou C1.");
+      setFieldError("code");
       codeRef.current?.focus();
       return;
     }
@@ -231,9 +236,11 @@ export function KeyboardScoresheet({
       validateSheet(next);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Lançamento inválido.");
+      setFieldError("code");
       return;
     }
     apply(next);
+    setFieldError(null);
     setTarget("");
     setCode("");
     setEditing(null);
@@ -376,7 +383,10 @@ export function KeyboardScoresheet({
                                   (s) => s.rosterEntryId !== candidate.rosterEntryId,
                                 );
                             // Intermediate setup can be incomplete; full validation runs on continue and server save.
-                            setHistory((h) => ({ ...h, present: { ...h.present, roster } }));
+                            setHistory((h) => ({
+                              ...h,
+                              present: { ...h.present, roster },
+                            }));
                           }}
                         />{" "}
                         {candidate.name}
@@ -395,7 +405,9 @@ export function KeyboardScoresheet({
                             inputMode="numeric"
                             maxLength={2}
                             value={selected.jersey}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              setSetupErrorId(null);
+                              setError("");
                               setHistory((h) => ({
                                 ...h,
                                 present: {
@@ -406,8 +418,8 @@ export function KeyboardScoresheet({
                                       : s,
                                   ),
                                 },
-                              }))
-                            }
+                              }));
+                            }}
                           />
                         </label>
                       )}
@@ -451,6 +463,7 @@ export function KeyboardScoresheet({
                 validateSheet(sheet);
                 setSetup(false);
                 setError("");
+                setSetupErrorId(null);
                 setTimeout(focus, 0);
               } catch (cause) {
                 setError(
@@ -458,7 +471,13 @@ export function KeyboardScoresheet({
                     ? cause.message
                     : "Confira as camisas: use 0, 00 ou um número de 1 a 99, sem repetir na equipe.",
                 );
-                const invalid = sheet.roster.find((s) => !/^(00|0|[1-9][0-9]?)$/.test(s.jersey));
+                const seen = new Set<string>();
+                const invalid = sheet.roster.find((s) => {
+                  const key = `${s.side}:${s.jersey}`;
+                  if (!/^(00|0|[1-9][0-9]?)$/.test(s.jersey) || seen.has(key)) return true;
+                  seen.add(key);
+                  return false;
+                });
                 if (invalid) {
                   setSetupErrorId(invalid.rosterEntryId);
                   document.getElementById(`keyboard-roster-${invalid.rosterEntryId}`)?.focus();
@@ -603,9 +622,14 @@ export function KeyboardScoresheet({
                 inputMode="text"
                 value={target}
                 maxLength={2}
-                aria-describedby={error ? "keyboard-error keyboard-help" : "keyboard-help"}
-                aria-invalid={Boolean(error)}
-                onChange={(e) => setTarget(e.target.value.toUpperCase())}
+                aria-describedby={
+                  fieldError === "target" ? "keyboard-error keyboard-help" : "keyboard-help"
+                }
+                aria-invalid={fieldError === "target"}
+                onChange={(e) => {
+                  setTarget(e.target.value.toUpperCase());
+                  setFieldError(null);
+                }}
                 onKeyDown={(e) => {
                   if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
                   e.preventDefault();
@@ -615,9 +639,11 @@ export function KeyboardScoresheet({
                     !sheet.roster.some((s) => s.side === side && s.jersey === target)
                   ) {
                     setError("Camisa não relacionada à equipe ativa.");
+                    setFieldError("target");
                     return;
                   }
                   setError("");
+                  setFieldError(null);
                   if (target === "B" || target === "C") setCode(`${target}1`);
                   codeRef.current?.focus();
                   codeRef.current?.select();
@@ -633,8 +659,14 @@ export function KeyboardScoresheet({
                 autoComplete="off"
                 value={code}
                 maxLength={3}
-                aria-describedby={error ? "keyboard-error keyboard-help" : "keyboard-help"}
-                onChange={(e) => setCode(e.target.value)}
+                aria-describedby={
+                  fieldError === "code" ? "keyboard-error keyboard-help" : "keyboard-help"
+                }
+                aria-invalid={fieldError === "code"}
+                onChange={(e) => {
+                  setCode(e.target.value);
+                  setFieldError(null);
+                }}
               />
             </label>
             <button type="submit">{editing ? "Aplicar correção" : "Lançar"}</button>
@@ -795,7 +827,10 @@ export function KeyboardScoresheet({
                   type="button"
                   aria-label={`Excluir lançamento ${index + 1}`}
                   onClick={() => {
-                    apply({ ...sheet, events: sheet.events.filter((e) => e.id !== event.id) });
+                    apply({
+                      ...sheet,
+                      events: sheet.events.filter((e) => e.id !== event.id),
+                    });
                     focus();
                   }}
                 >
@@ -814,10 +849,16 @@ export function KeyboardScoresheet({
               <label>
                 Motivo da correção
                 <textarea
+                  ref={reasonRef}
                   value={reason}
                   minLength={10}
                   maxLength={500}
-                  onChange={(e) => setReason(e.target.value)}
+                  aria-invalid={fieldError === "reason"}
+                  aria-describedby={fieldError === "reason" ? "keyboard-error" : undefined}
+                  onChange={(e) => {
+                    setReason(e.target.value);
+                    setFieldError(null);
+                  }}
                 />
               </label>
             )}
@@ -825,6 +866,12 @@ export function KeyboardScoresheet({
               type="button"
               disabled={busy || Boolean(recovery)}
               onClick={() => {
+                if (confirmed && reason.trim().length < 10) {
+                  setError("Informe um motivo da correção com pelo menos 10 caracteres.");
+                  setFieldError("reason");
+                  reasonRef.current?.focus();
+                  return;
+                }
                 void flush(true).catch((cause) =>
                   setError(cause instanceof Error ? cause.message : "Não foi possível confirmar."),
                 );

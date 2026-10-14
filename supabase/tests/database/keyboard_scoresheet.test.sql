@@ -181,5 +181,59 @@ select is(coalesce(current_setting('bdb.keyboard_replacing_submission',true),'')
 set constraints keyboard_authority_swap_complete immediate;
 set constraints keyboard_authority_swap_complete deferred;
 
+-- Direct D and accumulated technical GD both project a single disqualification.
+insert into keyboard_docs(name,doc)
+select 'gd',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000031","side":"home","period":1,"target":"00","code":"T1"},{"id":"10000000-0000-4000-8000-000000000032","side":"home","period":2,"target":"00","code":"T1"}]'::jsonb)
+from keyboard_docs where name='base';
+insert into keyboard_docs(name,doc)
+select 'direct_d',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000033","side":"home","period":1,"target":"00","code":"D2"}]'::jsonb)
+from keyboard_docs where name='base';
+select set_config('request.jwt.claims',json_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
+set local role authenticated;
+select is(public.admin_save_keyboard_scoresheet(93004,'20000000-0000-4000-8000-000000000031',0,(select doc from keyboard_docs where name='gd'),true)->>'confirmed','true','accumulated GD confirmed');
+select is(public.admin_save_keyboard_scoresheet(93005,'20000000-0000-4000-8000-000000000032',0,(select doc from keyboard_docs where name='direct_d'),true)->>'confirmed','true','direct D confirmed');
+reset role;
+select is((select disqualification_reason from public.game_roster_slots where game_id=93004 and roster_entry_id=9301),'2T','two technicals set GD reason');
+select is((select disqualifications from public.game_scoresheet_player_statistics where game_id=93004 and player_id=9301),1::bigint,'GD counted in public game');
+select is((select disqualifications from public.game_scoresheet_player_statistics where game_id=93005 and player_id=9301),1::bigint,'direct D counted once');
+select is((select disqualifications from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9301),2::bigint,'GD and direct D counted once each in competition');
+
+-- The same athlete playing for another registration retains separate totals.
+insert into public.teams (id,name,slug) overriding system value
+values (9303,'Time Sumula Transferencia','time-sumula-transferencia');
+insert into public.team_registrations (id,competition_id,team_id,status,confirmed_at)
+overriding system value values (9303,9301,9303,'confirmed',now());
+-- Transfer ends the prior active roster entry; past game slots keep its history.
+update public.roster_entries set status='inactive',left_on='2026-08-21' where id=9301;
+insert into public.roster_entries (id,competition_id,registration_id,player_id,jersey_number,status)
+overriding system value values (9304,9301,9303,9301,'33','active');
+insert into public.matchups
+  (id,competition_id,round_id,home_registration_id,away_registration_id,matchup_order,structure_kind)
+overriding system value values (93008,9301,9301,9303,9302,8,'regulated');
+insert into public.games
+  (id,competition_id,game_number,scheduled_at,venue,status,source,matchup_id,matchup_game_number)
+overriding system value values
+  (93008,9301,'MAN-TRANSFER','2026-08-20 18:00:00-03','Ginasio de teste','scheduled','seed',93008,1);
+insert into public.game_participants (game_id,competition_id,registration_id,side)
+values (93008,9301,9303,'home'),(93008,9301,9302,'away');
+insert into keyboard_docs(name,doc)
+select 'transfer',jsonb_set(
+  jsonb_set(doc,'{roster}','[
+   {"rosterEntryId":9304,"registrationId":9303,"side":"home","jersey":"33","played":true},
+   {"rosterEntryId":9303,"registrationId":9302,"side":"away","jersey":"00","played":true}
+  ]'::jsonb),
+  '{events}','[
+   {"id":"10000000-0000-4000-8000-000000000034","side":"home","period":1,"target":"33","code":"2"}
+  ]'::jsonb
+) from keyboard_docs where name='base';
+select set_config('request.jwt.claims',json_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
+set local role authenticated;
+select is(public.admin_save_keyboard_scoresheet(93008,'20000000-0000-4000-8000-000000000033',0,(select doc from keyboard_docs where name='transfer'),true)->>'confirmed','true','transfer game confirmed');
+reset role;
+select is((select count(*) from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301),2::bigint,'transfer produces two competition rows');
+select is((select games_played from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9301),4::bigint,'original registration keeps only its games');
+select is((select games_played from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9303),1::bigint,'new registration gets only its game');
+select is((select team_id from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9303),9303::bigint,'transfer retains team identity');
+
 select * from finish();
 rollback;

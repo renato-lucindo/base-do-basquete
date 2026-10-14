@@ -1,5 +1,13 @@
 # HANDOFF — Base do Basquete
 
+## PR #77 — correções de bloqueios críticos — 14/10/2026
+
+WORK_UNIT=PR77-CRITICAL-REVIEW-FIXES; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE=cc32c70; WRITE_LOCK=RELEASED após publicação das correções, sujeito a novo lock em caso de REQUEST_CHANGES; RISK_LEVEL=CRITICO; PR DRAFT.
+
+Os bloqueios dos revisores anteriores foram tratados por migration ADITIVA `20261014180500_keyboard_public_player_statistics.sql` (GD/D e isolamento de inscrição) e editor acessível (camisa duplicada, ação inválida, motivo da revisão), com regressões pgTAP/Playwright. Nenhuma migration antiga foi modificada. Localmente: 12 Playwright PASS, `npm run check` PASS (550 Vitest, typecheck, formato, lint com 328 avisos, build, segredos); PostgreSQL integral não executado por ausência de Docker. Os resultados do CI, quatro pareceres renovados, autenticação GoTrue/PostgREST AAL2 e concorrência entre escritores ainda precisam ser comprovados. Evidência: `docs/execution/PR77-CRITICAL-REVIEW-FIXES-20261014.md`. Sem alteração em Supabase compartilhado, produção, PR #72 ou outras worktrees.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=PR77 / SHA remoto; ACAO=conferir CI/database/preview/CodeQL, obter pareceres independentes de banco/estatísticas/acessibilidade/QA e validar GoTrue/PostgREST AAL2 + concorrência em ambiente isolado; CRITERIO_DE_CONCLUSAO=gates completos, sem parecer bloqueante, antes de considerar merge. Manter DRAFT durante pendências.
+
 ## PR #77 — substituição da entrada antiga pelo lançamento por teclado — 14/10/2026
 
 WORK_UNIT=PR77-KEYBOARD-ENTRY-REPLACE; OWNER=project-maintainer; BRANCH=codex/keyboard-scoresheet-mvp; WRITE_LOCK=RELEASED após entrega da branch e preview; HEAD_FUNCIONAL=4a47f8bdee9cafbde34cb540ce4a006d49776d59; COMMIT_INICIAL=d00f9d6; MERGE_REMOTO=b045850; BASE_MAIN=be85121; RISK_LEVEL=CRITICO.

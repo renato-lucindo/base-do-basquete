@@ -25,9 +25,13 @@ test("rejects clearing participation with events without unmounting the editor",
   await page.goto(url);
   await entry(page, "12", "3");
   await page
-    .getByText("Participação em quadra — conferir atletas sem pontos", { exact: true })
+    .getByText("Participação em quadra — conferir atletas sem pontos", {
+      exact: true,
+    })
     .click();
-  const participation = page.getByLabel("Participou: Equipe Azul · #12 · Ana", { exact: true });
+  const participation = page.getByLabel("Participou: Equipe Azul · #12 · Ana", {
+    exact: true,
+  });
   await participation.focus();
   await participation.press("Space");
   await expect(participation).toBeChecked();
@@ -64,6 +68,46 @@ test("setup validation gives a readable linked error and focuses jersey", async 
     "aria-invalid",
     "true",
   );
+});
+test("duplicate jersey highlights and focuses second athlete on the same team", async ({
+  page,
+}) => {
+  await page.goto(`${url}?setup`);
+  await page.getByLabel("Carla", { exact: true }).check();
+  await page.getByLabel("Camisa de Carla", { exact: true }).fill("12");
+  await page.getByRole("button", { name: "Iniciar transcrição" }).click();
+  const duplicate = page.getByLabel("Camisa de Carla", { exact: true });
+  await expect(duplicate).toBeFocused();
+  await expect(duplicate).toHaveAttribute("aria-invalid", "true");
+  await expect(duplicate).toHaveAttribute("aria-describedby", "keyboard-error");
+  await duplicate.fill("13");
+  await page.getByRole("button", { name: "Iniciar transcrição" }).click();
+  await expect(page.getByLabel("Camisa, B ou C", { exact: true })).toBeFocused();
+});
+test("invalid action identifies the action field, not the jersey", async ({ page }) => {
+  await page.goto(url);
+  const jersey = page.getByLabel("Camisa, B ou C", { exact: true });
+  await jersey.fill("12");
+  await jersey.press("Enter");
+  const action = page.locator(".keyboard-entry input").nth(1);
+  await action.fill("X");
+  await action.press("Enter");
+  await expect(action).toBeFocused();
+  await expect(action).toHaveAttribute("aria-invalid", "true");
+  await expect(action).toHaveAttribute("aria-describedby", "keyboard-error keyboard-help");
+  await expect(jersey).toHaveAttribute("aria-invalid", "false");
+});
+test("revision confirmation requires an associated reason and focuses it", async ({ page }) => {
+  await page.goto(url);
+  await entry(page, "12", "3");
+  await page.getByRole("button", { name: "Revisar totais e confirmar" }).click();
+  await expect(page.getByLabel("Motivo da correção")).toBeVisible();
+  await page.getByRole("button", { name: "Revisar totais e confirmar" }).click();
+  const reason = page.getByLabel("Motivo da correção");
+  await expect(reason).toBeFocused();
+  await expect(reason).toHaveAttribute("aria-invalid", "true");
+  await expect(reason).toHaveAttribute("aria-describedby", "keyboard-error");
+  await expect(page.getByRole("alert")).toContainText("pelo menos 10 caracteres");
 });
 async function entry(page: import("@playwright/test").Page, target: string, code: string) {
   const jersey = page.getByLabel("Camisa, B ou C", { exact: true });
