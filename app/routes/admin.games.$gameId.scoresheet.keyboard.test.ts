@@ -185,7 +185,18 @@ it("returns service unavailable rather than validation error on transient PostgR
 });
 it("reports a missing emergency fallback reason as validation, not infrastructure error", async () => {
   rpc.mockResolvedValue({ data: null, error: { code: "BD715" } });
-  expect(await action(args({ ...request, confirm: true }))).toMatchObject({
+  expect(
+    await action(
+      args({
+        ...request,
+        confirm: true,
+        document: {
+          ...doc,
+          events: [{ id: request.requestId, side: "home", period: 1, target: "12", code: "2" }],
+        },
+      }),
+    ),
+  ).toMatchObject({
     init: { status: 400 },
     data: { error: expect.stringContaining("fallback emergencial") },
   });
