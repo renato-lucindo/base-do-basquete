@@ -72,7 +72,7 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     await expect(page).toHaveURL(/\/admin\/mfa$/);
     await page.getByLabel("Código de seis dígitos").fill(totp());
     await page.getByRole("button", { name: "Confirmar acesso" }).click();
-    await expect(page).toHaveURL(/\/admin\/?$/);
+    await expect(page).toHaveURL(/\/admin\/competitions$/);
 
     await page.goto("/admin/competitions/9350/scoresheets/new");
     const fallbackEntry = page.getByRole("link", { name: /Iniciar fallback emergencial/ });
