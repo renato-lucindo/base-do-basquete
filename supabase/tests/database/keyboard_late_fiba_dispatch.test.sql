@@ -206,12 +206,20 @@ select is((select count(*) from public.keyboard_scoresheet_revisions where game_
 
 -- A corrected fallback must be able to supersede its own confirmed receipt
 -- while keeping immutable history and six active authorities.
+-- The client role has no direct UPDATE grant, so use the privileged fixture
+-- role to exercise the BD707 integrity trigger with no writer context.
+reset role;
+select ok(
+  not has_table_privilege('authenticated', 'public.game_data_submissions', 'UPDATE'),
+  'authenticated clients cannot directly change submission status'
+);
 select throws_ok(
   $$update public.game_data_submissions set status='superseded'
     where id=(select submission_id from public.keyboard_scoresheets where game_id=93601)$$,
   'BD707','BDB_SUBMISSION_HAS_ACTIVE_AUTHORITY',
   'unscoped manual authority deactivation remains forbidden'
 );
+set local role authenticated;
 select is(public.admin_save_keyboard_scoresheet(
   93601,'93600000-0000-4000-8000-000000000051',3,
   (select document from late_keyboard_docs where name='base'),true,

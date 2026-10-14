@@ -3,6 +3,18 @@ begin;
 \ir ../helpers/registration_boxscore_fixture.inc
 select no_plan();
 
+-- The shared WP14 fixture declares ten points for the first home player,
+-- but its shot counters are zero. Make this game's persisted source consistent:
+-- canonical points are generated from made shots, not from the JSON label.
+reset role;
+update public.boxscore_imports
+set parsed_payload = jsonb_set(
+  jsonb_set(parsed_payload, '{teams,0,players,0,twoPoints}',
+    '{"made":5,"attempted":5}'::jsonb),
+  '{teams,0,players,0,fieldGoals}', '{"made":5,"attempted":5}'::jsonb)
+where id = (select import_id from wp14_test_data where case_key='own');
+set local role authenticated;
+
 update wp14_test_data
 set resolution=jsonb_set(resolution,'{teams}',
   public.admin_resolve_boxscore_team_registrations(import_id,
@@ -15,6 +27,11 @@ select is(public.admin_commit_boxscore_import(
   (select import_id from wp14_test_data where case_key='own'),
   (select resolution from wp14_test_data where case_key='own')),
   94141::bigint,'the valid FIBA fixture is persisted before transfer');
+select is((select sum(stat.points)::bigint
+  from public.player_period_stats stat
+  join public.game_roster_slots slot on slot.id=stat.game_roster_slot_id
+  where stat.game_id=94141 and slot.roster_entry_id=94141),
+  10::bigint,'FIBA shot conversions persist ten canonical player points');
 select is((select official_points from public.competition_boxscore_player_statistics
   where competition_id=9414 and player_id=94141 and registration_id=9414),
   10::bigint,'first registration initially owns the historical points');
