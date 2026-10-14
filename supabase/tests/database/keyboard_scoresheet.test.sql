@@ -254,7 +254,7 @@ select throws_ok($$select public.admin_save_keyboard_scoresheet(
   jsonb_set((select document from public.keyboard_scoresheets where game_id=93001),
     '{roster,0,rosterEntryId}','9304'::jsonb),
   true,'Tentativa de alterar participante histórico'
-)$$,'BD902','KEYBOARD_INVALID_ROSTER','a transferred athlete cannot replace an original historical roster slot');
+)$$,'BD907','KEYBOARD_CONFIRMED_ROSTER_IMMUTABLE','a transferred athlete cannot replace an original historical roster slot');
 reset role;
 
 select * from finish();
