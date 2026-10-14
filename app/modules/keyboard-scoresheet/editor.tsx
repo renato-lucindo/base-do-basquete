@@ -30,6 +30,7 @@ export interface KeyboardContext {
   initial: Sheet;
   version: number;
   confirmed: boolean;
+  requiresFallback: boolean;
 }
 export function KeyboardScoresheet({
   context,
@@ -132,7 +133,11 @@ export function KeyboardScoresheet({
           pending.current = null;
           if (result.confirmed) {
             setConfirmed(true);
-            setStatus("Súmula confirmada. Publique a edição para atualizar a área pública.");
+            setStatus(
+              context.requiresFallback
+                ? "Fallback manual confirmado. A finalização e a publicação são etapas separadas."
+                : "Súmula confirmada. Publique a edição para atualizar a área pública.",
+            );
           } else setStatus("Rascunho salvo no servidor");
           if (request.confirm) break;
           if (confirm && request.document !== current.current) continue;
@@ -141,9 +146,7 @@ export function KeyboardScoresheet({
       } catch (cause) {
         if (
           cause instanceof SaveFailure &&
-          cause.status >= 400 &&
-          cause.status < 500 &&
-          cause.status !== 409
+          [400, 403, 422].includes(cause.status)
         )
           pending.current = null;
         throw cause;
@@ -845,9 +848,9 @@ export function KeyboardScoresheet({
               O rascunho salva automaticamente. A confirmação substitui os totais deste jogo em uma
               transação. A publicação da edição é uma ação separada.
             </p>
-            {confirmed && (
+            {(confirmed || context.requiresFallback) && (
               <label>
-                Motivo da correção
+                {confirmed ? "Motivo da correção" : "Motivo do fallback emergencial"}
                 <textarea
                   ref={reasonRef}
                   value={reason}
@@ -866,8 +869,12 @@ export function KeyboardScoresheet({
               type="button"
               disabled={busy || Boolean(recovery)}
               onClick={() => {
-                if (confirmed && reason.trim().length < 10) {
-                  setError("Informe um motivo da correção com pelo menos 10 caracteres.");
+                if ((confirmed || context.requiresFallback) && reason.trim().length < 10) {
+                  setError(
+                    confirmed
+                      ? "Informe um motivo da correção com pelo menos 10 caracteres."
+                      : "Informe um motivo do fallback emergencial com pelo menos 10 caracteres.",
+                  );
                   setFieldError("reason");
                   reasonRef.current?.focus();
                   return;
