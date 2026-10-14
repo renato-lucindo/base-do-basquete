@@ -173,4 +173,31 @@ describe("boxscore statistics server domain", () => {
     expect(page.rows.map((row) => row.playerId)).toEqual([1, 2]);
     expect(empty.rows).toEqual([]);
   });
+
+  it("keeps independent registrations of the same global team in the team filter", () => {
+    const lobos = {
+      ...raw(1, 1200),
+      registration_id: 21,
+      team_id: 31,
+      team_name: "Lobos",
+      team_slug: "inscricao-21",
+    };
+    const lobosB = {
+      ...raw(2, 1200),
+      registration_id: 22,
+      team_id: 31,
+      team_name: "Lobos B",
+      team_slug: "inscricao-22",
+    };
+    const page = buildBoxscoreStatisticsPage(
+      [lobos, lobosB],
+      header,
+      parseBoxscoreStatisticsQuery(new URLSearchParams()),
+    );
+
+    expect(page.teams).toEqual([
+      { id: 21, name: "Lobos", slug: "inscricao-21" },
+      { id: 22, name: "Lobos B", slug: "inscricao-22" },
+    ]);
+  });
 });

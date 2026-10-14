@@ -16,6 +16,10 @@ import {
   parseBoxscoreStatisticsMode,
 } from "./boxscore-statistics-contract";
 import type { PlayerTotals } from "./player-profile-domain";
+import {
+  registrationIdentityMap,
+  registrationIdentitySchemaUnavailable,
+} from "./public-statistics.server";
 
 interface PlayerCompetitionBase {
   context: CompetitionContext;
@@ -243,6 +247,23 @@ export async function loadPublicPlayerProfile(
   ensure(boxscoreStatisticsResult.error, "Estatísticas detalhadas temporariamente indisponíveis");
   ensure(legacyStatisticsResult.error, "Estatísticas públicas temporariamente indisponíveis");
 
+  const registrationNames = await registrationIdentityMap(client, [
+    ...scoresheetStatisticsResult.data,
+    ...boxscoreStatisticsResult.data,
+    ...legacyStatisticsResult.data,
+  ]);
+  function summaryIdentity(row: {
+    registration_id?: number | null;
+    team_name: string | null;
+    team_slug: string | null;
+  }) {
+    const name =
+      row.registration_id == null ? undefined : registrationNames?.get(row.registration_id);
+    return name === undefined
+      ? { teamName: row.team_name, teamSlug: row.team_slug }
+      : { teamName: name, teamSlug: `inscricao-${row.registration_id}` };
+  }
+
   const scoresheetCompetitions = scoresheetStatisticsResult.data.flatMap(
     (row): PlayerCompetitionSummary[] => {
       const rowContext = row.competition_id ? contextById.get(row.competition_id) : undefined;
@@ -251,8 +272,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "scoresheet",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
@@ -278,8 +298,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "boxscore",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
@@ -307,8 +326,7 @@ export async function loadPublicPlayerProfile(
         {
           kind: "scoresheet",
           context: rowContext,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          ...summaryIdentity(row),
           teamAbbreviation: row.team_abbreviation,
           jerseyNumber: row.jersey_number,
           position: row.roster_position,
@@ -393,15 +411,36 @@ export async function loadPublicPlayerProfile(
     : { data: [], error: null };
   ensure(participantsResult.error, "Adversários temporariamente indisponíveis");
   const registrationIds = participantsResult.data.map((item) => item.registration_id);
-  const registrationsResult = registrationIds.length
+  const registrationsWithIdentity = registrationIds.length
+    ? await client
+        .from("team_registrations")
+        .select("id,team_id,public_name")
+        .in("id", registrationIds)
+    : { data: [], error: null };
+  const legacyRegistrations = registrationIdentitySchemaUnavailable(registrationsWithIdentity.error)
     ? await client.from("team_registrations").select("id,team_id").in("id", registrationIds)
+    : null;
+  ensure(
+    legacyRegistrations ? legacyRegistrations.error : registrationsWithIdentity.error,
+    "Equipes temporariamente indisponíveis",
+  );
+  const legacyTeams = legacyRegistrations?.data?.length
+    ? await client
+        .from("teams")
+        .select("id,name")
+        .in(
+          "id",
+          legacyRegistrations.data.map((registration) => registration.team_id),
+        )
     : { data: [], error: null };
-  ensure(registrationsResult.error, "Equipes temporariamente indisponíveis");
-  const teamIds = registrationsResult.data.map((item) => item.team_id);
-  const teamsResult = teamIds.length
-    ? await client.from("teams").select("id,name").in("id", teamIds).eq("is_public", true)
-    : { data: [], error: null };
-  ensure(teamsResult.error, "Equipes temporariamente indisponíveis");
+  ensure(legacyTeams.error, "Equipes temporariamente indisponíveis");
+  const legacyNameByTeamId = new Map(legacyTeams.data.map((team) => [team.id, team.name]));
+  const registrations = legacyRegistrations
+    ? (legacyRegistrations.data ?? []).map((registration) => ({
+        ...registration,
+        public_name: legacyNameByTeamId.get(registration.team_id) ?? null,
+      }))
+    : (registrationsWithIdentity.data ?? []);
   const scoresResult = gameIds.length
     ? await client
         .from("game_scores")
@@ -425,8 +464,7 @@ export async function loadPublicPlayerProfile(
       row.game_id === null ? [] : ([[row.game_id, row]] as const),
     ),
   );
-  const registrationById = new Map(registrationsResult.data.map((item) => [item.id, item]));
-  const teamById = new Map(teamsResult.data.map((item) => [item.id, item]));
+  const registrationById = new Map(registrations.map((item) => [item.id, item]));
 
   return {
     id: profile.id,
@@ -508,8 +546,15 @@ export async function loadPublicPlayerProfile(
             : legacyStats;
       if (!rowContext || !stats) return [];
       const participants = participantsResult.data.filter((item) => item.game_id === game.id);
+      const statsRegistrationId =
+        "registration_id" in stats && typeof stats.registration_id === "number"
+          ? stats.registration_id
+          : null;
       const ownParticipant = participants.find(
-        (item) => registrationById.get(item.registration_id)?.team_id === stats.team_id,
+        (item) =>
+          (statsRegistrationId !== null && item.registration_id === statsRegistrationId) ||
+          (statsRegistrationId === null &&
+            registrationById.get(item.registration_id)?.team_id === stats.team_id),
       );
       const opponentParticipant = participants.find(
         (item) => item.registration_id !== ownParticipant?.registration_id,
@@ -517,7 +562,9 @@ export async function loadPublicPlayerProfile(
       const opponentRegistration = opponentParticipant
         ? registrationById.get(opponentParticipant.registration_id)
         : null;
-      const opponent = opponentRegistration ? teamById.get(opponentRegistration.team_id) : null;
+      const ownRegistration = ownParticipant
+        ? registrationById.get(ownParticipant.registration_id)
+        : null;
       const ownScore = scoresResult.data.find(
         (item) =>
           item.game_id === game.id && item.registration_id === ownParticipant?.registration_id,
@@ -540,9 +587,9 @@ export async function loadPublicPlayerProfile(
         status: game.status,
         scheduledAt: game.scheduled_at,
         context: rowContext,
-        teamName: stats.team_name,
+        teamName: ownRegistration?.public_name ?? stats.team_name,
         jerseyNumber: stats.jersey_number,
-        opponentName: opponent?.name ?? null,
+        opponentName: opponentRegistration?.public_name ?? null,
         result,
         score: ownScore == null || opponentScore == null ? null : `${ownScore} × ${opponentScore}`,
         didNotPlay: Boolean(stats.did_not_play),

@@ -24,8 +24,8 @@ select col_not_null(
 );
 select has_index(
   'public', 'competitions', 'competitions_dispute_unique',
-  array['season_id','category_id','competitive_division_value_id'],
-  'final dispute identity is unique by season, category and optional competitive division'
+  array['season_id','category_id','gender_division','competitive_division_value_id'],
+  'final dispute identity is unique by season, category, gender and optional competitive division'
 );
 select has_fk(
   'public', 'players',

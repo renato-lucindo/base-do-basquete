@@ -102,7 +102,7 @@ function TeamBoxscore({
   team: PublicGameTeam;
 }) {
   const players = game.players
-    .filter((player) => player.teamId === team.teamId)
+    .filter((player) => player.registrationId === team.registrationId)
     .map((player, index) => ({ player, index }))
     .sort((left, right) => {
       if (order === "official") return left.index - right.index;

@@ -170,42 +170,34 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   if (profileResult.error) throw new Error("Manual scoresheet profile query failed");
   const requiresFallbackReason = profileResult.data?.primary_source === "fiba_boxscore";
 
-  const [registrationsResult, teamsResult, rosterResult, prefillResult, gamesResult] =
-    await Promise.all([
-      auth.client
-        .from("team_registrations")
-        .select("id,team_id")
-        .eq("competition_id", competitionId)
-        .eq("status", "confirmed")
-        .order("id"),
-      auth.client.from("teams").select("id,name").eq("is_active", true).order("name"),
-      auth.client
-        .from("roster_entries")
-        .select("id,registration_id,player_id,jersey_number")
-        .eq("competition_id", competitionId)
-        .eq("status", "active")
-        .order("id"),
-      auth.client
-        .from("manual_scoresheet_prefill")
-        .select("registration_id,slot_number,roster_entry_id,jersey_number")
-        .eq("competition_id", competitionId)
-        .order("slot_number"),
-      auth.client
-        .from("games")
-        .select("id,game_number,scheduled_at,venue,status,matchup_id")
-        .eq("competition_id", competitionId)
-        .in("status", ["draft", "scheduled", "live"])
-        .not("matchup_id", "is", null)
-        .order("scheduled_at", { ascending: true, nullsFirst: false }),
-    ]);
+  const [registrationsResult, rosterResult, prefillResult, gamesResult] = await Promise.all([
+    auth.client
+      .from("team_registrations")
+      .select("id,team_id,public_name")
+      .eq("competition_id", competitionId)
+      .eq("status", "confirmed")
+      .order("id"),
+    auth.client
+      .from("roster_entries")
+      .select("id,registration_id,player_id,jersey_number")
+      .eq("competition_id", competitionId)
+      .eq("status", "active")
+      .order("id"),
+    auth.client
+      .from("manual_scoresheet_prefill")
+      .select("registration_id,slot_number,roster_entry_id,jersey_number")
+      .eq("competition_id", competitionId)
+      .order("slot_number"),
+    auth.client
+      .from("games")
+      .select("id,game_number,scheduled_at,venue,status,matchup_id")
+      .eq("competition_id", competitionId)
+      .in("status", ["draft", "scheduled", "live"])
+      .not("matchup_id", "is", null)
+      .order("scheduled_at", { ascending: true, nullsFirst: false }),
+  ]);
 
-  if (
-    registrationsResult.error ||
-    teamsResult.error ||
-    rosterResult.error ||
-    prefillResult.error ||
-    gamesResult.error
-  ) {
+  if (registrationsResult.error || rosterResult.error || prefillResult.error || gamesResult.error) {
     throw new Error("Manual scoresheet context query failed");
   }
 
@@ -215,12 +207,11 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     : { data: [], error: null };
   if (playersResult.error) throw new Error("Manual scoresheet player query failed");
 
-  const teamNames = new Map(teamsResult.data.map((team) => [team.id, team.name]));
   const playerNames = new Map(playersResult.data.map((player) => [player.id, player.full_name]));
   const registrations = registrationsResult.data
     .map((registration) => ({
       id: registration.id,
-      teamName: teamNames.get(registration.team_id) ?? "Equipe indisponível",
+      teamName: registration.public_name,
       roster: rosterResult.data
         .filter((entry) => entry.registration_id === registration.id)
         .map((entry) => ({

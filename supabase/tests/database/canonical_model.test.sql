@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(35);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -117,8 +117,14 @@ select throws_ok(
       (competition_id, team_id, status, confirmed_at)
     values (9101, 9101, 'confirmed', now())$$,
   '23505',
-  'duplicate key value violates unique constraint "team_registrations_competition_team_unique"',
-  'a team registers once per edition'
+  'duplicate key value violates unique constraint "team_registrations_competition_public_name_uidx"',
+  'registration public names are unique inside one dispute'
+);
+select lives_ok(
+  $$insert into public.team_registrations
+      (competition_id, team_id, public_name, status, confirmed_at)
+    values (9101, 9101, 'Equipe Azul B', 'confirmed', now())$$,
+  'the same global team can have a second independent registration with another public name'
 );
 select throws_ok(
   $$insert into public.roster_entries

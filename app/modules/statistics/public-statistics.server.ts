@@ -77,6 +77,7 @@ export interface PublicGamePlayer {
   playerId: number;
   playerName: string;
   playerSlug: string;
+  registrationId: number;
   teamId: number;
   side: "home" | "away";
   jerseyNumber: string;
@@ -111,6 +112,32 @@ function numberValue(value: number | null): number {
 
 function nullableNumber(value: number | null): number | null {
   return value;
+}
+
+export function registrationIdentitySchemaUnavailable(error: unknown): boolean {
+  if (typeof error !== "object" || error === null || !("code" in error)) return false;
+  return ["42703", "42P01", "PGRST204", "PGRST205"].includes(
+    String((error as { code?: unknown }).code),
+  );
+}
+
+export async function registrationIdentityMap(
+  client: SupabaseClient<Database>,
+  rows: Array<Record<string, unknown>>,
+): Promise<Map<number, string> | null> {
+  const registrationIds = [
+    ...new Set(
+      rows.flatMap((row) => (typeof row.registration_id === "number" ? [row.registration_id] : [])),
+    ),
+  ];
+  if (registrationIds.length === 0) return new Map<number, string>();
+  const result = await client
+    .from("team_registrations")
+    .select("id,public_name")
+    .in("id", registrationIds);
+  if (registrationIdentitySchemaUnavailable(result.error)) return null;
+  ensure(result.error);
+  return new Map(result.data.map((registration) => [registration.id, registration.public_name]));
 }
 
 function totalsFromRow(row: {
@@ -167,6 +194,10 @@ export async function loadCompetitionStatistics(
       .order("points", { ascending: false })
       .order("player_name");
     ensure(result.error);
+    const registrationNames = await registrationIdentityMap(
+      client,
+      result.data as Array<Record<string, unknown>>,
+    );
     return {
       kind: "scoresheet",
       competitionId: context.competitionId,
@@ -178,8 +209,14 @@ export async function loadCompetitionStatistics(
           playerId: row.player_id as number,
           playerName: row.player_name as string,
           playerSlug: row.player_slug as string,
-          teamName: row.team_name,
-          teamSlug: row.team_slug,
+          teamName:
+            registrationNames !== null && typeof row.registration_id === "number"
+              ? (registrationNames.get(row.registration_id) ?? row.team_name)
+              : row.team_name,
+          teamSlug:
+            registrationNames !== null && typeof row.registration_id === "number"
+              ? `inscricao-${row.registration_id}`
+              : row.team_slug,
           teamAbbreviation: row.team_abbreviation,
           gamesPlayed,
           dnpCount: "dnp_count" in row ? numberValue(row.dnp_count) : 0,
@@ -211,6 +248,10 @@ export async function loadCompetitionStatistics(
   ]);
   ensure(result.error);
   ensure(coverageResult.error);
+  const registrationNames = await registrationIdentityMap(
+    client,
+    result.data as Array<Record<string, unknown>>,
+  );
   const coverage = coverageResult.data;
   return {
     kind: "boxscore",
@@ -229,8 +270,14 @@ export async function loadCompetitionStatistics(
         playerId: row.player_id as number,
         playerName: row.player_name as string,
         playerSlug: row.player_slug as string,
-        teamName: row.team_name,
-        teamSlug: row.team_slug,
+        teamName:
+          registrationNames !== null && typeof row.registration_id === "number"
+            ? (registrationNames.get(row.registration_id) ?? row.team_name)
+            : row.team_name,
+        teamSlug:
+          registrationNames !== null && typeof row.registration_id === "number"
+            ? `inscricao-${row.registration_id}`
+            : row.team_slug,
         teamAbbreviation: row.team_abbreviation,
         gamesPlayed: numberValue(row.games_played),
         advancedGamesPlayed,
@@ -322,22 +369,32 @@ export async function loadPublicGameDetail(
   const registrationIds = participantsResult.data.map((participant) => participant.registration_id);
   const registrationsResult = await client
     .from("team_registrations")
-    .select("id,team_id")
+    .select("id,team_id,public_name")
     .eq("competition_id", context.competitionId)
     .in("id", registrationIds);
-  ensure(registrationsResult.error);
+  const legacyRegistrations = registrationIdentitySchemaUnavailable(registrationsResult.error)
+    ? await client
+        .from("team_registrations")
+        .select("id,team_id")
+        .eq("competition_id", context.competitionId)
+        .in("id", registrationIds)
+    : null;
+  ensure(legacyRegistrations ? legacyRegistrations.error : registrationsResult.error);
+  const registrations = legacyRegistrations
+    ? (legacyRegistrations.data ?? []).map((row) => ({ ...row, public_name: null }))
+    : (registrationsResult.data ?? []);
   const teamsResult = await client
     .from("teams")
     .select("id,name,slug")
     .in(
       "id",
-      registrationsResult.data.map((registration) => registration.team_id),
+      registrations.map((registration) => registration.team_id),
     )
     .eq("is_public", true);
   ensure(teamsResult.error);
 
   const registrationById = new Map(
-    registrationsResult.data.map((registration) => [registration.id, registration]),
+    registrations.map((registration) => [registration.id, registration]),
   );
   const teamById = new Map(teamsResult.data.map((team) => [team.id, team]));
   const starterBySlot = new Map(rosterSlotsResult.data.map((slot) => [slot.id, slot.is_starter]));
@@ -352,6 +409,7 @@ export async function loadPublicGameDetail(
       playerId: row.player_id as number,
       playerName: row.player_name as string,
       playerSlug: row.player_slug as string,
+      registrationId: row.registration_id as number,
       teamId: row.team_id as number,
       side: row.side as "home" | "away",
       jerseyNumber: row.jersey_number as string,
@@ -369,9 +427,9 @@ export async function loadPublicGameDetail(
           : null,
     };
   });
-  const totalsForTeam = (teamId: number): StatisticTotals | null => {
+  const totalsForRegistration = (registrationId: number): StatisticTotals | null => {
     const participatingPlayers = players.filter(
-      (player) => player.teamId === teamId && !player.didNotPlay,
+      (player) => player.registrationId === registrationId && !player.didNotPlay,
     );
     if (!participatingPlayers.length) return null;
     if (context.statisticsMode === "boxscore" && activeDomains.has("player_advanced")) {
@@ -406,8 +464,8 @@ export async function loadPublicGameDetail(
         registrationId: participant.registration_id,
         side: participant.side,
         teamId: team.id,
-        teamName: team.name,
-        teamSlug: team.slug,
+        teamName: registration.public_name ?? team.name,
+        teamSlug: legacyRegistrations ? team.slug : `inscricao-${registration.id}`,
         score:
           scoresResult.data.find((score) => score.registration_id === participant.registration_id)
             ?.score ?? 0,
@@ -415,10 +473,10 @@ export async function loadPublicGameDetail(
           .filter((score) => score.registration_id === participant.registration_id)
           .map((score) => ({ periodNumber: score.period_number, points: score.points })),
         totals: (() => {
-          return totalsForTeam(team.id);
+          return totalsForRegistration(registration.id);
         })(),
         pointsReconciled: (() => {
-          const totals = totalsForTeam(team.id);
+          const totals = totalsForRegistration(registration.id);
           const score = scoresResult.data.find(
             (item) => item.registration_id === participant.registration_id,
           )?.score;

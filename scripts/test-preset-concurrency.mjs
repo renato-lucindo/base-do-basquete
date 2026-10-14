@@ -393,16 +393,95 @@ const contenderEdition =
   return 'accepted'; exception when sqlstate 'BD506' then return 'duplicate'; end$$;
   select pg_temp.create_edition_contender()`;
 const editionOutcomes = await race(
-  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025:male',417))`,
+  `select pg_advisory_xact_lock(hashtextextended('${editionSeries}:2025',417))`,
   [contenderEdition(), contenderEdition()],
 );
 assert.deepEqual(editionOutcomes.sort(), ["accepted", "duplicate"]);
 assert.equal(
   Number(
     await run(
-      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025 and gender_division='male'`,
+      `select count(*) from public.competition_seasons where series_id=${editionSeries} and year=2025`,
     ),
   ),
   1,
 );
 console.log("PASS: competing edition requests serialize; one accepted and one explicit duplicate");
+
+const batchRequest = randomUUID();
+const batchDispute = {
+  categoryKind: "adult",
+  categoryAge: null,
+  gender: "male",
+  startsOn: null,
+  endsOn: null,
+  divisionMode: "new",
+  divisionValueId: null,
+  divisionTypeName: "Serie",
+  divisionValueName: "Ouro",
+  source: "manual_scoresheet",
+  preset: "single_group",
+  entryCount: 4,
+  expectedProfileId: null,
+  reason: null,
+};
+const batchInput = {
+  seriesId: null,
+  championshipName: `Batch race ${runId}`,
+  seasonId: null,
+  year: 2026,
+  description: null,
+  navigationOrder: "category_division",
+  reviewed: true,
+  disputes: [batchDispute, { ...batchDispute, categoryKind: "base", categoryAge: 17 }],
+};
+const batchCall = `set local role authenticated; select public.admin_create_competition_edition_batch('${batchRequest}', '${JSON.stringify(batchInput)}'::jsonb)`;
+const batchResults = await race(
+  `select pg_advisory_xact_lock(hashtextextended('${batchRequest}',434))`,
+  [batchCall, batchCall],
+);
+assert.equal(
+  batchResults[0],
+  batchResults[1],
+  "concurrent batch retry returns the same edition and dispute IDs",
+);
+const batchResult = JSON.parse(batchResults[0]);
+assert.equal(batchResult.competitionIds.length, 2);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from private.edition_batch_creation_requests where request_id='${batchRequest}'`,
+    ),
+  ),
+  1,
+);
+assert.equal(
+  Number(
+    await run(`select count(*) from public.competitions where season_id=${batchResult.seasonId}`),
+  ),
+  2,
+);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.competition_competitive_division_values where season_id=${batchResult.seasonId}`,
+    ),
+  ),
+  1,
+);
+assert.equal(
+  Number(
+    await run(
+      `select count(*) from public.admin_mutation_audit where action='competition_season_navigation_configured' and entity_id=${batchResult.seasonId}`,
+    ),
+  ),
+  1,
+);
+await assert.rejects(
+  run(
+    `begin; ${authContext} set local role authenticated; select public.admin_create_competition_edition_batch('${batchRequest}', '${JSON.stringify({ ...batchInput, navigationOrder: "division_category" })}'::jsonb); commit;`,
+  ),
+  /BDB_IDEMPOTENCY_CONFLICT/,
+);
+console.log(
+  "PASS: concurrent edition batch retries preserve two disputes, one shared division, ledger and navigation audit",
+);
