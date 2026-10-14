@@ -28,17 +28,21 @@ assert.equal(endpoint.hostname, "127.0.0.1");
 assert.equal(endpoint.port, "54321");
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const header = encode({ alg: "HS256", typ: "JWT" });
-const payload = encode({
-  sub: randomUUID(),
-  role: "authenticated",
-  aal: "aal2",
-  exp: Math.floor(Date.now() / 1000) + 300,
-});
-const signature = createHmac("sha256", status.JWT_SECRET)
-  .update(`${header}.${payload}`)
-  .digest("base64url");
-const token = `${header}.${payload}.${signature}`;
+function tokenFor(subject, aal) {
+  const payload = encode({
+    sub: subject,
+    role: "authenticated",
+    aal,
+    exp: Math.floor(Date.now() / 1000) + 300,
+  });
+  const signature = createHmac("sha256", status.JWT_SECRET)
+    .update(`${header}.${payload}`)
+    .digest("base64url");
+  return `${header}.${payload}.${signature}`;
+}
+const token = tokenFor(randomUUID(), "aal2");
 const calls = [
+  ["admin_create_competition_edition_batch", { p_request_id: randomUUID(), p_input: {} }],
   ["admin_create_competition_edition", { p_request_id: randomUUID(), p_input: {} }],
   ["admin_add_competition_dispute", { p_request_id: randomUUID(), p_input: {} }],
   [
@@ -102,4 +106,48 @@ for (const [name, args] of calls) {
   assert.equal(error.code, "BD401", `${name}: exact named arguments must reach the AAL2 guard`);
   assert.equal(error.message, "BDB_ADMIN_AAL2_REQUIRED");
   console.log(`PASS: ${name} resolves through PostgREST and denies non-admin AAL2`);
+}
+
+// Verify the composed SECURITY DEFINER wrapper through the actual Data API.
+// The account UUID is read only from the disposable database, never from remote configuration.
+const adminId = execFileSync(
+  "docker",
+  [
+    "exec",
+    "supabase_db_base-do-basquete",
+    "psql",
+    "-X",
+    "-qAt",
+    "-U",
+    "postgres",
+    "-d",
+    "postgres",
+    "-v",
+    "ON_ERROR_STOP=1",
+    "-c",
+    "select user_id from private.admin_accounts limit 1",
+  ],
+  { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+).trim();
+assert.match(adminId, /^[0-9a-f-]{36}$/i);
+for (const [label, bearer, expectedCode] of [
+  ["anonymous", status.ANON_KEY, "42501"],
+  ["administrator AAL1", tokenFor(adminId, "aal1"), "BD401"],
+  ["administrator AAL2 invalid input", tokenFor(adminId, "aal2"), "BD501"],
+]) {
+  const response = await fetch(
+    new URL("/rest/v1/rpc/admin_create_competition_edition_batch", endpoint),
+    {
+      method: "POST",
+      headers: {
+        apikey: status.ANON_KEY,
+        Authorization: `Bearer ${bearer}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ p_request_id: randomUUID(), p_input: {} }),
+      signal: AbortSignal.timeout(15000),
+    },
+  );
+  assert.equal((await response.json()).code, expectedCode, `batch RPC: ${label}`);
+  console.log(`PASS: batch RPC enforces ${label} through PostgREST`);
 }

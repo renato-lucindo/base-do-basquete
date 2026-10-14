@@ -1400,7 +1400,7 @@ export type Database = {
         Row: {
           created_at: string;
           description: string | null;
-          gender_division: string;
+          dispute_navigation_order: string;
           id: number;
           name: string;
           revision: number;
@@ -1413,7 +1413,7 @@ export type Database = {
         Insert: {
           created_at?: string;
           description?: string | null;
-          gender_division: string;
+          dispute_navigation_order?: string;
           id?: never;
           name: string;
           revision?: number;
@@ -1426,7 +1426,7 @@ export type Database = {
         Update: {
           created_at?: string;
           description?: string | null;
-          gender_division?: string;
+          dispute_navigation_order?: string;
           id?: never;
           name?: string;
           revision?: number;
@@ -3644,6 +3644,7 @@ export type Database = {
           confirmed_at: string | null;
           created_at: string;
           id: number;
+          public_name: string;
           status: string;
           team_id: number;
           updated_at: string;
@@ -3653,6 +3654,7 @@ export type Database = {
           confirmed_at?: string | null;
           created_at?: string;
           id?: never;
+          public_name?: string;
           status?: string;
           team_id: number;
           updated_at?: string;
@@ -3662,6 +3664,7 @@ export type Database = {
           confirmed_at?: string | null;
           created_at?: string;
           id?: never;
+          public_name?: string;
           status?: string;
           team_id?: number;
           updated_at?: string;
@@ -4666,6 +4669,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      admin_create_competition_edition_batch: {
+        Args: { p_input: Json; p_request_id: string };
+        Returns: Json;
+      };
       admin_create_competition_edition: {
         Args: { p_input: Json; p_request_id: string };
         Returns: Json;
@@ -4952,6 +4959,10 @@ export type Database = {
         };
         Returns: number;
       };
+      admin_resolve_competition_season_id: {
+        Args: { p_season_id: number };
+        Returns: number;
+      };
       admin_create_manual_scoresheet: {
         Args: { p_payload: Json };
         Returns: number;
@@ -5038,6 +5049,15 @@ export type Database = {
         Args: { p_abbreviation: string; p_competition_id: number; p_name: string };
         Returns: Json;
       };
+      admin_create_and_register_named_team: {
+        Args: {
+          p_abbreviation: string;
+          p_competition_id: number;
+          p_name: string;
+          p_public_name: string;
+        };
+        Returns: Json;
+      };
       admin_create_manual_matchup: {
         Args: {
           p_away_registration_id: number;
@@ -5076,6 +5096,7 @@ export type Database = {
           confirmed_at: string | null;
           created_at: string;
           id: number;
+          public_name: string;
           status: string;
           team_id: number;
           updated_at: string;
@@ -5086,6 +5107,34 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      admin_create_named_team_registration: {
+        Args: { p_competition_id: number; p_public_name: string; p_team_id: number };
+        Returns: {
+          competition_id: number;
+          confirmed_at: string | null;
+          created_at: string;
+          id: number;
+          public_name: string;
+          status: string;
+          team_id: number;
+          updated_at: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "team_registrations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_copy_team_registrations: {
+        Args: {
+          p_items: Json;
+          p_request_id: string;
+          p_source_competition_id: number;
+          p_target_competition_id: number;
+        };
+        Returns: Json;
       };
       admin_confirm_team_registrations: {
         Args: { p_competition_id: number; p_registration_ids: number[] };
@@ -5151,6 +5200,14 @@ export type Database = {
       };
       admin_get_sports_exceptions_dashboard: {
         Args: { p_competition_id: number };
+        Returns: Json;
+      };
+      admin_preview_dispute_context_change: {
+        Args: { p_category_id: number; p_competition_id: number; p_gender_division: string };
+        Returns: Json;
+      };
+      admin_preview_registration_copy: {
+        Args: { p_source_competition_id: number; p_target_competition_id: number };
         Returns: Json;
       };
       admin_list_ruleset_clone_sources: {
@@ -5260,6 +5317,37 @@ export type Database = {
       };
       admin_review_competition_gender: {
         Args: { p_competition_id: number; p_gender_division: string };
+        Returns: {
+          category_id: number;
+          competitive_division_value_id: number | null;
+          created_at: string;
+          current_publication_id: number | null;
+          data_profile_id: number;
+          data_profile_review_required: boolean;
+          data_profile_validated_at: string;
+          data_profile_validated_by: string;
+          display_name: string;
+          ends_on: string | null;
+          gender_division: string;
+          gender_division_review_required: boolean;
+          id: number;
+          published_at: string | null;
+          season_id: number;
+          series_id: number;
+          starts_on: string | null;
+          status: string;
+          updated_at: string;
+          year: number;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "competitions";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      admin_apply_dispute_context_change: {
+        Args: { p_category_id: number; p_competition_id: number; p_gender_division: string };
         Returns: {
           category_id: number;
           competitive_division_value_id: number | null;

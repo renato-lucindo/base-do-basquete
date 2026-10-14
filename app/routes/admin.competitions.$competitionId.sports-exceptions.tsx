@@ -67,7 +67,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const competitionId = positiveId(params.competitionId);
   if (!competitionId) throw new Response("Edição não encontrada", { status: 404 });
   const auth = await requireAdminAal2(request, context.get(cloudflareContext).env);
-  const [competition, dashboardResult, registrations, teams] = await Promise.all([
+  const [competition, dashboardResult, registrations] = await Promise.all([
     auth.client
       .from("competitions")
       .select("id,display_name,status")
@@ -78,20 +78,18 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     }),
     auth.client
       .from("team_registrations")
-      .select("id,team_id,status")
+      .select("id,public_name,status")
       .eq("competition_id", competitionId),
-    auth.client.from("teams").select("id,name"),
   ]);
   if (competition.error || !competition.data)
     throw new Response("Edição não encontrada", { status: 404 });
   const dashboard = parseSportsExceptionsDashboard(dashboardResult.data);
-  if (dashboardResult.error || !dashboard || registrations.error || teams.error)
+  if (dashboardResult.error || !dashboard || registrations.error)
     throw new Response("Exceções esportivas indisponíveis.", { status: 503 });
-  const teamNames = new Map(teams.data.map((team) => [team.id, team.name]));
   const registrationNames = Object.fromEntries(
     registrations.data.map((registration) => [
       registration.id,
-      teamNames.get(registration.team_id) ?? `Inscrição #${registration.id}`,
+      registration.public_name ?? `Inscrição #${registration.id}`,
     ]),
   );
   return data(

@@ -5819,13 +5819,41 @@ body {
   font-size: clamp(1.2rem, 2vw, 1.5rem);
   overflow-wrap: anywhere;
 }
-.admin-edition-list ul {
-  margin-block: 0.5rem;
-  padding-left: 1.2rem;
+
+.admin-edition-table-wrap {
+  width: 100%;
+  margin-top: 0.75rem;
+  overflow-x: auto;
 }
-.admin-edition-list li {
-  padding-block: 0.35rem;
+
+.admin-edition-table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.admin-edition-table th,
+.admin-edition-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.admin-edition-table th:first-child,
+.admin-edition-table td:first-child {
+  padding-left: 0;
+}
+
+.admin-edition-table a {
   overflow-wrap: anywhere;
+}
+
+.edition-dispute-config {
+  margin-block: 0.75rem;
+  padding-block: 0.75rem;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 
 .roster-form {

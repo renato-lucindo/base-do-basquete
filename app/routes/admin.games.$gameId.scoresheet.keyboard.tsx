@@ -58,7 +58,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,registration_id,player_id,jersey_number")
       .in("registration_id", registrationIds)
       .eq("status", "active"),
-    auth.client.from("team_registrations").select("id,team_id,status").in("id", registrationIds),
+    auth.client
+      .from("team_registrations")
+      .select("id,team_id,public_name,status")
+      .in("id", registrationIds),
   ]);
   if (rosterResult.error || registrationsResult.error)
     throw new Error("Keyboard roster query failed");
@@ -96,7 +99,11 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     const registration = registrationsResult.data.find(
       (r) => r.id === participants.find((p) => p.side === side)?.registration_id,
     );
-    return teamsResult.data.find((t) => t.id === registration?.team_id)?.name ?? side;
+    return (
+      registration?.public_name ||
+      teamsResult.data.find((t) => t.id === registration?.team_id)?.name ||
+      side
+    );
   };
   const initial: Sheet = sheetResult.data
     ? validateSheet(sheetResult.data.document)

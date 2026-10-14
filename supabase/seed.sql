@@ -57,7 +57,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where s.slug = 'liga-de-desenvolvimento'
-on conflict (season_id,category_id,competitive_division_value_id) do update
+on conflict (season_id,category_id,gender_division,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -87,15 +87,15 @@ on conflict (player_id) do update
 set sex=excluded.sex,sex_review_required=false;
 
 insert into public.team_registrations
-  (competition_id, team_id, status, confirmed_at)
-select c.id, t.id, 'confirmed', now()
+  (competition_id, team_id, public_name, status, confirmed_at)
+select c.id, t.id, t.name, 'confirmed', now()
 from public.competitions c
 join public.competition_series s on s.id = c.series_id
 cross join public.teams t
 where s.slug = 'liga-de-desenvolvimento'
   and c.year in (2025, 2026)
   and t.slug in ('equipe-demonstracao-azul', 'equipe-demonstracao-dourada')
-on conflict (competition_id, team_id) do update
+on conflict (competition_id, lower(public_name)) do update
 set status = 'confirmed',
     confirmed_at = coalesce(public.team_registrations.confirmed_at, excluded.confirmed_at);
 
@@ -411,7 +411,7 @@ join public.series_category_data_profiles profile
  and profile.gender_division='male'
  and profile.status='active'
 where series.slug = 'copa-es-ouro' and category.slug = 'fixture-fiba'
-on conflict (season_id,category_id,competitive_division_value_id) do update
+on conflict (season_id,category_id,gender_division,competitive_division_value_id) do update
 set display_name = excluded.display_name;
 
 insert into public.teams (name, slug, abbreviation, is_public)
@@ -505,15 +505,15 @@ on conflict (player_id) do update
 set sex=excluded.sex,sex_review_required=false;
 
 insert into public.team_registrations
-  (competition_id, team_id, status, confirmed_at)
-select competition.id, team.id, 'confirmed', now()
+  (competition_id, team_id, public_name, status, confirmed_at)
+select competition.id, team.id, team.name, 'confirmed', now()
 from public.competitions competition
 join public.competition_series series on series.id = competition.series_id
 cross join public.teams team
 where series.slug = 'copa-es-ouro'
   and competition.year = 2026
   and team.slug in ('alcateia', 'avabes', 'instituto-viva-vida', 'clube-alvares-cabral')
-on conflict (competition_id, team_id) do update
+on conflict (competition_id, lower(public_name)) do update
 set status = 'confirmed',
     confirmed_at = coalesce(public.team_registrations.confirmed_at, excluded.confirmed_at);
 

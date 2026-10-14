@@ -83,10 +83,10 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     throw new Response("Edição indisponível", { status: 404 });
   }
 
-  const [registrationsResult, rosterResult, gamesResult, teamsResult] = await Promise.all([
+  const [registrationsResult, rosterResult, gamesResult] = await Promise.all([
     auth.client
       .from("team_registrations")
-      .select("id,team_id")
+      .select("id,public_name")
       .eq("competition_id", competitionId)
       .eq("status", "confirmed")
       .order("id"),
@@ -101,9 +101,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
       .select("id,game_number,matchup_id,status")
       .eq("competition_id", competitionId)
       .order("id"),
-    auth.client.from("teams").select("id,name").order("name"),
   ]);
-  if (registrationsResult.error || rosterResult.error || gamesResult.error || teamsResult.error) {
+  if (registrationsResult.error || rosterResult.error || gamesResult.error) {
     throw new Error("Scoresheet eligibility query failed");
   }
 
@@ -131,9 +130,8 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   }
   const migrationPending = Boolean(savedResult.error);
   const fallbackProfile = profileResult.data?.primary_source === "fiba_boxscore";
-  const confirmed = new Map(registrationsResult.data.map((entry) => [entry.id, entry.team_id]));
+  const confirmed = new Map(registrationsResult.data.map((entry) => [entry.id, entry.public_name]));
   const rostered = new Set(rosterResult.data.map((entry) => entry.registration_id));
-  const teamNames = new Map(teamsResult.data.map((team) => [team.id, team.name]));
   const savedIds = new Set((savedResult.data ?? []).map((entry) => entry.game_id));
   const eligible = gamesResult.data.flatMap((game) => {
     const participants = participantsResult.data.filter((part) => part.game_id === game.id);
@@ -141,17 +139,17 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     const away = participants.find((part) => part.side === "away");
     if (!home || !away || !game.matchup_id || home.registration_id === away.registration_id)
       return [];
-    const homeTeamId = confirmed.get(home.registration_id);
-    const awayTeamId = confirmed.get(away.registration_id);
-    if (homeTeamId === undefined || awayTeamId === undefined) return [];
+    const homeName = confirmed.get(home.registration_id);
+    const awayName = confirmed.get(away.registration_id);
+    if (homeName === undefined || awayName === undefined) return [];
     if (!rostered.has(home.registration_id) || !rostered.has(away.registration_id)) return [];
     if (!savedIds.has(game.id) && !["draft", "scheduled", "live"].includes(game.status)) return [];
     return [
       {
         id: game.id,
         number: game.game_number,
-        homeName: teamNames.get(homeTeamId) ?? "Mandante",
-        awayName: teamNames.get(awayTeamId) ?? "Visitante",
+        homeName: homeName || "Mandante",
+        awayName: awayName || "Visitante",
         saved: savedIds.has(game.id),
       },
     ];

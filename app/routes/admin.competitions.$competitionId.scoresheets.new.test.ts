@@ -258,8 +258,8 @@ function readyGames(keyboardError: unknown = null) {
       { id: 100, display_name: "Liga de teste", status: "draft", data_profile_id: null },
     ]),
     team_registrations: query([
-      { id: 11, team_id: 21 },
-      { id: 12, team_id: 22 },
+      { id: 11, team_id: 21, public_name: "Azul" },
+      { id: 12, team_id: 22, public_name: "Ouro" },
     ]),
     roster_entries: query([{ registration_id: 11 }, { registration_id: 12 }]),
     teams: query([

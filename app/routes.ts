@@ -45,6 +45,14 @@ export default [
     "admin/competitions/:competitionId/data-profile",
     "routes/admin.competitions.$competitionId.data-profile.tsx",
   ),
+  route(
+    "admin/competitions/:competitionId/registrations/copy",
+    "routes/admin.competitions.$competitionId.registrations.copy.tsx",
+  ),
+  route(
+    "admin/competitions/:competitionId/context",
+    "routes/admin.competitions.$competitionId.context.tsx",
+  ),
   route("admin/games/:gameId/data-conflict", "routes/admin.games.$gameId.data-conflict.tsx"),
   route(
     "admin/games/:gameId/scoresheet/keyboard",
