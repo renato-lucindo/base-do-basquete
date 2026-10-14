@@ -1,5 +1,13 @@
 # HANDOFF — Base do Basquete
 
+## PR #77 — correção do pgTAP em CI — 14/10/2026
+
+WORK_UNIT=PR77-PGTAP-VALID-SCORE-FIX; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE_HEAD=be15e9c99d202ff252dce363af88b68fcc48c9cb; WRITE_LOCK=RELEASED após commit/push; RISK_LEVEL=CRITICO; PR DRAFT.
+
+CI 38611605674 no HEAD be15e9c: gate e accessibility PASS, CodeQL 38611605602 PASS, preview 38611605540 PASS. Job database FAIL apenas no pgTAP `keyboard_scoresheet.test.sql` linha 193: `KEYBOARD_SCORE_OR_OVERTIME_INVALID` (BD902), após migrations fresh/upgrade PASS. Os novos cenários D/GD tentavam confirmar jogos com placar 0–0, proibido pela própria RPC. Ajustadas somente duas fixtures desses testes com uma cesta válida de dois pontos do time mandante. `git diff --check` PASS; Docker ausente no Windows; SQL integral requer GitHub Actions. Migrações permanecem imutáveis; não executar no Supabase compartilhado nem produção. Os pareceres independentes anteriores ao HEAD são históricos, não aprovações da revisão atual.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=GitHub PR77 / CI e revisores; ACAO=conferir pgTAP no CI do novo HEAD publicado, corrigir quaisquer falhas remanescentes, obter quatro pareceres independentes válidos e executar GoTrue/PostgREST AAL2 e concorrência em ambiente isolado; CRITERIO_DE_CONCLUSAO=database, CI, CodeQL e preview verdes, ensaio autenticado, concorrência e revisores aprovados no HEAD antes de considerar merge. Manter DRAFT.
+
 ## PR #77 — correções de bloqueios críticos — 14/10/2026
 
 WORK_UNIT=PR77-CRITICAL-REVIEW-FIXES; OWNER=project-maintainer; BRANCH_LOCAL=codex/pr77-main-reconcile-20261014; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp; BASE=cc32c70; WRITE_LOCK=RELEASED após publicação das correções, sujeito a novo lock em caso de REQUEST_CHANGES; RISK_LEVEL=CRITICO; PR DRAFT.

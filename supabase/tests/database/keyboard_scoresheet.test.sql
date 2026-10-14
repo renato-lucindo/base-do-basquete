@@ -183,10 +183,10 @@ set constraints keyboard_authority_swap_complete deferred;
 
 -- Direct D and accumulated technical GD both project a single disqualification.
 insert into keyboard_docs(name,doc)
-select 'gd',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000031","side":"home","period":1,"target":"00","code":"T1"},{"id":"10000000-0000-4000-8000-000000000032","side":"home","period":2,"target":"00","code":"T1"}]'::jsonb)
+select 'gd',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000030","side":"home","period":1,"target":"00","code":"2"},{"id":"10000000-0000-4000-8000-000000000031","side":"home","period":1,"target":"00","code":"T1"},{"id":"10000000-0000-4000-8000-000000000032","side":"home","period":2,"target":"00","code":"T1"}]'::jsonb)
 from keyboard_docs where name='base';
 insert into keyboard_docs(name,doc)
-select 'direct_d',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000033","side":"home","period":1,"target":"00","code":"D2"}]'::jsonb)
+select 'direct_d',jsonb_set(doc,'{events}','[{"id":"10000000-0000-4000-8000-000000000035","side":"home","period":1,"target":"00","code":"2"},{"id":"10000000-0000-4000-8000-000000000033","side":"home","period":1,"target":"00","code":"D2"}]'::jsonb)
 from keyboard_docs where name='base';
 select set_config('request.jwt.claims',json_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
 set local role authenticated;
