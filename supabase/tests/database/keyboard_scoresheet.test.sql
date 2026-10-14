@@ -235,5 +235,27 @@ select is((select games_played from public.competition_scoresheet_player_statist
 select is((select games_played from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9303),1::bigint,'new registration gets only its game');
 select is((select team_id from public.competition_scoresheet_player_statistics where competition_id=9301 and player_id=9301 and registration_id=9303),9303::bigint,'transfer retains team identity');
 
+
+-- Historical corrections use the game slot, not an athlete's present-day roster status.
+select set_config('request.jwt.claims',
+  json_build_object('sub',(select user_id from private.admin_accounts limit 1),'role','authenticated','aal','aal2')::text,true);
+set local role authenticated;
+select is(public.admin_save_keyboard_scoresheet(
+  93001,'20000000-0000-4000-8000-000000000041',3,
+  (select document from public.keyboard_scoresheets where game_id=93001),
+  true,'Revisão histórica após transferência de equipe'
+)->>'version','4','past confirmed game remains reviewable after original player transfer');
+select is((select count(*) from public.keyboard_scoresheet_revisions where game_id=93001),
+  4::bigint,'historical correction creates an immutable revision');
+select is((select count(*) from public.game_data_submissions where game_id=93001 and status='active'),
+  1::bigint,'historical correction keeps one active canonical submission');
+select throws_ok($select public.admin_save_keyboard_scoresheet(
+  93001,'20000000-0000-4000-8000-000000000042',4,
+  jsonb_set((select document from public.keyboard_scoresheets where game_id=93001),
+    '{roster,0,rosterEntryId}','9304'::jsonb),
+  true,'Tentativa de alterar participante histórico'
+)$,'BD902','KEYBOARD_INVALID_ROSTER','a transferred athlete cannot replace an original historical roster slot');
+reset role;
+
 select * from finish();
 rollback;
