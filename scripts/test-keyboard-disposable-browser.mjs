@@ -87,7 +87,11 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     });
     page.on("requestfailed", (request) => {
       if (request.url().includes("/admin/games/93501")) {
-        navigationEvents.push({ event: "requestfailed", url: request.url(), failure: request.failure() });
+        navigationEvents.push({
+          event: "requestfailed",
+          url: request.url(),
+          failure: request.failure(),
+        });
       }
     });
 
