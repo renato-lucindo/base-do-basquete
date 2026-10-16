@@ -129,6 +129,23 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
       throw cause;
     }
     await page.getByRole("button", { name: "Iniciar transcrição" }).click();
+    try {
+      await expect(page.getByLabel("Camisa, B ou C", { exact: true })).toBeVisible({
+        timeout: 6000,
+      });
+    } catch (cause) {
+      console.error("Keyboard setup transition diagnostics", {
+        url: page.url(),
+        setupButtonVisible: await page
+          .getByRole("button", { name: "Iniciar transcrição" })
+          .isVisible(),
+        alerts: await page.getByRole("alert").allTextContents(),
+        status: await page.getByRole("status").allTextContents(),
+        body: (await page.locator("body").innerText()).slice(-2400),
+        browserErrors,
+      });
+      throw cause;
+    }
 
     async function entry(jersey, code) {
       const target = page.getByLabel("Camisa, B ou C", { exact: true });
