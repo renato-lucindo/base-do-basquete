@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Ativação de preview autorizada — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_INICIAL=dc5bae6ff3c103ab5fcdf49e3a931dadaa9a05ac; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
+
+O responsável instruiu “faça os passos de ativação para mim”, autorizando o SQL e publicação necessários somente no preview. Esta instrução substitui a proibição anterior de ações remotas para esta ativação; produção, banco compartilhado e QA72 permanecem fora do escopo de alteração. O modo permanece opt-in por preview; nenhum preview existente será redirecionado indiscriminadamente. Não há identificador válido fornecido; list_projects e list_branches confirmam apenas compartilhado, QA72 e projeto antigo inativo. Procurar branch nova isolada, sem copiar dados. Custos que o provedor exigir devem ser confirmados pelo responsável no mecanismo oficial.
+
+Resultado do preflight remoto: create_branch(preview-password-auth) recusado pelo Supabase com PaymentRequiredException — branching exige Pro. O responsável escolheu explicitamente a organização renato-lucindo (susztsuwjauudvirutdr). create_project(base-basquete-preview-password,sa-east-1) recusado por limite de dois projetos Free ativos. Nenhum recurso novo foi criado. Aguardando escolha explícita entre pausar QA72 preservando dados, upgrade manual ou manter ativação pendente; não pausar/alterar outro projeto sem essa resposta.
+
+Cloudflare consultado em leitura: conta 16b4a5e0a99a031d28051ebadb4811cc; Worker preview modificado em 2026-10-15T00:05:09.914475Z, produção em 2026-09-25T18:09:37.411036Z. APP_ENV confirma preview/production, ambos com os três bindings criptografados esperados. Wrangler OAuth tem workers_scripts write; não é necessário novo login. Nenhum deploy/secret/configuração remota alterado. PR77 permanece dabafa879d4e6a8131527c844d3c143e6534d2ae OPEN/DRAFT.
+
+PROXIMO_PASSO_EXATO: SERVICO=Supabase na organização renato-lucindo; ACAO=receber decisão sobre a vaga Free, provisionar projeto isolado permitido e preparar schema/identidade; CRITERIO=projeto exclusivo saudável e acesso por senha validado antes de ativar Worker. A autorização de ativação permanece válida, mas não autoriza cobrança/upgrade ou pausa de QA72 sem escolha explícita.
+
 ## Acesso por senha somente em preview — 16/10/2026
 
 WORK_UNIT=PREVIEW-PASSWORD-AUTH; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; BASE_COMMIT=be851210da2ba96e4ca78c9cbfac53223ee6862d; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
