@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Compatibilidade da lista de competições no preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-COMPETITIONS-LEGACY-SCHEMA; BRANCH=codex/preview-password-auth; PR=#86; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
+
+Falha observada no Chromium da PR #77: `/admin/competitions.data` retornou HTTP 500 (x-correlation-id `2a4d09fe-f9a7-4c8f-8497-f05729e36166`) e o ErrorBoundary exibiu "Algo saiu do compasso". O loader de `app/routes/admin.competitions.tsx` selecionava `competition_seasons.dispute_navigation_order`, coluna ausente no projeto Supabase compartilhado `yjnbemfeyjhxhomprlnm`. A migration de introdução `20261006123600_multi_dispute_creation_navigation.sql` consta localmente mas não foi registrada remotamente; há divergência histórica entre migrations locais/remotas, então não foi feito `db push`/`repair` em lote.
+
+Correção focal no loader: se a consulta da preferência falhar exclusivamente com `42703`/`PGRST204`, consultar `competition_seasons.id` e apresentar a ordem padrão `category_division`. Em banco atualizado, preservar `dispute_navigation_order`; demais erros continuam fatais. Novo teste cobre fallback, preferência preservada e erros reais não mascarados. Gate local `npm run check` aprovado (541 Vitest/70 arquivos, lint com avisos preexistentes, typecheck, build, documentação, agentes, segredos). Sem alterações SQL, RLS, MFA ou PR #77.
+
+Worker `base-do-basquete-preview` publicado apenas em preview com o segredo existente preservado: versão `4e6a91a3-14c8-4673-85e8-183828ab5ed0`. HTTP público após deploy: `/admin/login`=200, `/admin/competitions` sem sessão=302 para `/admin/login`. Não há smoke autenticado desta lista pelo navegador deste agente (o Chromium disponível está autenticado no hostname isolado da PR #77); não declarar a falha corrigida para sessão autenticada até que esse fluxo seja verificado. Produção não foi modificada.
+
+PROXIMO_PASSO_EXATO: SERVICO=Worker base-do-basquete-preview e PR #86; ACAO=validar com sessão administrativa real `/admin/competitions` (lista deve carregar), resolver qualquer erro residual por correlação/logs, renovar pareceres independentes e conferir checks após push; CRITERIO=HTTP 200 autenticado com a lista renderizada e segurança AAL1/AAL2 preservada; manter PR #86 draft até gates/revisões válidos. A criação de novas disputas exige conciliar o restante das migrations em unidade separada antes de habilitá-la no banco compartilhado.
+
 ## Preview por senha publicado — 16/10/2026
 
 WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
