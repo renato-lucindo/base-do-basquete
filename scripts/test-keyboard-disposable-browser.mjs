@@ -35,6 +35,8 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
   let output = "";
   const server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1"], {
     stdio: ["ignore", "pipe", "pipe"],
+    // Keep npm and the dev server in one process group for CI cleanup.
+    detached: process.platform !== "win32",
   });
   const record = (chunk) => {
     output = (output + chunk.toString()).slice(-2500);
@@ -287,8 +289,22 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     );
     await context.close();
   } finally {
+    if (server.pid && process.platform !== "win32") {
+      try {
+        process.kill(-server.pid, "SIGTERM");
+      } catch (error) {
+        if (error?.code !== "ESRCH") {
+          console.error("Failed to stop the disposable dev server process group", error);
+          process.exitCode = 1;
+        }
+      }
+    } else {
+      server.kill();
+    }
+    server.stdout.destroy();
+    server.stderr.destroy();
     await browser?.close();
-    server.kill();
     unlinkSync(varsPath);
+    console.log("PASS: disposable browser and dev server cleaned up");
   }
 }

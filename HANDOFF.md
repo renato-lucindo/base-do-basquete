@@ -1,3 +1,13 @@
+## Issue #83 / PR #77 — Chromium passou; encerramento do servidor de teste — 16/10/2026
+
+WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; PR: OPEN/DRAFT; RISK_LEVEL: CRITICO; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
+
+EVIDENCIA: no HEAD `2cee308`, o CI `38934367508` passou em gate e acessibilidade; database concluiu migrations, pgTAP, concorrencia e integracao GoTrue/AAL2. O log da etapa Chromium registrou `PASS: real browser login/MFA, fallback, retry, concurrent edit conflict and recovery` em 16:49:12Z, apos o fluxo completo, mas o processo Node nao terminou e o job foi cancelado por timeout de 20 minutos em 17:05:16Z. Assim, a transicao do setup e a confirmacao FIBA passaram; o bloqueio atual e o encerramento do harness, nao uma falha comprovada de regra de negocio.
+
+CORRECAO_EM_VALIDACAO: `scripts/test-keyboard-disposable-browser.mjs` inicia npm/Vite em grupo de processos proprio no Linux e sinaliza todo o grupo no `finally`, fecha os pipes do subprocesso e o Chromium e registra a conclusao do cleanup. O codigo anterior encerrava somente o processo pai npm, possivelmente deixando Vite e pipes abertos. Atribuicao exata do handle ainda depende do novo CI. `worker-configuration.d.ts` segue modificado por geracao anterior; preservar fora dos commits. Nenhuma migration compartilhada, merge ou deploy.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=GitHub Actions CI/database PR77; ACAO=verificar gate local, publicar o cleanup, confirmar que o job database termina SUCCESS com mensagem de cleanup, depois atualizar REVIEW_PACKET e renovar pareceres independentes de banco/seguranca, estatisticas, boxscore, acessibilidade e QA no SHA final; CRITERIO_DE_CONCLUSAO=CI/CodeQL/Preview verdes no mesmo SHA e revisoes sem bloqueios, PR ainda DRAFT. Issue #84 permanece P2 para unidade isolada posterior.
+
 ## Issue #83 / PR #77 — confirmação Chromium e fixture FIBA — 16/10/2026
 
 WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; PR: OPEN/DRAFT; RISK_LEVEL: CRITICO; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
