@@ -56,7 +56,7 @@ beforeEach(() => {
 });
 
 describe("administrator password login", () => {
-  it("opens the isolated preview panel after password and database authorization", async () => {
+  it("opens the preview panel after password and session admission", async () => {
     const response = await action(args()).catch((error: unknown) => error);
     expect(response).toBeInstanceOf(Response);
     expect((response as Response).headers.get("Location")).toBe("/admin");
@@ -69,14 +69,14 @@ describe("administrator password login", () => {
     expect(client.auth.mfa.listFactors).not.toHaveBeenCalled();
   });
 
-  it("refuses password login if the isolated database has not enabled the exception", async () => {
+  it("revokes only the attempted session when preview admission fails", async () => {
     client.rpc.mockImplementation(async (name) => ({
       data: name === "is_current_admin",
       error: null,
     }));
     const response = await action(args());
     expect(response).toMatchObject({ init: { status: 503 } });
-    expect(client.auth.signOut).toHaveBeenCalledWith({ scope: "global" });
+    expect(client.auth.signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
   it("rejects valid credentials belonging to another identity", async () => {

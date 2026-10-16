@@ -79,7 +79,7 @@ export async function action({ request, context }: Route.ActionArgs) {
       p_secret: env.PREVIEW_AUTH_SECRET ?? "",
     });
     if (error || allowed !== true) {
-      await client.auth.signOut({ scope: "global" });
+      await client.auth.signOut({ scope: "local" });
       logAuthEvent(correlationId, "auth.login", "blocked");
       return data(
         { error: "O acesso por senha não está habilitado neste preview." },
