@@ -18,9 +18,37 @@ PRESERVAÇÃO: gerador npm ci/typegen alterou worker-configuration.d.ts nesta wo
 
 Correção focal posterior: selo global passou a “Sessão administrativa”, sem afirmar AAL2 em sessão AAL1. Runbook explicita conferência manual do projeto conectado e revogação completa primeiro no banco e depois no Worker. Gate após a correção PASS novamente: 544 Vitest, tipos/build/lint/formato/agentes/runbooks e scan740. O primeiro comando de formato desta rodada encontrou apenas o JSON efêmero do Playwright sem newline; corrigido esse artefato ignorado, sem modificar teste ou configuração. SQL e autenticação não mudaram nesta rodada. PostgreSQL descartável local foi parado após os ensaios.
 
-Branch publicada em origin/codex/preview-password-auth, sem PR para não disparar automaticamente o workflow de preview. Referência do primeiro push a7d30025832d79ccfa5fd1c2088d098a306a0c9c. Nenhum workflow remoto acionado. Renovação focal dos pareceres após a correção do selo ainda pendente. Falta identificador público válido de projeto exclusivo: a resposta recebida foi um nome curto, não uma referência Supabase de 20 letras; list_projects continua sem novo projeto dedicado.
+Branch publicada em origin/codex/preview-password-auth, sem PR para não disparar automaticamente o workflow de preview. HEAD funcional publicado accc980bd7798afc6d8a4366ff090b18d05b2d9e, confirmado pela API GitHub e git ls-remote. Nenhum workflow remoto acionado. Falta identificador público válido de projeto exclusivo: a resposta recebida foi um nome curto, não uma referência Supabase de 20 letras; list_projects continua sem novo projeto dedicado. Foi solicitado o link do painel do projeto para evitar exigir que o responsável localize o identificador manualmente.
 
-PROXIMO_PASSO_EXATO: ARQUIVO_OU_SERVICO=branch codex/preview-password-auth e docs/runbooks/preview-password-auth.md; ACAO=consolidar a renovação focal dos pareceres, depois receber o identificador público de um projeto exclusivo de preview e autorização específica para ativação remota; CRITERIO_DE_CONCLUSAO=login real por senha e leitura/escrita de dados de teste comprovados, produção continua MFA. ATIVACAO_REMOTA=NAO_REALIZADA; READY_FOR_RELEASE=NO. WRITE_LOCK=RELEASED para revisão.
+Renovações independentes em accc980: banco APPROVE em 2026-10-16T12:50:44Z; QA APPROVE em 12:50:45Z; acessibilidade APPROVE em 12:50:46Z. P2 do selo e notas de rollback/conferência de destino encerrados. Pareceres aprovam somente a preparação; não autorizam ativação, merge ou release. Acessibilidade anterior incluiu nove análises axe da renderização isolada em 390/720/1440, sem violações, além de inspeção de teclado; não equivale a login remoto/hidratação real. Revisores encerrados após emissão. Este checkpoint posterior é exclusivamente documental; artefato funcional e evidências não mudam.
+
+```text
+REVIEW_PACKET:
+WORK_UNIT: PREVIEW-PASSWORD-AUTH
+BRANCH: codex/preview-password-auth
+BASE_COMMIT: be851210da2ba96e4ca78c9cbfac53223ee6862d
+HEAD_COMMIT_FUNCIONAL: accc980bd7798afc6d8a4366ff090b18d05b2d9e
+OBJETIVO: preparar acesso por senha somente em preview isolado, com ativação manual posterior
+CRITERIOS_DE_ACEITE: default MFA; produção/compartilhado/QA72 rejeitados para exceção; identidade/emissor/senha/RLS validados localmente; UI correta; rollback documentado
+ESCOPO: guard/configuração opcional, login/security/selo, testes, overlay manual e runbook
+ESCOPO_NEGATIVO: remoto, PR77, compartilhado, QA72, produção, merge e deploy
+ARQUIVOS_ALTERADOS: HANDOFF.md; app/env.d.ts; app/components/admin/admin-area.tsx; app/modules/auth/authorization.server.ts e teste; app/modules/auth/preview-password.server.ts e teste; app/routes/admin.login.tsx e teste; app/routes/admin.security.tsx; scripts/preview-password-auth.sql; preview-tests/preview_password_auth.test.sql; docs/runbooks/preview-password-auth.md
+MIGRATIONS: nenhuma; overlay fora das migrations de produto
+RISCOS_CONHECIDOS: destino depende de conferência manual; GoTrue/PostgREST/CI/operações de domínio e login remoto ainda não comprovados
+TESTES_EXECUTADOS: check544, focal32, Chromium axe1, SQL baseline10/overlay16/rollback10 e guardas de instalação
+EVIDENCIAS: logs locais citados acima e pareceres independentes no HEAD funcional; resultados essenciais preservados neste checkpoint
+AMBIENTE_VALIDADO: local/Chromium/PostgreSQL17 com bootstrap Auth mínimo
+RISK_LEVEL: CRITICO
+RISK_JUSTIFICATION: Auth e autorização central de RLS/RPCs
+REVIEW_DECISIONS: banco REQUIRED/APPROVE; acessibilidade REQUIRED/APPROVE; QA REQUIRED/APPROVE; estatística/boxscore/performance não aplicáveis ao delta
+REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer
+WAIVERS: nenhuma dispensa crítica ou de gate de ativação
+REVIEW_APPROVER: project-maintainer, somente preparação local
+WRITE_LOCK_OWNER: RELEASED
+READY_FOR_RELEASE: NO
+```
+
+PROXIMO_PASSO_EXATO: ARQUIVO_OU_SERVICO=projeto Supabase exclusivo de preview e docs/runbooks/preview-password-auth.md; ACAO=receber o link/identificador público válido, conferir isolamento/schema/conta administrativa e obter autorização específica para ativação remota; CRITERIO_DE_CONCLUSAO=login real por senha e leitura/escrita de dados de teste comprovados, produção continua MFA. ATIVACAO_REMOTA=NAO_REALIZADA; READY_FOR_RELEASE=NO. WRITE_LOCK=RELEASED.
 
 ## Revisoes e integracoes79 e73 concluidas - 14/10/2026
 
