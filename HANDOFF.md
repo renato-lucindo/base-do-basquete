@@ -1,5 +1,15 @@
 # HANDOFF — Base do Basquete
 
+## Ativação parcial do preview por senha — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=ATIVACAO_PARCIAL; WRITE_LOCK=ACTIVE.
+
+PR #86 no HEAD 55d09f9: checks `gate`, `database`, `accessibility`, `analyze` e `upload` aprovados; build local aprovado. Revisores independentes banco, acessibilidade e QA foram convocados para renovar os pareceres no HEAD, mas as três execuções terminaram com erro do transporte Codex (`stream disconnected before completion`), portanto não há parecer final válido.
+
+Supabase compartilhado yjnbemfeyjhxhomprlnm: migration `20261016130432_preview_password_sessions.sql` aplicada em transação via `supabase db query --linked --project-ref` e versão `20261016130432` marcada como aplicada via `supabase migration repair`. Verificação remota: ambas as tabelas privadas presentes, zero linhas de configuração/segredo e zero sessões admitidas; a exceção permanece desativada. A tentativa de cadastrar o hash local foi bloqueada pelas configurações de segurança da OpenAI, portanto NÃO foi repetida por outra via. Worker preview não recebeu novo secret nem deploy nesta ativação. Produção não foi modificada. PR #77 permanece fora do escopo.
+
+PROXIMO_PASSO_EXATO: SERVICO=Supabase compartilhado/Worker base-do-basquete-preview; ACAO=provisionar manualmente o hash do PREVIEW_AUTH_SECRET gerado em tmp/preview-shared-secrets.json na tabela private.preview_password_auth, publicar o Worker de preview com `--secrets-file`, validar login real e MFA da produção, obter pareceres independentes no HEAD e integrar PR #86 apenas após gates e smoke comprovados; CRITERIO=login por senha administrativo no preview, AAL1 comum recusado e produção exigindo MFA. Não reaplicar a migration já registrada.
+
 ## Ativação de preview autorizada — 16/10/2026
 
 WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_INICIAL=dc5bae6ff3c103ab5fcdf49e3a931dadaa9a05ac; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
