@@ -1,5 +1,23 @@
 # HANDOFF — Base do Basquete
 
+## Acesso por senha somente em preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; BASE_COMMIT=be851210da2ba96e4ca78c9cbfac53223ee6862d; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
+
+O responsável solicitou acesso administrativo por senha e escolheu explicitamente **somente preview**. Esta instrução autoriza a exceção de produto nesse ambiente; produção continua exigindo MFA. Implementação em worktree própria, preservando os deltas existentes no checkout original e na PR #77. O HEAD remoto da PR77 observado foi dabafa879d4e6a8131527c844d3c143e6534d2ae, posterior ao checkpoint histórico abaixo.
+
+Escopo simplificado por instrução posterior do responsável: opção explícita de Worker vinculada a projeto Supabase isolado e um overlay SQL manual, específico desse projeto, fora das migrations de produto. Sem tabela de configuração ou nova RPC. Testes de identidade/RLS/produção e instruções de ativação/rollback em docs/runbooks/preview-password-auth.md. Escopo negativo: nenhum uso do banco compartilhado yjnbemfeyjhxhomprlnm para senha sem MFA; não reutilizar o QA da PR72; não apagar fatores cadastrados; sem alteração da PR77, migrations remotas, merge ou deploy nesta preparação. A autorização anterior de investigação proíbe migrations remotas e deploy; a ativação será uma etapa concreta posterior.
+
+REQUIRED_REVIEWERS=database-security-reviewer,accessibility-ui-reviewer,qa-reviewer. Pareceres ainda pendentes. Esta unidade não resolve nem dispensa o bloqueio de navegação da PR77.
+
+Implementação simplificada preparada: guard e login consultam a autorização existente do banco; a exceção só é selecionada pelo binding opcional do Worker com origem exata e projeto exclusivo. O overlay manual compila o emissor JWT e exige identidade administrativa, AAL1 explícito e método password; preserva o AAL real e a assinatura validada pelo Supabase. Sem binding, o backend mantém o fluxo original de MFA. Login e página de segurança informam o modo correto.
+
+EVIDÊNCIAS LOCAIS: npm run check PASS (69 arquivos/544 Vitest, formato, lint com 328 avisos preexistentes, tipos, agentes, runbooks, build e scan de 740 arquivos). 32 regressões focais PASS; Chromium/axe do login 1/1 PASS. PostgreSQL 17 local descartável: baseline Auth/RLS 10/10 PASS, overlay 16/16 PASS, guardas de instalação para placeholder/compartilhado/QA72 PASS, rollback documentado PASS e baseline pós-rollback 10/10 PASS. Observadas falhas antes da implementação; corrigido retorno NULL para AAL ausente, que agora é false. Bootstrap Auth mínimo não valida GoTrue/PostgREST real nem todas as RPCs de domínio. Nenhuma evidência de acesso remoto por senha foi produzida.
+
+PRESERVAÇÃO: gerador npm ci/typegen alterou worker-configuration.d.ts nesta worktree nova; somente esse delta gerado e identificado foi retirado. Nenhum arquivo do checkout original ou da PR77 foi alterado. Banco local foi usado somente para os testes descritos; Supabase compartilhado, QA72 e produção inalterados.
+
+PROXIMO_PASSO_EXATO: ARQUIVO_OU_SERVICO=branch codex/preview-password-auth e docs/runbooks/preview-password-auth.md; ACAO=obter pareceres independentes sobre a preparação, depois receber o identificador público de um projeto exclusivo de preview e autorização específica para ativação remota; CRITERIO_DE_CONCLUSAO=login real por senha e leitura/escrita de dados de teste comprovados, produção continua MFA. ATIVACAO_REMOTA=NAO_REALIZADA; READY_FOR_RELEASE=NO. WRITE_LOCK=RELEASED para revisão.
+
 ## Revisoes e integracoes79 e73 concluidas - 14/10/2026
 
 Este checkpoint substitui operacionalmente os registros historicos abaixo. PR79 MERGED por cfb461425b76d0a738e915bb6925025ff7c635b4, com banco/boxscore/estatisticas/QA aprovados e QA editorial6166528738. PR73 MERGED por squash467d9e40ae559dc6d5bcf123a11fbd41f1c3a282, com banco6167075596, acessibilidade6167092759 e QA6167114151 aprovados noHEADc1323c3. As arvores integradas foram verificadas identicas aos HEADs aprovados. Todos os bloqueios anteriores foram encerrados por novos pareceres independentes; CI nao foi usado como aprovacao ficticia.
