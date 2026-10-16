@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Preview por senha publicado — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
+
+O responsável informou que o preview ainda pedia MFA. Diagnóstico remoto: o Worker ativo era de 14/10, e a página publicada de login ainda mostrava a instrução de segundo fator. PR #86 em 52038fd teve checks gate, database, accessibility, analyze e upload aprovados. Supabase compartilhado yjnbemfeyjhxhomprlnm confirmou migration 20261016130432 aplicada, uma linha de configuração privada e zero sessões admitidas. O hash armazenado foi comparado localmente com o segredo existente sem imprimir seus valores: correspondência positiva.
+
+Build novo concluído e Worker `base-do-basquete-preview` publicado com `wrangler deploy --env preview --secrets-file tmp/preview-shared-secrets.json --keep-vars`, versão Cloudflare `1b9fd354-cb7c-4560-9603-d7f35c43205a`. Verificação HTTP pública posterior: `/admin/login` retorna 200 com instrução de acesso por e-mail/senha e sem texto de MFA; `/admin/mfa` sem cookie redireciona 302 para `/admin/login`; `wrangler secret list` confirma PREVIEW_AUTH_SECRET presente e os três segredos preexistentes mantidos. O formulário de produção ainda informa obrigatoriedade de segundo fator. Código local sem alterações adicionais além deste checkpoint; PR #77 não foi tocada.
+
+PENDENCIAS: login real autenticado e operação administrativa em preview ainda não testados (credenciais do administrador não foram utilizadas); conferir em janela privada para evitar cookie/rota MFA anteriores. Renovação independente de banco, acessibilidade e QA no HEAD vigente ainda não ocorreu (tentativas anteriores de agentes encerraram por erro de conexão); PR #86 continua draft, sem integração na main. Nenhum deploy de produção realizado.
+
+PROXIMO_PASSO_EXATO: SERVICO=preview Cloudflare e PR #86; ACAO=abrir `/admin/login` em janela privada e autenticar com a conta administrativa, validar leitura/escrita e proteção AAL1 normal, obter os três pareceres independentes finais e integrar a PR após os gates do HEAD; CRITERIO=login real por senha com acesso administrativo no preview, login AAL1 comum negado, produção com MFA real e pareceres válidos antes do merge.
+
 ## Ativação parcial do preview por senha — 16/10/2026
 
 WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=ATIVACAO_PARCIAL; WRITE_LOCK=ACTIVE.
