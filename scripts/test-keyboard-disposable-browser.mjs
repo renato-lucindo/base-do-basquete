@@ -150,7 +150,7 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
       assert.equal(result.status(), 200, "First browser save must reach real PostgREST");
       await route.abort("failed");
     });
-    await entry("10", "2");
+    await entry("10", "3");
     await expect(page.getByRole("status")).toHaveText("Alterações aguardando salvamento");
     assert.ok(intercepted, "Expected a real HTTP request");
     assert.equal(
@@ -180,7 +180,7 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     await expect(stalePage.locator(".keyboard-history li")).toHaveCount(1);
 
     await page.getByRole("button", { name: /Equipe B ·/ }).click();
-    await entry("20", "1");
+    await entry("20", "2");
     await expect(page.getByRole("status")).toHaveText("Rascunho salvo no servidor");
 
     // Another tab still holds version 1 and must be rejected by the real backend.
@@ -206,7 +206,18 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
       .getByLabel("Motivo do fallback emergencial")
       .fill("O documento FIBA oficial não chegou e a partida precisa de registro auditado.");
     await page.getByRole("button", { name: "Revisar totais e confirmar" }).click();
-    await expect(page.getByRole("status")).toContainText("Fallback manual confirmado");
+    try {
+      await expect(page.getByRole("status")).toContainText("Fallback manual confirmado");
+    } catch (cause) {
+      console.error("Fallback confirmation diagnostics", {
+        status: await page.getByRole("status").allTextContents(),
+        alerts: await page.getByRole("alert").allTextContents(),
+        saveResponses: navigationEvents
+          .filter((event) => event.url.includes("/keyboard-scoresheet"))
+          .slice(-5),
+      });
+      throw cause;
+    }
 
     assert.equal(
       await sql(`select role from public.game_data_submissions where id=(
@@ -220,7 +231,7 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
           "select coalesce(sum(points),0) from public.game_period_scores where game_id=93501",
         ),
       ),
-      3,
+      5,
     );
     assert.equal(
       Number(

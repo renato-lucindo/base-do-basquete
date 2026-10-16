@@ -1,3 +1,13 @@
+## Issue #83 / PR #77 — confirmação Chromium e fixture FIBA — 16/10/2026
+
+WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; PR: OPEN/DRAFT; RISK_LEVEL: CRITICO; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
+
+DIAGNOSTICO: commit 76d1860 resolveu a navegação de documento: CI 38931283647 passou pelos testes reais de GoTrue AAL2, retry idempotente, concorrência de abas e entrada no editor Chromium. A etapa seguinte falhou ao confirmar: o teste criava um lance livre convertido pela equipe B (codigo `1`) sem falta adversaria que concedesse LL. `validateSheet(document, true)` bloqueia isso com `LL convertidos excedem LL cobrados`, enquanto o rascunho pode ser salvo normalmente, explicando o status `Rascunho salvo no servidor` e a falta de confirmacao. O teste de dominio ja cobre esta regra; 30/30 PASS na verificacao focal.
+
+CORRECAO_FOCAL: ajustar somente a fixture do navegador para duas cestas de campo validas (equipe A 3 pontos, B 2; total persistido esperado 5), mantendo as etapas de retry, conflito e recuperacao. Acrescentar diagnostico sem credenciais que, em eventual nova falha de confirmacao, registra alertas visiveis e respostas da API. `npm.cmd run check` PASS (68 arquivos/558 Vitest, formato, lint com 328 avisos nao bloqueantes, tipos, build, runbooks, agentes e scan de segredos). O navegador com GoTrue/PostgREST descartavel depende do job database do GitHub Actions; Docker nao instalado neste Windows. `worker-configuration.d.ts` alterado anteriormente pelo gerador permanece preservado e fora do commit. Nenhuma migration compartilhada, merge ou deploy de producao.
+
+PROXIMO_PASSO_EXATO: RESPONSAVEL=project-maintainer; SERVICO=GitHub Actions CI/database da PR77; ACAO=executar gate local antes do push, publicar o teste corrigido na branch PR77, verificar a confirmacao real no Chromium/GoTrue descartavel, atualizar REVIEW_PACKET com SHA e pareceres independentes; CRITERIO_DE_CONCLUSAO=CI/database/CodeQL/Preview verdes e revisoes criticas aprovadas no SHA final, sem liberar merge. Issue #84 permanece P2 para trabalho isolado apos #83.
+
 ## Issue #83 / PR #77 — navegação do fallback em stack descartável — 16/10/2026
 
 WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; HEAD_INICIAL: dabafa879d4e6a8131527c844d3c143e6534d2ae; PR: OPEN/DRAFT; RISK_LEVEL: CRITICO; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.
