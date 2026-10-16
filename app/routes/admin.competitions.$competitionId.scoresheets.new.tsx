@@ -296,6 +296,7 @@ export default function NewManualScoresheet({ loaderData }: Route.ComponentProps
                 <Link
                   className="button button-primary"
                   to={`/admin/games/${game.id}/scoresheet/keyboard`}
+                  reloadDocument={loaderData.fallbackProfile}
                 >
                   Jogo {game.number ?? game.id} · {game.homeName} × {game.awayName} ·{" "}
                   {game.saved
