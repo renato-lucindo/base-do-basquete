@@ -14,7 +14,8 @@ const env = {
   SUPABASE_URL: "https://abcdefghijklmnopqrst.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "test-key",
   SESSION_SECRET: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-  PREVIEW_PASSWORD_AUTH_PROJECT_REF: "abcdefghijklmnopqrst",
+  PREVIEW_PASSWORD_AUTH: "enabled",
+  PREVIEW_AUTH_SECRET: "test-preview-secret",
 } as unknown as Env;
 
 function args(environment = env, origin = "https://preview.test") {
@@ -62,7 +63,9 @@ describe("administrator password login", () => {
     expect((response as Response).headers.get("Set-Cookie")).toContain(
       "HttpOnly; Secure; SameSite=Strict",
     );
-    expect(client.rpc).toHaveBeenCalledWith("is_current_admin_aal2");
+    expect(client.rpc).toHaveBeenCalledWith("admin_open_preview_session", {
+      p_secret: "test-preview-secret",
+    });
     expect(client.auth.mfa.listFactors).not.toHaveBeenCalled();
   });
 
@@ -96,7 +99,7 @@ describe("administrator password login", () => {
       args({
         ...env,
         APP_ENV: "production",
-        PREVIEW_PASSWORD_AUTH_PROJECT_REF: undefined,
+        PREVIEW_PASSWORD_AUTH: undefined,
       } as unknown as Env),
     ).catch((error: unknown) => error);
     expect((response as Response).headers.get("Location")).toBe("/admin/mfa");
@@ -105,14 +108,20 @@ describe("administrator password login", () => {
 
   it("preserves enrollment when no verified factor exists", async () => {
     client.auth.mfa.listFactors.mockResolvedValue({ data: { totp: [] }, error: null });
-    const response = await action(
-      args({ ...env, PREVIEW_PASSWORD_AUTH_PROJECT_REF: undefined }),
-    ).catch((error: unknown) => error);
+    const response = await action(args({ ...env, PREVIEW_PASSWORD_AUTH: undefined })).catch(
+      (error: unknown) => error,
+    );
     expect((response as Response).headers.get("Location")).toBe("/admin/mfa/enroll");
   });
 
   it("retains the same-origin guard", async () => {
     await expect(action(args(env, "https://evil.test"))).rejects.toBeInstanceOf(Response);
+    expect(client.auth.signInWithPassword).not.toHaveBeenCalled();
+  });
+  it("rejects login before authentication when the preview backend secret is missing", async () => {
+    expect(await action(args({ ...env, PREVIEW_AUTH_SECRET: undefined }))).toMatchObject({
+      init: { status: 503 },
+    });
     expect(client.auth.signInWithPassword).not.toHaveBeenCalled();
   });
 });

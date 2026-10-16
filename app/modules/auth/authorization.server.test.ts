@@ -24,7 +24,7 @@ const env = {
   SUPABASE_URL: "https://abcdefghijklmnopqrst.supabase.co",
   SUPABASE_PUBLISHABLE_KEY: "test-key",
   SESSION_SECRET: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-  PREVIEW_PASSWORD_AUTH_PROJECT_REF: "abcdefghijklmnopqrst",
+  PREVIEW_PASSWORD_AUTH: "enabled",
 } as unknown as Env;
 
 async function request() {
@@ -123,7 +123,7 @@ describe("administrator request authorization", () => {
       const defaults = {
         ...env,
         APP_ENV: environment,
-        PREVIEW_PASSWORD_AUTH_PROJECT_REF: undefined,
+        PREVIEW_PASSWORD_AUTH: undefined,
       } as unknown as Env;
       await expectRedirect(requireAdminAal2(await request(), defaults), "/admin/mfa");
       expect(client.rpc).not.toHaveBeenCalledWith("is_current_admin_aal2");
@@ -137,7 +137,7 @@ describe("administrator request authorization", () => {
     });
     await requireAdminAal2(await request(), {
       ...env,
-      PREVIEW_PASSWORD_AUTH_PROJECT_REF: undefined,
+      PREVIEW_PASSWORD_AUTH: undefined,
     });
     expect(client.rpc).toHaveBeenCalledWith("is_current_admin_aal2");
   });

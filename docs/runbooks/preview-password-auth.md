@@ -1,37 +1,31 @@
-# Senha sem MFA somente no preview
+# Acesso por senha como padrão dos previews
 
-Decisão do responsável em 16/10/2026: permitir e-mail e senha somente no preview. Produção continua com MFA. Esta exceção não resolve a navegação da PR77.
+Decisão vigente de 16/10/2026: reutilizar o Supabase dos previews existentes e evitar configuração por PR. Produção continua exigindo MFA real. A conta administrativa e sua senha permanecem as mesmas.
 
-## Ativação manual
+## Configuração única
 
-1. Use um **projeto Supabase exclusivo de teste**, com schema compatível e uma única conta administrativa cadastrada. Não use `yjnbemfeyjhxhomprlnm` (compartilhado) nem `payumtvegfqfejmowxiy` (QA da PR72).
-2. No arquivo `scripts/preview-password-auth.sql`, substitua `__ISOLATED_PREVIEW_PROJECT_REF__` pelo identificador público de 20 letras desse projeto. Confira na URL do SQL Editor que o projeto aberto corresponde exatamente ao identificador substituído: o script não descobre sozinho em qual banco foi colado. Execute o conteúdo no SQL Editor **desse projeto de teste**. O script modifica somente a decisão central de autorização; não cria tabelas nem apaga fatores. É uma configuração específica de preview, fora das migrations de produto.
-3. Configure o Worker exclusivamente de preview com os bindings do projeto de teste e `PREVIEW_PASSWORD_AUTH_PROJECT_REF=<mesmo identificador>`. `SUPABASE_URL` deve ser exatamente `https://<identificador>.supabase.co` e `APP_ENV` deve ser `preview`. Configuração divergente é bloqueada. Não envie credenciais pelo chat.
-4. Após os gates e a revisão, publique somente esse preview. Entre com e-mail e senha; confirme que o painel abre e que consegue ler e gravar dados de teste. A sessão permanece com `aal1` real. O banco continua recusando outras contas, emissores e métodos de entrada.
+1. Aplicar a migration aditiva de sessões de preview, após gates e revisão. Ela cria somente configuração privada e admissões de sessão, inicialmente vazias: AAL1 normal continua bloqueado.
+2. Gerar uma credencial aleatória de backend e guardar apenas seu SHA-256 em private.preview_password_auth. Guardar o valor original exclusivamente no secret PREVIEW_AUTH_SECRET do Worker base-do-basquete-preview. Nunca publicar o valor no Git, logs, navegador ou chat.
+3. A configuração versionada já declara PREVIEW_PASSWORD_AUTH=enabled no ambiente preview, e não no ambiente production. Uploads futuros do mesmo Worker herdam o secret único; nenhuma configuração por PR é necessária.
+4. Publicar o artefato revisado em preview e entrar normalmente com e-mail e senha. O backend admite apenas a sessão Auth real da conta administrativa, mediante a credencial própria do Worker preview. A autorização dura até oito horas e termina imediatamente quando GoTrue remove a sessão no logout. Tokens preservam o AAL1 real.
 
-Não foi executada nenhuma etapa remota nesta preparação. A proibição anterior de migrations remotas e deploy permanece até autorização específica. A existência de uma flag no Worker não basta para autorizar o banco.
+O banco permanece compartilhado: operações administrativas realizadas em preview atuam nos mesmos dados já utilizados pelos previews anteriores. A exceção não concede acesso a outras identidades nem a sessões AAL1 iniciadas normalmente na produção. O Worker production continua verificando AAL2 real antes de qualquer acesso, mesmo se receber um token AAL1 admitido por preview.
 
-## Voltar ao MFA
+## Revogação e rollback
 
-A reversão completa exige **banco e Worker**. Primeiro execute o SQL abaixo no banco de teste para revogar o acesso AAL1 também pela API. Depois remova o binding `PREVIEW_PASSWORD_AUTH_PROJECT_REF` do Worker e publique novamente o preview para restaurar a tela de MFA. Remover somente o binding não revoga a exceção no banco.
+Para revogar imediatamente a exceção no banco, executar como mantenedor em transação:
 
 ```sql
-create or replace function private.is_admin_aal2()
-returns boolean
-language sql stable security invoker set search_path = ''
-as $$
-  select (select private.is_admin())
-    and coalesce((select auth.jwt()->>'aal'), 'aal1') = 'aal2';
-$$;
-comment on function private.is_admin_aal2() is null;
+begin;
+delete from private.preview_password_sessions;
+delete from private.preview_password_auth;
+commit;
 ```
 
-Confirme que a API recusa leitura e escrita com a sessão AAL1 anterior e que o painel volta a exigir MFA. O projeto compartilhado e produção não participam desse procedimento.
+Em seguida remover PREVIEW_PASSWORD_AUTH da configuração de preview e publicar novamente, ou retornar à versão anterior do Worker. Não é necessário remover tabelas ou desfazer migrations. Rotação da credencial exige substituir o hash e apagar admissões antigas na mesma transação, depois atualizar o secret de preview. Confirmar que leitura e escrita AAL1 são recusadas e que AAL2 de produção continua válido.
 
-## Validação e entrega
+## Evidências exigidas
 
-O delta é restrito ao guard central, login, mensagem de segurança, testes e overlay manual. Não há migration automática, credencial privilegiada no navegador, alteração de senha ou remoção de fatores. RLS, autorização por identidade, CSRF, cookies e transações permanecem.
+Testes focais de identidade/capacidade/sessão/TTL/logout; pgTAP integral desde zero; CI/CodeQL; revisão de banco, acessibilidade e QA; smoke de login real. O código preparado anteriormente para projeto isolado foi substituído por este contrato; o overlay manual antigo não deve ser usado.
 
-Os testes devem cobrir configuração de produção/preview, emissor, método de senha, administrador/outra conta/anônimo, leitura/escrita com RLS e restauração de MFA. Banco/segurança, acessibilidade e QA independentes são exigidos antes da ativação. Evidências reais ficam no HANDOFF.
-
-Referência: [MFA e níveis de autenticação no Supabase](https://supabase.com/docs/guides/auth/auth-mfa).
+Referências oficiais: [sessões e session_id](https://supabase.com/docs/guides/auth/sessions), [MFA](https://supabase.com/docs/guides/auth/auth-mfa).

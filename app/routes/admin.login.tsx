@@ -33,6 +33,12 @@ export async function action({ request, context }: Route.ActionArgs) {
   const { env } = context.get(cloudflareContext);
   const passwordOnlyPreview = usesPreviewPasswordAuth(env);
   const correlationId = context.get(correlationIdContext);
+  if (passwordOnlyPreview && !env.PREVIEW_AUTH_SECRET) {
+    return data(
+      { error: "O acesso por senha está temporariamente indisponível." },
+      { status: 503 },
+    );
+  }
   const formData = await request.formData();
   const email = formData.get("email");
   const password = formData.get("password");
@@ -69,7 +75,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 
   let destination = "/admin";
   if (passwordOnlyPreview) {
-    const { data: allowed, error } = await client.rpc("is_current_admin_aal2");
+    const { data: allowed, error } = await client.rpc("admin_open_preview_session", {
+      p_secret: env.PREVIEW_AUTH_SECRET ?? "",
+    });
     if (error || allowed !== true) {
       await client.auth.signOut({ scope: "global" });
       logAuthEvent(correlationId, "auth.login", "blocked");
