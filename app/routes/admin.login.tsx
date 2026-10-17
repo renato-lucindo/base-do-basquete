@@ -4,6 +4,7 @@ import type { Route } from "./+types/admin.login";
 import { cloudflareContext, correlationIdContext } from "../context";
 import { logAuthEvent } from "../modules/auth/audit.server";
 import { assertSameOrigin } from "../modules/auth/csrf.server";
+import { usesPreviewPasswordAuth } from "../modules/auth/preview-password.server";
 import {
   createSessionCookie,
   sealSession,
@@ -17,10 +18,27 @@ export function meta() {
   return [{ title: "Acesso administrativo — Base do Basquete" }];
 }
 
+export async function loader({ context }: Route.LoaderArgs) {
+  const { env } = context.get(cloudflareContext);
+  return data(
+    { passwordOnlyPreview: usesPreviewPasswordAuth(env) },
+    {
+      headers: { "Cache-Control": "private, no-store" },
+    },
+  );
+}
+
 export async function action({ request, context }: Route.ActionArgs) {
   assertSameOrigin(request);
   const { env } = context.get(cloudflareContext);
+  const passwordOnlyPreview = usesPreviewPasswordAuth(env);
   const correlationId = context.get(correlationIdContext);
+  if (passwordOnlyPreview && !env.PREVIEW_AUTH_SECRET) {
+    return data(
+      { error: "O acesso por senha está temporariamente indisponível." },
+      { status: 503 },
+    );
+  }
   const formData = await request.formData();
   const email = formData.get("email");
   const password = formData.get("password");
@@ -55,24 +73,41 @@ export async function action({ request, context }: Route.ActionArgs) {
     return data({ error: genericLoginError }, { status: 400 });
   }
 
-  const { data: factors, error: factorsError } = await client.auth.mfa.listFactors();
-  if (factorsError) {
-    await client.auth.signOut({ scope: "global" });
-    logAuthEvent(correlationId, "auth.login", "failure");
-    return data({ error: "O segundo fator não pôde ser consultado." }, { status: 503 });
+  let destination = "/admin";
+  if (passwordOnlyPreview) {
+    const { data: allowed, error } = await client.rpc("admin_open_preview_session", {
+      p_secret: env.PREVIEW_AUTH_SECRET ?? "",
+    });
+    if (error || allowed !== true) {
+      await client.auth.signOut({ scope: "local" });
+      logAuthEvent(correlationId, "auth.login", "blocked");
+      return data(
+        { error: "O acesso por senha não está habilitado neste preview." },
+        { status: 503 },
+      );
+    }
+  } else {
+    const { data: factors, error: factorsError } = await client.auth.mfa.listFactors();
+    if (factorsError) {
+      await client.auth.signOut({ scope: "global" });
+      logAuthEvent(correlationId, "auth.login", "failure");
+      return data({ error: "O segundo fator não pôde ser consultado." }, { status: 503 });
+    }
+
+    const hasVerifiedTotp = factors.totp.some((factor) => factor.status === "verified");
+    destination = hasVerifiedTotp ? "/admin/mfa" : "/admin/mfa/enroll";
   }
 
   const payload = sessionFromSupabase(signInData.session);
   const cookie = createSessionCookie(await sealSession(payload, env.SESSION_SECRET));
-  const hasVerifiedTotp = factors.totp.some((factor) => factor.status === "verified");
 
   logAuthEvent(correlationId, "auth.login", "success");
-  throw redirect(hasVerifiedTotp ? "/admin/mfa" : "/admin/mfa/enroll", {
+  throw redirect(destination, {
     headers: { "Set-Cookie": cookie },
   });
 }
 
-export default function AdminLogin({ actionData }: Route.ComponentProps) {
+export default function AdminLogin({ actionData, loaderData }: Route.ComponentProps) {
   const navigation = useNavigation();
   const submitting = navigation.state === "submitting";
 
@@ -88,7 +123,9 @@ export default function AdminLogin({ actionData }: Route.ComponentProps) {
         <p className="eyebrow">Área restrita</p>
         <h1 id="login-title">Acesso administrativo</h1>
         <p className="auth-intro">
-          Entre com a conta única autorizada. O segundo fator será exigido antes de qualquer acesso.
+          {loaderData.passwordOnlyPreview
+            ? "Entre com a conta única autorizada usando e-mail e senha."
+            : "Entre com a conta única autorizada. O segundo fator será exigido antes de qualquer acesso."}
         </p>
         {actionData?.error ? (
           <p className="form-error" role="alert">

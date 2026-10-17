@@ -6,6 +6,22 @@ import { recordAuthAuditEvent } from "../modules/auth/audit.server";
 import { requireAdminAal2 } from "../modules/auth/authorization.server";
 import type { Route } from "./+types/admin.competitions";
 
+async function loadNavigationBySeason(
+  client: Awaited<ReturnType<typeof requireAdminAal2>>["client"],
+) {
+  const current = await client.from("competition_seasons").select("id,dispute_navigation_order");
+  if (!current.error)
+    return new Map(current.data.map((row) => [row.id, row.dispute_navigation_order]));
+
+  // The shared preview database can still have the season schema from before
+  // the multi-dispute migration. Keep the edition list available there.
+  if (!["42703", "PGRST204"].includes(current.error.code))
+    throw new Error("Administrative dashboard query failed");
+  const legacy = await client.from("competition_seasons").select("id");
+  if (legacy.error) throw new Error("Administrative dashboard query failed");
+  return new Map(legacy.data.map((row) => [row.id, "category_division"]));
+}
+
 export function meta() {
   return [{ title: "Competições — Administração" }];
 }
@@ -15,23 +31,19 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const auth = await requireAdminAal2(request, env);
   await recordAuthAuditEvent(auth.client, "admin_access", correlationId);
 
-  const [competitionsResult, seriesResult, categoriesResult, seasonsResult] = await Promise.all([
-    auth.client
-      .from("competitions")
-      .select("id,display_name,year,status,series_id,category_id,gender_division")
-      .order("year", { ascending: false })
-      .order("id", { ascending: false }),
-    auth.client.from("competition_series").select("id,name"),
-    auth.client.from("categories").select("id,name"),
-    auth.client.from("competition_seasons").select("id,dispute_navigation_order"),
-  ]);
+  const [competitionsResult, seriesResult, categoriesResult, navigationBySeason] =
+    await Promise.all([
+      auth.client
+        .from("competitions")
+        .select("id,display_name,year,status,series_id,category_id,gender_division")
+        .order("year", { ascending: false })
+        .order("id", { ascending: false }),
+      auth.client.from("competition_series").select("id,name"),
+      auth.client.from("categories").select("id,name"),
+      loadNavigationBySeason(auth.client),
+    ]);
 
-  if (
-    competitionsResult.error ||
-    seriesResult.error ||
-    categoriesResult.error ||
-    seasonsResult.error
-  ) {
+  if (competitionsResult.error || seriesResult.error || categoriesResult.error) {
     throw new Error("Administrative dashboard query failed");
   }
 
@@ -51,9 +63,6 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   if (contexts.error && !["PGRST205", "42P01"].includes(contexts.error.code))
     throw new Error("Edition grouping unavailable");
   const contextById = new Map((contexts.data ?? []).map((row) => [row.competition_id, row]));
-  const navigationBySeason = new Map(
-    seasonsResult.data.map((row) => [row.id, row.dispute_navigation_order]),
-  );
 
   const params = new URL(request.url).searchParams;
   const query = (params.get("q") ?? "").trim().slice(0, 80);

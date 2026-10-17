@@ -5370,6 +5370,7 @@ export type Database = {
         };
       };
       is_current_admin: { Args: never; Returns: boolean };
+      admin_open_preview_session: { Args: { p_secret: string }; Returns: boolean };
       is_current_admin_aal2: { Args: never; Returns: boolean };
       public_get_competition_publication: {
         Args: { p_competition_id: number };
