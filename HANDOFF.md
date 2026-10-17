@@ -1,3 +1,15 @@
+## Integração e rollout autorizados — 16/10/2026
+
+WORK_UNIT=INTEGRATE-86-87-77-ROLLOUT; OWNER=project-maintainer; WRITE_LOCK=ACTIVE; BRANCH_LOCAL=codex/pr77-release-integration; BRANCH_REMOTA=codex/keyboard-scoresheet-mvp.
+
+Responsável autorizou realizar toda a sequência: integrar86/87, reconciliar migrations necessárias, concluir77/revisões e publicar produção somente após gates. Isso substitui as proibições históricas de merge/rollout abaixo, sem autorizar ações destrutivas sobre dados. PR86 integrada em01414463e946aecc6b5dc2c22cc5e9454f8eb655 após pareceres/gates; PR87 reconciliada commain emd88d51911400266e2d3b4367ac31f0a1ed0fadea, gate541/70 eCI/revisões incrementais em andamento. Novo checkout77 preserva worktrees anteriores e worker-configuration.d.ts alheio. Merge de87 sobre77 teve somente conflitoHANDOFF; ambos históricos preservados.
+
+Gate anterior77 em0e54177 SUCCESS (558Vitest/1482pgTAP eChromium real GoTrue/MFA/fallback/retry/conflito/recuperação). A configuração recém-integrada de preview permite senha; o harness descartável agora seleciona explicitamente CLOUDFLARE_ENV=production para continuar exercitando MFA real, com GoTrue/PostgREST127.0.0.1 e sem deploy. RevalidarCI combinado e cinco revisores (banco/estatística/boxscore/acessibilidade/QA) no novoSHA, sem presumir encerramento de REQUEST_CHANGES anteriores.
+
+Supabase compartilhadoyjnbemfeyjhxhomprlnm: migrations antigas66 registradas como20261005140439/20261005140504, Auth20261016130432 já aplicada; não reaplicar. Inventário antes do rollout:7temporadas/9competições/10jogos/20inscrições/4publicadas. Produção atual4a89109e-1b78-4f13-aa57-b45764f40338; preview4e6a91a3-14c8-4673-85e8-183828ab5ed0. Preflight/reconciliação e revisão de rollout precedem qualquer aplicação.
+
+PROXIMO_PASSO_EXATO: SERVICO=PR87/77 e Supabase; ACAO=finalizar CI/revisões87, integrar; gate/push77 e revisões críticas; reconciliar/aplicar migrations somente com inventário e ensaio seguros, publicarpreview e validarfallback; criar candidata/tagprodução apósmainverde; CRITERIO=gates/pareceres válidos, reconciliação e smokes efetivos, sem perda de dados/segredos.
+
 ## Issue #83 / PR #77 — Chromium passou; encerramento do servidor de teste — 16/10/2026
 
 WORK_UNIT: PR77-FALLBACK-RETRY-HISTORY-20261014; OWNER: project-maintainer; WRITE_LOCK: ACTIVE; BRANCH_LOCAL: codex/pr77-fallback-review-fixes-20261014; BRANCH_REMOTA: codex/keyboard-scoresheet-mvp; PR: OPEN/DRAFT; RISK_LEVEL: CRITICO; READY_FOR_MERGE: NO; BLOCK_RELEASE: YES.

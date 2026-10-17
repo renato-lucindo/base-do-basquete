@@ -35,6 +35,9 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
   let output = "";
   const server = spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1"], {
     stdio: ["ignore", "pipe", "pipe"],
+    // Exercise the production MFA guard against local disposable services.
+    // Preview password admission is deliberately absent from this AAL2 test.
+    env: { ...process.env, CLOUDFLARE_ENV: "production" },
     // Keep npm and the dev server in one process group for CI cleanup.
     detached: process.platform !== "win32",
   });
