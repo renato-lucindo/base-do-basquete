@@ -1,7 +1,7 @@
 begin;
 \ir ../helpers/final_profile_fixtures.inc
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(31);
 
 select ok(
   pg_get_constraintdef(
@@ -79,6 +79,18 @@ select is(
 select throws_ok(
   $$select public.admin_create_competition_edition_batch(request_id,input || '{"navigationOrder":"category_division"}') from batch_context$$,
   'BD409','BDB_IDEMPOTENCY_CONFLICT','divergent retry is rejected'
+);
+select throws_ok(
+  $$select public.admin_create_competition_edition_batch(gen_random_uuid(),input || '{"disputes":{}}') from batch_context$$,
+  'BD501','BDB_EDITION_BATCH_INPUT_INVALID','object disputes retain the domain error'
+);
+select throws_ok(
+  $$select public.admin_create_competition_edition_batch(gen_random_uuid(),input || '{"disputes":null}') from batch_context$$,
+  'BD501','BDB_EDITION_BATCH_INPUT_INVALID','null disputes retain the domain error'
+);
+select throws_ok(
+  $$select public.admin_create_competition_edition_batch(gen_random_uuid(),input || '{"disputes":[]}') from batch_context$$,
+  'BD501','BDB_EDITION_BATCH_INPUT_INVALID','empty disputes retain the domain error'
 );
 reset role;
 

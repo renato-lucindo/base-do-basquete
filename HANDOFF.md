@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Issue #84 — correção de ordem dos locks — 16/10/2026
+
+WORK_UNIT=ISSUE84-BATCH-DEADLOCK-20261016; OWNER=project-maintainer; BRANCH=codex/issue84-batch-lock-order-20261016; BASE=be851210da2ba96e4ca78c9cbfac53223ee6862d; WRITE_LOCK=ACTIVE (registro remoto issue84 comentário6221019141).
+
+Retomada preserva os dois arquivos preparados anteriormente. Migration aditiva do wrapper batch mantém autorização, ledger e validação na função privada; adquire request434, campeonato432 quando novo e categorias433 únicas em ordem canônica antes de processar disputas. Preserva ordem do payload/IDs, AAL2, CAS, auditoria e replay. Teste CI descartável restaura wrapper original, exige deadlock40P01 com UUIDs/ordens inversas e barreira do ano, restaura correção no finally, verifica resultado explícito, atomicidade e IDs estáveis. Não executa em banco remoto. Causa ainda pendente de reprodução no banco descartável; não declarar resolvida antes da evidência.
+
+PR86 está congelada em fd0a91a para renovação independente de banco/acessibilidade/QA; lista autenticada já validada por .data200 e sete tabelas. Worktrees alheias preservadas. Sem merge, migration compartilhada ou produção.
+
+Gate local estável PASS: npm run check, 512 Vitest/66 arquivos, formato/lint/tipos/build/runbooks/agentes/segredos (734 arquivos; 328 avisos lint preexistentes). node --check e diff --check PASS. Três assertivas pgTAP adicionais cobrem disputes objeto/null/vazio e preservação de BD501. Docker indisponível no Windows; reprodução e SQL integral pendentes do CI descartável. Somente worker-configuration.d.ts regenerado nesta worktree foi identificado e retirado do delta após o gate, sem alteração do contrato de ambiente.
+
+PROXIMO_PASSO_EXATO: ARQUIVO_OU_SERVICO=scripts/test-preset-concurrency.mjs e migration20261016173000; ACAO=finalizar regressões/gate local, abrir PR draft, comprovar baseline40P01 e correção no CI descartável e obter banco/QA independentes; CRITERIO=regressões, atomicidade/replay e pareceres válidos no SHA; sem rollout compartilhado.
+
 ## Revisoes e integracoes79 e73 concluidas - 14/10/2026
 
 Este checkpoint substitui operacionalmente os registros historicos abaixo. PR79 MERGED por cfb461425b76d0a738e915bb6925025ff7c635b4, com banco/boxscore/estatisticas/QA aprovados e QA editorial6166528738. PR73 MERGED por squash467d9e40ae559dc6d5bcf123a11fbd41f1c3a282, com banco6167075596, acessibilidade6167092759 e QA6167114151 aprovados noHEADc1323c3. As arvores integradas foram verificadas identicas aos HEADs aprovados. Todos os bloqueios anteriores foram encerrados por novos pareceres independentes; CI nao foi usado como aprovacao ficticia.

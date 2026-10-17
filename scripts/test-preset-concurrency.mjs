@@ -55,8 +55,9 @@ function connection(sql, keepOpen = false) {
   // Attach a rejection handler immediately, including while a lock barrier is being prepared.
   done.catch(() => {});
   child.stdin.on("error", () => {});
-  if (keepOpen) child.stdin.write(sql);
-  else child.stdin.end(sql);
+  const verboseSql = `\\set VERBOSITY verbose\n${sql}`;
+  if (keepOpen) child.stdin.write(verboseSql);
+  else child.stdin.end(verboseSql);
   return { child, done, ready };
 }
 async function run(sql) {
@@ -106,7 +107,12 @@ async function race(lock, statements) {
     );
     barrier.child.stdin.end("commit;\n");
     await barrier.done;
-    return await Promise.all(clients.map((client) => client.done));
+    // A baseline deadlock rejects one contender; wait for the survivor to
+    // finish before restoring the wrapper or checking committed state.
+    const results = await Promise.allSettled(clients.map((client) => client.done));
+    const failed = results.find((result) => result.status === "rejected");
+    if (failed) throw failed.reason;
+    return results.map((result) => result.value);
   } finally {
     clearTimeout(watchdog);
     if (!barrier.child.stdin.destroyed) barrier.child.stdin.end("rollback;\n");
@@ -484,4 +490,123 @@ await assert.rejects(
 );
 console.log(
   "PASS: concurrent edition batch retries preserve two disputes, one shared division, ledger and navigation audit",
+);
+
+// Issue #84: prove the original opposite-order deadlock, then verify the
+// additive ordered-lock wrapper removes 40P01 with distinct request UUIDs.
+const deadlockSeries = async (suffix) =>
+  Number(
+    await run(`insert into public.competition_series(name,slug)
+      values('Batch lock regression ${suffix}','batch-lock-${suffix}-${runId}') returning id`),
+  );
+const reversedBatchInput = (series, reverse) => {
+  const adult = {
+    ...batchDispute,
+    divisionMode: "none",
+    divisionTypeName: null,
+    divisionValueName: null,
+  };
+  const base17 = { ...adult, categoryKind: "base", categoryAge: 17 };
+  return {
+    seriesId: series,
+    championshipName: null,
+    seasonId: null,
+    year: 2026,
+    description: null,
+    navigationOrder: "category_division",
+    reviewed: true,
+    disputes: reverse ? [base17, adult] : [adult, base17],
+  };
+};
+const competingBatchCall = (request, input) => `
+set local role authenticated;
+create function pg_temp.try_inverse_batch() returns text language plpgsql as $fn$
+begin
+  perform public.admin_create_competition_edition_batch(
+    '${request}', $json$${JSON.stringify(input)}$json$::jsonb
+  );
+  return 'accepted';
+exception
+  when sqlstate 'BD506' then return 'duplicate';
+  when sqlstate 'BD409' then return 'conflict';
+  when sqlstate 'BR012' then return 'stale';
+end;
+$fn$;
+select pg_temp.try_inverse_batch()`;
+const yearLock = "select pg_advisory_xact_lock(hashtextextended('2026',311))";
+const orderedMigration = (await import("node:fs")).readFileSync(
+  new URL(
+    "../supabase/migrations/20261016173000_batch_ordered_category_locks.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
+// Recreate only the original public wrapper inside this disposable CI DB.
+// The authoritative private implementation and its validations are untouched.
+try {
+  await run(`create or replace function public.admin_create_competition_edition_batch(
+    p_request_id uuid, p_input jsonb
+  ) returns jsonb language sql security definer set search_path = ''
+  as $$ select private.create_edition_workflow_batch(p_request_id,p_input); $$`);
+  const baselineSeries = await deadlockSeries("baseline");
+  await assert.rejects(
+    race(yearLock, [
+      competingBatchCall(randomUUID(), reversedBatchInput(baselineSeries, false)),
+      competingBatchCall(randomUUID(), reversedBatchInput(baselineSeries, true)),
+    ]),
+    (error) => /40P01/.test(error.message) && /deadlock detected/i.test(error.message),
+    "the original wrapper deadlocks when categories are processed in opposite orders",
+  );
+  console.log("PASS: disposable baseline reproduces opposite-order batch deadlock (40P01)");
+} finally {
+  await run(orderedMigration);
+}
+const fixedSeries = await deadlockSeries("fixed");
+const requestA = randomUUID();
+const requestB = randomUUID();
+const fixedInputA = reversedBatchInput(fixedSeries, false);
+const fixedInputB = reversedBatchInput(fixedSeries, true);
+const fixedOutcomes = await race(yearLock, [
+  competingBatchCall(requestA, fixedInputA),
+  competingBatchCall(requestB, fixedInputB),
+]);
+assert.equal(fixedOutcomes.filter((x) => x === "accepted").length, 1);
+assert.equal(
+  fixedOutcomes.filter((x) => ["duplicate", "conflict", "stale"].includes(x)).length,
+  1,
+  "the other UUID must get an explicit domain outcome, never a deadlock",
+);
+const acceptedRequest = fixedOutcomes[0] === "accepted" ? requestA : requestB;
+const acceptedInput = fixedOutcomes[0] === "accepted" ? fixedInputA : fixedInputB;
+const acceptedBatch = JSON.parse(
+  await run(`select result from private.edition_batch_creation_requests
+    where request_id='${acceptedRequest}'`),
+);
+assert.equal(acceptedBatch.competitionIds.length, 2);
+const fixedCounts = JSON.parse(
+  await run(`select jsonb_build_object(
+    'seasons',(select count(*) from public.competition_seasons where series_id=${fixedSeries}),
+    'disputes',(select count(*) from public.competitions where series_id=${fixedSeries} and year=2026),
+    'ledger',(select count(*) from private.edition_batch_creation_requests
+      where request_id in ('${requestA}','${requestB}')),
+    'navigationAudits',(select count(*) from public.admin_mutation_audit
+      where action='competition_season_navigation_configured'
+      and entity_id=${acceptedBatch.seasonId})
+  )`),
+);
+assert.deepEqual(fixedCounts, {
+  seasons: 1,
+  disputes: 2,
+  ledger: 1,
+  navigationAudits: 1,
+});
+const retriedBatch = JSON.parse(
+  await run(`begin; ${authContext} set local role authenticated;
+    select public.admin_create_competition_edition_batch(
+      '${acceptedRequest}', $json$${JSON.stringify(acceptedInput)}$json$::jsonb
+    ); commit`),
+);
+assert.deepEqual(retriedBatch, acceptedBatch, "retry preserves committed IDs");
+console.log(
+  "PASS: opposite-order UUID batches finish without 40P01, leave one atomic edition, and replay stable IDs",
 );
