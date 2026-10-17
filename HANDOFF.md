@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Validação autenticada da compatibilidade do preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-COMPETITIONS-AUTH-SMOKE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_FUNCIONAL=2dc0b4c94b1ad213eb6befcd039f104195310ac6; WRITE_LOCK=RELEASED; ESTADO=LISTA_AUTENTICADA_VERIFICADA.
+
+Reconciliação: a correção de compatibilidade já estava commitada, publicada e com CI aprovado. O diagnóstico na conversa tratou registros anteriores ao deploy como pendência atual; não repetir rollback, implementação ou deploy. O Chromium do MCP chrome-devtools está sem sessão (about:blank); o navegador integrado possui a sessão real do responsável e foi utilizado para a validação, sem copiar cookies ou credenciais.
+
+Evidência real: `/admin/competitions` renderizou sete tabelas de edições; recarregar preservou a lista. Clicar em Filtrar disparou GET `/admin/competitions.data?q=&year=&status=` com HTTP 200 e x-correlation-id `ba3443ae-f5bb-478b-8489-c9a7130e8fe9`; sete grupos permaneceram renderizados na URL com os filtros. O fallback para coluna ausente está em `app/routes/admin.competitions.tsx`, coberto pelos testes existentes para schema antigo, preferência atual e erros reais. CI 38927917551 (gate, accessibility, database), CodeQL 38927917538 e preview 38927917331 SUCCESS no SHA funcional. Evidências reutilizadas: nenhum código mudou nesta verificação.
+
+Escopo desta rodada: documentação e smoke de leitura. Nenhuma migration, alteração de autenticação, merge, deploy ou suíte completa executada. A PR #86 permanece draft; este smoke não substitui as revisões pendentes de Auth nem comprova criação de edição, outras rotas ou o fallback da PR #77. Erros históricos de `team_registrations` não foram reproduzidos nem declarados corrigidos.
+
+PROXIMO_PASSO_EXATO: SERVICO=PR #86; ACAO=renovar as revisões independentes de Auth no HEAD funcional e conferir os gates antes de eventual integração autorizada; CRITERIO=pareceres válidos, mantendo a evidência de lista autenticada. Reconciliação de migrations e issues #83/#84 continuam unidades separadas, sem aplicação no banco compartilhado.
+
 ## Compatibilidade da lista de competições no preview — 16/10/2026
 
 WORK_UNIT=PREVIEW-COMPETITIONS-LEGACY-SCHEMA; BRANCH=codex/preview-password-auth; PR=#86; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
