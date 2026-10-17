@@ -29,7 +29,7 @@ export function AdminArea({ title, children }: { title: string; children: ReactN
           </span>
           <span>Base do Basquete</span>
         </Link>
-        <span className="environment-pill">Sessão AAL2</span>
+        <span className="environment-pill">Sessão administrativa</span>
       </header>
       <AdminNavigation />
       <section className="admin-welcome admin-dashboard">
