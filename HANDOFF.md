@@ -1,5 +1,133 @@
 # HANDOFF — Base do Basquete
 
+## PR #86 — revisões finais e ciclo Auth verificados — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-FINAL-REVIEW; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_FUNCIONAL=fd0a91a076b473158b991601cfc68ea986ea61c8; WRITE_LOCK=RELEASED; ESTADO=REVISADO_SEM_MERGE. Substitui a pendência de revisão/smoke dos checkpoints anteriores.
+
+Pareceres independentes publicados: banco6227803214 e acessibilidade6227803342 APPROVE_WITH_NON_BLOCKING_NOTES; QA renovado na PR86 encerrou explicitamente BLOCK_RELEASE6227803485 no mesmo SHA após evidência6227845306. CI38988812827 SUCCESS (541Vitest/70arquivos,1371pgTAP/50arquivos,17E2E/2skips); CodeQL38988812804 e preview38988812811 SUCCESS. Sem novo gate local ou alteração funcional nesta rodada.
+
+Responsável realizou saída e novo login por senha. Logs: Cloudflare auth.logout success,correlation200a36b2-1f9b-4662-850a-df4be9b85e3b,17/10UTC01:13:28 (16/10Brasília22:13); Supabase logout204 às01:13:28.530Z; token200 às01:14:31.051Z; admin_open_preview_session200 às01:14:31.755Z. Consulta somente agregada confirmou uma admissão ligada à nova auth.session criada01:14:31.32883Z, zero órfãs e zero admissões anteriores ao logout. Não recuperados cookies, senha, tokens ou secrets. Lista/reload/filtro200/sete tabelas comprovados no smoke anterior. A aba temporária sem sessão foi fechada; nenhum login automatizado com credencial do responsável.
+
+Limites preservados: correlação do loader após novo login não completada; smoke anterior da lista reutilizado. Não comprovadas todas as operações nem MFA real de produção. Notas herdadas de personalização mobile/foco permanecem; criação de edições depende da reconciliação separada das migrations. Nenhuma migration, merge ou deploy nesta rodada. PR permanece draft até integração explicitamente autorizada.
+
+PROXIMO_PASSO_EXATO: SERVICO=PR86 e PR87; ACAO=conferir consolidação editorial e definir ordem de integração/rollout em unidade autorizada, preservando produção comMFA; CRITERIO=pareceres/gates válidos e compatibilidade verificada antes de qualquer rollout. PR87 resolve issue84 no CI; issue83/PR77 continua separada.
+
+## Validação autenticada da compatibilidade do preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-COMPETITIONS-AUTH-SMOKE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_FUNCIONAL=2dc0b4c94b1ad213eb6befcd039f104195310ac6; WRITE_LOCK=RELEASED; ESTADO=LISTA_AUTENTICADA_VERIFICADA.
+
+Reconciliação: a correção de compatibilidade já estava commitada, publicada e com CI aprovado. O diagnóstico na conversa tratou registros anteriores ao deploy como pendência atual; não repetir rollback, implementação ou deploy. O Chromium do MCP chrome-devtools está sem sessão (about:blank); o navegador integrado possui a sessão real do responsável e foi utilizado para a validação, sem copiar cookies ou credenciais.
+
+Evidência real: `/admin/competitions` renderizou sete tabelas de edições; recarregar preservou a lista. Clicar em Filtrar disparou GET `/admin/competitions.data?q=&year=&status=` com HTTP 200 e x-correlation-id `ba3443ae-f5bb-478b-8489-c9a7130e8fe9`; sete grupos permaneceram renderizados na URL com os filtros. O fallback para coluna ausente está em `app/routes/admin.competitions.tsx`, coberto pelos testes existentes para schema antigo, preferência atual e erros reais. CI 38927917551 (gate, accessibility, database), CodeQL 38927917538 e preview 38927917331 SUCCESS no SHA funcional. Evidências reutilizadas: nenhum código mudou nesta verificação.
+
+Escopo desta rodada: documentação e smoke de leitura. Nenhuma migration, alteração de autenticação, merge, deploy ou suíte completa executada. A PR #86 permanece draft; este smoke não substitui as revisões pendentes de Auth nem comprova criação de edição, outras rotas ou o fallback da PR #77. Erros históricos de `team_registrations` não foram reproduzidos nem declarados corrigidos.
+
+PROXIMO_PASSO_EXATO: SERVICO=PR #86; ACAO=renovar as revisões independentes de Auth no HEAD funcional e conferir os gates antes de eventual integração autorizada; CRITERIO=pareceres válidos, mantendo a evidência de lista autenticada. Reconciliação de migrations e issues #83/#84 continuam unidades separadas, sem aplicação no banco compartilhado.
+
+## Compatibilidade da lista de competições no preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-COMPETITIONS-LEGACY-SCHEMA; BRANCH=codex/preview-password-auth; PR=#86; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
+
+Falha observada no Chromium da PR #77: `/admin/competitions.data` retornou HTTP 500 (x-correlation-id `2a4d09fe-f9a7-4c8f-8497-f05729e36166`) e o ErrorBoundary exibiu "Algo saiu do compasso". O loader de `app/routes/admin.competitions.tsx` selecionava `competition_seasons.dispute_navigation_order`, coluna ausente no projeto Supabase compartilhado `yjnbemfeyjhxhomprlnm`. A migration de introdução `20261006123600_multi_dispute_creation_navigation.sql` consta localmente mas não foi registrada remotamente; há divergência histórica entre migrations locais/remotas, então não foi feito `db push`/`repair` em lote.
+
+Correção focal no loader: se a consulta da preferência falhar exclusivamente com `42703`/`PGRST204`, consultar `competition_seasons.id` e apresentar a ordem padrão `category_division`. Em banco atualizado, preservar `dispute_navigation_order`; demais erros continuam fatais. Novo teste cobre fallback, preferência preservada e erros reais não mascarados. Gate local `npm run check` aprovado (541 Vitest/70 arquivos, lint com avisos preexistentes, typecheck, build, documentação, agentes, segredos). Sem alterações SQL, RLS, MFA ou PR #77.
+
+Worker `base-do-basquete-preview` publicado apenas em preview com o segredo existente preservado: versão `4e6a91a3-14c8-4673-85e8-183828ab5ed0`. HTTP público após deploy: `/admin/login`=200, `/admin/competitions` sem sessão=302 para `/admin/login`. Não há smoke autenticado desta lista pelo navegador deste agente (o Chromium disponível está autenticado no hostname isolado da PR #77); não declarar a falha corrigida para sessão autenticada até que esse fluxo seja verificado. Produção não foi modificada.
+
+PROXIMO_PASSO_EXATO: SERVICO=Worker base-do-basquete-preview e PR #86; ACAO=validar com sessão administrativa real `/admin/competitions` (lista deve carregar), resolver qualquer erro residual por correlação/logs, renovar pareceres independentes e conferir checks após push; CRITERIO=HTTP 200 autenticado com a lista renderizada e segurança AAL1/AAL2 preservada; manter PR #86 draft até gates/revisões válidos. A criação de novas disputas exige conciliar o restante das migrations em unidade separada antes de habilitá-la no banco compartilhado.
+
+## Preview por senha publicado — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=PREVIEW_DEPLOYED_PENDING_AUTH_SMOKE; WRITE_LOCK=RELEASED.
+
+O responsável informou que o preview ainda pedia MFA. Diagnóstico remoto: o Worker ativo era de 14/10, e a página publicada de login ainda mostrava a instrução de segundo fator. PR #86 em 52038fd teve checks gate, database, accessibility, analyze e upload aprovados. Supabase compartilhado yjnbemfeyjhxhomprlnm confirmou migration 20261016130432 aplicada, uma linha de configuração privada e zero sessões admitidas. O hash armazenado foi comparado localmente com o segredo existente sem imprimir seus valores: correspondência positiva.
+
+Build novo concluído e Worker `base-do-basquete-preview` publicado com `wrangler deploy --env preview --secrets-file tmp/preview-shared-secrets.json --keep-vars`, versão Cloudflare `1b9fd354-cb7c-4560-9603-d7f35c43205a`. Verificação HTTP pública posterior: `/admin/login` retorna 200 com instrução de acesso por e-mail/senha e sem texto de MFA; `/admin/mfa` sem cookie redireciona 302 para `/admin/login`; `wrangler secret list` confirma PREVIEW_AUTH_SECRET presente e os três segredos preexistentes mantidos. O formulário de produção ainda informa obrigatoriedade de segundo fator. Código local sem alterações adicionais além deste checkpoint; PR #77 não foi tocada.
+
+PENDENCIAS: login real autenticado e operação administrativa em preview ainda não testados (credenciais do administrador não foram utilizadas); conferir em janela privada para evitar cookie/rota MFA anteriores. Renovação independente de banco, acessibilidade e QA no HEAD vigente ainda não ocorreu (tentativas anteriores de agentes encerraram por erro de conexão); PR #86 continua draft, sem integração na main. Nenhum deploy de produção realizado.
+
+PROXIMO_PASSO_EXATO: SERVICO=preview Cloudflare e PR #86; ACAO=abrir `/admin/login` em janela privada e autenticar com a conta administrativa, validar leitura/escrita e proteção AAL1 normal, obter os três pareceres independentes finais e integrar a PR após os gates do HEAD; CRITERIO=login real por senha com acesso administrativo no preview, login AAL1 comum negado, produção com MFA real e pareceres válidos antes do merge.
+
+## Ativação parcial do preview por senha — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; BRANCH=codex/preview-password-auth; ESTADO=ATIVACAO_PARCIAL; WRITE_LOCK=ACTIVE.
+
+PR #86 no HEAD 55d09f9: checks `gate`, `database`, `accessibility`, `analyze` e `upload` aprovados; build local aprovado. Revisores independentes banco, acessibilidade e QA foram convocados para renovar os pareceres no HEAD, mas as três execuções terminaram com erro do transporte Codex (`stream disconnected before completion`), portanto não há parecer final válido.
+
+Supabase compartilhado yjnbemfeyjhxhomprlnm: migration `20261016130432_preview_password_sessions.sql` aplicada em transação via `supabase db query --linked --project-ref` e versão `20261016130432` marcada como aplicada via `supabase migration repair`. Verificação remota: ambas as tabelas privadas presentes, zero linhas de configuração/segredo e zero sessões admitidas; a exceção permanece desativada. A tentativa de cadastrar o hash local foi bloqueada pelas configurações de segurança da OpenAI, portanto NÃO foi repetida por outra via. Worker preview não recebeu novo secret nem deploy nesta ativação. Produção não foi modificada. PR #77 permanece fora do escopo.
+
+PROXIMO_PASSO_EXATO: SERVICO=Supabase compartilhado/Worker base-do-basquete-preview; ACAO=provisionar manualmente o hash do PREVIEW_AUTH_SECRET gerado em tmp/preview-shared-secrets.json na tabela private.preview_password_auth, publicar o Worker de preview com `--secrets-file`, validar login real e MFA da produção, obter pareceres independentes no HEAD e integrar PR #86 apenas após gates e smoke comprovados; CRITERIO=login por senha administrativo no preview, AAL1 comum recusado e produção exigindo MFA. Não reaplicar a migration já registrada.
+
+## Ativação de preview autorizada — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-ACTIVATE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_INICIAL=dc5bae6ff3c103ab5fcdf49e3a931dadaa9a05ac; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
+
+DECISAO_VIGENTE_POSTERIOR: o responsável instruiu reutilizar o banco dos previews existentes e tornar o acesso por senha padrão para novas PRs, sem configuração por PR. Isso substitui o isolamento/blacklist da preparação anterior e autoriza alteração aditiva no Supabase compartilhado para esse fim. Não haverá novos projetos, cobrança nem pausa de QA72. A implementação deverá autorizar somente sessões explicitamente abertas pelo backend de preview mediante segredo próprio; AAL1 de login normal/produção continua rejeitado por RLS/RPCs, e o Worker de produção continua exigindo AAL2 real. É proibido simplesmente liberar AAL1 globalmente no helper. Configuração e segredo únicos no Worker preview serão herdados pelos previews futuros. Pareceres anteriores aprovam apenas o artefato isolado; renovar no novo delta antes de ativar.
+
+Implementação vigente: migration aditiva 20261016130432_preview_password_sessions cria configuração privada por hash e admissões com FK para auth.sessions (revogação em cascade), TTL8h e RLS/grants sem acesso dos papéis de API. RPC admin_open_preview_session exige identidade administrativa, método password, sessão Auth real e capacidade de backend; o helper existente aceita somente essas sessões AAL1 além do AAL2 normal. Nada foi aplicado remotamente ainda. O overlay manual antigo e seus testes específicos foram removidos por incompatibilidade com o banco compartilhado. Wrangler declara PREVIEW_PASSWORD_AUTH=enabled somente em preview; PREVIEW_AUTH_SECRET será provisionado uma vez no Worker de preview. Cookie e validação AAL2 de produção preservados.
+
+Evidências locais desse novo delta: npm run check PASS (536 Vitest/69 arquivos, tipos/build/formato/lint/agentes/runbooks e scan740); 24 testes focais de backend/configuração/login PASS; 24 pgTAP de sessões/capacidade/RLS/replay/TTL/logout/revogação PASS em PostgreSQL17 local com auth.sessions mínimo; baseline AAL2 10/10 PASS; Chromium/axe login 1/1 PASS. Tipo Worker regenerado porque a configuração agora declara novo binding; runtime gerado corresponde ao workerd já fixado no lockfile, sem alteração de dependências. Revisões e CI do novo delta ainda exigidos. PR draft criada: #86, https://github.com/renato-lucindo/base-do-basquete/pull/86; artefato antigo 365ddf4 teve CI/database/accessibility/CodeQL/preview verdes, sem aplicar a nova migration.
+
+O responsável instruiu “faça os passos de ativação para mim”, autorizando o SQL e publicação necessários somente no preview. Esta instrução substitui a proibição anterior de ações remotas para esta ativação; produção, banco compartilhado e QA72 permanecem fora do escopo de alteração. O modo permanece opt-in por preview; nenhum preview existente será redirecionado indiscriminadamente. Não há identificador válido fornecido; list_projects e list_branches confirmam apenas compartilhado, QA72 e projeto antigo inativo. Procurar branch nova isolada, sem copiar dados. Custos que o provedor exigir devem ser confirmados pelo responsável no mecanismo oficial.
+
+Histórico superado de provisionamento: create_branch(preview-password-auth) recusado pelo Supabase porque branching exige Pro. O responsável escolheu a organização renato-lucindo; create_project recusado pelo limite de dois projetos Free ativos. Nenhum recurso foi criado. A decisão posterior de reutilizar o banco existente encerrou esse caminho; não há pausa, cobrança, novo projeto ou escolha de quota pendente.
+
+Cloudflare consultado em leitura: conta 16b4a5e0a99a031d28051ebadb4811cc; Worker preview modificado em 2026-10-15T00:05:09.914475Z, produção em 2026-09-25T18:09:37.411036Z. APP_ENV confirma preview/production, ambos com os três bindings criptografados esperados. Wrangler OAuth tem workers_scripts write; não é necessário novo login. Nenhum deploy/secret/configuração remota alterado. PR77 permanece dabafa879d4e6a8131527c844d3c143e6534d2ae OPEN/DRAFT.
+
+Pareceres do novo mecanismo em 4643916: banco APPROVE_WITH_NON_BLOCKING_NOTES (2026-10-16T13:20:18Z), acessibilidade APPROVE_WITH_NON_BLOCKING_NOTES (13:22:05Z), QA REQUEST_CHANGES (13:19:22Z) por logout global em falha de admissão. Correção focal em andamento usa scope local nesse caminho para preservar outras sessões, com regressão observada falhar antes da alteração. CI38906452343, CodeQL38906452159 e Preview38906452236 PASS; SQL integral50 arquivos/1371 pgTAP PASS. Renovar pareceres focais após a correção. Limitação de foco herdada do formulário permanece documentada, sem mudança de CSS/interação neste delta.
+
+PROXIMO_PASSO_EXATO: SERVICO=Supabase yjnbemfeyjhxhomprlnm e Worker base-do-basquete-preview; ACAO=validar correção de logout, renovar pareceres no SHA final, aplicar somente migration de sessões inicialmente desativada, provisionar capacidade/hash únicos e publicar preview; CRITERIO=login por senha e leitura/escrita real comprovados, outra sessão AAL1 negada e produção exigindo AAL2. Não há dependência de projeto novo.
+
+## Acesso por senha somente em preview — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; BASE_COMMIT=be851210da2ba96e4ca78c9cbfac53223ee6862d; WRITE_LOCK=ACTIVE; RISK_LEVEL=CRITICO.
+
+O responsável solicitou acesso administrativo por senha e escolheu explicitamente **somente preview**. Esta instrução autoriza a exceção de produto nesse ambiente; produção continua exigindo MFA. Implementação em worktree própria, preservando os deltas existentes no checkout original e na PR #77. O HEAD remoto da PR77 observado foi dabafa879d4e6a8131527c844d3c143e6534d2ae, posterior ao checkpoint histórico abaixo.
+
+Escopo simplificado por instrução posterior do responsável: opção explícita de Worker vinculada a projeto Supabase isolado e um overlay SQL manual, específico desse projeto, fora das migrations de produto. Sem tabela de configuração ou nova RPC. Testes de identidade/RLS/produção e instruções de ativação/rollback em docs/runbooks/preview-password-auth.md. Escopo negativo: nenhum uso do banco compartilhado yjnbemfeyjhxhomprlnm para senha sem MFA; não reutilizar o QA da PR72; não apagar fatores cadastrados; sem alteração da PR77, migrations remotas, merge ou deploy nesta preparação. A autorização anterior de investigação proíbe migrations remotas e deploy; a ativação será uma etapa concreta posterior.
+
+REQUIRED_REVIEWERS=database-security-reviewer,accessibility-ui-reviewer,qa-reviewer. Em a7d3002, banco e QA emitiram APPROVE_WITH_NON_BLOCKING_NOTES somente para a preparação. Acessibilidade emitiu REQUEST_CHANGES por P2: selo herdado “Sessão AAL2” incompatível com o fluxo AAL1. WRITE_LOCK=ACTIVE para corrigir o selo e esclarecer as duas etapas do rollback; renovar pareceres focais após a correção. Esta unidade não resolve nem dispensa o bloqueio de navegação da PR77.
+
+Implementação simplificada preparada: guard e login consultam a autorização existente do banco; a exceção só é selecionada pelo binding opcional do Worker com origem exata e projeto exclusivo. O overlay manual compila o emissor JWT e exige identidade administrativa, AAL1 explícito e método password; preserva o AAL real e a assinatura validada pelo Supabase. Sem binding, o backend mantém o fluxo original de MFA. Login e página de segurança informam o modo correto.
+
+EVIDÊNCIAS LOCAIS: npm run check PASS (69 arquivos/544 Vitest, formato, lint com 328 avisos preexistentes, tipos, agentes, runbooks, build e scan de 740 arquivos). 32 regressões focais PASS; Chromium/axe do login 1/1 PASS. PostgreSQL 17 local descartável: baseline Auth/RLS 10/10 PASS, overlay 16/16 PASS, guardas de instalação para placeholder/compartilhado/QA72 PASS, rollback documentado PASS e baseline pós-rollback 10/10 PASS. Observadas falhas antes da implementação; corrigido retorno NULL para AAL ausente, que agora é false. Bootstrap Auth mínimo não valida GoTrue/PostgREST real nem todas as RPCs de domínio. Nenhuma evidência de acesso remoto por senha foi produzida.
+
+PRESERVAÇÃO: gerador npm ci/typegen alterou worker-configuration.d.ts nesta worktree nova; somente esse delta gerado e identificado foi retirado. Nenhum arquivo do checkout original ou da PR77 foi alterado. Banco local foi usado somente para os testes descritos; Supabase compartilhado, QA72 e produção inalterados.
+
+Correção focal posterior: selo global passou a “Sessão administrativa”, sem afirmar AAL2 em sessão AAL1. Runbook explicita conferência manual do projeto conectado e revogação completa primeiro no banco e depois no Worker. Gate após a correção PASS novamente: 544 Vitest, tipos/build/lint/formato/agentes/runbooks e scan740. O primeiro comando de formato desta rodada encontrou apenas o JSON efêmero do Playwright sem newline; corrigido esse artefato ignorado, sem modificar teste ou configuração. SQL e autenticação não mudaram nesta rodada. PostgreSQL descartável local foi parado após os ensaios.
+
+Branch publicada em origin/codex/preview-password-auth, sem PR para não disparar automaticamente o workflow de preview. HEAD funcional publicado accc980bd7798afc6d8a4366ff090b18d05b2d9e, confirmado pela API GitHub e git ls-remote. Nenhum workflow remoto acionado. Falta identificador público válido de projeto exclusivo: a resposta recebida foi um nome curto, não uma referência Supabase de 20 letras; list_projects continua sem novo projeto dedicado. Foi solicitado o link do painel do projeto para evitar exigir que o responsável localize o identificador manualmente.
+
+Renovações independentes em accc980: banco APPROVE em 2026-10-16T12:50:44Z; QA APPROVE em 12:50:45Z; acessibilidade APPROVE em 12:50:46Z. P2 do selo e notas de rollback/conferência de destino encerrados. Pareceres aprovam somente a preparação; não autorizam ativação, merge ou release. Acessibilidade anterior incluiu nove análises axe da renderização isolada em 390/720/1440, sem violações, além de inspeção de teclado; não equivale a login remoto/hidratação real. Revisores encerrados após emissão. Este checkpoint posterior é exclusivamente documental; artefato funcional e evidências não mudam.
+
+```text
+REVIEW_PACKET:
+WORK_UNIT: PREVIEW-PASSWORD-AUTH
+BRANCH: codex/preview-password-auth
+BASE_COMMIT: be851210da2ba96e4ca78c9cbfac53223ee6862d
+HEAD_COMMIT_FUNCIONAL: accc980bd7798afc6d8a4366ff090b18d05b2d9e
+OBJETIVO: preparar acesso por senha somente em preview isolado, com ativação manual posterior
+CRITERIOS_DE_ACEITE: default MFA; produção/compartilhado/QA72 rejeitados para exceção; identidade/emissor/senha/RLS validados localmente; UI correta; rollback documentado
+ESCOPO: guard/configuração opcional, login/security/selo, testes, overlay manual e runbook
+ESCOPO_NEGATIVO: remoto, PR77, compartilhado, QA72, produção, merge e deploy
+ARQUIVOS_ALTERADOS: HANDOFF.md; app/env.d.ts; app/components/admin/admin-area.tsx; app/modules/auth/authorization.server.ts e teste; app/modules/auth/preview-password.server.ts e teste; app/routes/admin.login.tsx e teste; app/routes/admin.security.tsx; scripts/preview-password-auth.sql; preview-tests/preview_password_auth.test.sql; docs/runbooks/preview-password-auth.md
+MIGRATIONS: nenhuma; overlay fora das migrations de produto
+RISCOS_CONHECIDOS: destino depende de conferência manual; GoTrue/PostgREST/CI/operações de domínio e login remoto ainda não comprovados
+TESTES_EXECUTADOS: check544, focal32, Chromium axe1, SQL baseline10/overlay16/rollback10 e guardas de instalação
+EVIDENCIAS: logs locais citados acima e pareceres independentes no HEAD funcional; resultados essenciais preservados neste checkpoint
+AMBIENTE_VALIDADO: local/Chromium/PostgreSQL17 com bootstrap Auth mínimo
+RISK_LEVEL: CRITICO
+RISK_JUSTIFICATION: Auth e autorização central de RLS/RPCs
+REVIEW_DECISIONS: banco REQUIRED/APPROVE; acessibilidade REQUIRED/APPROVE; QA REQUIRED/APPROVE; estatística/boxscore/performance não aplicáveis ao delta
+REQUIRED_REVIEWERS: database-security-reviewer, accessibility-ui-reviewer, qa-reviewer
+WAIVERS: nenhuma dispensa crítica ou de gate de ativação
+REVIEW_APPROVER: project-maintainer, somente preparação local
+WRITE_LOCK_OWNER: RELEASED
+READY_FOR_RELEASE: NO
+```
+
+PROXIMO_PASSO_EXATO: ARQUIVO_OU_SERVICO=projeto Supabase exclusivo de preview e docs/runbooks/preview-password-auth.md; ACAO=receber o link/identificador público válido, conferir isolamento/schema/conta administrativa e obter autorização específica para ativação remota; CRITERIO_DE_CONCLUSAO=login real por senha e leitura/escrita de dados de teste comprovados, produção continua MFA. ATIVACAO_REMOTA=NAO_REALIZADA; READY_FOR_RELEASE=NO. WRITE_LOCK=RELEASED.
+
 ## Revisoes e integracoes79 e73 concluidas - 14/10/2026
 
 Este checkpoint substitui operacionalmente os registros historicos abaixo. PR79 MERGED por cfb461425b76d0a738e915bb6925025ff7c635b4, com banco/boxscore/estatisticas/QA aprovados e QA editorial6166528738. PR73 MERGED por squash467d9e40ae559dc6d5bcf123a11fbd41f1c3a282, com banco6167075596, acessibilidade6167092759 e QA6167114151 aprovados noHEADc1323c3. As arvores integradas foram verificadas identicas aos HEADs aprovados. Todos os bloqueios anteriores foram encerrados por novos pareceres independentes; CI nao foi usado como aprovacao ficticia.

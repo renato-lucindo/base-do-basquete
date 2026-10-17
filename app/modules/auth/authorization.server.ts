@@ -3,6 +3,7 @@ import { redirect } from "react-router";
 
 import type { Database } from "../../types/database.generated";
 import { createAuthenticatedSupabaseClient } from "./supabase.server";
+import { usesPreviewPasswordAuth } from "./preview-password.server";
 import {
   clearSessionCookie,
   createSessionCookie,
@@ -87,7 +88,16 @@ export async function requireAdminIdentity(
 }
 
 export async function requireAdminAal2(request: Request, env: Env): Promise<AuthenticatedRequest> {
+  // Keep the historical entry point for existing routes. The preview exception
+  // requires both an isolated Worker configuration and a matching database policy.
+  const passwordOnlyPreview = usesPreviewPasswordAuth(env);
   const auth = await requireAdminIdentity(request, env);
+  if (passwordOnlyPreview) {
+    if (!(await callAuthorizationProbe(auth.client, "is_current_admin_aal2"))) {
+      loginRedirect();
+    }
+    return auth;
+  }
   const { data, error } = await auth.client.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error) loginRedirect();
 
