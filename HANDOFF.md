@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## PR #86 — revisões finais e ciclo Auth verificados — 16/10/2026
+
+WORK_UNIT=PREVIEW-PASSWORD-AUTH-FINAL-REVIEW; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_FUNCIONAL=fd0a91a076b473158b991601cfc68ea986ea61c8; WRITE_LOCK=RELEASED; ESTADO=REVISADO_SEM_MERGE. Substitui a pendência de revisão/smoke dos checkpoints anteriores.
+
+Pareceres independentes publicados: banco6227803214 e acessibilidade6227803342 APPROVE_WITH_NON_BLOCKING_NOTES; QA renovado na PR86 encerrou explicitamente BLOCK_RELEASE6227803485 no mesmo SHA após evidência6227845306. CI38988812827 SUCCESS (541Vitest/70arquivos,1371pgTAP/50arquivos,17E2E/2skips); CodeQL38988812804 e preview38988812811 SUCCESS. Sem novo gate local ou alteração funcional nesta rodada.
+
+Responsável realizou saída e novo login por senha. Logs: Cloudflare auth.logout success,correlation200a36b2-1f9b-4662-850a-df4be9b85e3b,17/10UTC01:13:28 (16/10Brasília22:13); Supabase logout204 às01:13:28.530Z; token200 às01:14:31.051Z; admin_open_preview_session200 às01:14:31.755Z. Consulta somente agregada confirmou uma admissão ligada à nova auth.session criada01:14:31.32883Z, zero órfãs e zero admissões anteriores ao logout. Não recuperados cookies, senha, tokens ou secrets. Lista/reload/filtro200/sete tabelas comprovados no smoke anterior. A aba temporária sem sessão foi fechada; nenhum login automatizado com credencial do responsável.
+
+Limites preservados: correlação do loader após novo login não completada; smoke anterior da lista reutilizado. Não comprovadas todas as operações nem MFA real de produção. Notas herdadas de personalização mobile/foco permanecem; criação de edições depende da reconciliação separada das migrations. Nenhuma migration, merge ou deploy nesta rodada. PR permanece draft até integração explicitamente autorizada.
+
+PROXIMO_PASSO_EXATO: SERVICO=PR86 e PR87; ACAO=conferir consolidação editorial e definir ordem de integração/rollout em unidade autorizada, preservando produção comMFA; CRITERIO=pareceres/gates válidos e compatibilidade verificada antes de qualquer rollout. PR87 resolve issue84 no CI; issue83/PR77 continua separada.
+
 ## Validação autenticada da compatibilidade do preview — 16/10/2026
 
 WORK_UNIT=PREVIEW-COMPETITIONS-AUTH-SMOKE; OWNER=project-maintainer; BRANCH=codex/preview-password-auth; HEAD_FUNCIONAL=2dc0b4c94b1ad213eb6befcd039f104195310ac6; WRITE_LOCK=RELEASED; ESTADO=LISTA_AUTENTICADA_VERIFICADA.
