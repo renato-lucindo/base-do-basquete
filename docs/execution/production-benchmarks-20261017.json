@@ -1,0 +1,78 @@
+{
+  "commit": "862288a6ac2f09a0801b33a0a32c4c6c7f58b1d6",
+  "version": "95633298-cd5d-4e28-8fa6-d17a255d6a34",
+  "deployment": "95502bdd-5867-4f18-b784-96330e90bb46",
+  "initial": {
+    "budgetMet": false,
+    "measurement": {
+      "baseUrl": "https://base-do-basquete-prod.renato-lucindo-jr.workers.dev",
+      "measuredAt": "2026-10-17T02:31:58.647Z",
+      "warmups": 3,
+      "targets": {
+        "p50Ms": 1000,
+        "p95Ms": 1500
+      },
+      "results": [
+        {
+          "name": "estatísticas avançadas",
+          "path": "/2026/liga-de-desenvolvimento/sub-15/masculino/jogadores",
+          "samples": 10,
+          "responseBytes": 16361,
+          "minMs": 637.1,
+          "p50Ms": 705.3,
+          "p95Ms": 775.7,
+          "maxMs": 775.7,
+          "averageMs": 715.1
+        },
+        {
+          "name": "detalhe de jogo FIBA",
+          "path": "/2026/copa-es-ouro/fixture-fiba/masculino/jogos/63",
+          "samples": 10,
+          "responseBytes": 37692,
+          "minMs": 629.6,
+          "p50Ms": 798.2,
+          "p95Ms": 2375.6,
+          "maxMs": 2375.6,
+          "averageMs": 947.7
+        }
+      ]
+    }
+  },
+  "predeterminedDefaultRepeat": {
+    "budgetMet": true,
+    "measurement": {
+      "baseUrl": "https://base-do-basquete-prod.renato-lucindo-jr.workers.dev",
+      "measuredAt": "2026-10-17T04:25:58.836Z",
+      "warmups": 3,
+      "targets": {
+        "p50Ms": 1000,
+        "p95Ms": 1500
+      },
+      "results": [
+        {
+          "name": "estatísticas avançadas",
+          "path": "/2026/liga-de-desenvolvimento/sub-15/masculino/jogadores",
+          "samples": 30,
+          "responseBytes": 16361,
+          "minMs": 525.2,
+          "p50Ms": 587.2,
+          "p95Ms": 670.6,
+          "maxMs": 688.4,
+          "averageMs": 589
+        },
+        {
+          "name": "detalhe de jogo FIBA",
+          "path": "/2026/copa-es-ouro/fixture-fiba/masculino/jogos/63",
+          "samples": 30,
+          "responseBytes": 37692,
+          "minMs": 478.4,
+          "p50Ms": 553.4,
+          "p95Ms": 825.2,
+          "maxMs": 861.1,
+          "averageMs": 575.8
+        }
+      ]
+    }
+  },
+  "interpretation": "Initial FIBA tail exceeded1500ms. One predetermined default30-sample repeat passed unchanged targets on unchanged artifact. Exact cause of initial peak unconfirmed; no code or target changed."
+}
