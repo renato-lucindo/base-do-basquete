@@ -2,7 +2,7 @@ begin;
 \ir ../helpers/final_profile_fixtures.inc
 
 create extension if not exists pgtap with schema extensions;
-select plan(39);
+select plan(44);
 set constraints all deferred;
 select set_config('bdb.allow_internal_ingestion_game', 'on', true);
 
@@ -203,6 +203,38 @@ $$,'the site import advances to review');
 select is((select parser_version from public.boxscore_imports
   where id=(select import_id from site_boxscore_test_data)),
   'basketball-site-v1','the draft retains the real parser version');
+-- Regression: both PDF commit entrypoints must honor an existing keyboard draft.
+reset role;
+insert into public.keyboard_scoresheets(game_id, document)
+values (
+  94101,
+  '{"rulesVersion":"FIBA_2024","periods":4,"roster":[],"events":[],"coachPlayer":{"home":null,"away":null}}'::jsonb
+);
+set local role authenticated;
+select throws_ok($$
+  select public.admin_commit_boxscore_import_v2(
+    import_id,
+    resolution-'gameId',
+    jsonb_build_object(
+      'mode','existing','gameId',94101,'applyReviewedMetadata',false,
+      'scheduledAt','2026-05-13T23:30:00Z','venue','Sesport'
+    )
+  ) from site_boxscore_test_data
+$$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'Site v2 cannot overwrite a keyboard draft');
+select throws_ok($$
+  select public.admin_commit_boxscore_import(import_id, resolution)
+  from site_boxscore_test_data
+$$, 'BD906', 'KEYBOARD_OTHER_SOURCE_ACTIVE', 'legacy Site commit cannot overwrite a keyboard draft');
+select is((select status from public.boxscore_imports where id=(select import_id from site_boxscore_test_data)),
+  'review', 'blocked Site import remains reviewable');
+select is((select status from public.games where id=94101),
+  'scheduled', 'blocked Site import does not finalize the game');
+select is((select count(*) from public.keyboard_scoresheets where game_id=94101),
+  1::bigint, 'Site collision retains the existing keyboard draft');
+reset role;
+delete from public.keyboard_scoresheets where game_id=94101;
+set local role authenticated;
+
 select lives_ok($$
   select public.admin_commit_boxscore_import_v2(
     import_id,

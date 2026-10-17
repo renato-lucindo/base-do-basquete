@@ -1,0 +1,119 @@
+{
+  "sourceCommit": "d26d7ddccd99eea8e8de41d0af5dd220b9b39cbb",
+  "install": "npm ci in clean detached disposable checkout; no dependency junction during verification",
+  "lockfileSha256": "5b375818e1bdb9cd98054dad07561650621cff3b5c7aaabdfc151db6a161c7cb",
+  "directDependencyMismatches": [],
+  "dependencies": {
+    "@supabase/supabase-js": {
+      "locked": "2.117.2",
+      "installed": "2.117.2"
+    },
+    "isbot": {
+      "locked": "5.2.2",
+      "installed": "5.2.2"
+    },
+    "react": {
+      "locked": "19.3.0",
+      "installed": "19.3.0"
+    },
+    "react-dom": {
+      "locked": "19.3.0",
+      "installed": "19.3.0"
+    },
+    "react-router": {
+      "locked": "8.4.0",
+      "installed": "8.4.0"
+    },
+    "sienna-accessibility": {
+      "locked": "2.2.333",
+      "installed": "2.2.333"
+    },
+    "unpdf": {
+      "locked": "1.8.1",
+      "installed": "1.8.1"
+    },
+    "zod": {
+      "locked": "4.4.3",
+      "installed": "4.4.3"
+    },
+    "@axe-core/playwright": {
+      "locked": "4.13.0",
+      "installed": "4.13.0"
+    },
+    "@biomejs/biome": {
+      "locked": "2.5.14",
+      "installed": "2.5.14"
+    },
+    "@cloudflare/vite-plugin": {
+      "locked": "1.60.1",
+      "installed": "1.60.1"
+    },
+    "@playwright/test": {
+      "locked": "1.63.0",
+      "installed": "1.63.0"
+    },
+    "@react-router/dev": {
+      "locked": "8.4.0",
+      "installed": "8.4.0"
+    },
+    "@types/node": {
+      "locked": "26.6.2",
+      "installed": "26.6.2"
+    },
+    "@types/react": {
+      "locked": "19.3.0",
+      "installed": "19.3.0"
+    },
+    "@types/react-dom": {
+      "locked": "19.3.0",
+      "installed": "19.3.0"
+    },
+    "fast-check": {
+      "locked": "4.10.2",
+      "installed": "4.10.2"
+    },
+    "supabase": {
+      "locked": "2.118.0",
+      "installed": "2.118.0"
+    },
+    "typescript": {
+      "locked": "7.0.2",
+      "installed": "7.0.2"
+    },
+    "vite": {
+      "locked": "8.3.1",
+      "installed": "8.3.1"
+    },
+    "vitest": {
+      "locked": "5.0.2",
+      "installed": "5.0.2"
+    },
+    "wrangler": {
+      "locked": "4.140.0",
+      "installed": "4.140.0"
+    }
+  },
+  "gate": {
+    "npmRunCheck": "PASS",
+    "vitestFiles": 59,
+    "vitestTests": 487,
+    "playwrightTests": 9,
+    "secretScanFiles": 717
+  },
+  "audit": {
+    "productionVulnerabilities": 0,
+    "preexistingDevToolchainHighFindings": 6,
+    "lockfileChangedByFeature": false
+  },
+  "preview": {
+    "versionId": "60c2ead2-e452-4421-a79d-273174545d85",
+    "url": "https://pr-77-base-do-basquete-preview.renato-lucindo-jr.workers.dev",
+    "mvpSecurityPrivacySmoke": "PASS",
+    "publicContextSmoke": "PASS"
+  },
+  "limitations": [
+    "CI/CodeQL jobs do not start because GitHub billing/spending limit restriction",
+    "Shared Supabase migration not applied; native bootstrap does not verify GoTrue/PostgREST",
+    "Authenticated new module against remote preview remains unverified"
+  ]
+}

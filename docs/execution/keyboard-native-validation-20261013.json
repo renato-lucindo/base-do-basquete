@@ -1,0 +1,286 @@
+{
+  "environment": "Disposable native PostgreSQL 17.11, ICU und locale, actual migrations and seed; minimal Auth/Storage compatibility bootstrap; not Supabase Auth/PostgREST integration",
+  "passedFiles": 45,
+  "files": 45,
+  "passedAssertions": 1286,
+  "concurrencyScenarios": [
+    "CAS single winner",
+    "identical retry receipt",
+    "new versus legacy single winner"
+  ],
+  "ci": "GitHub Actions jobs did not start: account billing/spending-limit restriction",
+  "tests": [
+    {
+      "file": "admin_bulk_player_private_review.test.sql",
+      "passedAssertions": 23,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "admin_player_workflow.test.sql",
+      "passedAssertions": 16,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "admin_roster_transactions.test.sql",
+      "passedAssertions": 40,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "basketball_site_boxscore.test.sql",
+      "passedAssertions": 39,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "boxscore_team_resolution.test.sql",
+      "passedAssertions": 31,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "canonical_model.test.sql",
+      "passedAssertions": 34,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "edition_creation_workflow.test.sql",
+      "passedAssertions": 43,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "fiba_boxscore_import.test.sql",
+      "passedAssertions": 51,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "final_placements_history.test.sql",
+      "passedAssertions": 27,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "game_data_backfill.test.sql",
+      "passedAssertions": 43,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "game_data_domain_authority.test.sql",
+      "passedAssertions": 64,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "game_data_submissions.test.sql",
+      "passedAssertions": 40,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "jersey_history.test.sql",
+      "passedAssertions": 5,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "keyboard_scoresheet.test.sql",
+      "passedAssertions": 54,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "manual_scoresheet_transactions.test.sql",
+      "passedAssertions": 19,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp01_structural_ingestion.test.sql",
+      "passedAssertions": 16,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp02_public_player_read_models.test.sql",
+      "passedAssertions": 35,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp03_preset_compiler.test.sql",
+      "passedAssertions": 18,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp03_relational_presets.test.sql",
+      "passedAssertions": 36,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp04_matchup_progression.test.sql",
+      "passedAssertions": 28,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp04_private_scheduling.test.sql",
+      "passedAssertions": 63,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "mvp04_versioned_publication.test.sql",
+      "passedAssertions": 37,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "player_private_admin_flow.test.sql",
+      "passedAssertions": 24,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "player_profile_foundation.test.sql",
+      "passedAssertions": 27,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_conflict_resolution.test.sql",
+      "passedAssertions": 18,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_domain_comparisons.test.sql",
+      "passedAssertions": 17,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_late_fiba_candidate.test.sql",
+      "passedAssertions": 13,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_manual_fiba_projection.test.sql",
+      "passedAssertions": 10,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_source_roles.test.sql",
+      "passedAssertions": 17,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post01_submission_snapshots.test.sql",
+      "passedAssertions": 13,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post02_draft_ruleset_editor.test.sql",
+      "passedAssertions": 36,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post02_registration_removal_policy.test.sql",
+      "passedAssertions": 28,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post02_ruleset_clone.test.sql",
+      "passedAssertions": 29,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post03_administrative_results.test.sql",
+      "passedAssertions": 33,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post03_fk_covering_indexes.test.sql",
+      "passedAssertions": 11,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post03_group_closure.test.sql",
+      "passedAssertions": 29,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post03_ruleset_amendments.test.sql",
+      "passedAssertions": 34,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post03_sports_exceptions_dashboard.test.sql",
+      "passedAssertions": 8,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "post04_final_profile_enforcement.test.sql",
+      "passedAssertions": 21,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "public_game_statistics.test.sql",
+      "passedAssertions": 14,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "season_division_corrections.test.sql",
+      "passedAssertions": 27,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "season_division_model.test.sql",
+      "passedAssertions": 54,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "single_admin_auth.test.sql",
+      "passedAssertions": 10,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "stats_public_player_snapshot.test.sql",
+      "passedAssertions": 20,
+      "failures": [],
+      "errors": []
+    },
+    {
+      "file": "wp14_boxscore_enhancements.test.sql",
+      "passedAssertions": 31,
+      "failures": [],
+      "errors": []
+    }
+  ],
+  "evidenceComposition": "Full replay of 45 files on 9f3f258, followed by focused replay of the final validation delta (54 assertions); unchanged domain files reuse the full replay evidence.",
+  "migrationSha256": "144a0b95e17ca8d37ae56bc0f00c319958b017fd3ee3d36e616dacbb00c3a139"
+}

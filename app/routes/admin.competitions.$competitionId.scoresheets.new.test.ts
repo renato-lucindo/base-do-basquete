@@ -8,6 +8,7 @@ import { ScoresheetStep } from "../modules/scoresheet/editor";
 import {
   describeScoresheetUnavailability,
   loader,
+  default as NewManualScoresheet,
   ScoresheetUnavailableState,
 } from "./admin.competitions.$competitionId.scoresheets.new";
 
@@ -16,8 +17,8 @@ vi.mock("../modules/auth/authorization.server", () => ({ requireAdminAal2: vi.fn
 const authorization = vi.mocked(requireAdminAal2);
 const client = { from: vi.fn() };
 
-function query(data: unknown[]) {
-  const result = { data, error: null };
+function query(data: unknown[], error: unknown = null) {
+  const result = { data, error };
   const builder = {
     select: vi.fn(),
     eq: vi.fn(),
@@ -28,7 +29,7 @@ function query(data: unknown[]) {
   };
   builder.select.mockReturnValue(builder);
   builder.eq.mockReturnValue(builder);
-  builder.in.mockReturnValue(builder);
+  builder.in.mockResolvedValue(result);
   builder.not.mockReturnValue(builder);
   builder.order.mockResolvedValue(result);
   builder.limit.mockResolvedValue(result);
@@ -183,5 +184,166 @@ describe("manual scoresheet step isolation", () => {
     expect(active).toContain('id="scoresheet-step-1-heading"');
     expect(active).toContain('class="scoresheet-step-heading"');
     expect(active).toContain('tabindex="-1"');
+  });
+});
+
+describe("entrada exclusiva por teclado", () => {
+  it("exibe jogos FIBA elegíveis como fallback emergencial e mantém a justificativa visível", () => {
+    const RouterStub = createRoutesStub([
+      {
+        path: "/",
+        Component: () =>
+          createElement(NewManualScoresheet, {
+            loaderData: {
+              competitionId: 100,
+              competitionName: "Liga FIBA",
+              games: [{ id: 42, number: 7, homeName: "Azul", awayName: "Verde", saved: false }],
+              unavailableIssue: null,
+              migrationPending: false,
+              fallbackProfile: true,
+            },
+          } as unknown as Parameters<typeof NewManualScoresheet>[0]),
+      },
+    ]);
+    const html = renderToStaticMarkup(createElement(RouterStub));
+    expect(html).toContain("Fallback emergencial");
+    expect(html).toContain("justificativa de 10 a 500 caracteres");
+    expect(html).toContain('href="/admin/games/42/scoresheet/keyboard"');
+  });
+  it("mostra os jogos elegíveis sem renderizar a grade antiga", () => {
+    const RouterStub = createRoutesStub([
+      {
+        path: "/",
+        Component: () =>
+          createElement(NewManualScoresheet, {
+            loaderData: {
+              competitionId: 100,
+              competitionName: "Liga de teste",
+              games: [
+                {
+                  id: 42,
+                  number: 7,
+                  homeName: "Equipe Azul",
+                  awayName: "Equipe Ouro",
+                  saved: false,
+                },
+                {
+                  id: 43,
+                  number: 8,
+                  homeName: "Equipe Azul",
+                  awayName: "Equipe Ouro",
+                  saved: true,
+                },
+              ],
+              unavailableIssue: null,
+              migrationPending: false,
+              fallbackProfile: false,
+            },
+          } as unknown as Parameters<typeof NewManualScoresheet>[0]),
+      },
+    ]);
+    const html = renderToStaticMarkup(createElement(RouterStub));
+    expect(html).toContain("Transcrever súmula por teclado");
+    expect(html).toContain('href="/admin/games/42/scoresheet/keyboard"');
+    expect(html).toContain('href="/admin/games/43/scoresheet/keyboard"');
+    expect(html).toContain("Retomar ou corrigir");
+    expect(html).not.toContain("Grade por períodos");
+    expect(html).not.toContain("Cartões");
+  });
+
+  it("não permite iniciar lançamento quando a migration não está disponível", () => {
+    const RouterStub = createRoutesStub([
+      {
+        path: "/",
+        Component: () =>
+          createElement(NewManualScoresheet, {
+            loaderData: {
+              competitionId: 100,
+              competitionName: "Liga de teste",
+              games: [{ id: 42, number: 7, homeName: "Azul", awayName: "Ouro", saved: false }],
+              unavailableIssue: null,
+              migrationPending: true,
+              fallbackProfile: false,
+            },
+          } as unknown as Parameters<typeof NewManualScoresheet>[0]),
+      },
+    ]);
+    const html = renderToStaticMarkup(createElement(RouterStub));
+    expect(html).toContain("Gravação por teclado indisponível");
+    expect(html).not.toContain('href="/admin/games/42/scoresheet/keyboard"');
+  });
+});
+
+function readyGames(keyboardError: unknown = null) {
+  const fixtures = {
+    competitions: query([
+      { id: 100, display_name: "Liga de teste", status: "draft", data_profile_id: null },
+    ]),
+    team_registrations: query([
+      { id: 11, team_id: 21, public_name: "Azul" },
+      { id: 12, team_id: 22, public_name: "Ouro" },
+    ]),
+    roster_entries: query([{ registration_id: 11 }, { registration_id: 12 }]),
+    teams: query([
+      { id: 21, name: "Azul" },
+      { id: 22, name: "Ouro" },
+    ]),
+    games: query([{ id: 42, game_number: 7, matchup_id: 5, status: "scheduled" }]),
+    game_participants: query([
+      { game_id: 42, registration_id: 11, side: "home" },
+      { game_id: 42, registration_id: 12, side: "away" },
+    ]),
+    keyboard_scoresheets: query([], keyboardError),
+  } as Record<string, ReturnType<typeof query>>;
+  client.from.mockImplementation((table: string) => fixtures[table]);
+}
+
+describe("encaminhamento do jogo para o novo editor", () => {
+  it("abre diretamente o editor do único jogo elegível", async () => {
+    readyGames();
+    try {
+      await loader(loaderArgs());
+      throw new Error("Esperava redirecionamento");
+    } catch (cause) {
+      expect(cause).toBeInstanceOf(Response);
+      const response = cause as Response;
+      expect(response.headers.get("location")).toBe("/admin/games/42/scoresheet/keyboard");
+    }
+  });
+
+  it("informa falta de migration e evita redirecionar ao lançamento", async () => {
+    readyGames({ code: "42P01", message: "relation missing" });
+    const result = await loader(loaderArgs());
+    expect(result).not.toBeInstanceOf(Response);
+    const payload = result as { data: { migrationPending: boolean; games: unknown[] } };
+    expect(payload.data.migrationPending).toBe(true);
+    expect(payload.data.games).toHaveLength(1);
+  });
+});
+
+describe("compatibilidade da seleção no preview", () => {
+  it("usa o nome global somente se public_name ainda não existir no banco", async () => {
+    readyGames();
+    const registrations = client.from("team_registrations") as ReturnType<typeof query>;
+    registrations.select
+      .mockReturnValueOnce(query([], { code: "42703", message: "column missing" }))
+      .mockReturnValueOnce(
+        query([
+          { id: 11, team_id: 21 },
+          { id: 12, team_id: 22 },
+        ]),
+      );
+    await expect(loader(loaderArgs())).rejects.toMatchObject({
+      headers: expect.any(Headers),
+      status: 302,
+    });
+    expect(client.from).toHaveBeenCalledWith("teams");
+  });
+
+  it("não converte erro de autorização em fallback de esquema antigo", async () => {
+    readyGames();
+    const registrations = client.from("team_registrations") as ReturnType<typeof query>;
+    registrations.select.mockReturnValueOnce(query([], { code: "42501" }));
+    await expect(loader(loaderArgs())).rejects.toThrow("Scoresheet eligibility query failed");
   });
 });

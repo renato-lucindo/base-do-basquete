@@ -61,10 +61,12 @@ select ok(
   'submission role selection is enforced inside the database transaction'
 );
 select ok(
-  pg_get_functiondef('public.admin_create_manual_scoresheet(jsonb)'::regprocedure)
+  pg_get_functiondef('private.admin_create_manual_scoresheet_before_keyboard(jsonb)'::regprocedure)
     like '%expected_primary_source = ''fiba_boxscore''%'
+    and pg_get_functiondef('private.admin_create_manual_scoresheet_before_keyboard(jsonb)'::regprocedure)
+      like '%BDB_FALLBACK_REASON_REQUIRED%'
     and pg_get_functiondef('public.admin_create_manual_scoresheet(jsonb)'::regprocedure)
-      like '%BDB_FALLBACK_REASON_REQUIRED%',
+      like '%private.admin_create_manual_scoresheet_before_keyboard(p_payload)%',
   'manual ingestion derives fallback from the immutable profile and requires a reason'
 );
 select ok(

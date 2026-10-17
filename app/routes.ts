@@ -54,6 +54,14 @@ export default [
     "routes/admin.competitions.$competitionId.context.tsx",
   ),
   route("admin/games/:gameId/data-conflict", "routes/admin.games.$gameId.data-conflict.tsx"),
+  route(
+    "admin/games/:gameId/scoresheet/keyboard",
+    "routes/admin.games.$gameId.scoresheet.keyboard.tsx",
+  ),
+  route(
+    "api/admin/games/:gameId/keyboard-scoresheet",
+    "routes/api.admin.games.$gameId.keyboard-scoresheet.ts",
+  ),
   route("admin/competitions/:competitionId", "routes/admin.competitions.$competitionId.tsx"),
   route("api/public-search", "routes/api.public-search.tsx"),
   route("api/admin/players", "routes/api.admin-players.tsx"),
