@@ -218,6 +218,7 @@ test("divergent local recovery survives two reloads byte-for-byte until an expli
   await page.getByRole("button", { name: "Recuperar cópia local" }).click();
   await expect(page.locator(".keyboard-history li")).toHaveCount(1);
   await expect(page.getByRole("complementary", { name: "Recuperação" })).toHaveCount(0);
+  await expect(page.getByLabel("Camisa, B ou C", { exact: true })).toBeFocused();
 });
 
 test("discard replaces the local copy only after selection", async ({ page }) => {
@@ -237,6 +238,7 @@ test("discard replaces the local copy only after selection", async ({ page }) =>
   expect(await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"))).toBe(original);
   await page.getByRole("button", { name: "Usar versão do servidor" }).click();
   await expect(page.locator(".keyboard-history li")).toHaveCount(0);
+  await expect(page.getByLabel("Camisa, B ou C", { exact: true })).toBeFocused();
   const updated = await page.evaluate(() => localStorage.getItem("bdb:keyboard:v1:990"));
   expect(updated).not.toBe(original);
   expect(JSON.parse(updated ?? "{}").document.events).toEqual([]);

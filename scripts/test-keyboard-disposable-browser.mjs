@@ -206,12 +206,19 @@ export async function verifyDisposableBrowser({ sql, status, adminUser, password
     await expect(page.getByRole("status")).toHaveText("Rascunho salvo no servidor");
 
     // Another tab still holds version 1 and must be rejected by the real backend.
+    const staleTeam = stalePage.getByRole("button", { name: /Equipe A ·/ });
+    await staleTeam.click();
+    await expect(staleTeam).toHaveAttribute("aria-pressed", "true");
     const staleJersey = stalePage.getByLabel("Camisa, B ou C", { exact: true });
     await staleJersey.fill("10");
     await staleJersey.press("Enter");
     const staleAction = stalePage.locator(".keyboard-entry input").nth(1);
     await staleAction.fill("3");
+    const conflictResponse = stalePage.waitForResponse((response) =>
+      response.url().includes("/api/admin/games/93501/keyboard-scoresheet"),
+    );
     await staleAction.press("Enter");
+    assert.equal((await conflictResponse).status(), 409, "Valid stale edit reaches backend CAS");
     await expect(stalePage.getByRole("alert")).toContainText("outra aba");
     assert.equal(
       Number(

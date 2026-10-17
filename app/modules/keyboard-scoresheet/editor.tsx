@@ -62,6 +62,8 @@ export function KeyboardScoresheet({
   const [setupErrorId, setSetupErrorId] = useState<number | null>(null);
   const [fieldError, setFieldError] = useState<"target" | "code" | "reason" | null>(null);
   const targetRef = useRef<HTMLInputElement>(null);
+  const setupStartRef = useRef<HTMLButtonElement>(null);
+  const recoveryFocusPending = useRef(false);
   const codeRef = useRef<HTMLInputElement>(null);
   const reasonRef = useRef<HTMLTextAreaElement>(null);
   const version = useRef(context.version);
@@ -76,6 +78,13 @@ export function KeyboardScoresheet({
   const storageKey = `bdb:keyboard:v1:${context.gameId}`;
   const focus = () => targetRef.current?.focus();
   current.current = sheet;
+
+  useEffect(() => {
+    if (hydration === "ready" && recoveryFocusPending.current) {
+      recoveryFocusPending.current = false;
+      (setup ? setupStartRef.current : targetRef.current)?.focus();
+    }
+  }, [hydration, setup]);
 
   useEffect(() => {
     let stored: string | null;
@@ -303,6 +312,7 @@ export function KeyboardScoresheet({
     }
     setRecovery(null);
     setRecoveryRaw(null);
+    recoveryFocusPending.current = true;
     setHydration("ready");
   }
   function exportCopy() {
@@ -513,6 +523,7 @@ export function KeyboardScoresheet({
             ))}
             <button
               type="button"
+              ref={setupStartRef}
               onClick={() => {
                 try {
                   validateSheet(sheet);
