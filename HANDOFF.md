@@ -1,5 +1,17 @@
 # HANDOFF — Base do Basquete
 
+## Issue #84 — correção reproduzida e revisada — 16/10/2026
+
+WORK_UNIT=ISSUE84-BATCH-DEADLOCK-20261016; OWNER=project-maintainer; BRANCH=codex/issue84-batch-lock-order-20261016; PR=#87; HEAD_FUNCIONAL=5d90ad46fea7fa2284e2ef3e990efa77a63373f9; WRITE_LOCK=RELEASED; ESTADO=VALIDADO_SEM_MERGE_OU_ROLLOUT. Este checkpoint substitui o estado de execução anterior.
+
+CI38989840825 SUCCESS (gate/accessibility/database); CodeQL38989840768 e preview38989840767 SUCCESS. Banco descartável:49arquivos/1350pgTAP; baseline reproduziu40P01 às01:16:15Z de17/10UTC (22:16 de16/10Brasília), correção sem40P01 às01:16:16Z. Duas requisições/ordens inversas retornam um sucesso/um erro de domínio explícito, uma temporada/duas disputas/um ledger/uma auditoria; retries preservamIDs; mesmoUUID e negação de anon/AAL1/não-admin continuam PASS. Gate512Vitest/66arquivos PASS. Banco6227858895 e QA na PR87 APPROVE_WITH_NON_BLOCKING_NOTES, semP0-P3, vinculados ao SHAfuncional. REVIEW_PACKET6227809498; registros remotos autoritativos na PR87 e issue84.
+
+Limites: corridas mistas batch/helper/preset analisadas estaticamente; antecipar locks pode aumentar contenção. Evidência específica não certifica ausência universal de deadlocks. Nenhuma migration compartilhada, merge ou produção; não fechar issue antes da integração/rollout autorizado. Documento editorial posterior não muda o artefato funcional revisado.
+
+PR86: banco6227803214 e acessibilidade6227803342 aprovados com notas; QA renovado encerrou BLOCK_RELEASE6227803485 após smokeAuth6227845306. Responsável realizou logout/login por senha; GoTrue logout204, token200, admissão200; consulta agregada confirmou nova sessão e zero admissões anteriores ao logout. Três pareceres válidos no funcionalfd0a91a. Sem alteração da PR77 nesta unidade.
+
+PROXIMO_PASSO_EXATO: SERVICO=PRs86/87 e issue83/PR77; ACAO=conferir consolidação editorial e planejar ordem de integração/rollout em unidade autorizada; retomar pareceres críticos pendentes daPR77 em seu checkout preservado; CRITERIO=pareceres/gates do SHA correspondente e rollout explicitamente autorizado; não aplicar migrations compartilhadas nem integrar automaticamente.
+
 ## Issue #84 — correção de ordem dos locks — 16/10/2026
 
 WORK_UNIT=ISSUE84-BATCH-DEADLOCK-20261016; OWNER=project-maintainer; BRANCH=codex/issue84-batch-lock-order-20261016; BASE=be851210da2ba96e4ca78c9cbfac53223ee6862d; WRITE_LOCK=ACTIVE (registro remoto issue84 comentário6221019141).
